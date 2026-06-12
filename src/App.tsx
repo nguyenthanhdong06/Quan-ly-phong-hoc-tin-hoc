@@ -274,6 +274,13 @@ export default function App() {
     return day <= 15;
   }, []);
 
+  const hasAdminOrTeacherAccess = useMemo(() => {
+    return currentUser !== null && (
+      currentUser.role.includes('Admin') || 
+      currentUser.role.includes('Giáo viên')
+    );
+  }, [currentUser]);
+
   // Filter classes by grade
   const filteredActiveClasses = useMemo(() => {
     return classes.filter(c => c.gradeId === selectedGrade);
@@ -403,7 +410,7 @@ export default function App() {
       {toast.show && (
         <div 
           className={`fixed bottom-5 right-5 z-50 flex items-center gap-2.5 px-5 py-3.5 rounded-2xl shadow-2xl text-white transition-all transform translate-y-0 text-sm font-extrabold ${
-            toast.type === 'error' ? 'bg-red-500 border border-red-600' : 'bg-emerald-650 border border-emerald-700'
+            toast.type === 'error' ? 'bg-red-500 border border-red-600' : 'bg-emerald-600 border border-emerald-700'
           }`}
         >
           <span>{toast.type === 'error' ? '🚨' : '🎉'}</span>
@@ -446,7 +453,7 @@ export default function App() {
                   className={`px-3 py-1 text-xs font-black rounded-lg transition-all ${
                     selectedGrade === g.id 
                       ? 'bg-white text-amber-700 shadow-sm border border-white' 
-                      : 'hover:bg-amber-650/50 text-white'
+                      : 'hover:bg-amber-600/50 text-white'
                   }`}
                 >
                   {g.id}
@@ -485,95 +492,107 @@ export default function App() {
               onClick={() => setActiveTab('dashboard')}
               className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition whitespace-nowrap ${
                 activeTab === 'dashboard' 
-                  ? 'bg-amber-100 text-amber-900 border border-amber-250 shadow-sm' 
+                  ? 'bg-amber-100 text-amber-900 border border-amber-200 shadow-sm' 
                   : 'text-slate-500 hover:bg-slate-100'
               }`}
             >
               <Home className="w-4 h-4" /> Tổng quan
             </button>
             
-            <button
-              onClick={() => setActiveTab('students')}
-              className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition whitespace-nowrap ${
-                activeTab === 'students' 
-                  ? 'bg-amber-100 text-amber-900 border border-amber-250 shadow-sm' 
-                  : 'text-slate-500 hover:bg-slate-100'
-              }`}
-            >
-              <Users className="w-4 h-4" /> Học sinh
-            </button>
+            {hasAdminOrTeacherAccess && (
+              <button
+                onClick={() => setActiveTab('students')}
+                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition whitespace-nowrap ${
+                  activeTab === 'students' 
+                    ? 'bg-amber-100 text-amber-900 border border-amber-200 shadow-sm' 
+                    : 'text-slate-500 hover:bg-slate-100'
+                }`}
+              >
+                <Users className="w-4 h-4" /> Học sinh
+              </button>
+            )}
 
             {/* New CRUD Class & Grade tab */}
-            <button
-              onClick={() => setActiveTab('classes-management')}
-              className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition whitespace-nowrap ${
-                activeTab === 'classes-management' 
-                  ? 'bg-amber-100 text-amber-900 border border-amber-250 shadow-sm' 
-                  : 'text-slate-500 hover:bg-slate-100'
-              }`}
-            >
-              <Layers className="w-4 h-4" /> Khối & Lớp
-            </button>
+            {hasAdminOrTeacherAccess && (
+              <button
+                onClick={() => setActiveTab('classes-management')}
+                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition whitespace-nowrap ${
+                  activeTab === 'classes-management' 
+                    ? 'bg-amber-100 text-amber-900 border border-amber-200 shadow-sm' 
+                    : 'text-slate-500 hover:bg-slate-100'
+                }`}
+              >
+                <Layers className="w-4 h-4" /> Khối & Lớp
+              </button>
+            )}
 
-            <button
-              onClick={() => setActiveTab('attendance')}
-              className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition whitespace-nowrap ${
-                activeTab === 'attendance' 
-                  ? 'bg-amber-100 text-amber-900 border border-amber-250 shadow-sm' 
-                  : 'text-slate-500 hover:bg-slate-100'
-              }`}
-            >
-              <ClipboardCheck className="w-4 h-4" /> Điểm danh
-            </button>
+            {hasAdminOrTeacherAccess && (
+              <button
+                onClick={() => setActiveTab('attendance')}
+                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition whitespace-nowrap ${
+                  activeTab === 'attendance' 
+                    ? 'bg-amber-100 text-amber-900 border border-amber-200 shadow-sm' 
+                    : 'text-slate-500 hover:bg-slate-100'
+                }`}
+              >
+                <ClipboardCheck className="w-4 h-4" /> Điểm danh
+              </button>
+            )}
 
-            <button
-              onClick={() => setActiveTab('evaluation')}
-              className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition whitespace-nowrap ${
-                activeTab === 'evaluation' 
-                  ? 'bg-amber-100 text-amber-900 border border-amber-250 shadow-sm' 
-                  : 'text-slate-500 hover:bg-slate-100'
-              }`}
-            >
-              <Award className="w-4 h-4" /> Chấm điểm nhận xét
-            </button>
+            {hasAdminOrTeacherAccess && (
+              <button
+                onClick={() => setActiveTab('evaluation')}
+                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition whitespace-nowrap ${
+                  activeTab === 'evaluation' 
+                    ? 'bg-amber-100 text-amber-900 border border-amber-200 shadow-sm' 
+                    : 'text-slate-500 hover:bg-slate-100'
+                }`}
+              >
+                <Award className="w-4 h-4" /> Chấm điểm nhận xét
+              </button>
+            )}
 
-            <button
-              onClick={() => setActiveTab('emulation')}
-              className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap relative ${
-                activeTab === 'emulation'
-                  ? 'bg-amber-100 text-amber-900 border-2 border-amber-400 shadow-sm font-black'
-                  : 'text-slate-500 hover:bg-slate-100'
-              } ${
-                isRedemptionPeriod 
-                  ? 'animate-pulse bg-gradient-to-r from-red-500 via-amber-500 to-red-500 text-white border-2 border-yellow-300 shadow scale-105' 
-                  : ''
-              }`}
-            >
-              <Sparkles className="w-4 h-4" />
-              <span>Góc Thi Đua</span>
-              {isRedemptionPeriod && (
-                <span className="ml-1 bg-yellow-300 text-red-700 text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase animate-bounce border border-white">
-                  Đổi Quà 🎁
-                </span>
-              )}
-            </button>
+            {hasAdminOrTeacherAccess && (
+              <button
+                onClick={() => setActiveTab('emulation')}
+                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap relative ${
+                  activeTab === 'emulation'
+                    ? 'bg-amber-100 text-amber-900 border-2 border-amber-400 shadow-sm font-black'
+                    : 'text-slate-500 hover:bg-slate-100'
+                } ${
+                  isRedemptionPeriod 
+                    ? 'animate-pulse bg-gradient-to-r from-red-500 via-amber-500 to-red-500 text-white border-2 border-yellow-300 shadow scale-105' 
+                    : ''
+                }`}
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>Góc Thi Đua</span>
+                {isRedemptionPeriod && (
+                  <span className="ml-1 bg-yellow-300 text-red-700 text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase animate-bounce border border-white">
+                    Đổi Quà 🎁
+                  </span>
+                )}
+              </button>
+            )}
 
-            <button
-              onClick={() => setActiveTab('seating')}
-              className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition whitespace-nowrap ${
-                activeTab === 'seating' 
-                  ? 'bg-amber-100 text-amber-900 border border-amber-250 shadow-sm' 
-                  : 'text-slate-500 hover:bg-slate-100'
-              }`}
-            >
-              <Monitor className="w-4 h-4" /> Sơ đồ phòng máy
-            </button>
+            {hasAdminOrTeacherAccess && (
+              <button
+                onClick={() => setActiveTab('seating')}
+                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition whitespace-nowrap ${
+                  activeTab === 'seating' 
+                    ? 'bg-amber-100 text-amber-900 border border-amber-200 shadow-sm' 
+                    : 'text-slate-500 hover:bg-slate-100'
+                }`}
+              >
+                <Monitor className="w-4 h-4" /> Sơ đồ phòng máy
+              </button>
+            )}
 
             <button
               onClick={() => setActiveTab('resources')}
               className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition whitespace-nowrap ${
                 activeTab === 'resources' 
-                  ? 'bg-amber-100 text-amber-900 border border-amber-250 shadow-sm' 
+                  ? 'bg-amber-100 text-amber-900 border border-amber-200 shadow-sm' 
                   : 'text-slate-500 hover:bg-slate-100'
               }`}
             >
@@ -586,7 +605,7 @@ export default function App() {
                 onClick={() => setActiveTab('admin')}
                 className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition whitespace-nowrap ${
                   activeTab === 'admin' 
-                    ? 'bg-amber-100 text-amber-900 border border-amber-250 shadow-sm' 
+                    ? 'bg-amber-100 text-amber-900 border border-amber-200 shadow-sm' 
                     : 'text-slate-500 hover:bg-slate-100'
                 }`}
               >
@@ -611,7 +630,7 @@ export default function App() {
                   </span>
                   <button
                     onClick={handleLogout}
-                    className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-bold text-red-650 border border-red-200 hover:bg-red-50 transition"
+                    className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-bold text-red-600 border border-red-200 hover:bg-red-50 transition cursor-pointer"
                   >
                     <LogOut className="w-4 h-4" /> Đăng xuất
                   </button>
@@ -648,7 +667,7 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'students' && (
+        {activeTab === 'students' && hasAdminOrTeacherAccess && (
           <StudentsTab
             selectedClass={selectedClass}
             students={students}
@@ -657,7 +676,7 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'classes-management' && (
+        {activeTab === 'classes-management' && hasAdminOrTeacherAccess && (
           <ClassesTab
             grades={grades}
             setGrades={setGrades}
@@ -669,7 +688,7 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'attendance' && (
+        {activeTab === 'attendance' && hasAdminOrTeacherAccess && (
           <AttendanceTab
             selectedClass={selectedClass}
             selectedDate={selectedDate}
@@ -682,7 +701,7 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'evaluation' && (
+        {activeTab === 'evaluation' && hasAdminOrTeacherAccess && (
           <EvaluationTab
             selectedClass={selectedClass}
             selectedDate={selectedDate}
@@ -698,7 +717,7 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'emulation' && (
+        {activeTab === 'emulation' && hasAdminOrTeacherAccess && (
           <EmulationTab
             selectedClass={selectedClass}
             students={students}
@@ -709,7 +728,7 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'seating' && (
+        {activeTab === 'seating' && hasAdminOrTeacherAccess && (
           <SeatingTab
             selectedClass={selectedClass}
             computers={computers}
@@ -823,7 +842,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setIsLoginModalOpen(false)}
-                  className="bg-slate-550 hover:bg-slate-100 text-slate-600 font-bold px-4 py-2.5 rounded-xl block"
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-4 py-2.5 rounded-xl block cursor-pointer"
                 >
                   Hủy bỏ
                 </button>

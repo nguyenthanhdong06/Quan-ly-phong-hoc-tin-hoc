@@ -131,7 +131,7 @@ export default function EvaluationTab({
           />
           <button
             onClick={handleSave}
-            className="ml-auto bg-amber-550 hover:bg-amber-600 text-white font-bold text-xs py-2 px-4 rounded-lg transition"
+            className="ml-auto bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs py-2 px-4 rounded-xl border border-amber-600 hover:border-amber-700 transition cursor-pointer"
           >
             💾 Khóa Sổ & Lưu
           </button>
@@ -158,12 +158,12 @@ export default function EvaluationTab({
                 {/* Visual Name & computer ID row */}
                 <div className="flex justify-between items-start">
                   <div>
-                    <strong className="text-sm font-extrabold text-slate-850 block">{s.name}</strong>
+                    <strong className="text-sm font-extrabold text-slate-800 block">{s.name}</strong>
                     <span className="text-[10px] text-slate-400 font-mono">ID: {s.code} • Giới tính: {s.gender}</span>
                   </div>
                   
                   <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                    seatObj ? 'bg-amber-100 text-amber-850 border border-amber-200' : 'bg-slate-100 text-slate-450 border'
+                    seatObj ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-slate-100 text-slate-500 border'
                   }`}>
                     {seatObj ? `📍 Ngồi: ${seatObj.name}` : '❌ Chưa xếp máy'}
                   </span>

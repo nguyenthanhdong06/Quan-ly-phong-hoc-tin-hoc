@@ -72,7 +72,7 @@ export default function ResourcesTab({
               <select
                 value={newType}
                 onChange={(e) => setNewType(e.target.value)}
-                className="w-full text-xs p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500 font-semibold text-slate-705 bg-white"
+                className="w-full text-xs p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500 font-semibold text-slate-700 bg-white"
               >
                 <option value="KHGD">Kế hoạch giáo dục (KHGD)</option>
                 <option value="Bài giảng">Slide Bài giảng điện tử (PPTX)</option>

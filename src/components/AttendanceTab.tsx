@@ -107,7 +107,7 @@ export default function AttendanceTab({
 
           <button
             onClick={handleSetAllPresent}
-            className="flex-1 md:flex-none bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-250 font-bold text-xs px-4 py-2.5 rounded-xl transition"
+            className="flex-1 md:flex-none bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold text-xs px-4 py-2.5 rounded-xl transition cursor-pointer"
           >
             ✓ Đánh dấu có mặt tất cả
           </button>
@@ -180,21 +180,21 @@ export default function AttendanceTab({
                         <button
                           type="button"
                           onClick={() => handleSetState(s.id, 'present')}
-                          className={`flex-1 text-center py-1.5 rounded-md text-[10px] font-black tracking-wide transition-all ${currentStatus === 'present' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-650 hover:text-slate-900'}`}
+                          className={`flex-1 text-center py-1.5 rounded-md text-[10px] font-black tracking-wide transition-all ${currentStatus === 'present' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-900 border border-transparent hover:border-slate-100'}`}
                         >
                           Đi Học
                         </button>
                         <button
                           type="button"
                           onClick={() => handleSetState(s.id, 'excused')}
-                          className={`flex-1 text-center py-1.5 rounded-md text-[10px] font-black tracking-wide transition-all ${currentStatus === 'excused' ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-650 hover:text-slate-900'}`}
+                          className={`flex-1 text-center py-1.5 rounded-md text-[10px] font-black tracking-wide transition-all ${currentStatus === 'excused' ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-900 border border-transparent hover:border-slate-100'}`}
                         >
                           Có Phép (P)
                         </button>
                         <button
                           type="button"
                           onClick={() => handleSetState(s.id, 'unexcused')}
-                          className={`flex-1 text-center py-1.5 rounded-md text-[10px] font-black tracking-wide transition-all ${currentStatus === 'unexcused' ? 'bg-red-500 text-white shadow-sm' : 'text-slate-650 hover:text-slate-900'}`}
+                          className={`flex-1 text-center py-1.5 rounded-md text-[10px] font-black tracking-wide transition-all ${currentStatus === 'unexcused' ? 'bg-red-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-900 border border-transparent hover:border-slate-100'}`}
                         >
                           Không Phép (KP)
                         </button>

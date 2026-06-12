@@ -134,7 +134,7 @@ export default function EmulationTab({
               <div className="bg-slate-50 p-3 rounded-xl border border-indigo-100 bg-indigo-50/20 flex items-center gap-3">
                 <span className="text-2xl">🛡️</span>
                 <div>
-                  <strong className="text-xs text-slate-850 block font-black">Sticker Chiến Binh Công Nghệ</strong>
+                  <strong className="text-xs text-slate-800 block font-black">Sticker Chiến Binh Công Nghệ</strong>
                   <span className="text-[11px] text-indigo-600 font-bold">Chi phí đổi: 15 ⭐</span>
                 </div>
               </div>
@@ -143,14 +143,14 @@ export default function EmulationTab({
                 <span className="text-2xl">🎖️</span>
                 <div>
                   <strong className="text-xs text-slate-900 block font-black">Sticker Huy Hiệu Xuất Sắc</strong>
-                  <span className="text-[11px] text-red-650 font-black">Chi phí đổi: 20 ⭐</span>
+                  <span className="text-[11px] text-red-600 font-black">Chi phí đổi: 20 ⭐</span>
                 </div>
               </div>
 
             </div>
           </div>
 
-          <div className="bg-amber-50 p-5 rounded-2xl border border-amber-250 text-xs text-amber-900 text-left">
+          <div className="bg-amber-50 p-5 rounded-2xl border border-amber-200 text-xs text-amber-900 text-left">
             <strong className="text-amber-800 block mb-1">💡 Hướng dẫn dành cho thầy cô:</strong>
             <p className="leading-relaxed">
               Vào cuối tháng, giáo viên sẽ xuất báo cáo này để trao tận tay Sticker thật cho học sinh tương ứng với lịch sử đổi quà trên ứng dụng phần mềm.
@@ -211,7 +211,7 @@ export default function EmulationTab({
                         {emulationObj.badges.map(badge => (
                           <span 
                             key={badge} 
-                            className="bg-amber-100 text-amber-900 border border-amber-250 text-[9px] px-2 py-0.5 rounded-full font-bold flex items-center gap-0.5"
+                            className="bg-amber-100 text-amber-900 border border-amber-200 text-[9px] px-2 py-0.5 rounded-full font-bold flex items-center gap-0.5"
                           >
                             <Sparkles className="w-2.5 h-2.5 text-amber-600 animate-spin" />
                             🎁 {badge}
@@ -227,25 +227,25 @@ export default function EmulationTab({
                   <div className="flex flex-wrap gap-1 w-full sm:w-auto">
                     <button
                       onClick={() => handleExchangeReward(s.id, s.name, 'Sticker Chăm Ngoan', 5)}
-                      className="flex-1 sm:flex-none bg-white hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 text-slate-705 text-[10px] font-bold px-2.5 py-1.5 rounded-lg transition-all"
+                      className="flex-1 sm:flex-none bg-white hover:bg-emerald-50 border border-slate-200 hover:border-emerald-350 text-slate-700 text-[10px] font-bold px-2.5 py-1.5 rounded-lg shadow-2xs transition-all"
                     >
                       Đổi Sticker (5⭐)
                     </button>
                     <button
                       onClick={() => handleExchangeReward(s.id, s.name, 'Sticker Siêu Nhân', 10)}
-                      className="flex-1 sm:flex-none bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 text-slate-705 text-[10px] font-bold px-2.5 py-1.5 rounded-lg transition-all"
+                      className="flex-1 sm:flex-none bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-350 text-slate-700 text-[10px] font-bold px-2.5 py-1.5 rounded-lg shadow-2xs transition-all"
                     >
                       Siêu Nhân (10⭐)
                     </button>
                     <button
                       onClick={() => handleExchangeReward(s.id, s.name, 'Sticker Chiến Binh', 15)}
-                      className="flex-1 sm:flex-none bg-white hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 text-slate-705 text-[10px] font-bold px-2.5 py-1.5 rounded-lg transition-all"
+                      className="flex-1 sm:flex-none bg-white hover:bg-indigo-50 border border-slate-200 hover:border-indigo-350 text-slate-700 text-[10px] font-bold px-2.5 py-1.5 rounded-lg shadow-2xs transition-all"
                     >
                       Chiến Binh (15⭐)
                     </button>
                     <button
                       onClick={() => handleExchangeReward(s.id, s.name, 'Huy Hiệu 20 Sao Xuất Sắc', 20)}
-                      className="flex-1 sm:flex-none bg-amber-550 hover:bg-amber-600 text-white border border-amber-600 hover:border-amber-700 text-[10px] font-black px-2.5 py-1.5 rounded-lg shadow-sm transition-all"
+                      className="flex-1 sm:flex-none bg-amber-500 hover:bg-amber-600 text-white border border-amber-600 hover:border-amber-700 text-[10px] font-black px-2.5 py-1.5 rounded-lg shadow-md transition-all animate-pulse"
                     >
                       Huy Hiệu (20⭐)
                     </button>

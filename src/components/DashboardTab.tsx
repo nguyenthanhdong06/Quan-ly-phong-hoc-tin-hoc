@@ -1,6 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { Grade, ClassItem, Student, Computer, DocumentItem, EmulationDataState } from '../types';
-import { Award, Monitor, Activity, Radio, AlertTriangle, FileText, ChevronRight, CheckCircle, HelpCircle, Database, Cloud, RefreshCw, Layers, Users, BookOpen } from 'lucide-react';
+import { 
+  Award, Monitor, Activity, Radio, AlertTriangle, FileText, ChevronRight, 
+  CheckCircle, HelpCircle, Database, Cloud, RefreshCw, Layers, Users, 
+  BookOpen, Sparkles, Trophy, Lightbulb, Compass, ShieldAlert, Zap, UserCheck 
+} from 'lucide-react';
 
 interface DashboardTabProps {
   selectedClass: string;
@@ -43,12 +47,12 @@ export default function DashboardTab({
 }: DashboardTabProps) {
   
   const [showDbInfo, setShowDbInfo] = useState(true);
+  const [activeTipIndex, setActiveTipIndex] = useState(0);
   
   // Helpers
   const getStudentCurrentStars = (studentId: string) => {
     const emulationState = emulationDataState[studentId] || { cumulativeStars: 10, exchangedStickers: 0, totalDeducted: 0, badges: [] };
     
-    // Total stars = Month Cumulative - totalDeducted
     const deducted = emulationState.totalDeducted !== undefined 
       ? emulationState.totalDeducted 
       : (emulationState.exchangedStickers || 0) * 5;
@@ -105,331 +109,475 @@ export default function DashboardTab({
 
   const activeClassObj = classes.find(c => c.id === selectedClass);
 
+  // Dynamic technology tips for school students
+  const techTips = [
+    {
+      title: "Tư thế ngồi chuẩn tin học",
+      content: "Ngồi thẳng lưng, mắt cách màn hình máy tính từ 40-50cm, khuỷu tay vuông góc để không mỏi vai gáy nhé bé ơi!",
+      icon: "🧘"
+    },
+    {
+      title: "An toàn phòng máy số",
+      content: "Nhớ lau khô tay trước khi bật máy và tuyệt đối không mang nước uống hay bánh kẹo vào phòng thực hành nha.",
+      icon: "⚡"
+    },
+    {
+      title: "Mẹo gõ phím mười ngón",
+      content: "Hãy đặt ngón trỏ tay trái lên phím F và ngón trỏ tay phải lên phím J để định vị bàn phím dễ dàng mà không cần nhìn bàn phím.",
+      icon: "🎹"
+    },
+    {
+      title: "Bảo vệ tài khoản cá nhân",
+      content: "Luôn ghi nhớ mật khẩu học tập của mình và tuyệt đối không chia sẻ mật khẩu cho các bạn khác trong lớp lý thuyết.",
+      icon: "🔐"
+    }
+  ];
+
+  // Slogan based on class selection
+  const educationalSlogan = useMemo(() => {
+    const gradeLabel = activeClassObj ? String(activeClassObj.gradeId) : "";
+    if (gradeLabel.includes('3')) return "Nhiệt huyết - Chăm chỉ - Vững bước khám phá bàn phím số!";
+    if (gradeLabel.includes('4')) return "Sáng tạo bài tập trình chiếu - Làm chủ thế giới thông tin!";
+    if (gradeLabel.includes('5')) return "Lập trình Scratch thông minh - Kiến tạo tư duy tương lai rực rỡ!";
+    return "Sáng tạo công nghệ, vươn tầm tri thức học sinh Long Định!";
+  }, [activeClassObj]);
+
   return (
     <div className="space-y-6">
-
-      {/* SUPABASE DEPLOYMENT & SYNC CHECK STATION */}
+      {/* CLOUD DATABASE CONNECTIVITY MODULE */}
       {showDbInfo && (
-        <div id="supabase-db-monitor" className="bg-gradient-to-r from-emerald-950 to-slate-900 border border-emerald-500/30 p-5 rounded-3xl text-white shadow-xl relative overflow-hidden transition-all duration-300">
-          <div className="absolute top-0 right-0 w-36 h-36 bg-emerald-500/10 rounded-full blur-2xl"></div>
+        <div id="supabase-db-monitor" className="bg-gradient-to-r from-emerald-950/90 to-slate-900/95 border border-emerald-500/30 p-4 rounded-2.5xl text-white shadow-xl relative overflow-hidden transition-all duration-300">
+          <div className="absolute top-0 right-0 w-28 h-28 bg-emerald-500/10 rounded-full blur-3xl"></div>
           
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
-            <div className="space-y-1.5 text-left">
-              <div className="flex items-center gap-2">
-                <span className="flex h-2 w-2 relative">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400">Trạm Giám Sát Supabase Cloud</span>
-              </div>
-              <h3 className="text-base font-black flex items-center gap-2 uppercase tracking-wide">
+          <div className="flex flex-col md:flex-row sm:items-center justify-between gap-4 relative z-10">
+            <div className="flex items-start sm:items-center gap-3 text-left">
+              <div className="bg-emerald-500/20 p-2.5 rounded-2xl border border-emerald-500/30 shrink-0">
                 <Database className="w-5 h-5 text-emerald-400" />
-                Kiểm tra Kết nối & Cấu trúc Database thành công
-              </h3>
-              <p className="text-xs text-slate-300 font-medium">
-                Dữ liệu hiển thị dưới đây được tải trực tiếp từ cơ sở dữ liệu đám mây Supabase an toàn.
-              </p>
+              </div>
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-2 w-2 relative">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  <span className="text-[9px] font-black uppercase tracking-wider text-emerald-400">Đồng bộ đám mây trực tuyến</span>
+                </div>
+                <h4 className="text-xs font-black uppercase tracking-wide flex items-center gap-1.5 text-emerald-300">
+                  Kết nối thông suốt với máy chủ Supabase Database
+                </h4>
+                <p className="text-[10px] text-slate-300 font-medium">
+                  Hạ tầng luôn an toàn. Mọi dữ liệu học sinh, số liệu thi đua, sao tích lũy được bảo toàn tuyệt đối.
+                </p>
+              </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 self-start sm:self-center">
               <button
                 type="button"
                 id="btn-force-sync-dashboard"
                 onClick={onForceSync}
                 disabled={isSyncing}
-                className="bg-emerald-850 hover:bg-emerald-800 shadow border border-emerald-700 hover:border-emerald-500 text-xs text-white font-black px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition disabled:opacity-50 cursor-pointer"
+                className="bg-emerald-850 hover:bg-emerald-800 shadow border border-emerald-700/60 hover:border-emerald-500/80 text-[11px] text-white font-black px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition disabled:opacity-50 cursor-pointer"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
-                Tải lại đám mây
+                <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
+                Đồng bộ lại dữ liệu
               </button>
               <button
                 type="button"
                 id="btn-hide-monitor-dashboard"
                 onClick={() => setShowDbInfo(false)}
-                className="bg-stone-800 hover:bg-stone-700 text-xs text-slate-300 font-bold px-3 py-2 rounded-xl transition cursor-pointer"
+                className="bg-stone-850 hover:bg-stone-800 text-[11px] text-slate-400 hover:text-white font-bold px-2.5 py-1.5 rounded-xl border border-slate-700/40 transition cursor-pointer"
               >
-                Ẩn bảng điều khiển
+                Ẩn bảng monitor
               </button>
             </div>
           </div>
 
           {/* Quick Metrics from Supabase */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-4 pt-4 border-t border-emerald-500/20 text-left">
-            <div className="bg-slate-900/40 p-2.5 rounded-xl border border-emerald-500/10">
-              <span className="block text-[8px] font-black uppercase text-slate-400">Khối Đã Tạo</span>
-              <span className="text-xs font-black text-emerald-400 flex items-center gap-1.5 mt-0.5">
-                <Layers className="w-3.5 h-3.5 text-emerald-500" /> {grades.length} khối
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-3 pt-3 border-t border-emerald-500/15 text-left">
+            <div className="bg-slate-900/60 p-2 rounded-xl border border-emerald-500/10">
+              <span className="block text-[8px] font-black uppercase text-slate-400 tracking-wider">Phân loại Khối</span>
+              <span className="text-[11px] font-black text-emerald-300 flex items-center gap-1 mt-0.5">
+                <Layers className="w-3 h-3 text-emerald-500" /> {grades.length} khối tiêu chuẩn
               </span>
             </div>
-            <div className="bg-slate-900/40 p-2.5 rounded-xl border border-emerald-500/10">
-              <span className="block text-[8px] font-black uppercase text-slate-400">Lớp Đang Quản Lý</span>
-              <span className="text-xs font-black text-emerald-400 flex items-center gap-1.5 mt-0.5">
-                🏫 {classes.length} lớp học
+            <div className="bg-slate-900/60 p-2 rounded-xl border border-emerald-500/10">
+              <span className="block text-[8px] font-black uppercase text-slate-400 tracking-wider">Tổng số lớp</span>
+              <span className="text-[11px] font-black text-emerald-300 flex items-center gap-1 mt-0.5">
+                🏫 {classes.length} Lớp đang quản lý
               </span>
             </div>
-            <div className="bg-slate-900/40 p-2.5 rounded-xl border border-emerald-500/10">
-              <span className="block text-[8px] font-black uppercase text-slate-400">Học Sinh Liên Kết</span>
-              <span className="text-xs font-black text-emerald-400 flex items-center gap-1.5 mt-0.5">
-                <Users className="w-3.5 h-3.5 text-emerald-500" /> {students.length} học sinh
+            <div className="bg-slate-900/60 p-2 rounded-xl border border-emerald-500/10">
+              <span className="block text-[8px] font-black uppercase text-slate-400 tracking-wider">Học sinh liên kết</span>
+              <span className="text-[11px] font-black text-emerald-300 flex items-center gap-1 mt-0.5">
+                <Users className="w-3 h-3 text-emerald-400" /> {students.length} học sinh
               </span>
             </div>
-            <div className="bg-slate-900/40 p-2.5 rounded-xl border border-emerald-500/10">
-              <span className="block text-[8px] font-black uppercase text-slate-400">Máy Trạm Phòng Máy</span>
-              <span className="text-xs font-black text-emerald-400 flex items-center gap-1.5 mt-0.5">
-                <Monitor className="w-3.5 h-3.5 text-emerald-500" /> {computers.length} thiết bị
+            <div className="bg-slate-900/60 p-2 rounded-xl border border-emerald-500/10">
+              <span className="block text-[8px] font-black uppercase text-slate-400 tracking-wider">Máy trạm</span>
+              <span className="text-[11px] font-black text-emerald-300 flex items-center gap-1 mt-0.5">
+                <Monitor className="w-3 h-3 text-emerald-400" /> {computers.length} chỗ ngồi
               </span>
             </div>
-            <div className="bg-slate-900/40 p-2.5 rounded-xl border border-emerald-500/10 col-span-2 sm:col-span-1">
-              <span className="block text-[8px] font-black uppercase text-slate-400">Tài Liệu Số</span>
-              <span className="text-xs font-black text-emerald-400 flex items-center gap-1.5 mt-0.5">
-                <BookOpen className="w-3.5 h-3.5 text-emerald-500" /> {documents.length} học liệu
+            <div className="bg-slate-900/60 p-2 rounded-xl border border-emerald-500/10 col-span-2 sm:col-span-1">
+              <span className="block text-[8px] font-black uppercase text-slate-400 tracking-wider">Học liệu số</span>
+              <span className="text-[11px] font-black text-emerald-300 flex items-center gap-1 mt-0.5">
+                <BookOpen className="w-3 h-3 text-emerald-400" /> {documents.length} tài liệu số
               </span>
             </div>
           </div>
         </div>
       )}
 
-      {/* Golden Board of Honor Header Section */}
+      {/* COMPACT HARDWARE STATUS GRID - EXTREMELY LIVELY WITH MICRO INSIGHTS */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <div className="bg-white p-4.5 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between hover:shadow-md transition-all duration-300 group">
+          <div className="text-left space-y-1">
+            <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">Tổng số máy trạm</span>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-2.5xl font-black text-slate-800">{stats.totalComps}</span>
+              <span className="text-[10px] text-slate-400 font-bold">máy</span>
+            </div>
+            <div className="flex items-center gap-1 text-[10px] text-slate-400 font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+              35 Thường + 5 Ghép cặp
+            </div>
+          </div>
+          <div className="bg-indigo-50 text-indigo-500 p-2.5 rounded-xl group-hover:scale-110 transition duration-350 shrink-0">
+            <Monitor className="w-5 h-5 text-indigo-600" />
+          </div>
+        </div>
+
+        <div className="bg-white p-4.5 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between hover:shadow-md transition-all duration-300 group">
+          <div className="text-left space-y-1">
+            <span className="text-[10px] text-emerald-600 font-black uppercase tracking-wider block">Đang hoạt động tốt</span>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-2.5xl font-black text-emerald-600">{stats.okComps}</span>
+              <span className="text-[10px] text-emerald-500 font-bold">máy tốt</span>
+            </div>
+            <div className="flex items-center gap-1 text-[10px] text-emerald-600 font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              Sẵn sàng vận hành 100%
+            </div>
+          </div>
+          <div className="bg-emerald-50 text-emerald-600 p-2.5 rounded-xl group-hover:scale-110 transition duration-350 shrink-0">
+            <CheckCircle className="w-5 h-5" />
+          </div>
+        </div>
+
+        <div className="bg-white p-4.5 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between hover:shadow-md transition-all duration-300 group">
+          <div className="text-left space-y-1">
+            <span className="text-[10px] text-rose-500 font-black uppercase tracking-wider block">Thiết bị báo hỏng</span>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-2.5xl font-black text-rose-600">{stats.badComps}</span>
+              <span className="text-[10px] text-rose-400 font-bold">lỗi kĩ thuật</span>
+            </div>
+            <div className="flex items-center gap-1 text-[10px] text-rose-500/80 font-bold">
+              <ShieldAlert className="w-3 h-3 text-rose-500 animate-bounce" />
+              Đang gửi phiếu sửa chữa
+            </div>
+          </div>
+          <div className="bg-rose-50 text-rose-500 p-2.5 rounded-xl group-hover:scale-110 transition duration-350 shrink-0">
+            <AlertTriangle className="w-5 h-5" />
+          </div>
+        </div>
+
+        <div className="bg-white p-4.5 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between hover:shadow-md transition-all duration-300 group">
+          <div className="text-left space-y-1">
+            <span className="text-[10px] text-blue-500 font-black uppercase tracking-wider block">Đang bảo trì phần mềm</span>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-2.5xl font-black text-blue-600">{stats.maintComps}</span>
+              <span className="text-[10px] text-blue-400 font-bold">thiết bị</span>
+            </div>
+            <div className="flex items-center gap-1 text-[10px] text-blue-500/80 font-bold">
+              <Zap className="w-3 h-3 text-blue-500 animate-spin" />
+              Nâng cấp hệ sinh thái
+            </div>
+          </div>
+          <div className="bg-blue-50 text-blue-500 p-2.5 rounded-xl group-hover:scale-110 transition duration-350 shrink-0">
+            <Activity className="w-5 h-5" />
+          </div>
+        </div>
+
+      </div>
+
+      {/* MAIN BENTO LAYOUT (GOLDEN HONOR SCROLL & CLASS METRICS) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Left column: Golden scroll (Bảng vàng danh dự) */}
-        <div className="lg:col-span-2 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600 p-6 rounded-3xl shadow-xl border-4 border-yellow-300 text-slate-900 relative overflow-hidden flex flex-col justify-between min-h-[340px]">
-          <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
+        {/* Modernized interactive Golden Scroll of Honor (Vinh danh bảng vàng) */}
+        <div className="lg:col-span-2 bg-gradient-to-b from-amber-50 to-orange-100/40 p-6 rounded-3xl shadow-sm border border-amber-200/60 text-slate-800 relative overflow-hidden flex flex-col justify-between min-h-[360px] text-left">
           
-          <div className="relative z-10">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-amber-950/20 pb-3 mb-4 gap-2">
-              <div className="flex items-center gap-2">
-                <span className="text-3xl animate-bounce">👑</span>
+          {/* Sparkles design accents */}
+          <div className="absolute -top-10 -right-10 w-40 h-40 bg-yellow-400/20 rounded-full blur-2xl"></div>
+          <div className="absolute bottom-4 right-10 w-24 h-24 bg-amber-400/10 rounded-full blur-xl"></div>
+          
+          <div className="relative z-10 space-y-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-amber-900/10 pb-3 gap-2">
+              <div className="flex items-center gap-2.5">
+                <span className="text-3xl animate-bounce shrink-0">👑</span>
                 <div>
-                  <h2 className="text-xl font-black text-amber-950 uppercase tracking-wide">Bảng Vàng Danh Dự</h2>
-                  <p className="text-[11px] text-amber-900 font-bold">Vinh danh những ngôi sao sáng gặt hái từ 20⭐(sao) thi đua trở lên!</p>
+                  <h2 className="text-lg font-black text-amber-950 uppercase tracking-wide flex items-center gap-1.5">
+                    BẢNG VÀNG DANH DỰ LỚP
+                    <span className="bg-amber-500 text-white text-[11px] font-black px-2 py-0.5 rounded-lg border border-yellow-300">
+                      {activeClassObj ? activeClassObj.name : selectedClass}
+                    </span>
+                  </h2>
+                  <p className="text-[11px] text-amber-900/80 font-bold">
+                    Vinh danh những ngôi sao sáng gặt hái từ <strong className="text-red-600">20 ⭐ (sao) </strong>thi đua trở lên trong tháng này!
+                  </p>
                 </div>
               </div>
-              <span className="bg-amber-950/15 text-amber-950 text-[10px] font-black px-3 py-1 rounded-full uppercase border border-amber-900/10">
-                Lớp học: {activeClassObj ? activeClassObj.name : selectedClass}
-              </span>
             </div>
 
-            {/* Grid of outstanding student badges */}
+            {/* Grid of outstanding student cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {goldenBoardStudents.map((student) => (
-                <div 
-                  key={student.id} 
-                  className="bg-white/90 hover:bg-white/95 backdrop-blur-sm p-4 rounded-2xl border border-yellow-400 shadow-sm flex items-center gap-3 transition-all duration-300 transform hover:-translate-y-1"
-                >
-                  <div className="w-11 h-11 rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 text-slate-900 flex items-center justify-center text-lg font-black shadow-inner border border-white">
-                    🏆
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <strong className="text-sm font-black text-slate-800 block truncate">{student.name}</strong>
-                    <span className="text-[9px] bg-red-600 text-white px-2 py-0.5 rounded-full font-black uppercase tracking-wider inline-block">
-                      Học Sinh Xuất Sắc
-                    </span>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <span className="text-xs text-amber-600 font-extrabold">{student.stars} ⭐</span>
-                      {student.badges.slice(0, 2).map(b => (
-                        <span key={b} className="text-[9px] bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded font-bold truncate max-w-[80px]">
-                          {b}
+              {goldenBoardStudents.map((student, idx) => {
+                // Generate a clever student master title based on index or star bounds
+                const title = idx === 0 
+                  ? "Đại Hiệp Phòng Máy" 
+                  : idx === 1 
+                  ? "Bàn Phím Thần Tốc" 
+                  : student.stars >= 30 
+                  ? "Siêu Nhân Lập Trình" 
+                  : "Chiến Binh Chăm Chỉ";
+
+                return (
+                  <div 
+                    key={student.id} 
+                    className="bg-white/95 hover:bg-white border-2 border-yellow-400/80 hover:border-amber-500 rounded-2xl shadow-sm p-4 flex items-center gap-3.5 transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-pointer relative overflow-hidden group"
+                  >
+                    {/* Glowing highlight in background of student cards */}
+                    <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-yellow-300/10 to-amber-400/20 translate-x-4 -translate-y-4 rounded-full group-hover:scale-150 transition-all duration-300"></div>
+                    
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-400 via-amber-400 to-orange-500 text-slate-900 flex items-center justify-center text-xl font-black shadow-inner border-2 border-white shrink-0 group-hover:rotate-12 transition duration-300">
+                      🏆
+                    </div>
+                    <div className="min-w-0 flex-1 space-y-0.5 text-left relative z-10">
+                      <div className="flex items-center gap-1.5">
+                        <strong className="text-sm font-black text-slate-800 truncate">{student.name}</strong>
+                        <Trophy className="w-3.5 h-3.5 text-yellow-500 shrink-0" />
+                      </div>
+                      <span className="text-[9px] bg-amber-500/20 text-amber-950 px-2 py-0.5 rounded-full font-black uppercase tracking-wider inline-block">
+                        {title}
+                      </span>
+                      <div className="flex flex-wrap items-center gap-1 mt-1">
+                        <span className="text-xs text-amber-600 font-extrabold flex items-center gap-0.5 bg-amber-50 px-1.5 py-0.2 rounded-md border border-amber-200">
+                          {student.stars} ⭐
                         </span>
-                      ))}
+                        {student.badges.slice(0, 2).map(b => (
+                          <span key={b} className="text-[9px] bg-slate-100 text-slate-700 px-1.5 py-0.2 rounded font-semibold truncate max-w-[80px]">
+                            {b}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
-              {/* Placeholder for no outstanding students */}
+              {/* Empty State Banner with elegant styling */}
               {goldenBoardStudents.length === 0 && (
-                <div className="col-span-full py-12 text-center bg-white/40 backdrop-blur-sm border border-dashed border-amber-900/15 rounded-2xl p-4 text-amber-950 text-xs font-semibold">
-                  🌟 Hãy cùng thi đua đạt trên 20 ⭐ tích lũy trong tháng này để ghi danh lên Bảng Vàng học đường!
-                  <p className="text-[10px] text-amber-950/70 italic mt-1 font-medium">(Thầy cô có thể chấm thêm điểm sao cho các em tại mục "Nhận xét đánh giá")</p>
+                <div className="col-span-full py-10 text-center bg-amber-100/50 backdrop-blur-sm border-2 border-dashed border-amber-300/70 rounded-2xl p-6 text-amber-950 text-xs font-semibold flex flex-col items-center justify-center gap-2">
+                  <span className="text-3xl animate-bounce">✨🔭✨</span>
+                  <div className="space-y-1">
+                    <p className="font-extrabold text-sm text-amber-900">Chiến dịch thi đua chưa bắt đầu hoặc chưa có ai vượt mức 20 ⭐!</p>
+                    <p className="text-[11px] text-amber-900/70">
+                      Thầy cô hãy thực hiện đánh dấu, chấm điểm cộng sao cho các em học sinh có biểu hiện tốt trong phần "Nhận xét đánh giá" để thúc đẩy các em ghi danh lên Bảng Vàng nhé!
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
           </div>
 
-          <div className="relative z-10 pt-4 border-t border-amber-950/10 flex justify-between items-center text-[10px] text-amber-950 font-bold">
-            <span>Thời điểm tổng hợp: {systemDateText}</span>
+          <div className="pt-4 border-t border-amber-950/10 flex justify-between items-center text-[10px] text-amber-900/60 font-semibold mt-4">
+           <span className="text-sm font-black text-red">
+              <span className="flex items-center gap-1">
+              <Compass className="w-3 h-3 text-amber-600" />
+              Lớp <strong className="text-red-600">{activeClassObj ? activeClassObj.name : selectedClass} </strong>chung sức thi đua học tập
+            </span>
+            </span>
+            <span className="text-sm font-black text-red">
+              <span>Cập nhật: {systemDateText}</span>
+            </span>
           </div>
         </div>
 
-        {/* Right column: Class summary statistics */}
-        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col justify-between">
-          <div className="space-y-4">
-            <div className="border-b pb-2">
-              <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
+        {/* Right Column Grid: Class Emulation summary card */}
+        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col justify-between text-left relative overflow-hidden">
+          {/* Subtle graphical background node */}
+          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-full translate-x-6 -translate-y-6"></div>
+          
+          <div className="space-y-4 relative z-10">
+            <div className="border-b border-slate-100 pb-2.5">
+              <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 bg-amber-500 rounded-full"></span>
-                Thi Đua Lớp: {activeClassObj ? activeClassObj.name : selectedClass}
+                Quỹ Thi Đua Lớp {activeClassObj ? activeClassObj.name : selectedClass}
               </h3>
-              <p className="text-[10px] text-slate-400 text-left">Theo dõi quỹ thi đua khen thưởng của lớp</p>
+              <p className="text-[10px] text-slate-400 font-medium">Theo dõi hoạt động tích lũy phần thưởng học đường</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                <span className="text-[10px] text-slate-400 font-bold block uppercase text-left">Sao tích lũy lớp</span>
-                <strong className="text-xl text-amber-500 mt-1 block text-left">{stats.totalClassStars} ⭐</strong>
+            <div className="grid grid-cols-2 gap-3.5">
+              <div className="bg-slate-50/80 p-3 rounded-2xl border border-slate-100 hover:bg-slate-50 transition">
+                <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wide">Sao tích lũy lớp</span>
+                <strong className="text-xl md:text-2xl text-amber-600 mt-1.5 block font-black">
+                  {stats.totalClassStars} ⭐
+                </strong>
+                <span className="text-[8px] text-slate-400 block mt-0.5">Thống kê toàn khóa</span>
               </div>
-              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                <span className="text-[10px] text-slate-400 font-bold block uppercase text-left">Sticker đổi thưởng</span>
-                <strong className="text-xl text-indigo-600 mt-1 block text-left">{stats.totalStickersExchanged} 🎁</strong>
+              <div className="bg-slate-50/80 p-3 rounded-2xl border border-slate-100 hover:bg-slate-50 transition">
+                <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wide">Stickers đổi quà</span>
+                <strong className="text-xl md:text-2xl text-indigo-600 mt-1.5 block font-black">
+                  {stats.totalStickersExchanged} 🎁
+                </strong>
+                <span className="text-[8px] text-indigo-400 font-bold block mt-0.5">Đặt tủ dán học tập</span>
               </div>
             </div>
 
-            <div className="p-3 bg-amber-50 rounded-xl text-xs text-amber-950 leading-relaxed font-semibold text-left">
-              🎁 Bé chăm ngoan có thể dùng quỹ sao tích lũy học tập này để tự tin đổi quà Sticker tại mục <strong className="text-red-600 underline cursor-pointer" onClick={() => setActiveTab('emulation')}>Bảng tin thi đua</strong>.
-            </div>
-          </div>
-
-          <button 
-            onClick={() => setActiveTab('emulation')} 
-            className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-2.5 rounded-xl transition mt-4"
-          >
-            Mở tủ Sticker Đổi thưởng →
-          </button>
-        </div>
-
-      </div>
-
-      {/* Hardware / Computer Status Widgets */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        
-        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
-          <div>
-            <p className="text-xs text-slate-500 font-bold uppercase text-left">Tổng số máy trạm</p>
-            <p className="text-3xl font-black text-slate-800 mt-1 text-left">{stats.totalComps}</p>
-            <p className="text-xs text-slate-400 mt-1 text-left">35 Máy thường + 5 Máy ghép</p>
-          </div>
-          <div className="bg-amber-50 p-3 rounded-xl text-amber-600">
-            <Monitor className="w-6 h-6" />
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
-          <div>
-            <p className="text-xs text-emerald-600 font-bold uppercase text-left">Đang hoạt động tốt</p>
-            <p className="text-3xl font-black text-emerald-600 mt-1 text-left">{stats.okComps}</p>
-            <p className="text-xs text-slate-400 mt-1 text-left">Sẵn sàng vận hành 100%</p>
-          </div>
-          <div className="bg-emerald-50 p-3 rounded-xl text-emerald-600">
-            <CheckCircle className="w-6 h-6" />
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
-          <div>
-            <p className="text-xs text-red-500 font-bold uppercase text-left">Thiết bị báo hỏng</p>
-            <p className="text-3xl font-black text-red-500 mt-1 text-left">{stats.badComps}</p>
-            <p className="text-xs text-slate-400 mt-1 text-left">Gửi phiếu chờ sửa chữa</p>
-          </div>
-          <div className="bg-red-50 p-3 rounded-xl text-red-500">
-            <AlertTriangle className="w-6 h-6 animate-pulse" />
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
-          <div>
-            <p className="text-xs text-blue-500 font-bold uppercase text-left">Đang bảo trì phần mềm</p>
-            <p className="text-3xl font-black text-blue-500 mt-1 text-left">{stats.maintComps}</p>
-            <p className="text-xs text-slate-400 mt-1 text-left">Nâng cấp và cài đặt hệ thống</p>
-          </div>
-          <div className="bg-blue-50 p-3 rounded-xl text-blue-500">
-            <Activity className="w-6 h-6" />
+            
           </div>
         </div>
 
       </div>
 
-      {/* Realtime Classroom Position Info & Quick Links */}
+      {/* DETAILED LESSON ALLOCATION & METADATA DASHBOARD */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
-          <h3 className="text-lg font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
-            <span className="w-2.5 h-2.5 bg-amber-500 rounded-full"></span>
+        {/* Left component: Detailed allocation chart/info list */}
+        <div className="lg:col-span-2 bg-white p-6 rounded-3xl shadow-sm border border-slate-100 space-y-4">
+          <h3 className="text-base font-black text-slate-800 border-b pb-2 flex items-center gap-2 text-left">
+            <span className="w-2.5 h-2.5 bg-indigo-600 rounded-full"></span>
             Thông Tin Phân Bổ Tiết Học Hiện Tại
           </h3>
           
-          <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-3">
-            <p className="text-sm font-semibold text-slate-700 text-left">
-              Lớp học đang chấm điểm: <span className="text-amber-600 font-black">{activeClassObj ? activeClassObj.name : selectedClass}</span> 
-              {activeClassObj?.teacher && <span> | GV Phụ trách: <strong>{activeClassObj.teacher}</strong></span>}
-            </p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              <div className="bg-white p-3 rounded-lg border border-slate-200">
-                <span className="text-xs text-slate-400 block font-medium text-left">Sĩ số học sinh</span>
-                <strong className="text-xl text-slate-800 block text-left">{stats.totalStudentsInClass}</strong>
+          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-200/50 pb-2">
+              <p className="text-sm font-bold text-slate-700 text-left">
+                Lớp học đang chấm điểm: <span className="text-amber-600 font-black">{activeClassObj ? activeClassObj.name : selectedClass}</span> 
+                {activeClassObj?.teacher && <span> | GV Phụ trách: <strong className="text-slate-900 font-semibold">{activeClassObj.teacher}</strong></span>}
+              </p>
+              <span className="text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200 px-2.5 py-0.5 rounded-full font-bold">
+                Môn: Tin Học Tiểu Học
+              </span>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
+              <div className="bg-white p-3.5 rounded-xl border border-slate-200/75 hover:border-slate-300 transition shadow-xs">
+                <div className="flex items-center gap-1.5">
+                  <Users className="w-4 h-4 text-slate-400" />
+                  <span className="text-xs text-slate-400 font-bold block">Sĩ số học sinh</span>
+                </div>
+                <strong className="text-2xl text-slate-800 block mt-1">{stats.totalStudentsInClass} em</strong>
+                <p className="text-[9px] text-slate-400 mt-1">Toàn bộ danh sách lớp học</p>
               </div>
-              <div className="bg-white p-3 rounded-lg border border-slate-200">
-                <span className="text-xs text-slate-400 block font-medium text-left">Đồng bộ chỗ ngồi</span>
-                <strong className="text-xl text-emerald-600 block text-left">{stats.assignedStudents}</strong>
+              
+              <div className="bg-white p-3.5 rounded-xl border border-slate-200/75 hover:border-slate-300 transition shadow-xs">
+                <div className="flex items-center gap-1.5">
+                  <UserCheck className="w-4 h-4 text-emerald-500" />
+                  <span className="text-xs text-emerald-600 font-bold block text-left">Đồng bộ máy trạm</span>
+                </div>
+                <strong className="text-2xl text-emerald-600 block mt-1">{stats.assignedStudents} em</strong>
+                <p className="text-[9px] text-slate-400 mt-1">Đã gán và cố định chỗ ngồi</p>
               </div>
-              <div className="bg-white p-3 rounded-lg border border-slate-200">
-                <span className="text-xs text-slate-400 block font-medium text-left">Chưa gán máy</span>
-                <strong className="text-xl text-amber-600 block text-left">{stats.unassignedStudents}</strong>
+              
+              <div className="bg-white p-3.5 rounded-xl border border-slate-200/75 hover:border-slate-300 transition shadow-xs">
+                <div className="flex items-center gap-1.5">
+                  <HelpCircle className="w-4 h-4 text-rose-500" />
+                  <span className="text-xs text-rose-600 font-bold block text-left">Chưa gán vị trí</span>
+                </div>
+                <strong className="text-2xl text-rose-600 block mt-1">{stats.unassignedStudents} em</strong>
+                <p className="text-[9px] text-slate-400 mt-1">Đang chờ đăng ký sơ đồ máy</p>
               </div>
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             
-            <div className="p-4 border border-dashed border-slate-200 rounded-xl text-left">
-              <h4 className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-1.5">
-                <FileText className="w-4 h-4 text-amber-500" />
-                Học liệu tải lên gần nhất
+            {/* Quick document files */}
+            <div className="p-4 border border-dashed border-slate-200 rounded-2xl text-left bg-slate-50/30">
+              <h4 className="text-xs font-black text-slate-700 mb-2.5 flex items-center justify-between">
+                <span className="flex items-center gap-1.5 uppercase tracking-wide">
+                  <FileText className="w-4 h-4 text-amber-500" />
+                  Học liệu của lớp gần đây
+                </span>
+                <span className="text-[9px] text-slate-400 font-bold">{documents.length} File số</span>
               </h4>
               <div className="space-y-2">
                 {documents.slice(0, 2).map(d => (
-                  <div key={d.id} className="text-xs flex justify-between items-center p-2 bg-slate-50 rounded border">
-                    <span className="truncate font-semibold text-slate-600 max-w-[170px]">{d.title}</span>
-                    <span className="bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded text-[9px] font-bold">{d.type}</span>
+                  <div key={d.id} className="text-xs flex justify-between items-center p-2.5 bg-white rounded-xl border border-slate-100 shadow-3xs hover:border-amber-350 transition">
+                    <span className="truncate font-semibold text-slate-700 max-w-[170px]">{d.title}</span>
+                    <span className="bg-amber-100 text-amber-900 px-2 py-0.5 rounded-lg text-[9px] font-bold shrink-0">
+                      {d.type}
+                    </span>
                   </div>
                 ))}
+                {documents.length === 0 && (
+                  <p className="text-slate-400 text-[11px] py-4 text-center">Chưa có học liệu số được tạo cho lớp này.</p>
+                )}
               </div>
             </div>
 
-            <div className="p-4 border border-dashed border-slate-200 rounded-xl text-left">
-              <h4 className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-1.5">
-                <Radio className="w-4 h-4 text-emerald-600" />
-                Người đang vận hành
-              </h4>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-xs uppercase shadow-sm">
-                  {currentUser ? currentUser.name.substring(0,2).toUpperCase() : 'GV'}
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-slate-700">{currentUser ? currentUser.name : 'Khách vãng lai'}</p>
-                  <p className="text-[10px] text-slate-400">{currentUser ? currentUser.role : 'Giáo viên bộ môn'}</p>
+            {/* Smart operator / Educator card */}
+            <div className="p-4 border border-dashed border-slate-200 rounded-2xl text-left bg-slate-50/30 flex flex-col justify-between">
+              <div>
+                <h4 className="text-xs font-black text-slate-700 mb-2.5 flex items-center gap-1.5 uppercase tracking-wide">
+                  <Radio className="w-4 h-4 text-emerald-500 animate-ping" />
+                  Tài khoản đang vận hành
+                </h4>
+                <div className="flex items-center gap-2.5 bg-white p-2.5 rounded-2xl border border-slate-100">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-700 to-indigo-900 text-white flex items-center justify-center font-black text-xs uppercase shadow-xs shrink-0">
+                    {currentUser ? currentUser.name.substring(0,2).toUpperCase() : 'GV'}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-black text-slate-800 truncate">{currentUser ? currentUser.name : 'Giáo viên thực hành'}</p>
+                    <p className="text-[10px] text-slate-400 font-medium">{currentUser ? currentUser.role : 'Quản trị viên hệ thống'}</p>
+                  </div>
                 </div>
               </div>
+              <p className="text-[10px] text-slate-400 italic mt-3">Hệ thống phân quyền đầy đủ cho tài khoản của bạn.</p>
             </div>
 
           </div>
         </div>
 
-        {/* Shortcuts card */}
-        <div className="bg-gradient-to-br from-amber-600 to-amber-700 text-white p-6 rounded-2xl shadow-md flex flex-col justify-between text-left">
+        {/* Right component: Educational Smart Tips (Góc mẹo hay phòng máy) */}
+        <div className="bg-gradient-to-br from-indigo-50/80 to-slate-50/50 p-6 rounded-3xl shadow-sm border border-indigo-100 flex flex-col justify-between text-left">
           <div className="space-y-4">
-            <h3 className="text-lg font-black uppercase tracking-wide">Phím tắt tính năng</h3>
-            <p className="text-xs text-amber-100 leading-relaxed">
-              Phần mềm được tối ưu để hoạt động trơn tru trên mọi thiết bị. Thầy cô có thể di chuyển nhanh tới các nghiệp vụ sau:
+            <h3 className="text-xs font-black text-indigo-950 uppercase tracking-widest flex items-center gap-1.5">
+              <Lightbulb className="w-4.5 h-4.5 text-yellow-500 shrink-0" />
+              Mẹo hay Học đường Tin học
+            </h3>
+            <p className="text-[11px] text-slate-500 leading-relaxed font-semibold">
+              Hãy chia sẻ những kiến thức bổ ích này cho học sinh trước mỗi buổi thực hành để tạo thói quen tốt nhé!
             </p>
             
-            <div className="space-y-2">
-              <button onClick={() => setActiveTab('seating')} className="w-full text-left bg-white/10 hover:bg-white/20 px-3 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-between">
-                <span>Vào Sơ đồ Chỗ ngồi phòng máy</span>
-                <ChevronRight className="w-4 h-4 text-amber-200" />
-              </button>
-              <button onClick={() => setActiveTab('students')} className="w-full text-left bg-white/10 hover:bg-white/20 px-3 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-between">
-                <span>Nhập nhanh Excel danh sách học sinh</span>
-                <ChevronRight className="w-4 h-4 text-amber-200" />
-              </button>
-              <button onClick={() => setActiveTab('resources')} className="w-full text-left bg-white/10 hover:bg-white/20 px-3 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-between">
-                <span>Tải học liệu số / Phân phối chương trình</span>
-                <ChevronRight className="w-4 h-4 text-amber-200" />
-              </button>
+            <div className="bg-white p-4 rounded-2.5xl shadow-xs border border-indigo-100/50 space-y-2 relative group min-h-[140px] flex flex-col justify-between transition-all">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl shrink-0">{techTips[activeTipIndex].icon}</span>
+                  <h4 className="text-xs font-black text-indigo-950">{techTips[activeTipIndex].title}</h4>
+                </div>
+                <p className="text-[11px] text-slate-600 leading-relaxed font-medium">
+                  "{techTips[activeTipIndex].content}"
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-1.5">
+                {techTips.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setActiveTipIndex(i)}
+                    className={`w-2 h-2 rounded-full transition-all duration-300 ${activeTipIndex === i ? 'bg-indigo-600 w-4' : 'bg-slate-200'}`}
+                    title={`Mẹo hay ${i+1}`}
+                  />
+                ))}
+              </div>
             </div>
           </div>
 
-          <div className="pt-4 border-t border-amber-500/50 mt-6 text-center text-[10px] text-amber-200">
-            Truy cập an toàn hệ thống giáo dục tiểu học TH Long Định
+          <div className="pt-4 border-t border-indigo-100 mt-6 text-center text-[10px] text-indigo-400 font-bold">
+            Trường học sáng tạo - Nuôi dưỡng tương lai số
           </div>
         </div>
 
@@ -438,3 +586,4 @@ export default function DashboardTab({
     </div>
   );
 }
+

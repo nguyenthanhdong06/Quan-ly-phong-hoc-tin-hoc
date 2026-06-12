@@ -78,15 +78,15 @@ export default function SeatingTab({
         {/* Legend */}
         <div className="flex flex-wrap items-center gap-4 text-xs font-semibold">
           <div className="flex items-center gap-1.5">
-            <span className="w-3.5 h-3.5 bg-amber-450 border border-amber-500 rounded shadow-sm inline-block"></span>
+            <span className="w-3.5 h-3.5 bg-amber-400 border border-amber-500 rounded shadow-sm inline-block"></span>
             <span>Thiết bị tốt</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-3.5 h-3.5 bg-red-400 border border-red-550 rounded shadow-sm inline-block animate-pulse"></span>
+            <span className="w-3.5 h-3.5 bg-red-400 border border-red-500 rounded shadow-sm inline-block animate-pulse"></span>
             <span>Gặp Sự Cố</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-3.5 h-3.5 bg-blue-400 border border-blue-550 rounded shadow-sm inline-block"></span>
+            <span className="w-3.5 h-3.5 bg-blue-400 border border-blue-500 rounded shadow-sm inline-block"></span>
             <span>Bảo Trì</span>
           </div>
         </div>
@@ -100,9 +100,9 @@ export default function SeatingTab({
         <div className="grid grid-cols-12 gap-4 items-center">
           
           {/* Teachers Desk */}
-          <div className="col-span-3 bg-slate-150 border-2 border-dashed border-slate-350 rounded-xl p-3 text-center flex flex-col items-center justify-center">
-            <div className="w-12 h-6 bg-amber-250 border-2 border-amber-500 rounded mb-1 shadow-sm"></div>
-            <strong className="text-xs text-slate-550 block font-bold">BÀN GIÁO VIÊN</strong>
+          <div className="col-span-3 bg-slate-100 border-2 border-dashed border-slate-300 rounded-xl p-3 text-center flex flex-col items-center justify-center">
+            <div className="w-12 h-6 bg-amber-200 border-2 border-amber-500 rounded mb-1 shadow-sm"></div>
+            <strong className="text-xs text-slate-500 block font-bold">BÀN GIÁO VIÊN</strong>
           </div>
 
           {/* Blackboard board */}
@@ -130,11 +130,11 @@ export default function SeatingTab({
                   const assignedStudentId = seatingChart[selectedClass]?.[computer.id];
                   const studentObj = classStudents.find(s => s.id === assignedStudentId);
 
-                  let statusBg = 'bg-amber-400 border-amber-500 text-slate-800 hover:bg-amber-450';
+                  let statusBg = 'bg-amber-400 border-amber-500 text-slate-800 hover:bg-amber-500';
                   if (computer.status === 'Đang hỏng') {
-                    statusBg = 'bg-red-400 border-red-500 text-white hover:bg-red-450';
+                    statusBg = 'bg-red-400 border-red-500 text-white hover:bg-red-500';
                   } else if (computer.status === 'Bảo trì') {
-                    statusBg = 'bg-blue-400 border-blue-500 text-white hover:bg-blue-450';
+                    statusBg = 'bg-blue-400 border-blue-500 text-white hover:bg-blue-500';
                   }
 
                   return (
@@ -150,7 +150,7 @@ export default function SeatingTab({
                         
                         <span className={`w-2 h-2 rounded-full border border-black/10 inline-block ${
                           computer.status === 'Hoạt động' ? 'bg-emerald-500' :
-                          computer.status === 'Đang hỏng' ? 'bg-red-650 animate-ping' : 'bg-blue-650'
+                          computer.status === 'Đang hỏng' ? 'bg-red-600 animate-ping' : 'bg-blue-600'
                         }`} />
                       </div>
 
@@ -175,7 +175,7 @@ export default function SeatingTab({
         </div>
 
         {/* Bottom Metadata info */}
-        <div className="pt-4 border-t border-slate-100 flex justify-between items-center text-xs font-semibold text-slate-450">
+        <div className="pt-4 border-t border-slate-100 flex justify-between items-center text-xs font-semibold text-slate-500">
           <span>Khảo sát lớp học thực nghiệm môn Tin TH Long Định</span>
           <span>Bản quyền quản trị @Nguyễn Thanh Đồng</span>
         </div>
@@ -217,8 +217,8 @@ export default function SeatingTab({
                         onClick={() => handleUpdateComputerStatus(activeAssignModal, status)}
                         className={`py-1.5 px-2 text-xs font-bold rounded-lg border-2 transition ${
                           isCurrent 
-                            ? 'bg-amber-550 border-amber-600 text-white shadow-sm' 
-                            : 'border-slate-200 text-slate-650 hover:bg-slate-50'
+                            ? 'bg-amber-500 border-amber-600 text-white shadow-sm' 
+                            : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                         }`}
                       >
                         {status}
@@ -258,7 +258,7 @@ export default function SeatingTab({
               <div className="pt-2 border-t flex justify-end text-xs">
                 <button
                   onClick={() => setActiveAssignModal(null)}
-                  className="bg-slate-100 hover:bg-slate-200 text-slate-650 font-bold px-4 py-2.5 rounded-xl block"
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-4 py-2.5 rounded-xl block cursor-pointer"
                 >
                   Xác nhận Khép Lại
                 </button>

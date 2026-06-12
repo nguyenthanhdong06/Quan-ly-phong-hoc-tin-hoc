@@ -270,7 +270,7 @@ export default function StudentsTab({
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-slate-550 font-bold uppercase">
+                <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase">
                   <th className="py-3 px-4 w-12">STT</th>
                   <th className="py-3 px-4 w-28">Mã số MSHS</th>
                   <th className="py-3 px-4">Họ và Tên</th>
