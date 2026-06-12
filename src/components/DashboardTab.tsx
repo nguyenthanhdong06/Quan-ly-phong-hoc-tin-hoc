@@ -448,7 +448,7 @@ export default function DashboardTab({
         <div className="lg:col-span-2 bg-white p-6 rounded-3xl shadow-sm border border-slate-100 space-y-4">
           <h3 className="text-base font-black text-slate-800 border-b pb-2 flex items-center gap-2 text-left">
             <span className="w-2.5 h-2.5 bg-indigo-600 rounded-full"></span>
-            Thông Tin Phân Bổ Tiết Học Hiện Tại
+            Thông tin phân bổ tiết học hiện tại
           </h3>
           
           <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
