@@ -1,6 +1,6 @@
 import React from 'react';
 import { Student, EvaluationData, SeatingChart, Computer } from '../types';
-import { Star, MessageSquare, Tag, Calendar, Save, Award } from 'lucide-react';
+import { Star, MessageSquare, Tag, Calendar, Save, Award, Search, X } from 'lucide-react';
 
 interface EvaluationTabProps {
   selectedClass: string;
@@ -30,8 +30,27 @@ export default function EvaluationTab({
   setEmulationDataState
 }: EvaluationTabProps) {
   
+  const [searchTerm, setSearchTerm] = React.useState('');
+
+  // Reset search term when class changes for perfect UX
+  React.useEffect(() => {
+    setSearchTerm('');
+  }, [selectedClass]);
+
   const classStudents = students.filter(s => s.classId === selectedClass);
   const currentDaysEvaluations = evaluationData[selectedDate]?.[selectedClass] || {};
+
+  // Filter students by search term
+  const filteredStudents = React.useMemo(() => {
+    return classStudents.filter(s => {
+      const searchLower = searchTerm.toLowerCase().trim();
+      if (!searchLower) return true;
+      return (
+        s.name.toLowerCase().includes(searchLower) ||
+        s.code.toLowerCase().includes(searchLower)
+      );
+    });
+  }, [classStudents, searchTerm]);
 
   const availableTags = ['Hăng hái', 'Thực hành tốt', 'Giúp đỡ bạn', 'Chưa tập trung', 'Nói chuyện riêng'];
 
@@ -104,8 +123,8 @@ export default function EvaluationTab({
   return (
     <div className="space-y-6">
 
-      {/* Header controls select Date */}
-      <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      {/* Header controls select Date & Save blocks (2 separate items) */}
+      <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
         
         <div className="space-y-1 text-left">
           <span className="text-[10px] bg-indigo-100 text-indigo-800 px-2.5 py-1 rounded-full font-black uppercase tracking-wider">Nhận xét thời gian thực</span>
@@ -118,20 +137,25 @@ export default function EvaluationTab({
           </p>
         </div>
 
-        {/* Date Selector block */}
-        <div className="flex items-center gap-2 bg-slate-50 border px-3 py-2 rounded-xl text-xs font-semibold w-full md:w-auto">
-          <span className="text-slate-500 font-bold whitespace-nowrap text-left">Ngày chấm:</span>
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => {
-              if (e.target.value) setSelectedDate(e.target.value);
-            }}
-            className="bg-transparent border-none text-slate-800 font-extrabold focus:outline-none focus:ring-0 cursor-pointer"
-          />
+        {/* Date & Save controls - 2 separate nicely styled boxes */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+          {/* 1. Date Selector Block */}
+          <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl text-xs font-semibold w-full sm:w-auto">
+            <span className="text-slate-500 font-bold whitespace-nowrap text-left text-xs">Ngày chấm:</span>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => {
+                if (e.target.value) setSelectedDate(e.target.value);
+              }}
+              className="bg-transparent border-none text-slate-800 font-extrabold focus:outline-none focus:ring-0 cursor-pointer"
+            />
+          </div>
+
+          {/* 2. Save Button Block */}
           <button
             onClick={handleSave}
-            className="ml-auto bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs py-2 px-4 rounded-xl border border-amber-600 hover:border-amber-700 transition cursor-pointer"
+            className="bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs py-2.5 px-5 rounded-xl border border-amber-600 hover:border-amber-700 transition shadow-sm cursor-pointer flex items-center justify-center gap-1.5 w-full sm:w-auto"
           >
             💾 Khóa Sổ & Lưu
           </button>
@@ -139,9 +163,40 @@ export default function EvaluationTab({
 
       </div>
 
+      {/* Student Search and quick info bar - Positioned wonderfully at the head of student list */}
+      <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div className="text-left">
+          <h3 className="font-extrabold text-slate-800 text-sm">Danh sách học sinh đánh giá ({filteredStudents.length}/{classStudents.length})</h3>
+          <p className="text-[11px] text-slate-400">
+            Tìm kiếm nhanh học sinh và tăng/giảm sao, gắn tag hoặc đánh giá chi tiết.
+          </p>
+        </div>
+        <div className="relative w-full sm:w-80">
+          <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+            <Search className="w-4 h-4 text-slate-400" />
+          </span>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Tìm tên hoặc MSHS..."
+            className="w-full text-xs pl-9 pr-8 py-2.5 border border-slate-200 bg-slate-50/50 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:outline-none focus:bg-white transition-all font-semibold"
+          />
+          {searchTerm && (
+            <button 
+              type="button"
+              onClick={() => setSearchTerm('')}
+              className="absolute inset-y-0 right-0 flex items-center pr-2.5 text-slate-400 hover:text-slate-600 focus:outline-none"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Grid of student evaluations */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {classStudents.map((s) => {
+        {filteredStudents.map((s) => {
           const evalObj = currentDaysEvaluations[s.id] || { rating: 0, comment: '', tags: [] };
           
           // Get quick computer seat allocation status
@@ -228,6 +283,12 @@ export default function EvaluationTab({
             </div>
           );
         })}
+
+        {classStudents.length > 0 && filteredStudents.length === 0 && (
+          <div className="col-span-full py-16 text-center text-slate-400 border border-dashed rounded-3xl font-medium">
+            Không tìm thấy học sinh nào phù hợp với từ khóa "<strong>{searchTerm}</strong>".
+          </div>
+        )}
 
         {classStudents.length === 0 && (
           <div className="col-span-full py-16 text-center text-slate-400 border border-dashed rounded-3xl font-medium">

@@ -247,7 +247,7 @@ export default function StudentsTab({
         <div className="lg:col-span-2 bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3">
             <div className="text-left">
-              <h3 className="font-extrabold text-slate-800 text-base">Danh sách Học sinh chính thức</h3>
+              <h3 className="font-extrabold text-slate-800 text-base">Danh sách học sinh chính thức</h3>
               <p className="text-[11px] text-slate-400">
                 Đang xem Lớp học: <span className="font-bold text-amber-600">{selectedClass}</span> — Tổng số: <strong>{classStudents.length} học sinh</strong>.
               </p>

@@ -548,7 +548,7 @@ export default function App() {
                     : 'text-slate-500 hover:bg-slate-100'
                 }`}
               >
-                <Award className="w-4 h-4" /> Chấm điểm nhận xét
+                <Award className="w-4 h-4" /> Nhận xét
               </button>
             )}
 

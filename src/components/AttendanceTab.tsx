@@ -1,6 +1,6 @@
 import React from 'react';
 import { Student, AttendanceData } from '../types';
-import { Check, ClipboardCheck, Calendar, UserCheck, AlertTriangle, AlertCircle } from 'lucide-react';
+import { Check, ClipboardCheck, Calendar, UserCheck, AlertTriangle, AlertCircle, Search, X } from 'lucide-react';
 
 interface AttendanceTabProps {
   selectedClass: string;
@@ -24,8 +24,27 @@ export default function AttendanceTab({
   systemDateText
 }: AttendanceTabProps) {
   
+  const [searchTerm, setSearchTerm] = React.useState('');
+
+  // Reset search term when class changes for perfect UX
+  React.useEffect(() => {
+    setSearchTerm('');
+  }, [selectedClass]);
+
   const classStudents = students.filter(s => s.classId === selectedClass);
   const currentDaysAttendance = attendanceData[selectedDate]?.[selectedClass] || {};
+
+  // Filter students based on search term (case-insensitive)
+  const filteredStudents = React.useMemo(() => {
+    return classStudents.filter(s => {
+      const searchLower = searchTerm.toLowerCase().trim();
+      if (!searchLower) return true;
+      return (
+        s.name.toLowerCase().includes(searchLower) ||
+        s.code.toLowerCase().includes(searchLower)
+      );
+    });
+  }, [classStudents, searchTerm]);
 
   // Metrics
   let presentCount = 0;
@@ -151,6 +170,38 @@ export default function AttendanceTab({
 
       {/* Main Table for attendance records on selected date */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 space-y-4">
+        
+        {/* Search student controls - Positioned beautifully above the list table */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-4">
+          <div className="text-left">
+            <h3 className="font-extrabold text-slate-800 text-sm">Danh sách học sinh điểm danh</h3>
+            <p className="text-[11px] text-slate-400">
+              Nhấp chọn trạng thái đi học cho từng học sinh bên dưới.
+            </p>
+          </div>
+          <div className="relative w-full sm:w-64">
+            <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+              <Search className="w-3.5 h-3.5 text-slate-400" />
+            </span>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Tìm tên hoặc MSHS..."
+              className="w-full text-xs pl-9 pr-8 py-2.5 border border-slate-200 bg-slate-50/50 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:outline-none focus:bg-white transition-all font-semibold"
+            />
+            {searchTerm && (
+              <button 
+                type="button"
+                onClick={() => setSearchTerm('')}
+                className="absolute inset-y-0 right-0 flex items-center pr-2.5 text-slate-400 hover:text-slate-600 focus:outline-none"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
@@ -163,11 +214,14 @@ export default function AttendanceTab({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {classStudents.map((s, index) => {
+              {filteredStudents.map((s, index) => {
                 const currentStatus = currentDaysAttendance[s.id] || 'present';
+                // Find true full index in full class list for consistent numbering in UI
+                const originalIndex = classStudents.findIndex(cs => cs.id === s.id);
+                const displayIndex = originalIndex !== -1 ? originalIndex + 1 : index + 1;
                 return (
                   <tr key={s.id} className="hover:bg-slate-50/20 transition">
-                    <td className="py-3 px-4 font-bold text-slate-400">{index + 1}</td>
+                    <td className="py-3 px-4 font-bold text-slate-400">{displayIndex}</td>
                     <td className="py-3 px-4 font-mono font-bold text-slate-500">{s.code}</td>
                     <td className="py-3 px-4 font-extrabold text-slate-900 text-left">{s.name}</td>
                     <td className="py-3 px-4">
@@ -204,6 +258,14 @@ export default function AttendanceTab({
                 );
               })}
               
+              {classStudents.length > 0 && filteredStudents.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center text-slate-400 font-semibold text-xs">
+                    Không tìm thấy học sinh nào phù hợp với từ khóa "<strong>{searchTerm}</strong>".
+                  </td>
+                </tr>
+              )}
+
               {classStudents.length === 0 && (
                 <tr>
                   <td colSpan={5} className="py-12 text-center text-slate-450 font-semibold text-xs">
