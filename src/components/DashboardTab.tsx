@@ -379,7 +379,7 @@ export default function DashboardTab({
               {/* Empty State Banner with elegant styling */}
               {goldenBoardStudents.length === 0 && (
                 <div className="col-span-full py-10 text-center bg-amber-100/50 backdrop-blur-sm border-2 border-dashed border-amber-300/70 rounded-2xl p-6 text-amber-950 text-xs font-semibold flex flex-col items-center justify-center gap-2">
-                  <span className="text-3xl animate-bounce">✨🔭✨</span>
+                  <span className="text-3xl animate-bounce">✨🏆✨</span>
                   <div className="space-y-1">
                     <p className="font-extrabold text-sm text-amber-900">Chiến dịch thi đua chưa bắt đầu hoặc chưa có ai vượt mức 20 ⭐!</p>
                     <p className="text-[11px] text-amber-900/70">
@@ -413,7 +413,8 @@ export default function DashboardTab({
             <div className="border-b border-slate-100 pb-2.5">
               <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 bg-amber-500 rounded-full"></span>
-                Quỹ Thi Đua Lớp {activeClassObj ? activeClassObj.name : selectedClass}
+                Quỹ Thi Đua Lớp <span className="bg-amber-500 text-white text-[11px] font-black px-2 py-0.5 rounded-lg border border-yellow-300">
+                {activeClassObj ? activeClassObj.name : selectedClass}</span>
               </h3>
               <p className="text-[10px] text-slate-400 font-medium">Theo dõi hoạt động tích lũy phần thưởng học đường</p>
             </div>

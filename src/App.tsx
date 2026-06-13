@@ -780,7 +780,7 @@ export default function App() {
                   <LogIn className="w-5 h-5" />
                   Đăng Nhập Cổng Giáo Viên
                 </h3>
-                <p className="text-[10px] text-amber-100 font-semibold mt-0.5">Tiểu Học Long Định • Quản trị phòng máy</p>
+                <p className="text-[10px] text-amber-100 font-semibold mt-0.5">Trường Tiểu học Long Định • Quản trị phòng máy</p>
               </div>
               <button
                 type="button"
@@ -850,7 +850,7 @@ export default function App() {
                   type="submit"
                   className="bg-amber-500 hover:bg-amber-600 text-white font-extrabold px-5 py-2.5 rounded-xl block shadow"
                 >
-                  Xác nhận và Vào làm
+                  Xác nhận
                 </button>
               </div>
 
