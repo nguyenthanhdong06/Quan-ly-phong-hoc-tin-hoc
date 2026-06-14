@@ -200,6 +200,7 @@ export default function AdminTab({
                           {member.role}
                         </span>
                       </td>
+
                       <td className="py-3 px-4 text-center">
                         {member.id !== 'u-1' ? (
                           <button
