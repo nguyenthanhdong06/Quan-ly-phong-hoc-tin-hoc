@@ -591,8 +591,8 @@ export default function DashboardTab({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
           
           {/* Recharts Bar Chart Panel */}
-          <div className="md:col-span-2 h-[260px] relative w-full">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="md:col-span-2 h-[260px] relative w-full min-w-0">
+            <ResponsiveContainer width="100%" height={260} minWidth={0}>
               <BarChart
                 data={monthlyGradeAttendanceData}
                 margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
