@@ -168,6 +168,107 @@ export default function AttendanceTab({
 
       </div>
 
+      {/* Báo cáo nhanh cho Giáo viên chủ nhiệm */}
+      <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <div className="text-left">
+            <h4 className="text-xs font-black uppercase text-amber-700 tracking-wider flex items-center gap-1.5">
+              <span className="animate-pulse">📝</span> BẢNG THỐNG KÊ BÁO CÁO GIÁO VIÊN CHỦ NHIỆM
+            </h4>
+            <p className="text-[12px] text-slate-500 mt-0.5">
+              Báo cáo nhanh số liệu điểm danh ngày <span className="font-bold text-slate-700">{selectedDate.split('-').reverse().join('/')}</span> của lớp <span className="font-bold text-amber-600">{selectedClass}</span>.
+            </p>
+          </div>
+          
+          <button
+            onClick={() => {
+              const textMessage = `BÁO CÁO ĐIỂM DANH LỚP: ${selectedClass}\n` +
+                `- Sĩ số: ${classStudents.length} học sinh (Nữ: ${classStudents.filter(s => s.gender === 'Nữ').length})\n` +
+                `- Hiện diện: ${classStudents.filter(s => (currentDaysAttendance[s.id] || 'present') === 'present').length} học sinh` +
+                ` (Nữ: ${classStudents.filter(s => (currentDaysAttendance[s.id] || 'present') === 'present' && s.gender === 'Nữ').length})\n` +
+                `- Vắng: ${classStudents.filter(s => (currentDaysAttendance[s.id] || 'present') !== 'present').length} học sinh` +
+                ` (Nữ: ${classStudents.filter(s => (currentDaysAttendance[s.id] || 'present') !== 'present' && s.gender === 'Nữ').length})\n` +
+                `- Họ tên HS vắng: ${
+                  classStudents.filter(s => (currentDaysAttendance[s.id] || 'present') !== 'present').length > 0
+                    ? classStudents.filter(s => (currentDaysAttendance[s.id] || 'present') !== 'present').map(s => {
+                        const st = currentDaysAttendance[s.id];
+                        return `${s.name} (${st === 'excused' ? 'Phép' : 'Không phép'})`;
+                      }).join(', ')
+                    : 'Không có (Lớp đi đủ 100%)'
+                }`;
+              
+              navigator.clipboard.writeText(textMessage);
+              showToast("Đã sao chép nội dung báo cáo điểm danh gửi GVCN thành công! ✨");
+            }}
+            className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-[10px] uppercase tracking-wider px-3.5 py-2.5 rounded-xl shadow-sm transition flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+            title="Sao chép văn bản để gửi qua Zalo/Viber"
+          >
+            📋 Sao chép nhanh cho GVCN
+          </button>
+        </div>
+
+        <div className="overflow-hidden border border-slate-200 rounded-xl bg-white shadow-sm max-w-3xl">
+          <table className="w-full border-collapse text-xs text-left">
+            <tbody>
+              <tr className="border-b border-slate-200 hover:bg-slate-50/40 transition">
+                <td className="py-2.5 px-4 font-bold text-slate-500 bg-slate-50 w-44 border-r border-slate-200">Lớp:</td>
+                <td className="py-2.5 px-4 font-black text-amber-600">{selectedClass}</td>
+              </tr>
+              <tr className="border-b border-slate-200 hover:bg-slate-50/40 transition">
+                <td className="py-2.5 px-4 font-bold text-slate-500 bg-slate-50 w-44 border-r border-slate-200">Sĩ số:</td>
+                <td className="py-2.5 px-4 font-extrabold text-slate-800">
+                  {classStudents.length} học sinh <span className="text-slate-300 font-normal mx-1">|</span> <span className="text-pink-600 font-extrabold">{classStudents.filter(s => s.gender === 'Nữ').length} Nữ</span>
+                </td>
+              </tr>
+              <tr className="border-b border-slate-200 hover:bg-slate-50/40 transition">
+                <td className="py-2.5 px-4 font-bold text-slate-500 bg-slate-50 w-44 border-r border-slate-200">Hiện diện:</td>
+                <td className="py-2.5 px-4 font-extrabold text-emerald-700">
+                  {classStudents.filter(s => (currentDaysAttendance[s.id] || 'present') === 'present').length} học sinh đi học <span className="text-slate-300 font-normal mx-1">|</span> <span className="text-pink-600 font-extrabold">{classStudents.filter(s => (currentDaysAttendance[s.id] || 'present') === 'present' && s.gender === 'Nữ').length} Nữ</span>
+                </td>
+              </tr>
+              <tr className="border-b border-slate-200 hover:bg-slate-50/40 transition">
+                <td className="py-2.5 px-4 font-bold text-slate-500 bg-slate-50 w-44 border-r border-slate-200">Vắng:</td>
+                <td className="py-2.5 px-4 font-extrabold text-red-650">
+                  <span className="text-red-600">{classStudents.filter(s => (currentDaysAttendance[s.id] || 'present') !== 'present').length} học sinh vắng</span> <span className="text-slate-300 font-normal mx-1">|</span> <span className="text-pink-600 font-extrabold">{classStudents.filter(s => (currentDaysAttendance[s.id] || 'present') !== 'present' && s.gender === 'Nữ').length} Nữ</span>
+                </td>
+              </tr>
+              <tr className="hover:bg-slate-50/40 transition">
+                <td className="py-3 px-4 font-bold text-slate-500 bg-slate-50 w-44 border-r border-slate-200 align-middle">Họ tên HS vắng:</td>
+                <td className="py-3 px-4 font-semibold text-slate-700">
+                  {classStudents.filter(s => (currentDaysAttendance[s.id] || 'present') !== 'present').length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {classStudents.filter(s => (currentDaysAttendance[s.id] || 'present') !== 'present').map(s => {
+                        const status = currentDaysAttendance[s.id];
+                        const isExcused = status === 'excused';
+                        return (
+                          <span 
+                            key={s.id} 
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black border uppercase tracking-wider ${
+                              isExcused 
+                                ? 'bg-amber-50 text-amber-700 border-amber-200' 
+                                : 'bg-red-50 text-red-700 border-red-200'
+                            }`}
+                          >
+                            <span>{s.name}</span>
+                            <span className="text-[8px] bg-white opacity-90 px-1 py-0.2 rounded border shadow-sm font-mono">
+                              {isExcused ? 'Phép (P)' : 'Không Phép (KP)'}
+                            </span>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <span className="text-emerald-600 font-extrabold text-[11px] flex items-center gap-1">
+                      ✨ Gương mẫu! Lớp đi học đầy đủ 100%, không có học sinh vắng.
+                    </span>
+                  )}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* Main Table for attendance records on selected date */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 space-y-4">
         

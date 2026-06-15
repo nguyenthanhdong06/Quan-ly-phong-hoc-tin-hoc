@@ -164,7 +164,7 @@ export default function EmulationTab({
           
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3">
             <div className="text-left">
-              <h3 className="font-extrabold text-slate-800 text-sm">Góc Quầy Đổi Thưởng: Lớp {selectedClass}</h3>
+              <h3 className="font-extrabold text-slate-800 text-sm">Góc Quầy Đổi Thưởng: Lớp <span className="bg-amber-500 text-white text-[11px] font-black px-2 py-0.5 rounded-lg border border-yellow-300">{selectedClass}</span></h3>
               <p className="text-[11px] text-slate-400">Ấn đổi quà khi bé tích luỹ đủ sao vàng học tốt</p>
             </div>
             <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full uppercase">Sổ Thi Đua Chuyên Cần</span>
@@ -229,25 +229,25 @@ export default function EmulationTab({
                       onClick={() => handleExchangeReward(s.id, s.name, 'Sticker Chăm Ngoan', 5)}
                       className="flex-1 sm:flex-none bg-white hover:bg-emerald-50 border border-slate-200 hover:border-emerald-350 text-slate-700 text-[10px] font-bold px-2.5 py-1.5 rounded-lg shadow-2xs transition-all"
                     >
-                      Đổi Sticker (5⭐)
+                    👍 Chăm Ngoan (5⭐)
                     </button>
                     <button
                       onClick={() => handleExchangeReward(s.id, s.name, 'Sticker Siêu Nhân', 10)}
                       className="flex-1 sm:flex-none bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-350 text-slate-700 text-[10px] font-bold px-2.5 py-1.5 rounded-lg shadow-2xs transition-all"
                     >
-                      Siêu Nhân (10⭐)
+                      ⚡ Siêu Nhân (10⭐)
                     </button>
                     <button
                       onClick={() => handleExchangeReward(s.id, s.name, 'Sticker Chiến Binh', 15)}
                       className="flex-1 sm:flex-none bg-white hover:bg-indigo-50 border border-slate-200 hover:border-indigo-350 text-slate-700 text-[10px] font-bold px-2.5 py-1.5 rounded-lg shadow-2xs transition-all"
                     >
-                      Chiến Binh (15⭐)
+                      🛡️ Chiến Binh (15⭐)
                     </button>
                     <button
                       onClick={() => handleExchangeReward(s.id, s.name, 'Huy Hiệu 20 Sao Xuất Sắc', 20)}
                       className="flex-1 sm:flex-none bg-amber-500 hover:bg-amber-600 text-white border border-amber-600 hover:border-amber-700 text-[10px] font-black px-2.5 py-1.5 rounded-lg shadow-md transition-all animate-pulse"
                     >
-                      Huy Hiệu (20⭐)
+                      🎖️ Huy Hiệu (20⭐)
                     </button>
                   </div>
 

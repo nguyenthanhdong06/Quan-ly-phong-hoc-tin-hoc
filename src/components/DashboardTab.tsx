@@ -457,12 +457,12 @@ export default function DashboardTab({
               {goldenBoardStudents.map((student, idx) => {
                 // Generate a clever student master title based on index or star bounds
                 const title = idx === 0 
-                  ? "Đại Hiệp Phòng Máy" 
+                  ? "Siêu sao Tin học" 
                   : idx === 1 
-                  ? "Bàn Phím Thần Tốc" 
+                  ? "Huyền thoại Công nghệ" 
                   : student.stars >= 30 
-                  ? "Siêu Nhân Lập Trình" 
-                  : "Chiến Binh Chăm Chỉ";
+                  ? "Chiến binh công nghệ" 
+                  : "Lập trình viên nhí";
 
                 return (
                   <div 
@@ -488,7 +488,7 @@ export default function DashboardTab({
                           {student.stars} ⭐
                         </span>
                         {student.badges.slice(0, 2).map(b => (
-                          <span key={b} className="text-[9px] bg-slate-100 text-slate-700 px-1.5 py-0.2 rounded font-semibold truncate max-w-[80px]">
+                          <span key={b} className="text-[8px] bg-slate-100 text-slate-700 px-1.5 py-0.2 rounded font-semibold truncate max-w-[120px]">
                             {b}
                           </span>
                         ))}
