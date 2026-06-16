@@ -609,7 +609,7 @@ export default function App() {
                     : 'text-slate-500 hover:bg-slate-100'
                 }`}
               >
-                <Settings className="w-4 h-4" /> Quản trị Admin
+                <Settings className="w-4 h-4" /> Quản trị
               </button>
             )}
 

@@ -127,7 +127,7 @@ export default function AdminTab({
                 className="w-full border border-slate-200 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white font-semibold text-slate-700"
               >
                 <option value="Giáo viên bộ môn">Giáo viên bộ môn (Chấm điểm + Điểm danh)</option>
-                <option value="Quản trị viên (Admin)">Quản trị viên (Toàn quyền CRUD)</option>
+                <option value="Quản trị viên">Quản trị viên (Toàn quyền CRUD)</option>
               </select>
             </div>
 
