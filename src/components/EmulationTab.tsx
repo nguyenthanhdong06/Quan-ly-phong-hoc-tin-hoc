@@ -26,7 +26,7 @@ export default function EmulationTab({
 
   // Get current active star count of a student
   const getStudentCurrentStars = (studentId: string) => {
-    const emulationState = emulationDataState[studentId] || { cumulativeStars: 10, exchangedStickers: 0, totalDeducted: 0, badges: [] };
+    const emulationState = emulationDataState[studentId] || { cumulativeStars: 0, exchangedStickers: 0, totalDeducted: 0, badges: [] };
     const deducted = emulationState.totalDeducted !== undefined 
       ? emulationState.totalDeducted 
       : (emulationState.exchangedStickers || 0) * 5;
@@ -80,7 +80,7 @@ export default function EmulationTab({
             🏆
           </div>
           <div>
-            <h2 className="text-2xl font-black uppercase tracking-wider">Hội Chợ Học Tập • Đổi Sao Lấy Quà</h2>
+            <h2 className="text-2xl font-black uppercase tracking-wider">Cửa Hàng Học Tập • Đổi Sao Lấy Quà</h2>
             <p className="text-xs text-amber-100 font-medium">Tích lũy sao vàng thực hành hàng tháng để nhận được nhiều huy hiệu sticker rực rỡ.</p>
             
             {isRedemptionPeriod && (
@@ -188,7 +188,7 @@ export default function EmulationTab({
           <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
             {filteredStudents.map(s => {
               const stars = getStudentCurrentStars(s.id);
-              const emulationObj = emulationDataState[s.id] || { cumulativeStars: 10, exchangedStickers: 0, totalDeducted: 0, badges: [] };
+              const emulationObj = emulationDataState[s.id] || { cumulativeStars: 0, exchangedStickers: 0, totalDeducted: 0, badges: [] };
 
               return (
                 <div 

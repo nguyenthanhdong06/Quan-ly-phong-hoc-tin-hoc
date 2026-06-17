@@ -1,6 +1,6 @@
 import React from 'react';
 import { Student, Computer, SeatingChart } from '../types';
-import { Monitor, X, Wrench, AlertTriangle, PenTool, Clipboard, Search, Check, ChevronDown } from 'lucide-react';
+import { Monitor, X, Wrench, AlertTriangle, PenTool, Clipboard, Search, Check, ChevronDown, Maximize, Minimize, Tv, ZoomIn, ZoomOut, Sun, Moon } from 'lucide-react';
 
 interface SeatingTabProps {
   selectedClass: string;
@@ -32,11 +32,119 @@ export default function SeatingTab({
 
   const [modalSearch, setModalSearch] = React.useState('');
   const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
+  const [isFullscreen, setIsFullscreen] = React.useState(false);
+  const [scaleSize, setScaleSize] = React.useState<'sm' | 'md' | 'lg' | 'xl'>('lg');
+  const [projectorTheme, setProjectorTheme] = React.useState<'dark' | 'light'>('dark');
 
   React.useEffect(() => {
     setModalSearch('');
     setIsDropdownOpen(false);
   }, [activeAssignModal]);
+
+  React.useEffect(() => {
+    const handleFullscreenChange = () => {
+      const isCurrentlyNativeFullscreen = !!document.fullscreenElement;
+      if (!isCurrentlyNativeFullscreen && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+    
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, [isFullscreen]);
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+        try {
+          if (document.fullscreenElement && document.exitFullscreen) {
+            document.exitFullscreen();
+          }
+        } catch (err) {
+          console.warn(err);
+        }
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullscreen]);
+
+  const toggleBrowserFullscreen = async () => {
+    const nextVal = !isFullscreen;
+    setIsFullscreen(nextVal);
+    
+    try {
+      if (nextVal) {
+        const element = document.documentElement;
+        if (element.requestFullscreen) {
+          await element.requestFullscreen();
+        }
+      } else {
+        if (document.exitFullscreen && document.fullscreenElement) {
+          await document.exitFullscreen();
+        }
+      }
+    } catch (err) {
+      console.warn("Fullscreen API is not fully supported or restricted in sandbox iframe:", err);
+    }
+  };
+
+  const getComputerContrastClasses = (status: string, isThemeDark: boolean) => {
+    if (isThemeDark) {
+      if (status === 'Đang hỏng') {
+        return 'bg-red-950/90 border-red-500/80 text-rose-300 hover:bg-red-900/80';
+      } else if (status === 'Bảo trì') {
+        return 'bg-blue-950/90 border-blue-500/80 text-blue-200 hover:bg-blue-900/80';
+      }
+      return 'bg-slate-850 border-amber-500/60 text-amber-200 hover:bg-slate-800 hover:border-amber-400';
+    } else {
+      if (status === 'Đang hỏng') {
+        return 'bg-red-500 border-red-600 text-white hover:bg-red-600';
+      } else if (status === 'Bảo trì') {
+        return 'bg-blue-500 border-blue-600 text-white hover:bg-blue-600';
+      }
+      return 'bg-amber-400 border-amber-500 text-slate-900 hover:bg-amber-500 hover:border-amber-600';
+    }
+  };
+
+  const scaleConfig = {
+    sm: {
+      card: 'p-1.5 border rounded-lg',
+      name: 'text-[11px] font-bold',
+      student: 'text-[9px] max-w-[85px]',
+      icon: 'w-2 h-2',
+      columnSpacing: 'p-2 rounded-xl space-y-2',
+      colTitle: 'text-[9px]'
+    },
+    md: {
+      card: 'p-2.5 border-2 rounded-xl',
+      name: 'text-xs font-extrabold',
+      student: 'text-[10px] max-w-[110px]',
+      icon: 'w-3 h-3',
+      columnSpacing: 'p-3 rounded-2xl space-y-2.5',
+      colTitle: 'text-[10px]'
+    },
+    lg: {
+      card: 'p-3.5 border-2 rounded-xl',
+      name: 'text-sm font-black',
+      student: 'text-xs font-black max-w-[140px]',
+      icon: 'w-3.5 h-3.5',
+      columnSpacing: 'p-4 rounded-2xl space-y-3',
+      colTitle: 'text-xs'
+    },
+    xl: {
+      card: 'p-5 border-[3px] rounded-2xl',
+      name: 'text-lg font-black',
+      student: 'text-sm font-black max-w-[180px]',
+      icon: 'w-4 h-4',
+      columnSpacing: 'p-5 rounded-2xl space-y-4',
+      colTitle: 'text-sm'
+    }
+  };
 
   // Assign student to computer seat
   const handleAssignStudent = (computerId: string, studentId: string) => {
@@ -97,6 +205,15 @@ export default function SeatingTab({
             <span className="w-3.5 h-3.5 bg-blue-400 border border-blue-500 rounded shadow-sm inline-block"></span>
             <span>Bảo Trì</span>
           </div>
+
+          <button
+            type="button"
+            onClick={toggleBrowserFullscreen}
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-750 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl transition duration-150 shadow-md hover:shadow-lg active:scale-95 cursor-pointer"
+          >
+            <Tv className="w-4 h-4 animate-pulse" />
+            <span>Trình chiếu Máy chiếu</span>
+          </button>
         </div>
 
       </div>
@@ -149,7 +266,10 @@ export default function SeatingTab({
                     <div
                       key={computer.id}
                       onClick={() => setActiveAssignModal(computer.id)}
-                      className={`p-3 border-2 rounded-xl text-center shadow-sm cursor-pointer transition transform hover:-translate-y-0.5 active:translate-y-0 ${statusBg}`}
+                      className={`p-3 border-2 rounded-xl text-center shadow-sm cursor-pointer transition-all duration-200 transform hover:-translate-y-1 hover:scale-[1.05] hover:shadow-lg hover:ring-4 active:translate-y-0 ${statusBg} ${
+                        computer.status === 'Đang hỏng' ? 'hover:ring-rose-450/40' :
+                        computer.status === 'Bảo trì' ? 'hover:ring-blue-450/40' : 'hover:ring-amber-450/60'
+                      }`}
                     >
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-[9px] font-bold uppercase tracking-wider bg-black/10 px-1 rounded block">
@@ -184,7 +304,7 @@ export default function SeatingTab({
 
         {/* Bottom Metadata info */}
         <div className="pt-4 border-t border-slate-100 flex justify-between items-center text-xs font-semibold text-slate-500">
-          <span>Khảo sát lớp học thực nghiệm môn Tin TH Long Định</span>
+          <span>Sơ đồ lớp học môn Tin học Trường Tiểu học Long Định</span>
           <span>Bản quyền quản trị @Nguyễn Thanh Đồng</span>
         </div>
 
@@ -431,6 +551,225 @@ export default function SeatingTab({
             </div>
 
           </div>
+        </div>
+      )}
+
+      {/* EXQUISITE CLASSROOM PROJECTOR FULL SCREEN OVERLAY */}
+      {isFullscreen && (
+        <div className={`fixed inset-0 z-40 flex flex-col p-6 overflow-y-auto ${
+          projectorTheme === 'dark' 
+            ? 'bg-slate-950 text-slate-100' 
+            : 'bg-slate-50 text-slate-900 bg-gradient-to-b from-slate-50 to-slate-100'
+        }`}>
+          
+          {/* Projector Mode Top Control Panel Header */}
+          <div className={`flex flex-col md:flex-row justify-between items-center gap-4 mb-6 pb-4 border-b ${
+            projectorTheme === 'dark' ? 'border-slate-800' : 'border-slate-200'
+          }`}>
+            <div className="flex items-center gap-3 w-full md:w-auto">
+              <div className="bg-indigo-600 text-white p-2.5 rounded-2xl shadow-md border border-indigo-450 hidden sm:block">
+                <Tv className="w-6 h-6 animate-pulse" />
+              </div>
+              <div className="text-left">
+                <h1 className="text-lg font-black uppercase tracking-wider flex flex-wrap items-center gap-2">
+                  <span className={`${projectorTheme === 'dark' ? 'text-amber-400' : 'text-slate-800'}`}>SƠ ĐỒ PHÒNG MÁY CHUYÊN DỤNG</span>
+                  <span className="text-[9px] bg-amber-500 text-slate-950 font-black py-0.5 px-2 rounded-full tracking-normal uppercase">
+                    MÁY CHIẾU LỚP HỌC
+                  </span>
+                </h1>
+                <p className={`text-xs ${projectorTheme === 'dark' ? 'text-slate-400' : 'text-slate-550'} font-semibold`}>
+                  Lớp: <span className="font-extrabold uppercase bg-amber-400/25 text-amber-500 border border-amber-500/35 px-1.5 py-0.2 rounded">{selectedClass}</span> • Thầy giáo: <span className="font-extrabold">Nguyễn Thanh Đồng</span> (Giáo viên Tin học)
+                </p>
+              </div>
+            </div>
+
+            {/* Quick configuration tools for projector */}
+            <div className="flex flex-wrap items-center gap-3 text-xs w-full md:w-auto justify-end">
+              
+              {/* Scale Adjuster */}
+              <div className={`flex items-center gap-1.5 p-1 rounded-xl ${
+                projectorTheme === 'dark' ? 'bg-slate-900 border border-slate-800' : 'bg-slate-200/80 border border-slate-300'
+              }`}>
+                <span className={`font-black px-2 pointer-events-none text-[10px] uppercase hidden sm:inline ${
+                  projectorTheme === 'dark' ? 'text-slate-400' : 'text-slate-600'
+                }`}>Thu Phóng Chữ:</span>
+                {(['sm', 'md', 'lg', 'xl'] as const).map(size => (
+                  <button
+                    key={size}
+                    type="button"
+                    onClick={() => setScaleSize(size)}
+                    className={`px-3 py-1.5 rounded-lg font-black uppercase transition-all duration-150 cursor-pointer text-[10px] ${
+                      scaleSize === size 
+                        ? 'bg-amber-500 text-slate-950 shadow-md font-black' 
+                        : projectorTheme === 'dark' ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:bg-slate-300'
+                    }`}
+                  >
+                    {size === 'sm' ? 'Nhỏ' : size === 'md' ? 'Vừa' : size === 'lg' ? 'Lớn' : 'Cực Đại'}
+                  </button>
+                ))}
+              </div>
+
+              {/* Theme Selector */}
+              <div className={`flex items-center gap-1 p-1 rounded-xl ${
+                projectorTheme === 'dark' ? 'bg-slate-900 border border-slate-800' : 'bg-slate-200/80 border border-slate-300'
+              }`}>
+                <button
+                  type="button"
+                  onClick={() => setProjectorTheme('dark')}
+                  className={`p-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 font-black text-[10.5px] ${
+                    projectorTheme === 'dark'
+                      ? 'bg-amber-500 text-slate-950 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                  title="Chế độ Tối"
+                >
+                  <Moon className="w-3.5 h-3.5" />
+                  <span>Nền tối</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setProjectorTheme('light')}
+                  className={`p-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 font-black text-[10.5px] ${
+                    projectorTheme === 'light'
+                      ? 'bg-white text-indigo-950 shadow-md border border-slate-200'
+                      : projectorTheme === 'dark' ? 'text-slate-400 hover:text-white' : 'text-slate-600'
+                  }`}
+                  title="Chế độ Sáng"
+                >
+                  <Sun className="w-3.5 h-3.5" />
+                  <span>Nền sáng</span>
+                </button>
+              </div>
+
+              {/* Exit Projection button */}
+              <button
+                type="button"
+                onClick={toggleBrowserFullscreen}
+                className="flex items-center gap-1.5 bg-rose-600 hover:bg-rose-750 text-white font-black px-4.5 py-2.5 rounded-xl shadow-md transition-all active:scale-95 duration-150 cursor-pointer"
+              >
+                <Minimize className="w-4 h-4" />
+                <span>Thoát Trình Chiếu (ESC)</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Central Physical Classroom Layout mapping */}
+          <div className={`flex-1 flex flex-col justify-between max-w-7xl mx-auto w-full p-6 border-4 rounded-3xl transition-colors duration-200 ${
+            projectorTheme === 'dark' 
+              ? 'bg-slate-900 border-slate-800 shadow-2xl' 
+              : 'bg-white border-slate-300 shadow-xl'
+          } space-y-8 overflow-x-auto min-w-[1000px]`}>
+            
+            {/* Projector Header row: Teachers desk, board, entry */}
+            <div className="grid grid-cols-12 gap-5 items-center">
+              
+              {/* Teacher Desk */}
+              <div className={`col-span-3 border-2 border-dashed rounded-2xl p-4 text-center ${
+                projectorTheme === 'dark' 
+                  ? 'bg-slate-950/40 border-slate-800 text-slate-400' 
+                  : 'bg-slate-100 border-slate-200 text-slate-600'
+              }`}>
+                <div className="w-14 h-8 bg-amber-500/20 border-2 border-amber-500 rounded-lg mx-auto mb-1.5"></div>
+                <strong className="text-xs uppercase tracking-wider block font-bold">BÀN GIÁO VIÊN</strong>
+              </div>
+
+              {/* Blackboard board */}
+              <div className={`col-span-6 rounded-2xl py-4 shadow-inner border-2 text-center text-white font-black uppercase tracking-widest ${
+                projectorTheme === 'dark' 
+                  ? 'bg-emerald-950/80 border-emerald-800/60 text-emerald-200' 
+                  : 'bg-slate-800 border-slate-700 text-slate-100'
+              }`}>
+                <span className="text-sm md:text-base">MÀN CHIẾU • BẢNG LỚP HỌC</span>
+              </div>
+
+              {/* Entry doorway gate */}
+              <div className="col-span-3 flex justify-end">
+                <div className="bg-amber-500 text-slate-955 font-black text-xs py-4 px-6 rounded-2xl border-2 border-amber-600 shadow-md tracking-wider uppercase text-center">
+                  CỬA VÀO PHÒNG
+                </div>
+              </div>
+
+            </div>
+
+            {/* SEATING COLUMNS MATRIX CONTROLLER */}
+            <div className="grid grid-cols-5 gap-4 pt-4 border-t border-dashed border-slate-500/20">
+              {classroomColumns.map((col, colIndex) => (
+                <div 
+                  key={colIndex} 
+                  className={`transition-all duration-200 ${scaleConfig[scaleSize].columnSpacing} ${
+                    projectorTheme === 'dark' ? 'bg-slate-950/30' : 'bg-slate-50'
+                  } border ${
+                    projectorTheme === 'dark' ? 'border-slate-800' : 'border-slate-200'
+                  }`}
+                >
+                  <p className={`font-black uppercase tracking-wider text-center border-b pb-2 ${
+                    scaleConfig[scaleSize].colTitle
+                  } ${
+                    projectorTheme === 'dark' ? 'text-slate-400 border-slate-805' : 'text-slate-500 border-slate-200'
+                  }`}>
+                    {col.title}
+                  </p>
+                  
+                  <div className="space-y-2">
+                    {col.items.map((computer: Computer) => {
+                      const assignedStudentId = seatingChart[selectedClass]?.[computer.id];
+                      const studentObj = classStudents.find(s => s.id === assignedStudentId);
+                      const statusBg = getComputerContrastClasses(computer.status, projectorTheme === 'dark');
+
+                      return (
+                        <div
+                          key={computer.id}
+                          onClick={() => setActiveAssignModal(computer.id)}
+                          className={`border-2 text-center shadow transition-all duration-200 cursor-pointer transform hover:-translate-y-1.5 hover:scale-[1.05] hover:shadow-xl hover:ring-4 active:translate-y-0 ${
+                            computer.status === 'Đang hỏng' ? 'hover:ring-rose-450/40' :
+                            computer.status === 'Bảo trì' ? 'hover:ring-blue-450/40' : 'hover:ring-amber-450/60'
+                          } ${
+                            scaleConfig[scaleSize].card
+                          } ${statusBg}`}
+                        >
+                          <div className="flex justify-between items-center opacity-85">
+                            <span className="text-[10px] font-extrabold uppercase tracking-widest bg-black/10 px-1.5 py-0.2 rounded block">
+                              {computer.name}
+                            </span>
+                            
+                            <span className={`w-2 h-2 rounded-full border border-black/10 inline-block ${
+                              computer.status === 'Hoạt động' ? 'bg-emerald-500' :
+                              computer.status === 'Đang hỏng' ? 'bg-red-500 animate-pulse' : 'bg-blue-500'
+                            }`} />
+                          </div>
+
+                          <div className="pt-2 border-t border-black/5 min-h-[34px] flex flex-col items-center justify-center">
+                            {studentObj ? (
+                              <p className={`font-black truncate block tracking-tight leading-tight ${
+                                projectorTheme === 'dark' ? 'text-amber-100' : 'text-slate-900'
+                              } ${scaleConfig[scaleSize].student}`}>
+                                {studentObj.gender === 'Nữ' ? '👧🏻' : '👦🏻'} {studentObj.name}
+                              </p>
+                            ) : (
+                              <span className={`italic block opacity-40 text-[10px] font-bold ${
+                                projectorTheme === 'dark' ? 'text-slate-400' : 'text-slate-550'
+                              }`}>Trống</span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                </div>
+              ))}
+            </div>
+
+            {/* Bottom Credits info inside screen */}
+            <div className={`pt-4 border-t border-dashed flex justify-between items-center text-[10px] font-extrabold uppercase tracking-wider ${
+              projectorTheme === 'dark' ? 'border-slate-800 text-slate-500' : 'border-slate-200 text-slate-400'
+            }`}>
+              <span>Trường Tiểu học Long Định • Phòng máy thực nghiệm</span>
+              <span>Lớp học Tin học lý thú</span>
+            </div>
+
+          </div>
+
         </div>
       )}
 

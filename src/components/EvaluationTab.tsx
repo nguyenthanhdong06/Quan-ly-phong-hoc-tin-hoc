@@ -72,7 +72,7 @@ export default function EvaluationTab({
     // Award / adjust the cumulative stars in EmulationState!
     if (diff !== 0) {
       setEmulationDataState((prev: any) => {
-        const studentEmulation = prev[studentId] || { cumulativeStars: 10, exchangedStickers: 0, totalDeducted: 0, badges: [] };
+        const studentEmulation = prev[studentId] || { cumulativeStars: 0, exchangedStickers: 0, totalDeducted: 0, badges: [] };
         const newCumulative = Math.max(0, studentEmulation.cumulativeStars + diff);
         return {
           ...prev,

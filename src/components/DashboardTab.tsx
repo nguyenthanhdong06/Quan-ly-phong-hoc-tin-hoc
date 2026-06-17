@@ -714,7 +714,7 @@ export default function DashboardTab({
               <p className="text-sm font-bold text-slate-700 text-left">
                 Lớp:  <span className="bg-amber-500 text-white text-[11px] font-black px-2 py-0.5 rounded-lg border border-yellow-300">
                       {activeClassObj ? activeClassObj.name : selectedClass}</span>
-                {activeClassObj?.teacher && <span> | GV Phụ trách: <strong className="text-slate-900 font-semibold">{activeClassObj.teacher}</strong></span>}
+                {activeClassObj?.teacher && <span> | GVCN: <strong className="text-slate-900 font-semibold">{activeClassObj.teacher}</strong></span>}
               </p>
               <span className="text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200 px-2.5 py-0.5 rounded-full font-bold">
                 Môn: Tin Học Tiểu Học
