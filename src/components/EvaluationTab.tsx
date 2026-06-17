@@ -52,7 +52,7 @@ export default function EvaluationTab({
     });
   }, [classStudents, searchTerm]);
 
-  const availableTags = ['Hăng hái', 'Thực hành tốt', 'Giúp đỡ bạn', 'Chưa tập trung', 'Nói chuyện riêng'];
+  const availableTags = ['🙋Hăng hái', '💻Thực hành tốt', '🤝Giúp đỡ bạn', '🤔Chưa tập trung', '🤫Nói chuyện riêng'];
 
   // Handle single rating update & update emulation stars cumulative in parallel!
   const handleSetRating = (studentId: string, rating: number) => {
@@ -220,7 +220,7 @@ export default function EvaluationTab({
                   <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
                     seatObj ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-slate-100 text-slate-500 border'
                   }`}>
-                    {seatObj ? `📍 Ngồi: ${seatObj.name}` : '❌ Chưa xếp máy'}
+                    {seatObj ? `📍 Ngồi: 💻${seatObj.name}` : '❌ Chưa xếp máy'}
                   </span>
                 </div>
 

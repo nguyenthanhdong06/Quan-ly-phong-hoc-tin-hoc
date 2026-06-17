@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Member, Computer } from '../types';
-import { UserCheck, Trash2, ShieldAlert, Heart, HardDrive, Cpu, Cloud, Check, Wifi, AlertTriangle, RefreshCw, Database, FileCode, CheckCircle2 } from 'lucide-react';
+import { Member, Computer, Student } from '../types';
+import { UserCheck, Trash2, ShieldAlert, Heart, HardDrive, Cpu, Cloud, Check, Wifi, AlertTriangle, RefreshCw, Database, FileCode, CheckCircle2, X } from 'lucide-react';
 import { SQL_INITIALIZATION_QUERY } from '../supabaseClient';
 
 interface AdminTabProps {
@@ -14,6 +14,8 @@ interface AdminTabProps {
   supabaseError?: string | null;
   onForceSync?: () => Promise<void>;
   onForcePush?: () => Promise<void>;
+  students: Student[];
+  setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
 }
 
 export default function AdminTab({
@@ -26,7 +28,9 @@ export default function AdminTab({
   isSyncing = false,
   supabaseError = null,
   onForceSync,
-  onForcePush
+  onForcePush,
+  students,
+  setStudents
 }: AdminTabProps) {
 
   // States for adding member
@@ -35,6 +39,7 @@ export default function AdminTab({
   const [newEmail, setNewEmail] = useState('');
   const [newPhone, setNewPhone] = useState('');
   const [copiedSql, setCopiedSql] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
   const handleAddMember = (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,6 +89,13 @@ export default function AdminTab({
       status: 'Hoạt động'
     })));
     showToast('Đã khởi chạy bảo dưỡng, đồng loạt thiết lập 40 máy trạm về trạng thái rực rỡ Hoạt động Tốt!');
+  };
+
+  // Delete all students from system
+  const handleDeleteAllStudents = () => {
+    setStudents([]);
+    setIsDeleteConfirmOpen(false);
+    showToast('Đã xóa toàn bộ danh sách học sinh trên hệ thống thành công!', 'success');
   };
 
   // Copy SQL instructions
@@ -241,6 +253,28 @@ export default function AdminTab({
             </div>
           </div>
 
+          {/* Danger zone for deleting all students */}
+          <div className="pt-4 border-t border-slate-200 space-y-3 p-4 rounded-2xl border border-rose-100 bg-rose-50/30">
+            <h4 className="font-black text-rose-800 text-sm flex items-center gap-1.5">
+              <AlertTriangle className="w-4 h-4 text-rose-600 animate-pulse" />
+              Khu vực nguy hiểm (Danger Zone)
+            </h4>
+            <p className="text-xs text-slate-500 leading-relaxed font-semibold">
+              Hành động này sẽ <strong>xóa hoàn toàn</strong> danh sách học sinh ở tất cả các khối lớp đã thiết lập trong hệ thống. Quý thầy cô vui lòng cân nhắc kỹ trước khi thực hiện.
+            </p>
+            
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setIsDeleteConfirmOpen(true)}
+                className="bg-red-600 hover:bg-red-750 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl transition shadow cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Xóa toàn bộ học sinh ({students.length} em)
+              </button>
+            </div>
+          </div>
+
         </div>
 
       </div>
@@ -353,6 +387,56 @@ export default function AdminTab({
         </div>
 
       </div>
+
+      {/* POP-UP CONFIRMATION FOR DELETING ALL STUDENTS */}
+      {isDeleteConfirmOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden border border-slate-100 transform transition-all animate-fadeIn text-left">
+            
+            <div className="bg-gradient-to-r from-red-500 to-red-650 p-5 text-white flex justify-between items-center">
+              <div className="flex items-center gap-1.5 font-extrabold text-sm uppercase tracking-widest text-white">
+                <AlertTriangle className="w-5 h-5 animate-pulse text-yellow-300" />
+                Cảnh báo nguy hiểm!
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsDeleteConfirmOpen(false)}
+                className="bg-black/10 hover:bg-black/25 text-white rounded-full p-1.5 focus:outline-none cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <p className="text-sm font-extrabold text-slate-800 leading-relaxed">
+                Bạn có muốn xóa toàn bộ danh sách học sinh không?
+              </p>
+              
+              <p className="text-xs text-slate-500 bg-slate-50 border p-3.5 rounded-xl font-semibold leading-relaxed">
+                ⚠️ Lưu ý: Toàn bộ danh sách <strong>{students.length} em học sinh</strong> hiện tại ở mọi khối lớp sẽ bị xóa sạch khỏi hệ thống.
+              </p>
+
+              <div className="flex justify-end gap-2 text-xs pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsDeleteConfirmOpen(false)}
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-4 py-2.5 rounded-xl block cursor-pointer transition"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteAllStudents}
+                  className="bg-red-600 hover:bg-red-750 text-white font-extrabold px-5 py-2.5 rounded-xl block shadow transition cursor-pointer"
+                >
+                  Xác nhận
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );

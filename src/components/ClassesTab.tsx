@@ -187,10 +187,78 @@ export default function ClassesTab({
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
-        {/* ================= COL 1: KHỐI LỚP ================= */}
-        <div className="space-y-6">
+        {/* ================= LEFT SIDEBAR (lg:col-span-4) - QUẢN LÝ / FORM CẤU HÌNH ================= */}
+        <div className="lg:col-span-4 space-y-6">
+
+          {/* Form Thêm Lớp */}
+          <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+            <h3 className="font-extrabold text-sm text-slate-800 border-b pb-2 flex items-center gap-1.5">
+              <BookOpen className="w-4 h-4 text-emerald-600" />
+              Thêm Lớp học mới
+            </h3>
+
+            <form onSubmit={handleAddClass} className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">Mã Lớp (Dùng trong hệ thống)</label>
+                <input
+                  type="text"
+                  value={classIdInput}
+                  onChange={(e) => setClassIdInput(e.target.value)}
+                  placeholder="Ví dụ: 3C, 3D, Ba 3..."
+                  className="w-full text-xs border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">Tên Hiển Thị của Lớp</label>
+                <input
+                  type="text"
+                  value={classNameInput}
+                  onChange={(e) => setClassNameInput(e.target.value)}
+                  placeholder="Ví dụ: Lớp Ba 3..."
+                  className="w-full text-xs border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">Mục Khối học trực thuộc</label>
+                <select
+                  value={classGradeIdInput}
+                  onChange={(e) => setClassGradeIdInput(e.target.value === '' ? '' : Number(e.target.value))}
+                  className="w-full text-xs border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white font-semibold text-slate-700"
+                  required
+                >
+                  <option value="">-- Chọn Khối --</option>
+                  {grades.map(g => (
+                    <option key={g.id} value={g.id}>{g.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">Giáo viên phụ trách dạy</label>
+                <input
+                  type="text"
+                  value={classTeacherInput}
+                  onChange={(e) => setClassTeacherInput(e.target.value)}
+                  placeholder="Ví dụ: Thầy Thanh Đồng"
+                  className="w-full text-xs border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs py-2.5 rounded-lg transition"
+              >
+                + Thêm Lớp học
+              </button>
+            </form>
+          </div>
           
           {/* Add Grade Form */}
           <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">
@@ -302,82 +370,12 @@ export default function ClassesTab({
 
         </div>
 
-        {/* ================= COL 2 & 3: LỚP HỌC ================= */}
-        <div className="lg:col-span-2 space-y-6">
+        {/* ================= RIGHT MAIN PANEL (lg:col-span-8) - DANH MỤC LỚP HỌC SPACIOUS ================= */}
+        <div className="lg:col-span-8">
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            
-            {/* Form Thêm Lớp */}
-            <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4 md:col-span-1">
-              <h3 className="font-extrabold text-sm text-slate-800 border-b pb-2 flex items-center gap-1.5">
-                <BookOpen className="w-4 h-4 text-emerald-600" />
-                Thêm Lớp học mới
-              </h3>
-
-              <form onSubmit={handleAddClass} className="space-y-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">Mã Lớp (Dùng trong hệ thống)</label>
-                  <input
-                    type="text"
-                    value={classIdInput}
-                    onChange={(e) => setClassIdInput(e.target.value)}
-                    placeholder="Ví dụ: 3C, 3D, Ba 3..."
-                    className="w-full text-xs border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">Tên Hiển Thị của Lớp</label>
-                  <input
-                    type="text"
-                    value={classNameInput}
-                    onChange={(e) => setClassNameInput(e.target.value)}
-                    placeholder="Ví dụ: Lớp Ba 3..."
-                    className="w-full text-xs border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">Mục Khối học trực thuộc</label>
-                  <select
-                    value={classGradeIdInput}
-                    onChange={(e) => setClassGradeIdInput(e.target.value === '' ? '' : Number(e.target.value))}
-                    className="w-full text-xs border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white font-semibold text-slate-700"
-                    required
-                  >
-                    <option value="">-- Chọn Khối --</option>
-                    {grades.map(g => (
-                      <option key={g.id} value={g.id}>{g.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">Giáo viên phụ trách dạy</label>
-                  <input
-                    type="text"
-                    value={classTeacherInput}
-                    onChange={(e) => setClassTeacherInput(e.target.value)}
-                    placeholder="Ví dụ: Thầy Thanh Đồng"
-                    className="w-full text-xs border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                    required
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs py-2.5 rounded-lg transition"
-                >
-                  + Thêm Lớp học
-                </button>
-              </form>
-            </div>
-
-            {/* Danh sách Lớp */}
-            <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4 md:col-span-2">
-              <h3 className="font-extrabold text-sm text-slate-800 border-b pb-2 flex items-center justify-between">
+          {/* Danh sách Lớp */}
+          <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+            <h3 className="font-extrabold text-sm text-slate-800 border-b pb-2 flex items-center justify-between">
                 <span>Danh mục Lớp học ({classes.length})</span>
                 <span className="text-[10px] text-slate-400 font-semibold uppercase">Realtime Monitor</span>
               </h3>
@@ -438,53 +436,170 @@ export default function ClassesTab({
                 </form>
               )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {classes.map(c => {
-                  const classStsCount = students.filter(s => s.classId === c.id).length;
-                  const gradeObj = grades.find(g => g.id === c.gradeId);
-                  
+              <div className="space-y-8">
+                {(() => {
+                  const gradeMap: { [key: number]: string } = {
+                    1: 'border-blue-500 text-blue-700 bg-blue-50/50 hover:border-blue-400',
+                    2: 'border-pink-500 text-pink-700 bg-pink-50/50 hover:border-pink-400',
+                    3: 'border-amber-500 text-amber-700 bg-amber-50/50 hover:border-amber-400',
+                    4: 'border-indigo-500 text-indigo-700 bg-indigo-50/50 hover:border-indigo-400',
+                    5: 'border-emerald-500 text-emerald-700 bg-emerald-50/50 hover:border-emerald-400',
+                  };
+
+                  // Lọc lớp không thuộc khối nào (nếu có dữ liệu lỗi)
+                  const unassignedClasses = classes.filter(
+                    c => !grades.some(g => g.id === c.gradeId)
+                  ).sort((a, b) => a.name.localeCompare(b.name, 'vi', { numeric: true, sensitivity: 'base' }));
+
                   return (
-                    <div
-                      key={c.id} 
-                      className="p-4 border border-slate-100 rounded-2xl bg-slate-50 hover:bg-slate-100/50 transition-all flex flex-col justify-between hover:border-amber-200 gap-3"
-                    >
-                      <div>
-                        <div className="flex justify-between items-start">
-                          <span className="text-[10px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full font-bold uppercase">
-                            {gradeObj ? gradeObj.name : `Khối ${c.gradeId}`}
-                          </span>
-                          <span className="text-[10px] text-slate-400 font-mono">ID: {c.id}</span>
-                        </div>
-                        <h4 className="font-extrabold text-base text-slate-800 mt-1.5">{c.name}</h4>
-                        <div className="mt-2 space-y-1 text-xs text-slate-500 font-medium">
-                          <p>Chủ nhiệm: <strong className="text-slate-700">{c.teacher}</strong></p>
-                          <p className="text-emerald-700">Sỹ số hiện thời: <strong>{classStsCount} học sinh</strong></p>
-                        </div>
-                      </div>
+                    <>
+                      {/* Lặp qua các khối lớp đã có và sắp xếp khối học theo Grade ID */}
+                      {grades.map(grade => {
+                        const gradeClasses = classes
+                          .filter(c => c.gradeId === grade.id)
+                          .sort((a, b) => a.name.localeCompare(b.name, 'vi', { numeric: true, sensitivity: 'base' }));
 
-                      <div className="flex gap-2 border-t border-slate-200/50 pt-2 justify-end">
-                        <button
-                          onClick={() => handleStartEditClass(c)}
-                          className="text-xs font-bold text-slate-600 hover:text-amber-600 flex items-center gap-1 hover:bg-white px-2 py-1.5 rounded-lg transition"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" /> Sửa
-                        </button>
-                        <button
-                          onClick={() => handlePreDeleteClass(c)}
-                          className="text-xs font-bold text-slate-600 hover:text-red-500 flex items-center gap-1 hover:bg-white px-2 py-1.5 rounded-lg transition"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" /> Xóa
-                        </button>
-                      </div>
-                    </div>
+                        if (gradeClasses.length === 0) return null;
+
+                        const customStyle = gradeMap[grade.id] || 'border-slate-500 text-slate-700 bg-slate-50/50 hover:border-slate-400';
+
+                        return (
+                          <div key={grade.id} className="space-y-4 bg-slate-50/20 p-4 rounded-2xl border border-slate-100 shadow-3xs">
+                            {/* Tiêu đề Khối */}
+                            <div className="flex items-center justify-between border-b pb-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-black uppercase text-slate-700 tracking-wider flex items-center gap-1.5">
+                                  🏫 {grade.name}
+                                </span>
+                                <span className="text-[10px] font-black bg-amber-50 text-amber-600 border border-amber-200 uppercase px-2.5 py-0.5 rounded-full">
+                                  {gradeClasses.length} lớp học
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Grid các lớp học thuộc khối học */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              {gradeClasses.map(c => {
+                                const classSts = students.filter(s => s.classId === c.id);
+                                const classStsCount = classSts.length;
+                                const femaleCount = classSts.filter(s => s.gender === 'Nữ').length;
+                                
+                                return (
+                                  <div
+                                    key={c.id} 
+                                    className={`p-4 border-l-4 rounded-2xl bg-white shadow-xs transition-all flex flex-col justify-between gap-3 ${customStyle} border-y border-r border-slate-150`}
+                                  >
+                                    <div>
+                                      <div className="flex justify-between items-start">
+                                        <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-extrabold uppercase">
+                                          {grade.name}
+                                        </span>
+                                        <span className="text-[9px] text-slate-400 font-mono font-bold">MÃ LỚP: {c.id}</span>
+                                      </div>
+                                      
+                                      <h4 className="font-black text-slate-800 text-base mt-2.5 flex items-center gap-1">
+                                        🏫 {c.name}
+                                      </h4>
+                                      
+                                      <div className="mt-2.5 space-y-1.5 text-xs text-slate-500 font-semibold text-left">
+                                        <p className="flex items-center gap-1 text-slate-600">
+                                          👤 Chủ nhiệm: <strong className="text-slate-800 font-extrabold">{c.teacher}</strong>
+                                        </p>
+                                        <p className="flex items-center gap-1 text-emerald-700">
+                                          📊 Sĩ số: <strong className="text-emerald-800 font-black">{classStsCount} học sinh/ {femaleCount} Nữ</strong>
+                                        </p>
+                                      </div>
+                                    </div>
+
+                                    <div className="flex gap-2 border-t border-slate-100 pt-2.5 justify-end">
+                                      <button
+                                        onClick={() => handleStartEditClass(c)}
+                                        className="text-[11px] font-black text-slate-600 hover:text-amber-600 flex items-center gap-1 hover:bg-slate-50 px-2.5 py-1.5 rounded-lg border border-transparent hover:border-slate-200 transition"
+                                      >
+                                        <Edit2 className="w-3.5 h-3.5 text-amber-500" /> Sửa
+                                      </button>
+                                      <button
+                                        onClick={() => handlePreDeleteClass(c)}
+                                        className="text-[11px] font-black text-slate-600 hover:text-rose-600 flex items-center gap-1 hover:bg-slate-50 px-2.5 py-1.5 rounded-lg border border-transparent hover:border-slate-200 transition"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5 text-rose-500" /> Xóa
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {/* Hiển thị lớp chưa được phân vào khối nếu có */}
+                      {unassignedClasses.length > 0 && (
+                        <div className="space-y-4 bg-rose-50/20 p-4 rounded-2xl border border-rose-100">
+                          <div className="flex items-center gap-2 border-b border-rose-100 pb-2">
+                            <span className="text-xs font-black uppercase text-rose-700 tracking-wider">
+                              ⚠️ LỚP CHƯA PHÂN KHỐI
+                            </span>
+                            <span className="text-[10px] bg-red-100 text-red-700 font-extrabold uppercase px-2 py-0.5 rounded-full">
+                              {unassignedClasses.length} lớp
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {unassignedClasses.map(c => {
+                              const classSts = students.filter(s => s.classId === c.id);
+                              const classStsCount = classSts.length;
+                              const femaleCount = classSts.filter(s => s.gender === 'Nữ').length;
+                              return (
+                                <div
+                                  key={c.id} 
+                                  className="p-4 border border-rose-150 border-l-4 border-l-red-500 rounded-2xl bg-white shadow-xs transition-all flex flex-col justify-between gap-3 hover:border-red-400"
+                                >
+                                  <div>
+                                    <div className="flex justify-between items-start">
+                                      <span className="text-[10px] bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full font-extrabold uppercase">
+                                        Chưa phân khối
+                                      </span>
+                                      <span className="text-[9px] text-slate-400 font-mono font-bold">MÃ LỚP: {c.id}</span>
+                                    </div>
+                                    <h4 className="font-black text-slate-800 text-base mt-2.5">
+                                      {c.name}
+                                    </h4>
+                                    <div className="mt-2 text-xs text-slate-500 font-semibold space-y-1">
+                                      <p>Chủ nhiệm: <strong className="text-slate-700">{c.teacher}</strong></p>
+                                      <p className="text-emerald-700">📊 Sĩ số: <strong className="text-emerald-800 font-black">{classStsCount} học sinh/ {femaleCount} Nữ</strong></p>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex gap-2 border-t border-slate-100 pt-2 justified-end">
+                                    <button
+                                      onClick={() => handleStartEditClass(c)}
+                                      className="text-[11px] font-black text-slate-600 hover:text-amber-600 flex items-center gap-1 hover:bg-slate-50 px-2 rounded-lg transition"
+                                    >
+                                      <Edit2 className="w-3.5 h-3.5 text-amber-500" /> Sửa
+                                    </button>
+                                    <button
+                                        onClick={() => handlePreDeleteClass(c)}
+                                        className="text-[11px] font-black text-slate-600 hover:text-rose-600 flex items-center gap-1 hover:bg-slate-50 px-2.5 py-1.5 rounded-lg border border-transparent hover:border-slate-200 transition"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5 text-rose-500" /> Xóa
+                                      </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {classes.length === 0 && (
+                        <div className="col-span-full py-12 text-center text-xs text-slate-400 border border-dashed rounded-2xl">
+                          Chưa có bất kỳ lớp học nào tồn tại! Vui lòng tạo lớp học đầu tiên.
+                        </div>
+                      )}
+                    </>
                   );
-                })}
-
-                {classes.length === 0 && (
-                  <div className="col-span-full py-12 text-center text-xs text-slate-400 border border-dashed rounded-2xl">
-                    Chưa có bất kỳ lớp học nào tồn tại! Vui lòng tạo lớp học đầu tiên.
-                  </div>
-                )}
+                })()}
               </div>
 
             </div>
@@ -492,8 +607,6 @@ export default function ClassesTab({
           </div>
 
         </div>
-
-      </div>
 
       {/* CASCADE DELETE MODAL / DANGEROUS ACTION CONTAINER */}
       {classToDelete && (

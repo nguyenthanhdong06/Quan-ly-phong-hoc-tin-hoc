@@ -764,6 +764,8 @@ export default function App() {
             supabaseError={supabaseError}
             onForceSync={forceFetchFromSupabase}
             onForcePush={forcePushToSupabase}
+            students={students}
+            setStudents={setStudents}
           />
         )}
 
