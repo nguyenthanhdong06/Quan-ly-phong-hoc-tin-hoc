@@ -88,3 +88,16 @@ export interface SeatingChart {
     [computerId: string]: string;
   };
 }
+
+// Cấu trúc phân công Thời khóa biểu giáo viên: { [usernameOrId]: { [dayPeriodKey]: { subject, className } } }
+export interface TimetableCell {
+  subject: string;
+  className: string;
+}
+
+export interface TimetableData {
+  [teacherIdOrUsername: string]: {
+    [dayPeriodKey: string]: TimetableCell;
+  };
+}
+

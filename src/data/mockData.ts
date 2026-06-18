@@ -136,3 +136,37 @@ export const defaultSeating: SeatingChart = {
     'comp-2': 'st-21',
   }
 };
+
+export const defaultTimetable = {
+  'dong.nt': {
+    // Thứ Hai
+    '2-5': { subject: 'Tin học', className: '3⁵' },
+    '2-6': { subject: 'Tin học', className: '4²' },
+    '2-7': { subject: 'Tin học', className: '4⁵' },
+    // Thứ Ba
+    '3-5': { subject: 'Tin học', className: '3⁶' },
+    '3-6': { subject: 'Tin học', className: '3²' },
+    '3-7': { subject: 'Tin học', className: '5⁶' },
+    // Thứ Tư
+    '4-1': { subject: 'Tin học', className: '4³' },
+    '4-2': { subject: 'Tin học', className: '5²' },
+    '4-3': { subject: 'Tin học', className: '5¹' },
+    '4-4': { subject: 'Tin học', className: '3⁴' },
+    '4-6': { subject: 'Tin học', className: '4¹' },
+    '4-7': { subject: 'Tin học', className: '5⁷' },
+    // Thứ Năm
+    '5-1': { subject: 'Tin học', className: '4⁴' },
+    '5-2': { subject: 'Tin học', className: '5³' },
+    '5-3': { subject: 'Tin học', className: '5⁵' },
+    '5-4': { subject: 'Tin học', className: '5⁴' },
+    '5-6': { subject: 'Tin học', className: '3¹' },
+    '5-7': { subject: 'Tin học', className: '4⁶' },
+  },
+  'nam.lh': {
+    '2-1': { subject: 'Tin học', className: '3¹' },
+    '2-2': { subject: 'Tin học', className: '3²' },
+    '3-1': { subject: 'Tin học', className: '4¹' },
+    '3-2': { subject: 'Tin học', className: '4²' },
+  }
+};
+

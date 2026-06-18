@@ -45,6 +45,46 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
+// Custom Tooltip component for Recharts Grade Emulation Comparison Bar Chart
+const CustomEmulationTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <div className="bg-slate-900 border border-slate-800 text-white p-3.5 rounded-xl shadow-lg text-xs space-y-1.5 text-left">
+        <p className="font-extrabold text-slate-200 text-sm">Lớp {label}</p>
+        <div className="border-t border-slate-800 my-1 pt-1.5 space-y-1">
+          <p className="flex items-center justify-between gap-6">
+            <span className="text-slate-400 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+              Tổng sao tích lũy:
+            </span>
+            <strong className="text-amber-400 font-extrabold text-xs">{data['Tổng sao thi đua']} ⭐</strong>
+          </p>
+          <p className="flex items-center justify-between gap-6">
+            <span className="text-slate-400 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              Sao trung bình/HS:
+            </span>
+            <strong className="text-emerald-400 font-extrabold text-xs">{data['Sao trung bình/HS']} ⭐</strong>
+          </p>
+          <p className="flex items-center justify-between gap-6">
+            <span className="text-slate-400 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+              Nhãn quà đã đổi:
+            </span>
+            <strong className="text-indigo-400 font-extrabold text-xs">{data['Stickers đã đổi']} 🎁</strong>
+          </p>
+          <p className="text-[10px] text-slate-500 font-bold border-t border-slate-800 mt-1 pt-1 text-center">
+            Sĩ số: {data['Sĩ số']} học sinh
+          </p>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
+
 interface DashboardTabProps {
   selectedClass: string;
   grades: Grade[];
@@ -87,6 +127,7 @@ export default function DashboardTab({
   
   const [showDbInfo, setShowDbInfo] = useState(true);
   const [activeTipIndex, setActiveTipIndex] = useState(0);
+  const [emulationMetric, setEmulationMetric] = useState<'total' | 'average' | 'stickers'>('total');
 
   // Parse active month information and calculate school-wide grade level attendance
   const activeMonthYearLabel = useMemo(() => {
@@ -230,6 +271,82 @@ export default function DashboardTab({
   }, [students, selectedClass, emulationDataState]);
 
   const activeClassObj = classes.find(c => c.id === selectedClass);
+
+  const activeGradeName = useMemo(() => {
+    const gradeId = activeClassObj ? activeClassObj.gradeId : (classes[0] ? classes[0].gradeId : 3);
+    const g = grades.find(x => x.id === gradeId);
+    return g ? g.name : `Khối ${gradeId}`;
+  }, [activeClassObj, grades, classes]);
+
+  const emulationComparisonData = useMemo(() => {
+    const gradeId = activeClassObj ? activeClassObj.gradeId : (classes[0] ? classes[0].gradeId : 3);
+    const sameGradeClasses = classes.filter(c => c.gradeId === gradeId);
+
+    return sameGradeClasses.map(cls => {
+      const clsStudents = students.filter(s => s.classId === cls.id);
+      let totalStars = 0;
+      let totalStickers = 0;
+
+      clsStudents.forEach(st => {
+        const emulationState = emulationDataState[st.id] || { cumulativeStars: 10, exchangedStickers: 0, totalDeducted: 0, badges: [] };
+        const deducted = emulationState.totalDeducted !== undefined 
+          ? emulationState.totalDeducted 
+          : (emulationState.exchangedStickers || 0) * 5;
+        const currentStars = Math.max(0, emulationState.cumulativeStars - deducted);
+        
+        totalStars += currentStars;
+        totalStickers += emulationState.exchangedStickers || 0;
+      });
+
+      const studentCount = clsStudents.length || 1;
+      const avgStars = parseFloat((totalStars / studentCount).toFixed(1));
+
+      return {
+        classId: cls.id,
+        className: cls.name,
+        'Tổng sao thi đua': totalStars,
+        'Sao trung bình/HS': avgStars,
+        'Stickers đã đổi': totalStickers,
+        'Sĩ số': studentCount,
+      };
+    }).sort((a, b) => b['Tổng sao thi đua'] - a['Tổng sao thi đua']);
+  }, [activeClassObj, classes, students, emulationDataState]);
+
+  const activeMetricConfig = useMemo(() => {
+    switch (emulationMetric) {
+      case 'average':
+        return {
+          dataKey: 'Sao trung bình/HS',
+          label: 'Sao trung bình / Học sinh',
+          unit: '⭐',
+          color: '#10b981',
+          gradientId: 'emulationAvgGradient',
+          stopColor1: '#10b981',
+          stopColor2: '#34d399',
+        };
+      case 'stickers':
+        return {
+          dataKey: 'Stickers đã đổi',
+          label: 'Tổng số Stickers đã nhận',
+          unit: '🎁',
+          color: '#6366f1',
+          gradientId: 'emulationStickersGradient',
+          stopColor1: '#4f46e5',
+          stopColor2: '#818cf8',
+        };
+      case 'total':
+      default:
+        return {
+          dataKey: 'Tổng sao thi đua',
+          label: 'Tổng sao thi đua tích lũy',
+          unit: '⭐',
+          color: '#f59e0b',
+          gradientId: 'emulationTotalGradient',
+          stopColor1: '#f59e0b',
+          stopColor2: '#fbbf24',
+        };
+    }
+  }, [emulationMetric]);
 
   // Dynamic technology tips for school students
   const techTips = [
@@ -562,6 +679,175 @@ export default function DashboardTab({
           </div>
         </div>
 
+      </div>
+
+      {/* GRAPHICAL EMULATION COMPARISON SECTION FOR TARGET GRADE */}
+      <div id="grade-emulation-comparison-section" className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 text-left space-y-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-100 pb-3 gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="bg-amber-50 text-amber-700 p-2 rounded-xl shrink-0">
+              <Trophy className="w-5 h-5 text-amber-500 animate-pulse" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                BẢNG SO SÁNH THI ĐUA {activeGradeName.toUpperCase()}
+                <span className="bg-amber-500 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-md">
+                  GÓC THI ĐUA KHỐI HỌC
+                </span>
+                <span className="text-[10px] text-slate-400 font-bold lowercase">
+                  (Khối lớp của {activeClassObj?.name || selectedClass})
+                </span>
+              </h3>
+              <p className="text-[11px] text-slate-400 font-medium">
+                Trực quan hóa mức độ tích lũy sao và hoạt động đổi quà giữa các lớp thuộc cùng khối {activeGradeName}
+              </p>
+            </div>
+          </div>
+
+          {/* Metric Selector Buttons */}
+          <div className="flex flex-wrap gap-1 bg-slate-100 p-1 rounded-xl self-stretch sm:self-auto">
+            <button
+              type="button"
+              onClick={() => setEmulationMetric('total')}
+              className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all duration-150 cursor-pointer ${
+                emulationMetric === 'total'
+                  ? 'bg-amber-500 text-slate-950 shadow-sm'
+                  : 'text-slate-550 hover:bg-slate-200'
+              }`}
+            >
+              Tổng Sao ⭐
+            </button>
+            <button
+              type="button"
+              onClick={() => setEmulationMetric('average')}
+              className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all duration-150 cursor-pointer ${
+                emulationMetric === 'average'
+                  ? 'bg-emerald-500 text-white shadow-sm'
+                  : 'text-slate-550 hover:bg-slate-200'
+              }`}
+            >
+              Trung bình/HS 🎯
+            </button>
+            <button
+              type="button"
+              onClick={() => setEmulationMetric('stickers')}
+              className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all duration-150 cursor-pointer ${
+                emulationMetric === 'stickers'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'text-slate-550 hover:bg-slate-200'
+              }`}
+            >
+              Quà Đã Đổi 🎁
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+          {/* Recharts Bar Chart Panel */}
+          <div className="md:col-span-2 h-[260px] relative w-full min-w-0">
+            <ResponsiveContainer width="100%" height={260} minWidth={0}>
+              <BarChart
+                data={emulationComparisonData}
+                margin={{ top: 15, right: 10, left: -20, bottom: 5 }}
+              >
+                <defs>
+                  <linearGradient id={activeMetricConfig.gradientId} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={activeMetricConfig.stopColor1} stopOpacity={0.9} />
+                    <stop offset="100%" stopColor={activeMetricConfig.stopColor2} stopOpacity={0.6} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis 
+                  dataKey="className" 
+                  tickLine={false} 
+                  axisLine={false}
+                  tick={{ fill: '#475569', fontSize: 11, fontWeight: 800 }}
+                />
+                <YAxis 
+                  tickLine={false} 
+                  axisLine={false}
+                  tickFormatter={(val) => `${val}${activeMetricConfig.unit}`}
+                  tick={{ fill: '#64748b', fontSize: 10, fontWeight: 600 }}
+                />
+                <Tooltip content={<CustomEmulationTooltip />} cursor={{ fill: '#f8fafc', radius: 8 }} />
+                <Bar 
+                  dataKey={activeMetricConfig.dataKey} 
+                  fill={`url(#${activeMetricConfig.gradientId})`} 
+                  radius={[8, 8, 0, 0]} 
+                  barSize={44}
+                >
+                  {emulationComparisonData.map((entry, index) => {
+                    // Highlight the currently selected class!
+                    const isSelected = entry.className === activeClassObj?.name;
+                    return (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={`url(#${activeMetricConfig.gradientId})`}
+                        stroke={isSelected ? '#dc2626' : 'none'}
+                        strokeWidth={isSelected ? 1.5 : 0}
+                      />
+                    );
+                  })}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Rankings & statistics panel */}
+          <div className="space-y-3.5">
+            <div className="bg-slate-50 p-4 rounded-2.5xl border border-slate-100 space-y-3">
+              <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest block">
+                Bảng thông tin chi tiết {activeGradeName}
+              </span>
+              
+              <div className="divide-y divide-slate-200/60 max-h-[170px] overflow-y-auto pr-1">
+                {emulationComparisonData.map((clsData, idx) => {
+                  const isCurrent = clsData.className === activeClassObj?.name;
+                  return (
+                    <div 
+                      key={clsData.classId} 
+                      className={`py-2 flex items-center justify-between text-xs transition ${
+                        isCurrent ? 'bg-amber-500/10 px-1.5 rounded-lg font-bold' : ''
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className={`w-5 h-5 flex items-center justify-center rounded-full text-[10px] font-black uppercase tracking-widest ${
+                          idx === 0 
+                            ? 'bg-yellow-400 text-yellow-950 shadow-sm' 
+                            : idx === 1 
+                            ? 'bg-slate-350 text-slate-800' 
+                            : 'bg-slate-200 text-slate-400'
+                        }`}>
+                          {idx + 1}
+                        </span>
+                        <span className={`font-extrabold ${isCurrent ? 'text-amber-700' : 'text-slate-700'}`}>
+                          Lớp {clsData.className}
+                          {isCurrent && <span className="ml-1 text-[8px] bg-amber-400 text-slate-950 px-1 py-0.2 rounded font-black uppercase">Đang Xem</span>}
+                        </span>
+                      </div>
+                      
+                      <div className="text-right">
+                        <span className="font-extrabold block text-slate-900 leading-none">
+                          {emulationMetric === 'total' && `${clsData['Tổng sao thi đua']} ⭐`}
+                          {emulationMetric === 'average' && `${clsData['Sao trung bình/HS']} ⭐/HS`}
+                          {emulationMetric === 'stickers' && `${clsData['Stickers đã đổi']} 🎁`}
+                        </span>
+                        <span className="text-[9px] text-slate-400 font-medium">
+                          Sĩ số: {clsData['Sĩ số']} HS
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Informative message */}
+              <p className="text-[9px] text-slate-400 italic font-medium leading-relaxed pt-2 border-t border-slate-200/50">
+                💡 Lớp có số sao trung bình trên mỗi học sinh cao hơn sẽ có xếp hạng thi đua thực chất cao hơn. Hãy cổ vũ tất cả các em cùng thi đua!
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* GRAPHICAL ATTENDANCE STATISTICS MODULE FOR ALL GRADES */}

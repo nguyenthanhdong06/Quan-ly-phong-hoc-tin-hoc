@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Grade, ClassItem, Student, Computer, DocumentItem, Member, AttendanceData, EvaluationData, EmulationDataState, SeatingChart } from './types';
+import { Grade, ClassItem, Student, Computer, DocumentItem, Member, AttendanceData, EvaluationData, EmulationDataState, SeatingChart, TimetableData } from './types';
 import {
   defaultGrades,
   defaultClasses,
@@ -10,7 +10,8 @@ import {
   defaultAttendance,
   defaultEvaluation,
   defaultEmulation,
-  defaultSeating
+  defaultSeating,
+  defaultTimetable
 } from './data/mockData';
 
 // Subcomponents import
@@ -97,6 +98,11 @@ export default function App() {
     return local ? JSON.parse(local) : defaultMembers;
   });
 
+  const [timetableData, setTimetableData] = useState<TimetableData>(() => {
+    const local = localStorage.getItem('school_timetable_data');
+    return local ? JSON.parse(local) : defaultTimetable;
+  });
+
   // --- SUPABASE CLOUD STATUS STATES ---
   const [isLoaded, setIsLoaded] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -120,6 +126,7 @@ export default function App() {
           if (dbStates['school_emulation_state']) setEmulationDataState(dbStates['school_emulation_state']);
           if (dbStates['school_documents']) setDocuments(dbStates['school_documents']);
           if (dbStates['school_members']) setMembers(dbStates['school_members']);
+          if (dbStates['school_timetable_data']) setTimetableData(dbStates['school_timetable_data']);
           showToast('Đã đồng bộ hóa toàn bộ cơ sở dữ liệu từ Supabase Cloud!', 'success');
         } else {
           // If Supabase is empty, let the user know and let them push datasets themselves
@@ -250,6 +257,13 @@ export default function App() {
   }, [members, isLoaded]);
 
   useEffect(() => {
+    localStorage.setItem('school_timetable_data', JSON.stringify(timetableData));
+    if (isLoaded) {
+      saveSupabaseState('school_timetable_data', timetableData);
+    }
+  }, [timetableData, isLoaded]);
+
+  useEffect(() => {
     if (currentUser) {
       localStorage.setItem('school_current_user', JSON.stringify(currentUser));
     } else {
@@ -356,6 +370,7 @@ export default function App() {
         if (dbStates['school_emulation_state']) setEmulationDataState(dbStates['school_emulation_state']);
         if (dbStates['school_documents']) setDocuments(dbStates['school_documents']);
         if (dbStates['school_members']) setMembers(dbStates['school_members']);
+        if (dbStates['school_timetable_data']) setTimetableData(dbStates['school_timetable_data']);
         
         showToast('Tải dữ liệu thành công! Đã ghi nhận đè bộ nhớ cục bộ.', 'success');
       } else {
@@ -385,7 +400,8 @@ export default function App() {
         saveSupabaseState('school_evaluation_data', evaluationData),
         saveSupabaseState('school_emulation_state', emulationDataState),
         saveSupabaseState('school_documents', documents),
-        saveSupabaseState('school_members', members)
+        saveSupabaseState('school_members', members),
+        saveSupabaseState('school_timetable_data', timetableData)
       ]);
       
       const allSuccess = results.every(r => r === true);
@@ -766,6 +782,9 @@ export default function App() {
             onForcePush={forcePushToSupabase}
             students={students}
             setStudents={setStudents}
+            timetableData={timetableData}
+            setTimetableData={setTimetableData}
+            classes={classes}
           />
         )}
 

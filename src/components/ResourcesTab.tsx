@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { DocumentItem } from '../types';
-import { UploadCloud, FileText, Trash2, Download, BookOpen, Layers } from 'lucide-react';
+import { UploadCloud, FileText, Trash2, Download, BookOpen, Layers, CheckCircle2 } from 'lucide-react';
 
 interface ResourcesTabProps {
   documents: DocumentItem[];
@@ -19,6 +19,73 @@ export default function ResourcesTab({
   const [newTitle, setNewTitle] = useState('');
   const [newType, setNewType] = useState('KHGD');
   const [newDesc, setNewDesc] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Process a selected file
+  const processSelectedFile = (file: File) => {
+    // 50 MB limits
+    const maxSize = 50 * 1024 * 1024;
+    if (file.size > maxSize) {
+      showToast('Kích thước tập tin vượt quá giới hạn cực đại 50MB!', 'error');
+      return;
+    }
+
+    setSelectedFile(file);
+    
+    // Automatically fill in title if currently empty
+    if (!newTitle.trim()) {
+      const cleanName = file.name.replace(/\.[^/.]+$/, "");
+      setNewTitle(cleanName);
+    }
+    
+    // Auto detect document type classification based on extension
+    const extension = file.name.split('.').pop()?.toLowerCase();
+    if (extension === 'pptx' || extension === 'ppt') {
+      setNewType('Bài giảng');
+    } else if (extension === 'docx' || extension === 'doc') {
+      setNewType('Bài tập');
+    } else if (extension === 'pdf') {
+      setNewType('KHGD');
+    }
+
+    showToast(`Đã nhận tập tin: ${file.name}`, 'success');
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      processSelectedFile(files[0]);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      processSelectedFile(files[0]);
+    }
+  };
+
+  const clearSelectedFile = () => {
+    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   // Handle uploading simulation
   const handleAddDocument = (e: React.FormEvent) => {
@@ -28,14 +95,28 @@ export default function ResourcesTab({
       return;
     }
 
+    // Determine details of uploaded file
+    let fileSize = `${(Math.random() * 8 + 1).toFixed(1)} MB`;
+    let fileUrl = '#';
+
+    if (selectedFile) {
+      const sizeInMB = selectedFile.size / (1024 * 1024);
+      fileSize = sizeInMB < 0.1 ? `${(selectedFile.size / 1024).toFixed(1)} KB` : `${sizeInMB.toFixed(1)} MB`;
+      try {
+        fileUrl = URL.createObjectURL(selectedFile);
+      } catch (err) {
+        console.warn('URL.createObjectURL failed:', err);
+      }
+    }
+
     const item: DocumentItem = {
       id: `doc-${Date.now()}`,
       title: newTitle.trim(),
       type: newType,
-      fileUrl: '#',
+      fileUrl: fileUrl,
       author: currentUser ? currentUser.name : 'Giáo viên bộ môn',
       date: new Date().toISOString().split('T')[0],
-      size: `${(Math.random() * 8 + 1).toFixed(1)} MB`,
+      size: fileSize,
       description: newDesc.trim() || 'Bài giảng mẫu hỗ trợ giáo án lớp học.'
     };
 
@@ -43,12 +124,39 @@ export default function ResourcesTab({
     setNewTitle('');
     setNewType('KHGD');
     setNewDesc('');
-    showToast('Tải lên học liệu giáo dục mới thành công!');
+    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    showToast('Tải lên học liệu giáo dục mới thành công!', 'success');
   };
 
   const handleDeleteDocument = (id: string, title: string) => {
+    // Revoke object URL to prevent memory leaks if it was locally created
+    const doc = documents.find(d => d.id === id);
+    if (doc?.fileUrl && doc.fileUrl.startsWith('blob:')) {
+      try {
+        URL.revokeObjectURL(doc.fileUrl);
+      } catch (e) {
+        console.warn(e);
+      }
+    }
     setDocuments(prev => prev.filter(d => d.id !== id));
-    showToast(`Đã xóa thành công học liệu: ${title}`);
+    showToast(`Đã xóa thành công học liệu: ${title}`, 'success');
+  };
+
+  const handleDownloadDocument = (doc: DocumentItem) => {
+    if (doc.fileUrl && doc.fileUrl !== '#') {
+      const link = document.createElement('a');
+      link.href = doc.fileUrl;
+      link.download = doc.title;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast(`Đã tải xuống thành công học liệu: ${doc.title}`, 'success');
+    } else {
+      showToast(`Mẫu tài liệu trực tuyến: Đã mở đường dẫn tải của ${doc.title}`, 'success');
+    }
   };
 
   return (
@@ -102,16 +210,63 @@ export default function ResourcesTab({
               />
             </div>
 
-            {/* Click upload file mock */}
-            <div className="border-2 border-dashed border-slate-200 hover:border-amber-400 rounded-xl p-5 text-center cursor-pointer bg-slate-50 transition-all">
-              <UploadCloud className="w-8 h-8 text-slate-350 mx-auto mb-1" />
-              <span className="text-xs font-extrabold text-amber-600 block hover:underline">Chọn file từ máy tính</span>
-              <p className="text-[10px] text-slate-400 mt-1">PDF, PPTX, DOCX tối đa 50MB</p>
+            {/* Fully Functional drag-and-drop & click uploader */}
+            <div 
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all ${
+                isDragging 
+                  ? 'border-amber-500 bg-amber-50/50 scale-[1.02]' 
+                  : selectedFile 
+                    ? 'border-emerald-400 bg-emerald-50/10' 
+                    : 'border-slate-200 hover:border-amber-400 bg-slate-50'
+              }`}
+            >
+              <input 
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                accept=".pdf,.pptx,.docx,.doc"
+                className="hidden"
+              />
+              
+              {selectedFile ? (
+                <div className="space-y-1">
+                  <div className="flex items-center justify-center gap-1.5 text-emerald-600">
+                    <CheckCircle2 className="w-5 h-5" />
+                    <span className="text-xs font-black block">Đã chọn tập tin!</span>
+                  </div>
+                  <p className="text-xs font-extrabold text-slate-700 truncate max-w-[200px] mx-auto">
+                    {selectedFile.name}
+                  </p>
+                  <p className="text-[10px] text-slate-400 font-bold">
+                    Kích thước: {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+                  </p>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      clearSelectedFile();
+                    }}
+                    className="mt-1.5 text-[10px] bg-slate-200 hover:bg-slate-350 text-slate-600 px-2.5 py-1.5 rounded-lg font-black transition cursor-pointer"
+                  >
+                    Hủy chọn file
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <UploadCloud className={`w-8 h-8 mx-auto mb-1 transition-colors ${isDragging ? 'text-amber-500' : 'text-slate-350'}`} />
+                  <span className="text-xs font-extrabold text-amber-600 block hover:underline">Chọn file từ máy tính</span>
+                  <p className="text-[10px] text-slate-400 mt-1">PDF, PPTX, DOCX tối đa 50MB</p>
+                </>
+              )}
             </div>
 
             <button
               type="submit"
-              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-2.5 rounded-lg transition"
+              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs py-2.5 rounded-lg transition"
             >
               Xác nhận Lưu trữ lên Thư Viện
             </button>
@@ -149,7 +304,7 @@ export default function ResourcesTab({
                   <div className="flex justify-between items-center pt-2.5 border-t border-slate-200/60 text-xs">
                     <span className="font-mono text-[10px] font-bold text-slate-400">{doc.size}</span>
                     <button
-                      onClick={() => showToast(`Đang tải tập tin: ${doc.title}`)}
+                      onClick={() => handleDownloadDocument(doc)}
                       className="bg-white hover:bg-slate-150 border border-slate-200 text-slate-700 font-extrabold text-[10px] px-2.5 py-1.5 rounded flex items-center gap-1 shadow-sm transition"
                     >
                       <Download className="w-3 h-3 text-slate-600" /> Tải về
@@ -188,7 +343,7 @@ export default function ResourcesTab({
                   <div className="flex justify-between items-center pt-2.5 border-t border-slate-200/60 text-xs">
                     <span className="font-mono text-[10px] font-bold text-slate-400">{doc.size}</span>
                     <button
-                      onClick={() => showToast(`Đang kết nối tải về: ${doc.title}`)}
+                      onClick={() => handleDownloadDocument(doc)}
                       className="bg-white hover:bg-slate-150 border border-slate-200 text-slate-700 font-extrabold text-[10px] px-2.5 py-1.5 rounded flex items-center gap-1 shadow-sm transition"
                     >
                       <Download className="w-3 h-3 text-slate-600" /> Tải về
