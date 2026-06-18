@@ -242,10 +242,10 @@ export default function AdminTab({
           <table className="w-full border-collapse border border-slate-300 text-center text-xs min-w-[700px]">
             
             <thead>
-              <tr className="bg-slate-100 border-b-2 border-slate-300 text-slate-800 font-extrabold uppercase text-[11px]">
+              <tr className="bg-slate-200 border-b-2 border-slate-300 text-slate-800 font-extrabold uppercase text-[11px]">
                 <th className="border border-slate-300 py-3 px-2 w-[130px]">THỜI GIAN</th>
                 <th className="border border-slate-300 py-3 px-2 w-[90px]">TIẾT</th>
-                <th className="border border-slate-300 py-3 px-3">THÚ HAI</th>
+                <th className="border border-slate-300 py-3 px-3">THỨ HAI</th>
                 <th className="border border-slate-300 py-3 px-3">THỨ BA</th>
                 <th className="border border-slate-300 py-3 px-3">THỨ TƯ</th>
                 <th className="border border-slate-300 py-3 px-3">THỨ NĂM</th>

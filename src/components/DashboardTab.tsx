@@ -177,7 +177,12 @@ export default function DashboardTab({
 
       let rate = 100;
       let isSimulated = false;
-      if (possibleTotal > 0) {
+      if (students.length === 0) {
+        rate = 0;
+        presentTotal = 0;
+        possibleTotal = 0;
+        isSimulated = false;
+      } else if (possibleTotal > 0) {
         rate = Math.round((presentTotal / possibleTotal) * 1000) / 10;
       } else {
         isSimulated = true;
@@ -210,7 +215,7 @@ export default function DashboardTab({
         isSimulated
       };
     });
-  }, [grades, classes, attendanceData, systemDateText]);
+  }, [grades, classes, attendanceData, systemDateText, students]);
   
   // Helpers
   const getStudentCurrentStars = (studentId: string) => {
@@ -298,8 +303,8 @@ export default function DashboardTab({
         totalStickers += emulationState.exchangedStickers || 0;
       });
 
-      const studentCount = clsStudents.length || 1;
-      const avgStars = parseFloat((totalStars / studentCount).toFixed(1));
+      const studentCount = clsStudents.length;
+      const avgStars = studentCount > 0 ? parseFloat((totalStars / studentCount).toFixed(1)) : 0;
 
       return {
         classId: cls.id,

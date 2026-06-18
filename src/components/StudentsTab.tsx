@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Student } from '../types';
-import { Trash2, UserPlus, FileSpreadsheet, Search, AlertCircle, Plus, Pencil, Check, X } from 'lucide-react';
+import { Trash2, UserPlus, FileSpreadsheet, Search, AlertCircle, Plus, Pencil, Check, X, Download } from 'lucide-react';
 
 interface StudentsTabProps {
   selectedClass: string;
@@ -110,19 +110,39 @@ export default function StudentsTab({
       const trimmedLine = line.trim();
       if (!trimmedLine) return; // Skip empty rows
 
-      const parts = trimmedLine.split('\t'); // Split tabs
+      // Support splitting by tab or comma (for Excel copy or CSV format)
+      let parts = trimmedLine.split('\t');
+      if (parts.length === 1 && trimmedLine.includes(',')) {
+        parts = trimmedLine.split(',');
+      }
+
       const rawName = parts[0] ? parts[0].trim() : '';
 
-      // Skip table headers if pasted accidentally
-      if (!rawName || rawName.toLowerCase() === 'họ và tên' || rawName.toLowerCase() === 'hoten') {
+      // Skip Excel separator directive or table headers if pasted accidentally
+      if (
+        !rawName || 
+        rawName.toLowerCase().startsWith('sep=') ||
+        rawName.toLowerCase() === 'họ và tên' || 
+        rawName.toLowerCase() === 'họ tên' || 
+        rawName.toLowerCase() === 'hoten' || 
+        rawName.toLowerCase() === 'name'
+      ) {
         return;
       }
 
-      // Check if user specified gender in the second column tab-separated, else dynamic guessing/defaulting
+      // Check if user specified gender in the second column (usually under "Nữ" column)
       let gender: 'Nam' | 'Nữ' = 'Nam';
-      if (parts[1]) {
+      if (parts[1] !== undefined) {
         const rawGender = parts[1].trim().toLowerCase();
-        if (rawGender.includes('nữ') || rawGender === 'nu' || rawGender === 'f') {
+        // Since the column header is "Nữ":
+        // - Cells with 'x', 'X', 'nữ', 'nu', '1', '✓', 'female' are 'Nữ'
+        // - Any non-empty string that is NOT 'nam', 'm', or 'male' indicates 'Nữ'
+        if (rawGender === 'x' || rawGender === 'nữ' || rawGender === 'nu' || rawGender === '1' || rawGender === 'f' || rawGender === 'female' || rawGender === '✓') {
+          gender = 'Nữ';
+        } else if (rawGender === 'nam' || rawGender === 'm' || rawGender === 'male') {
+          gender = 'Nam';
+        } else if (rawGender.length > 0) {
+          // Any mark in "Nữ" column indicates Female
           gender = 'Nữ';
         }
       } else {
@@ -160,6 +180,34 @@ export default function StudentsTab({
     showToast(`Đã xóa học sinh ${name} khỏi lớp học.`);
   };
 
+  // Download standard Excel CSV template with UTF-8 BOM
+  const handleDownloadTemplate = () => {
+    const sepLine = "sep=,\n";
+    const headers = "Họ Và Tên,Nữ\n";
+    const dataRows = [
+      "Bùi Ngọc Quỳnh Anh,x",
+      "Phan Thị Ngọc Anh,x",
+      "Lương Ngọc Kim Ánh,x",
+      "Nguyễn Hoàng Ân,",
+      "Nguyễn Hữu Danh,",
+      "Lê Đức Duy,",
+      "Lê Quốc Đại,",
+      "Lê Võ Tấn Đạt,",
+      "Lê Ngọc Hân,x"
+    ].join("\n");
+
+    const csvContent = sepLine + headers + dataRows;
+    const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `Mau_Danh_Sach_Hoc_Sinh_${selectedClass}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("Đã tải xuống file Excel mẫu (.csv) thành công!");
+  };
+
   // Filter students
   const classStudents = students.filter(s => s.classId === selectedClass);
   const femaleCount = classStudents.filter(s => s.gender === 'Nữ').length;
@@ -182,24 +230,59 @@ export default function StudentsTab({
               <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
               Chuẩn hóa Nhập hàng loạt bằng Excel
             </h4>
-            <p className="text-[11px] text-slate-400 leading-relaxed text-left">
-              Thầy cô sao chép cột <strong>Họ tên học sinh</strong> trong file Excel danh sách lớp, dán trực tiếp vào khung dưới và bấm Nhập là hoàn thành.
-            </p>
             
+            <p className="text-[11px] text-slate-500 leading-relaxed text-left">
+              Thầy cô sao chép đồng thời cột <strong>Họ tên học sinh</strong> và cột <strong>Nữ</strong> (như trong ảnh mẫu) trong file Excel, dán trực tiếp vào khung dưới đây.
+            </p>
+
+            {/* Quick Helper Layout representation */}
+            <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/60 text-[11px] text-slate-500 font-semibold space-y-1 text-left">
+              <p className="text-slate-700 font-extrabold flex items-center gap-1 text-[10px]">
+                <span>📋</span> Minh họa sao chép từ Excel:
+              </p>
+              <div className="overflow-hidden rounded-md border border-slate-200 bg-white font-mono text-[9px] divide-y">
+                <div className="grid grid-cols-2 bg-slate-100 font-bold px-2 py-0.5 text-slate-700">
+                  <div>Họ Và Tên</div>
+                  <div className="border-l pl-2">Nữ</div>
+                </div>
+                <div className="grid grid-cols-2 px-2 py-0.5">
+                  <div>Bùi Ngọc Quỳnh Anh</div>
+                  <div className="border-l pl-2 text-rose-600 font-bold">x</div>
+                </div>
+                <div className="grid grid-cols-2 px-2 py-0.5">
+                  <div>Nguyễn Hoàng Ân</div>
+                  <div className="border-l pl-2 text-slate-400 font-normal"><i>(Để trống)</i></div>
+                </div>
+              </div>
+              <p className="text-[9px] text-slate-400 select-none">
+                * Cột 2 điền chữ <strong className="text-rose-600 font-bold">"x"</strong> cho học sinh Nữ, để trống nếu là Nam.
+              </p>
+            </div>
+
             <div className="space-y-2.5">
               <textarea
                 value={excelText}
                 onChange={(e) => setExcelText(e.target.value)}
-                placeholder="Dán dữ liệu từ file Excel tại đây...&#10;Ví dụ:&#10;Phan Văn Toàn&#10;Nguyễn Thị Bích Vy&#10;Lâm Chấn Huy"
-                className="w-full text-xs border border-slate-200 rounded-xl p-3 h-32 focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono text-left"
+                placeholder="Dán dữ liệu từ file Excel tại đây...&#10;Ví dụ:&#10;Bùi Ngọc Quỳnh Anh&#9;x&#10;Phan Thị Ngọc Anh&#9;x&#10;Nguyễn Hoàng Ân&#10;Lê Đức Duy"
+                className="w-full text-xs border border-slate-200 rounded-xl p-3 h-36 focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono text-left"
               ></textarea>
+
+              {/* Action Buttons */}
+              <button
+                type="button"
+                onClick={handleDownloadTemplate}
+                className="flex items-center justify-center gap-1.5 text-[11px] text-emerald-700 hover:text-emerald-800 font-black bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200 py-2 rounded-xl w-full transition cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Tải file Excel mẫu (.csv)
+              </button>
               
               <div className="flex justify-between items-center bg-slate-50 p-2 rounded-xl border border-dashed text-left">
                 <button
                   type="button"
                   onClick={() => {
-                    setExcelText("Bùi Chí Thắng\tNam\nNguyễn Minh Vy\tNữ\nLê Thùy Dung\tNữ\nPhan Hoàng Minh\tNam");
-                    showToast("Đã chèn mẫu thử danh mục từ Excel!");
+                    setExcelText("Bùi Ngọc Quỳnh Anh\tx\nPhan Thị Ngọc Anh\tx\nLương Ngọc Kim Ánh\tx\nNguyễn Hoàng Ân\t\nNguyễn Hữu Danh\t\nLê Đức Duy\t\nLê Quốc Đại\t\nLê Võ Tấn Đạt\t\nLê Ngọc Hân\tx");
+                    showToast("Đã chèn dữ liệu mẫu đúng chuẩn Excel!");
                   }}
                   className="text-[10px] text-amber-600 hover:underline font-extrabold"
                 >
@@ -208,7 +291,7 @@ export default function StudentsTab({
                 
                 <button
                   onClick={handleImportExcel}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1 transition"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" /> Nhập vào {selectedClass}
                 </button>
