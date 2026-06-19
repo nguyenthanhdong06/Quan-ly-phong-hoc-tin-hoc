@@ -883,8 +883,8 @@ export default function App() {
 
       {/* FOOTER */}
       <footer className="bg-slate-900 text-slate-400 text-xs py-6 border-t border-slate-800 text-center space-y-1 mt-auto">
-        <p className="font-bold text-slate-300 uppercase tracking-wider">Hệ Thống Số Quản Lý Phòng Học Tin Học Trường Tiểu Học Long Định</p>
-        <p>© 2026. Xây dựng và hoàn thiện bởi Giáo Viên Nguyễn Thanh Đồng.</p>
+        <p className="font-bold text-white uppercase tracking-wider">Hệ Thống Số Quản Lý Phòng Học Tin Học Trường Tiểu Học Long Định</p>
+        <p><strong className="text-white">© 2026. Xây dựng và hoàn thiện bởi Giáo Viên Nguyễn Thanh Đồng.</strong></p>
       </footer>
 
     </div>
