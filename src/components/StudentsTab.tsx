@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Student } from '../types';
 import { Trash2, UserPlus, FileSpreadsheet, Search, AlertCircle, Plus, Pencil, Check, X, Download } from 'lucide-react';
 
@@ -8,6 +8,44 @@ interface StudentsTabProps {
   setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
   showToast: (message: string, type?: 'success' | 'error') => void;
 }
+
+interface NoteInputProps {
+  studentId: string;
+  initialValue: string;
+  onSave: (id: string, value: string) => void;
+}
+
+const NoteInput = ({ studentId, initialValue, onSave }: NoteInputProps) => {
+  const [value, setValue] = useState(initialValue);
+
+  useEffect(() => {
+    setValue(initialValue);
+  }, [initialValue]);
+
+  const handleBlur = () => {
+    if (value !== initialValue) {
+      onSave(studentId, value);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.currentTarget.blur();
+    }
+  };
+
+  return (
+    <input
+      type="text"
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      onBlur={handleBlur}
+      onKeyDown={handleKeyDown}
+      placeholder="Ghi chú nhanh..."
+      className="w-full text-xs text-slate-600 bg-slate-50/50 hover:bg-slate-50 border border-slate-150 focus:bg-white focus:border-amber-500 focus:ring-1 focus:ring-amber-200 rounded-lg px-2.5 py-1.5 focus:outline-none transition-all placeholder:text-slate-350"
+    />
+  );
+};
 
 export default function StudentsTab({
   selectedClass,
@@ -21,6 +59,7 @@ export default function StudentsTab({
   const [newCode, setNewCode] = useState('');
   const [newName, setNewName] = useState('');
   const [newGender, setNewGender] = useState<'Nam' | 'Nữ'>('Nam');
+  const [newNote, setNewNote] = useState('');
 
   // Multi-Student paste Excel box
   const [excelText, setExcelText] = useState('');
@@ -30,12 +69,14 @@ export default function StudentsTab({
   const [editCode, setEditCode] = useState('');
   const [editName, setEditName] = useState('');
   const [editGender, setEditGender] = useState<'Nam' | 'Nữ'>('Nam');
+  const [editNote, setEditNote] = useState('');
 
   const handleStartEdit = (student: Student) => {
     setEditingStudentId(student.id);
     setEditCode(student.code);
     setEditName(student.name);
     setEditGender(student.gender);
+    setEditNote(student.notes || '');
   };
 
   const handleSaveEdit = (id: string) => {
@@ -56,7 +97,8 @@ export default function StudentsTab({
           ...s,
           code: codeClean,
           name: editName.trim(),
-          gender: editGender
+          gender: editGender,
+          notes: editNote.trim()
         };
       }
       return s;
@@ -64,6 +106,11 @@ export default function StudentsTab({
 
     setEditingStudentId(null);
     showToast('Đã lưu thay đổi thông tin học sinh thành công!');
+  };
+
+  const handleSaveNote = (id: string, noteValue: string) => {
+    setStudents(prev => prev.map(s => s.id === id ? { ...s, notes: noteValue.trim() } : s));
+    showToast('Đã cập nhật ghi chú học sinh!');
   };
 
   // Handle addition
@@ -85,13 +132,15 @@ export default function StudentsTab({
       code: codeClean,
       name: newName.trim(),
       gender: newGender,
-      classId: selectedClass
+      classId: selectedClass,
+      notes: newNote.trim()
     };
 
     setStudents(prev => [...prev, item]);
     setNewCode('');
     setNewName('');
     setNewGender('Nam');
+    setNewNote('');
     showToast(`Đã thêm học sinh ${item.name} vào lớp ${selectedClass}`);
   };
 
@@ -357,6 +406,17 @@ export default function StudentsTab({
                 </div>
               </div>
 
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-wider text-left">Ghi chú nhanh</label>
+                <input
+                  type="text"
+                  value={newNote}
+                  onChange={(e) => setNewNote(e.target.value)}
+                  placeholder="Ghi chú học tập, thiết bị, chỗ ngồi..."
+                  className="w-full border border-slate-200 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder-slate-350"
+                />
+              </div>
+
               <button
                 type="submit"
                 className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-2.5 rounded-lg transition"
@@ -397,11 +457,12 @@ export default function StudentsTab({
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase">
                   <th className="py-3 px-4 w-12">STT</th>
-                  <th className="py-3 px-4 w-32">Mã số MSHS</th>
-                  <th className="py-3 px-4">Họ và Tên</th>
-                  <th className="py-3 px-4 w-28">Giới tính</th>
+                  <th className="py-3 px-4 w-28">Mã HS</th>
+                  <th className="py-3 px-4 w-44">Họ và Tên</th>
+                  <th className="py-3 px-4 w-24">Giới tính</th>
+                  <th className="py-3 px-4">Ghi chú</th>
                   <th className="py-3 px-4 text-center w-28">Chỉnh sửa</th>
-                  <th className="py-3 px-4 text-center w-16">Xóa bỏ</th>
+                  <th className="py-3 px-4 text-center w-16">Xóa</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -450,19 +511,36 @@ export default function StudentsTab({
                           </span>
                         )}
                       </td>
+                      <td className="py-3.5 px-4 text-left">
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={editNote}
+                            onChange={(e) => setEditNote(e.target.value)}
+                            placeholder="Nhập ghi chú học sinh..."
+                            className="w-full border border-amber-300 rounded-lg px-2 py-1.5 text-xs text-slate-800 bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none font-medium"
+                          />
+                        ) : (
+                          <NoteInput
+                            studentId={s.id}
+                            initialValue={s.notes || ''}
+                            onSave={handleSaveNote}
+                          />
+                        )}
+                      </td>
                       <td className="py-3.5 px-4 text-center">
                         {isEditing ? (
                           <div className="flex items-center justify-center gap-1.5">
                             <button
                               onClick={() => handleSaveEdit(s.id)}
-                              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2 py-1.5 rounded-lg transition shadow-sm flex items-center justify-center gap-1 text-[10px]"
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2 py-1.5 rounded-lg transition shadow-sm flex items-center justify-center gap-1 text-[10px] cursor-pointer"
                               title="Lưu"
                             >
                               <Check className="w-3 h-3" /> Lưu
                             </button>
                             <button
                               onClick={() => setEditingStudentId(null)}
-                              className="bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold px-2 py-1.5 rounded-lg transition flex items-center justify-center gap-1 text-[10px]"
+                              className="bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold px-2 py-1.5 rounded-lg transition flex items-center justify-center gap-1 text-[10px] cursor-pointer"
                               title="Hủy"
                             >
                               <X className="w-3 h-3" /> Hủy
@@ -471,7 +549,7 @@ export default function StudentsTab({
                         ) : (
                           <button
                             onClick={() => handleStartEdit(s)}
-                            className="text-slate-400 hover:text-amber-500 p-1.5 hover:bg-amber-50 rounded transition inline-block animate-pulse"
+                            className="text-slate-400 hover:text-amber-500 p-1.5 hover:bg-amber-50 rounded transition inline-block animate-pulse cursor-pointer"
                             title="Chỉnh sửa học sinh này"
                           >
                             <Pencil className="w-3.5 h-3.5 text-amber-600" />
@@ -481,7 +559,7 @@ export default function StudentsTab({
                       <td className="py-3.5 px-4 text-center">
                         <button
                           onClick={() => handleDeleteStudent(s.id, s.name)}
-                          className="text-slate-400 hover:text-red-500 p-1.5 hover:bg-red-50 rounded transition inline-block"
+                          className="text-slate-400 hover:text-red-500 p-1.5 hover:bg-red-50 rounded transition inline-block cursor-pointer"
                           title="Xóa học sinh này"
                           disabled={isEditing}
                         >
@@ -494,7 +572,7 @@ export default function StudentsTab({
                 
                 {filteredStudents.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="py-12 text-center text-slate-400 font-medium">
+                    <td colSpan={7} className="py-12 text-center text-slate-400 font-medium">
                       {classStudents.length === 0 
                         ? `Chưa có học sinh nào thuộc lớp "${selectedClass}". Hãy dán từ Excel ở mục bên trái!`
                         : 'Không tìm thấy học sinh nào trùng khớp với từ khóa tìm kiếm.'}

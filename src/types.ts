@@ -16,6 +16,7 @@ export interface Student {
   name: string;
   gender: 'Nam' | 'Nữ';
   classId: string;
+  notes?: string;
 }
 
 export interface Computer {

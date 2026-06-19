@@ -163,47 +163,33 @@ export default function DashboardTab({
           gradeClassIds.forEach(classId => {
             const classAttendance = dayClasses[classId];
             if (classAttendance) {
-              Object.keys(classAttendance).forEach(studentId => {
-                const status = classAttendance[studentId];
-                if (status === 'present') {
-                  presentTotal++;
-                }
-                possibleTotal++;
-              });
+              const classStudents = students.filter(s => s.classId === classId);
+              if (classStudents.length > 0) {
+                classStudents.forEach(student => {
+                  const status = classAttendance[student.id] || 'present';
+                  if (status === 'present') {
+                    presentTotal++;
+                  }
+                  possibleTotal++;
+                });
+              }
             }
           });
         }
       });
 
-      let rate = 100;
+      let rate = 0;
       let isSimulated = false;
       if (students.length === 0) {
         rate = 0;
         presentTotal = 0;
         possibleTotal = 0;
-        isSimulated = false;
       } else if (possibleTotal > 0) {
         rate = Math.round((presentTotal / possibleTotal) * 1000) / 10;
       } else {
-        isSimulated = true;
-        // Fallback standard high attendance rates for high UX
-        if (grade.id === 3) {
-          rate = 98.4;
-          presentTotal = 142;
-          possibleTotal = 144;
-        } else if (grade.id === 4) {
-          rate = 97.6;
-          presentTotal = 156;
-          possibleTotal = 160;
-        } else if (grade.id === 5) {
-          rate = 99.2;
-          presentTotal = 124;
-          possibleTotal = 125;
-        } else {
-          rate = 98.5;
-          presentTotal = 98;
-          possibleTotal = 100;
-        }
+        rate = 0;
+        presentTotal = 0;
+        possibleTotal = 0;
       }
 
       return {
@@ -219,7 +205,7 @@ export default function DashboardTab({
   
   // Helpers
   const getStudentCurrentStars = (studentId: string) => {
-    const emulationState = emulationDataState[studentId] || { cumulativeStars: 10, exchangedStickers: 0, totalDeducted: 0, badges: [] };
+    const emulationState = emulationDataState[studentId] || { cumulativeStars: 0, exchangedStickers: 0, totalDeducted: 0, badges: [] };
     
     const deducted = emulationState.totalDeducted !== undefined 
       ? emulationState.totalDeducted 
@@ -293,7 +279,7 @@ export default function DashboardTab({
       let totalStickers = 0;
 
       clsStudents.forEach(st => {
-        const emulationState = emulationDataState[st.id] || { cumulativeStars: 10, exchangedStickers: 0, totalDeducted: 0, badges: [] };
+        const emulationState = emulationDataState[st.id] || { cumulativeStars: 0, exchangedStickers: 0, totalDeducted: 0, badges: [] };
         const deducted = emulationState.totalDeducted !== undefined 
           ? emulationState.totalDeducted 
           : (emulationState.exchangedStickers || 0) * 5;
@@ -316,6 +302,29 @@ export default function DashboardTab({
       };
     }).sort((a, b) => b['Tổng sao thi đua'] - a['Tổng sao thi đua']);
   }, [activeClassObj, classes, students, emulationDataState]);
+
+  const topSchoolStudents = useMemo(() => {
+    return students
+      .map(s => {
+        const emulationState = emulationDataState[s.id] || { cumulativeStars: 0, exchangedStickers: 0, totalDeducted: 0, badges: [] };
+        const deducted = emulationState.totalDeducted !== undefined 
+          ? emulationState.totalDeducted 
+          : (emulationState.exchangedStickers || 0) * 5;
+        const currentStars = Math.max(0, emulationState.cumulativeStars - deducted);
+        const classObj = classes.find(c => c.id === s.classId);
+        
+        return {
+          ...s,
+          cumulativeStars: emulationState.cumulativeStars,
+          currentStars,
+          className: classObj ? classObj.name : s.classId,
+          exchangedStickers: emulationState.exchangedStickers || 0,
+          badges: emulationState.badges || []
+        };
+      })
+      .sort((a, b) => b.cumulativeStars - a.cumulativeStars || b.currentStars - a.currentStars)
+      .slice(0, 5);
+  }, [students, classes, emulationDataState]);
 
   const activeMetricConfig = useMemo(() => {
     switch (emulationMetric) {
@@ -648,40 +657,119 @@ export default function DashboardTab({
           </div>
         </div>
 
-        {/* Right Column Grid: Class Emulation summary card */}
-        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col justify-between text-left relative overflow-hidden">
-          {/* Subtle graphical background node */}
-          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-full translate-x-6 -translate-y-6"></div>
+        {/* Right Column Grid: Class Emulation summary card & School Top 5 layout */}
+        <div className="space-y-6 flex flex-col justify-stretch">
           
-          <div className="space-y-4 relative z-10">
-            <div className="border-b border-slate-100 pb-2.5">
-              <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 bg-amber-500 rounded-full"></span>
-                Quỹ Thi Đua Lớp <span className="bg-amber-500 text-white text-[11px] font-black px-2 py-0.5 rounded-lg border border-yellow-300">
-                {activeClassObj ? activeClassObj.name : selectedClass}</span>
-              </h3>
-              <p className="text-[10px] text-slate-400 font-medium">Theo dõi hoạt động tích lũy phần thưởng học đường</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3.5">
-              <div className="bg-slate-50/80 p-3 rounded-2xl border border-slate-100 hover:bg-slate-50 transition">
-                <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wide">Sao tích lũy lớp</span>
-                <strong className="text-xl md:text-2xl text-amber-600 mt-1.5 block font-black">
-                  {stats.totalClassStars} ⭐
-                </strong>
-                <span className="text-[8px] text-slate-450 block mt-0.5">Thống kê toàn khóa</span>
-              </div>
-              <div className="bg-slate-50/80 p-3 rounded-2xl border border-slate-100 hover:bg-slate-50 transition">
-                <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wide">Stickers đổi quà</span>
-                <strong className="text-xl md:text-2xl text-indigo-600 mt-1.5 block font-black">
-                  {stats.totalStickersExchanged} 🎁
-                </strong>
-                <span className="text-[8px] text-indigo-400 font-bold block mt-0.5">Đặt tủ dán học tập</span>
-              </div>
-            </div>
-
+          {/* Class Emulation summary card */}
+          <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col justify-between text-left relative overflow-hidden flex-1">
+            {/* Subtle graphical background node */}
+            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-full translate-x-6 -translate-y-6"></div>
             
+            <div className="space-y-4 relative z-10">
+              <div className="border-b border-slate-100 pb-2.5">
+                <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 bg-amber-500 rounded-full"></span>
+                  Quỹ Thi Đua Lớp <span className="bg-amber-500 text-white text-[11px] font-black px-2 py-0.5 rounded-lg border border-yellow-300">
+                  {activeClassObj ? activeClassObj.name : selectedClass}</span>
+                </h3>
+                <p className="text-[10px] text-slate-400 font-medium">Theo dõi hoạt động tích lũy phần thưởng học đường</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3.5">
+                <div className="bg-slate-50/80 p-3 rounded-2xl border border-slate-100 hover:bg-slate-50 transition">
+                  <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wide">Sao tích lũy lớp</span>
+                  <strong className="text-xl md:text-2xl text-amber-600 mt-1.5 block font-black">
+                    {stats.totalClassStars} ⭐
+                  </strong>
+                  <span className="text-[8px] text-slate-450 block mt-0.5">Thống kê toàn khóa</span>
+                </div>
+                <div className="bg-slate-50/80 p-3 rounded-2xl border border-slate-100 hover:bg-slate-50 transition">
+                  <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wide">Stickers đổi quà</span>
+                  <strong className="text-xl md:text-2xl text-indigo-600 mt-1.5 block font-black">
+                    {stats.totalStickersExchanged} 🎁
+                  </strong>
+                  <span className="text-[8px] text-indigo-400 font-bold block mt-0.5">Đặt tủ dán học tập</span>
+                </div>
+              </div>
+            </div>
           </div>
+
+          {/* TOP 5 STUDENTS OF THE ENTIRE SCHOOL */}
+          <div className="bg-gradient-to-b from-indigo-950 via-slate-900 to-indigo-900 text-white p-5 rounded-3xl shadow-sm border border-indigo-500/20 text-left relative overflow-hidden flex-1 flex flex-col justify-between">
+            {/* Ambient background glow highlights */}
+            <div className="absolute -top-12 -right-12 w-32 h-32 bg-amber-400/10 rounded-full blur-2xl"></div>
+            <div className="absolute -bottom-10 -left-10 w-24 h-24 bg-violet-600/10 rounded-full blur-xl"></div>
+            
+            <div className="relative z-10 space-y-3.5 flex-1 flex flex-col justify-between">
+              <div>
+                <div className="border-b border-indigo-850 pb-2.5">
+                  <h3 className="text-xs font-black text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
+                    <span className="text-sm animate-pulse">⭐</span> TOP 5 SAO TOÀN TRƯỜNG
+                  </h3>
+                  <p className="text-[10px] text-indigo-350 font-medium">Bảng vàng vinh danh điểm tích lũy thi đua học đường</p>
+                </div>
+
+                <div className="space-y-2 mt-3">
+                  {topSchoolStudents.map((st, index) => {
+                    const rankIcons = ["🥇", "🥈", "🥉", "4th", "5th"];
+                    const rankMedal = rankIcons[index];
+                    const title = index === 0 
+                      ? "Mặt Trời Công Nghệ ☀️" 
+                      : index === 1 
+                      ? "Trăng Sáng Tin Học 🌙" 
+                      : index === 2 
+                      ? "Tinh Tú Lập Trình 💫" 
+                      : "Ngôi Sao Đỏ 🌟";
+
+                    return (
+                      <div 
+                        key={st.id} 
+                        className="flex items-center justify-between p-2 rounded-xl bg-indigo-950/50 hover:bg-indigo-900/45 border border-indigo-900/50 transition-colors duration-200"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black ${
+                            index === 0 ? 'bg-amber-400/20 text-yellow-300' :
+                            index === 1 ? 'bg-slate-300/20 text-slate-200' :
+                            index === 2 ? 'bg-amber-600/20 text-amber-450' : 'text-slate-400'
+                          }`}>
+                            {rankMedal}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[12px] font-bold text-slate-100 truncate flex items-center gap-1.5">
+                              {st.name}
+                              <span className="text-[9px] font-black bg-indigo-505/30 text-indigo-300 px-1.5 py-0.2 rounded border border-indigo-700/20">
+                                {st.className}
+                              </span>
+                            </p>
+                            <p className="text-[8px] text-slate-400 font-extrabold uppercase tracking-wide">{title}</p>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className="text-xs text-amber-400 font-black flex items-center justify-end gap-0.5">
+                            {st.cumulativeStars} <span className="text-[10px] text-yellow-450">⭐</span>
+                          </span>
+                          {st.exchangedStickers > 0 && (
+                            <span className="text-[8px] text-indigo-300 font-semibold block">
+                              (Đã đổi {st.exchangedStickers} 🎁)
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {topSchoolStudents.length === 0 && (
+                    <p className="text-center text-[11px] text-slate-500 py-4">Chưa có học sinh nào tích lũy sao</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="text-[9px] text-indigo-400 font-semibold mt-3 pt-2.5 border-t border-indigo-850 flex justify-between items-center">
+                <span>Vận hành tự động</span>
+                <span>Cập nhật liên tục</span>
+              </div>
+            </div>
+          </div>
+
         </div>
 
       </div>
@@ -936,7 +1024,10 @@ export default function DashboardTab({
                   const rate = data['Tỷ lệ chuyên cần (%)'];
                   let badgeColor = "bg-rose-50 text-rose-600 border border-rose-200";
                   let badgeText = "Cần động viên";
-                  if (rate >= 98.5) {
+                  if (data['Tổng số lượt'] === 0) {
+                    badgeColor = "bg-slate-100 text-slate-500 border border-slate-150";
+                    badgeText = "Chưa học";
+                  } else if (rate >= 98.5) {
                     badgeColor = "bg-emerald-55 text-emerald-700 border border-emerald-200/50";
                     badgeText = "Xuất sắc ⭐";
                   } else if (rate >= 97.0) {

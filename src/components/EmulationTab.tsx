@@ -48,7 +48,7 @@ export default function EmulationTab({
     }
 
     setEmulationDataState(prev => {
-      const currentData = prev[studentId] || { cumulativeStars: 10, exchangedStickers: 0, totalDeducted: 0, badges: [] };
+      const currentData = prev[studentId] || { cumulativeStars: 0, exchangedStickers: 0, totalDeducted: 0, badges: [] };
       const updatedBadges = currentData.badges.includes(badgeName) ? currentData.badges : [...currentData.badges, badgeName];
       const initialDeduction = currentData.totalDeducted !== undefined 
         ? currentData.totalDeducted 
