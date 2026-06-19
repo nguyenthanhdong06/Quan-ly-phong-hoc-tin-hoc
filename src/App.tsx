@@ -820,19 +820,19 @@ export default function App() {
                   type="text"
                   value={loginForm.username}
                   onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
-                  placeholder="Ví dụ: dong.nt"
+                  placeholder="Ví dụ:dong.nt"
                   className="w-full text-xs p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none font-mono"
                   required
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="block text-[10px] font-black text-slate-450 uppercase tracking-wider">Mật khẩu xác thực</label>
+                <label className="block text-[10px] font-black text-slate-450 uppercase tracking-wider">Mật khẩu</label>
                 <input
                   type="password"
                   value={loginForm.password}
                   onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
-                  placeholder="Ví dụ: 123"
+                  placeholder="Ví dụ:123456789"
                   className="w-full text-xs p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none font-mono"
                   required
                 />
