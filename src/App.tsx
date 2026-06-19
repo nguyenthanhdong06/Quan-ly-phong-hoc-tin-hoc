@@ -159,7 +159,7 @@ export default function App() {
     return local ? JSON.parse(local) : null;
   });
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [loginForm, setLoginForm] = useState({ username: 'dong.nt', password: '123' });
+  const [loginForm, setLoginForm] = useState({ username: '', password: '' });
 
   // Custom Toast State
   const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
@@ -813,27 +813,6 @@ export default function App() {
             </div>
 
             <form onSubmit={handleLoginSubmit} className="p-6 space-y-4 text-left">
-              
-              {/* Quick credentials selection */}
-              <div className="p-3 bg-slate-50 border rounded-2xl text-left space-y-1.5">
-                <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest">Đăng nhập nhanh bộ môn (Bản chọn nhanh)</span>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setLoginForm({ username: 'dong.nt', password: '123' })}
-                    className="bg-white hover:bg-amber-100 border text-slate-800 text-[10px] font-extrabold px-2.5 py-1.5 rounded-lg shadow-sm transition"
-                  >
-                    Thầy Đồng (Admin)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setLoginForm({ username: 'nam.lh', password: '123' })}
-                    className="bg-white hover:bg-amber-100 border text-slate-800 text-[10px] font-extrabold px-2.5 py-1.5 rounded-lg shadow-sm transition"
-                  >
-                    Thầy Nam (Giáo viên)
-                  </button>
-                </div>
-              </div>
 
               <div className="space-y-1">
                 <label className="block text-[10px] font-black text-slate-450 uppercase tracking-wider">Tên Đăng Nhập (Email prefix)</label>
@@ -853,7 +832,7 @@ export default function App() {
                   type="password"
                   value={loginForm.password}
                   onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
-                  placeholder="Mật khẩu mặc định: 123"
+                  placeholder="Ví dụ: 123"
                   className="w-full text-xs p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none font-mono"
                   required
                 />
