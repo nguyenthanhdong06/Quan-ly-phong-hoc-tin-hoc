@@ -36,6 +36,67 @@ export default function SeatingTab({
   const [scaleSize, setScaleSize] = React.useState<'sm' | 'md' | 'lg' | 'xl'>('lg');
   const [projectorTheme, setProjectorTheme] = React.useState<'dark' | 'light'>('dark');
 
+  // Drag and drop states for interactive seating rearrangement
+  const [draggedOverId, setDraggedOverId] = React.useState<string | null>(null);
+  const [activeDraggingId, setActiveDraggingId] = React.useState<string | null>(null);
+
+  const handleDragStart = (e: React.DragEvent, computerId: string) => {
+    e.dataTransfer.setData('text/plain', computerId);
+    e.dataTransfer.effectAllowed = 'move';
+    setActiveDraggingId(computerId);
+  };
+
+  const handleDragEnd = () => {
+    setActiveDraggingId(null);
+    setDraggedOverId(null);
+  };
+
+  const handleDragOverCustom = (e: React.DragEvent, computerId: string) => {
+    e.preventDefault();
+    if (activeDraggingId !== computerId) {
+      setDraggedOverId(computerId);
+    }
+  };
+
+  const handleDragLeaveCustom = () => {
+    setDraggedOverId(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetComputerId: string) => {
+    e.preventDefault();
+    const sourceComputerId = e.dataTransfer.getData('text/plain');
+    if (!sourceComputerId || sourceComputerId === targetComputerId) {
+      setDraggedOverId(null);
+      return;
+    }
+
+    setSeatingChart(prev => {
+      const currentClassSeating = { ...(prev[selectedClass] || {}) };
+      const sourceStudentId = currentClassSeating[sourceComputerId];
+      const targetStudentId = currentClassSeating[targetComputerId];
+
+      if (sourceStudentId) {
+        if (targetStudentId) {
+          // Swap positions of two students
+          currentClassSeating[targetComputerId] = sourceStudentId;
+          currentClassSeating[sourceComputerId] = targetStudentId;
+        } else {
+          // Move from source to empty target
+          currentClassSeating[targetComputerId] = sourceStudentId;
+          delete currentClassSeating[sourceComputerId];
+        }
+      }
+      return {
+        ...prev,
+        [selectedClass]: currentClassSeating
+      };
+    });
+
+    setDraggedOverId(null);
+    setActiveDraggingId(null);
+    showToast('Đổi chỗ học sinh thành công!');
+  };
+
   React.useEffect(() => {
     setModalSearch('');
     setIsDropdownOpen(false);
@@ -187,7 +248,7 @@ export default function SeatingTab({
             Sơ Đồ Phân Máy Phòng Học Tin học
           </h2>
           <p className="text-xs text-slate-400">
-            Mẹo: Click chuột trực tiếp vào ô máy trạm để chỉ định vị trí học sinh ngồi thực hành hoặc đánh dấu hỏng hóc nhanh.
+            ✨Mẹo: Click chuột trực tiếp vào ô máy trạm để chỉ định học sinh. 
           </p>
         </div>
 
@@ -255,6 +316,9 @@ export default function SeatingTab({
                   const assignedStudentId = seatingChart[selectedClass]?.[computer.id];
                   const studentObj = classStudents.find(s => s.id === assignedStudentId);
 
+                  const isDraggingThis = activeDraggingId === computer.id;
+                  const isDraggedOverThis = draggedOverId === computer.id;
+
                   let statusBg = 'bg-amber-400 border-amber-500 text-slate-800 hover:bg-amber-500';
                   if (computer.status === 'Đang hỏng') {
                     statusBg = 'bg-red-400 border-red-500 text-white hover:bg-red-500';
@@ -262,14 +326,33 @@ export default function SeatingTab({
                     statusBg = 'bg-blue-400 border-blue-500 text-white hover:bg-blue-500';
                   }
 
+                  let dragClasses = studentObj ? 'cursor-grab active:cursor-grabbing hover:scale-[1.03]' : 'cursor-pointer';
+                  if (isDraggingThis) {
+                    dragClasses = 'opacity-30 border-dashed scale-95 select-none cursor-grabbing';
+                  }
+
+                  let ringClass = '';
+                  if (isDraggedOverThis) {
+                    ringClass = 'ring-4 ring-indigo-500 ring-offset-2 border-indigo-600 bg-indigo-50 shadow-xl scale-[1.08] z-20 animate-pulse';
+                  } else {
+                    ringClass = `hover:-translate-y-1 hover:shadow-lg hover:ring-4 ${
+                      computer.status === 'Đang hỏng' ? 'hover:ring-rose-455/40' :
+                      computer.status === 'Bảo trì' ? 'hover:ring-blue-455/40' : 'hover:ring-amber-455/60'
+                    }`;
+                  }
+
                   return (
                     <div
                       key={computer.id}
                       onClick={() => setActiveAssignModal(computer.id)}
-                      className={`p-3 border-2 rounded-xl text-center shadow-sm cursor-pointer transition-all duration-200 transform hover:-translate-y-1 hover:scale-[1.05] hover:shadow-lg hover:ring-4 active:translate-y-0 ${statusBg} ${
-                        computer.status === 'Đang hỏng' ? 'hover:ring-rose-450/40' :
-                        computer.status === 'Bảo trì' ? 'hover:ring-blue-450/40' : 'hover:ring-amber-450/60'
-                      }`}
+                      draggable={!!studentObj}
+                      onDragStart={(e) => handleDragStart(e, computer.id)}
+                      onDragEnd={handleDragEnd}
+                      onDragOver={(e) => handleDragOverCustom(e, computer.id)}
+                      onDragLeave={handleDragLeaveCustom}
+                      onDrop={(e) => handleDrop(e, computer.id)}
+                      className={`p-3 border-2 rounded-xl text-center shadow-sm transition-all duration-200 transform active:translate-y-0 ${statusBg} ${dragClasses} ${ringClass}`}
+                      title={studentObj ? `Nhấn giữ để kéo thả đổi chỗ [${studentObj.name}]` : 'Nhấp chuột để gán học sinh'}
                     >
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-[9px] font-bold uppercase tracking-wider bg-black/10 px-1 rounded block">
@@ -282,15 +365,24 @@ export default function SeatingTab({
                         }`} />
                       </div>
 
-                      <p className="text-xs font-black">{computer.name}</p>
+                      <p className="text-xs font-black text-slate-900">{computer.name}</p>
 
-                      <div className="mt-1.5 pt-1.5 border-t border-black/5 min-h-[22px] flex items-center justify-center">
+                      <div className="mt-1.5 pt-1.5 border-t border-black/3 min-h-[30px] flex items-center justify-center">
                         {studentObj ? (
-                          <p className="text-[10px] font-bold truncate max-w-[120px] text-slate-900 leading-none">
+                          <div className={`px-1.5 py-1 rounded-xl w-full font-black tracking-normal text-center whitespace-normal break-words leading-tight ${
+                            studentObj.name.length > 15 ? 'text-[8.5px]' : 'text-[10px]'
+                          } ${
+                            computer.status === 'Đang hỏng' 
+                              ? 'bg-rose-950 text-rose-100 border border-rose-800' 
+                              : computer.status === 'Bảo trì'
+                              ? 'bg-blue-950 text-blue-100 border border-blue-800'
+                              : 'bg-white text-slate-950 border border-slate-300 shadow-md'
+                          }`}>
+                            <span className="mr-0.5 inline-block">{studentObj.gender === 'Nữ' ? '👧🏻' : '👦🏻'}</span>
                             {studentObj.name}
-                          </p>
+                          </div>
                         ) : (
-                          <span className="text-[9px] italic text-black/40 block">Trống</span>
+                          <span className="text-[10px] font-bold tracking-wide italic text-black/40 block">Trống</span>
                         )}
                       </div>
                     </div>
@@ -716,16 +808,38 @@ export default function SeatingTab({
                       const studentObj = classStudents.find(s => s.id === assignedStudentId);
                       const statusBg = getComputerContrastClasses(computer.status, projectorTheme === 'dark');
 
+                      const isDraggingThis = activeDraggingId === computer.id;
+                      const isDraggedOverThis = draggedOverId === computer.id;
+
+                      let dragClasses = studentObj ? 'cursor-grab active:cursor-grabbing hover:scale-[1.03]' : 'cursor-pointer';
+                      if (isDraggingThis) {
+                        dragClasses = 'opacity-30 border-dashed scale-95 select-none cursor-grabbing';
+                      }
+
+                      let ringClass = '';
+                      if (isDraggedOverThis) {
+                        ringClass = 'ring-4 ring-indigo-505 ring-offset-2 border-indigo-600 bg-indigo-950/60 shadow-2xl scale-[1.08] z-20 animate-pulse';
+                      } else {
+                        ringClass = `hover:-translate-y-1.5 hover:shadow-xl hover:ring-4 ${
+                          computer.status === 'Đang hỏng' ? 'hover:ring-rose-455/40' :
+                          computer.status === 'Bảo trì' ? 'hover:ring-blue-455/40' : 'hover:ring-amber-455/65'
+                        }`;
+                      }
+
                       return (
                         <div
                           key={computer.id}
                           onClick={() => setActiveAssignModal(computer.id)}
-                          className={`border-2 text-center shadow transition-all duration-200 cursor-pointer transform hover:-translate-y-1.5 hover:scale-[1.05] hover:shadow-xl hover:ring-4 active:translate-y-0 ${
-                            computer.status === 'Đang hỏng' ? 'hover:ring-rose-450/40' :
-                            computer.status === 'Bảo trì' ? 'hover:ring-blue-450/40' : 'hover:ring-amber-450/60'
-                          } ${
+                          draggable={!!studentObj}
+                          onDragStart={(e) => handleDragStart(e, computer.id)}
+                          onDragEnd={handleDragEnd}
+                          onDragOver={(e) => handleDragOverCustom(e, computer.id)}
+                          onDragLeave={handleDragLeaveCustom}
+                          onDrop={(e) => handleDrop(e, computer.id)}
+                          className={`border-2 text-center shadow transition-all duration-200 cursor-pointer transform active:translate-y-0 ${
                             scaleConfig[scaleSize].card
-                          } ${statusBg}`}
+                          } ${statusBg} ${dragClasses} ${ringClass}`}
+                          title={studentObj ? `Nhấn giữ để kéo thả đổi chỗ [${studentObj.name}]` : 'Nhấp chuột để gán học sinh'}
                         >
                           <div className="flex justify-between items-center opacity-85">
                             <span className="text-[10px] font-extrabold uppercase tracking-widest bg-black/10 px-1.5 py-0.2 rounded block">
@@ -738,15 +852,23 @@ export default function SeatingTab({
                             }`} />
                           </div>
 
-                          <div className="pt-2 border-t border-black/5 min-h-[34px] flex flex-col items-center justify-center">
+                          <div className="pt-2 border-t border-black/5 min-h-[38px] flex flex-col items-center justify-center">
                             {studentObj ? (
-                              <p className={`font-black truncate block tracking-tight leading-tight ${
-                                projectorTheme === 'dark' ? 'text-amber-100' : 'text-slate-900'
-                              } ${scaleConfig[scaleSize].student}`}>
-                                {studentObj.gender === 'Nữ' ? '👧🏻' : '👦🏻'} {studentObj.name}
-                              </p>
+                              <div className={`px-1.5 py-1.5 rounded-xl w-full text-center font-black shadow-md tracking-normal whitespace-normal break-words leading-tight ${
+                                projectorTheme === 'dark'
+                                  ? 'bg-slate-950 text-amber-300 border border-slate-800'
+                                  : 'bg-white text-slate-950 border border-slate-300'
+                              } ${
+                                scaleSize === 'sm' ? (studentObj.name.length > 15 ? 'text-[8px]' : 'text-[9px]') :
+                                scaleSize === 'md' ? (studentObj.name.length > 15 ? 'text-[9px]' : 'text-[10.5px]') :
+                                scaleSize === 'lg' ? (studentObj.name.length > 15 ? 'text-[10.5px]' : 'text-xs') :
+                                                     (studentObj.name.length > 15 ? 'text-[12.5px]' : 'text-sm')
+                              }`}>
+                                <span className="mr-0.5 inline-block">{studentObj.gender === 'Nữ' ? '👧🏻' : '👦🏻'}</span>
+                                {studentObj.name}
+                              </div>
                             ) : (
-                              <span className={`italic block opacity-40 text-[10px] font-bold ${
+                              <span className={`italic block opacity-40 text-[9px] font-black uppercase tracking-wider ${
                                 projectorTheme === 'dark' ? 'text-slate-400' : 'text-slate-550'
                               }`}>Trống</span>
                             )}
