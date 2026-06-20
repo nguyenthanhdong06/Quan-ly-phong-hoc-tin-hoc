@@ -664,6 +664,7 @@ export default function App() {
         {activeTab === 'dashboard' && (
           <DashboardTab
             selectedClass={selectedClass}
+            selectedDate={selectedDate}
             grades={grades}
             classes={classes}
             students={students}

@@ -352,13 +352,15 @@ export default function ResourcesTab({
                           <div>
                             <div className="flex justify-between items-start gap-2">
                               <h4 className="text-xs font-black text-slate-800 line-clamp-2 leading-tight">{doc.title}</h4>
-                              <button
-                                onClick={() => handleDeleteDocument(doc.id, doc.title)}
-                                className="text-slate-400 hover:text-red-500 transition focus:outline-none cursor-pointer"
-                                title="Xóa học liệu"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                              {currentUser?.role?.includes('Admin') && (
+                                <button
+                                  onClick={() => handleDeleteDocument(doc.id, doc.title)}
+                                  className="text-slate-400 hover:text-red-500 transition focus:outline-none cursor-pointer"
+                                  title="Xóa học liệu"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
                             </div>
                             {doc.description && <p className="text-[10px] text-slate-400 line-clamp-2 mt-1.5 leading-snug">{doc.description}</p>}
                             <p className="text-[9px] text-slate-400 mt-1 font-bold">Người đăng: {doc.author} • Ngày: {doc.date}</p>
@@ -394,13 +396,15 @@ export default function ResourcesTab({
                           <div>
                             <div className="flex justify-between items-start gap-2">
                               <h4 className="text-xs font-black text-slate-800 line-clamp-2 leading-tight">{doc.title}</h4>
-                              <button
-                                onClick={() => handleDeleteDocument(doc.id, doc.title)}
-                                className="text-slate-400 hover:text-red-500 transition focus:outline-none cursor-pointer"
-                                title="Xóa tài liệu"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                              {currentUser?.role?.includes('Admin') && (
+                                <button
+                                  onClick={() => handleDeleteDocument(doc.id, doc.title)}
+                                  className="text-slate-400 hover:text-red-500 transition focus:outline-none cursor-pointer"
+                                  title="Xóa tài liệu"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
                             </div>
                             {doc.description && <p className="text-[10px] text-slate-400 line-clamp-2 mt-1.5 leading-snug">{doc.description}</p>}
                             <p className="text-[9px] text-slate-400 mt-1 font-bold">Người đăng: {doc.author} • Ngày: {doc.date}</p>

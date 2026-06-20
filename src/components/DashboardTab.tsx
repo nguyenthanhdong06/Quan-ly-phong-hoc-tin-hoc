@@ -87,6 +87,7 @@ const CustomEmulationTooltip = ({ active, payload, label }: any) => {
 
 interface DashboardTabProps {
   selectedClass: string;
+  selectedDate?: string;
   grades: Grade[];
   classes: ClassItem[];
   students: Student[];
@@ -107,6 +108,7 @@ interface DashboardTabProps {
 
 export default function DashboardTab({
   selectedClass,
+  selectedDate,
   grades,
   classes,
   students,
@@ -128,6 +130,97 @@ export default function DashboardTab({
   const [showDbInfo, setShowDbInfo] = useState(true);
   const [activeTipIndex, setActiveTipIndex] = useState(0);
   const [emulationMetric, setEmulationMetric] = useState<'total' | 'average' | 'stickers'>('total');
+
+  // Attendance automatic warning system states
+  const [absenceThreshold, setAbsenceThreshold] = useState<number>(3);
+  const [filterByClass, setFilterByClass] = useState<'all' | 'selected'>('all');
+  const [notifiedStudents, setNotifiedStudents] = useState<string[]>([]);
+  const [expandedStudents, setExpandedStudents] = useState<string[]>([]);
+  const [localToast, setLocalToast] = useState<{ show: boolean; message: string; type: 'success' | 'info' }>({
+    show: false,
+    message: '',
+    type: 'success'
+  });
+
+  const triggerLocalToast = (message: string, type: 'success' | 'info' = 'success') => {
+    setLocalToast({ show: true, message, type });
+    setTimeout(() => {
+      setLocalToast(prev => ({ ...prev, show: false }));
+    }, 4500);
+  };
+
+  const handleNotifyParent = (studentName: string, id: string, count: number) => {
+    if (notifiedStudents.includes(id)) return;
+    setNotifiedStudents(prev => [...prev, id]);
+    triggerLocalToast(`Đã tự động gửi thông báo liên hệ nhắc nhở về vi phạm vắng ${count} buổi của học sinh [${studentName}] đến Zalo/SMS phụ huynh thành công!`);
+  };
+
+  const toggleExpandStudent = (id: string) => {
+    setExpandedStudents(prev => 
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
+
+  const studentAbsenceAlerts = useMemo(() => {
+    if (!attendanceData || !students) return [];
+    
+    const list: {
+      student: Student;
+      className: string;
+      absentCount: number;
+      excusedCount: number;
+      unexcusedCount: number;
+      dates: { date: string; status: 'excused' | 'unexcused' }[];
+    }[] = [];
+    
+    students.forEach(student => {
+      let excusedCount = 0;
+      let unexcusedCount = 0;
+      const dates: { date: string; status: 'excused' | 'unexcused' }[] = [];
+      
+      Object.keys(attendanceData).forEach(dateKey => {
+        const dayData = attendanceData[dateKey];
+        if (dayData) {
+          Object.keys(dayData).forEach(classId => {
+            const classAttendance = dayData[classId];
+            if (classAttendance && classAttendance[student.id]) {
+              const status = classAttendance[student.id];
+              if (status === 'excused') {
+                excusedCount++;
+                dates.push({ date: dateKey, status: 'excused' });
+              } else if (status === 'unexcused') {
+                unexcusedCount++;
+                dates.push({ date: dateKey, status: 'unexcused' });
+              }
+            }
+          });
+        }
+      });
+      
+      const totalAbsents = excusedCount + unexcusedCount;
+      if (totalAbsents >= absenceThreshold) {
+        const classObj = classes.find(c => c.id === student.classId);
+        list.push({
+          student,
+          className: classObj ? classObj.name : student.classId,
+          absentCount: totalAbsents,
+          excusedCount,
+          unexcusedCount,
+          dates: dates.sort((a, b) => b.date.localeCompare(a.date)) // Mới nhất lên trước
+        });
+      }
+    });
+    
+    return list.sort((a, b) => b.absentCount - a.absentCount);
+  }, [students, attendanceData, classes, absenceThreshold]);
+
+  const filteredAbsenceAlerts = useMemo(() => {
+    if (filterByClass === 'all') {
+      return studentAbsenceAlerts;
+    } else {
+      return studentAbsenceAlerts.filter(alert => alert.student.classId === selectedClass);
+    }
+  }, [studentAbsenceAlerts, filterByClass, selectedClass]);
 
   // Parse active month information and calculate school-wide grade level attendance
   const activeMonthYearLabel = useMemo(() => {
@@ -236,6 +329,15 @@ export default function DashboardTab({
       totalStickersExchanged += sEm.exchangedStickers || 0;
     });
 
+    const maleCount = classSts.filter(s => s.gender === 'Nam').length;
+    const femaleCount = classSts.filter(s => s.gender === 'Nữ').length;
+    
+    const activeDateStr = selectedDate || new Date().toISOString().split('T')[0];
+    const todayAttendance = attendanceData[activeDateStr]?.[selectedClass] || {};
+    const todayExcusedCount = classSts.filter(s => todayAttendance[s.id] === 'excused').length;
+    const todayUnexcusedCount = classSts.filter(s => todayAttendance[s.id] === 'unexcused').length;
+    const todayTotalAbsent = todayExcusedCount + todayUnexcusedCount;
+
     return {
       totalComps,
       okComps,
@@ -245,9 +347,14 @@ export default function DashboardTab({
       assignedStudents: assignedStsCount,
       unassignedStudents: Math.max(0, classSts.length - assignedStsCount),
       totalClassStars,
-      totalStickersExchanged
+      totalStickersExchanged,
+      maleCount,
+      femaleCount,
+      todayExcusedCount,
+      todayUnexcusedCount,
+      todayTotalAbsent
     };
-  }, [computers, students, selectedClass, seatingChart, emulationDataState]);
+  }, [computers, students, selectedClass, seatingChart, emulationDataState, selectedDate, attendanceData]);
 
   // Filter students for the Golden Board of Honor (having stars >= 20)
   const goldenBoardStudents = useMemo(() => {
@@ -553,6 +660,193 @@ export default function DashboardTab({
           </div>
         </div>
 
+      </div>
+
+      {/* LOCAL TOAST NOTIFICATION FOR DEMO INTERACTIONS */}
+      {localToast.show && (
+        <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2 px-4 py-3 rounded-2xl bg-amber-950 border border-amber-800 text-white shadow-xl text-xs font-bold animate-pulse">
+          <span className="text-sm">🛡️</span>
+          <span>{localToast.message}</span>
+        </div>
+      )}
+
+      {/* AUTOMATIC ATTENDANCE WARNING BOARD */}
+      <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 text-left space-y-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-rose-100/40 pb-4 gap-4">
+          <div className="flex items-center gap-3">
+            <div className="bg-rose-50 text-rose-500 p-2.5 rounded-2xl border border-rose-200/50">
+              <ShieldAlert className="w-6 h-6 text-rose-650 animate-pulse" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                Hệ Thống Cảnh Báo Chuyên Cần Tự Động
+                {filteredAbsenceAlerts.length > 0 && (
+                  <span className="bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-bounce">
+                    {filteredAbsenceAlerts.length} học sinh
+                  </span>
+                )}
+              </h3>
+              <p className="text-[11px] text-slate-400 font-semibold">Tự động phát hiện & gửi cảnh báo khi số buổi vắng vượt quá giới hạn đặt trước</p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 text-xs w-full sm:w-auto">
+            {/* Filter by all vs selected class */}
+            <div className="bg-slate-100 p-1 rounded-xl flex items-center gap-1.5 border border-slate-200">
+              <button
+                type="button"
+                onClick={() => setFilterByClass('all')}
+                className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wide transition cursor-pointer ${
+                  filterByClass === 'all' 
+                    ? 'bg-white text-rose-600 shadow-sm border-b border-rose-100' 
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                Toàn trường
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterByClass('selected')}
+                className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wide transition cursor-pointer ${
+                  filterByClass === 'selected' 
+                    ? 'bg-white text-rose-600 shadow-sm border-b border-rose-100' 
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                Lớp {activeClassObj ? activeClassObj.name : selectedClass}
+              </button>
+            </div>
+
+            {/* Threshold setter */}
+            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-1 rounded-xl">
+              <span className="text-[10px] text-slate-500 font-extrabold uppercase">Ngưỡng vắng:</span>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  disabled={absenceThreshold <= 1}
+                  onClick={() => setAbsenceThreshold(prev => Math.max(1, prev - 1))}
+                  className="w-5 h-5 bg-white border border-slate-300 rounded-lg flex items-center justify-center font-black text-xs hover:bg-slate-150 disabled:opacity-50 cursor-pointer"
+                >
+                  -
+                </button>
+                <span className="min-w-6 text-center font-black text-[11px] text-rose-650 font-mono">{absenceThreshold}</span>
+                <button
+                  type="button"
+                  disabled={absenceThreshold >= 10}
+                  onClick={() => setAbsenceThreshold(prev => Math.min(10, prev + 1))}
+                  className="w-5 h-5 bg-white border border-slate-300 rounded-lg flex items-center justify-center font-black text-xs hover:bg-slate-150 disabled:opacity-50 cursor-pointer"
+                >
+                  +
+                </button>
+              </div>
+              <span className="text-[10px] text-slate-400 font-extrabold uppercase">Buổi</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Alerts list */}
+        {filteredAbsenceAlerts.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredAbsenceAlerts.map(alert => {
+              const isAlreadyNotified = notifiedStudents.includes(alert.student.id);
+              const hasRecentAbsentsExpanded = expandedStudents.includes(alert.student.id);
+
+              return (
+                <div 
+                  key={alert.student.id}
+                  className="bg-slate-50/85 rounded-2xl p-4 border border-rose-100/70 hover:border-rose-200 hover:bg-white hover:shadow-sm transition-all duration-300 flex flex-col justify-between space-y-4"
+                >
+                  <div className="space-y-2 text-left">
+                    <div className="flex items-start justify-between gap-1.5">
+                      <div className="min-w-0">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase text-rose-700 bg-rose-50 border border-rose-200">
+                          Lớp {alert.className}
+                        </span>
+                        <h4 className="text-sm font-black text-slate-800 mt-1 truncate">{alert.student.name}</h4>
+                        <p className="text-[9px] text-slate-400 font-bold tracking-wide">Mã HS: {alert.student.code}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="text-lg font-black text-rose-600 font-mono block">
+                          {alert.absentCount}
+                        </span>
+                        <span className="text-[8px] text-rose-450 font-black uppercase tracking-wider block">Buổi vắng</span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 bg-slate-100 p-2 rounded-xl border border-slate-200/50 text-center">
+                      <div>
+                        <span className="text-[8px] text-slate-450 font-bold block uppercase">Có phép</span>
+                        <strong className="text-xs text-slate-750 font-bold">{alert.excusedCount}</strong>
+                      </div>
+                      <div className="border-l border-slate-200/80">
+                        <span className="text-[8px] text-slate-450 font-bold block uppercase font-black text-rose-600/85">Không phép</span>
+                        <strong className="text-xs text-rose-600 font-black">{alert.unexcusedCount}</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2.5 pt-2.5 border-t border-slate-200/50">
+                    <div className="flex justify-between items-center">
+                      <button
+                        type="button"
+                        onClick={() => toggleExpandStudent(alert.student.id)}
+                        className="text-[10px] font-black text-indigo-600 hover:text-indigo-800 flex items-center gap-1 transition cursor-pointer"
+                      >
+                        {hasRecentAbsentsExpanded ? 'Ẩn lịch trình' : 'Xem chi tiết ngày vắng'}
+                        <span className="text-[8px]">{hasRecentAbsentsExpanded ? '▲' : '▼'}</span>
+                      </button>
+                    </div>
+
+                    {hasRecentAbsentsExpanded && (
+                      <div className="bg-white p-2 rounded-xl border border-slate-150 space-y-1.5 max-h-24 overflow-y-auto text-[10px] text-left">
+                        {alert.dates.map((d, index) => (
+                          <div key={index} className="flex justify-between items-center border-b border-slate-50 last:border-none pb-1 last:pb-0">
+                            <span className="font-mono text-slate-500 font-semibold">{d.date}</span>
+                            <span className={`px-1.5 py-0.2 rounded-md font-bold text-[8px] ${
+                              d.status === 'excused' ? 'bg-indigo-50 text-indigo-600 border border-indigo-150' : 'bg-rose-50 text-rose-600 border border-rose-150'
+                            }`}>
+                              {d.status === 'excused' ? 'Có phép' : 'Không phép'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => handleNotifyParent(alert.student.name, alert.student.id, alert.absentCount)}
+                      className={`w-full py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                        isAlreadyNotified
+                          ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                          : 'bg-indigo-600 hover:bg-indigo-750 text-white shadow-sm'
+                      }`}
+                    >
+                      {isAlreadyNotified ? (
+                        <>
+                          <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                          Đã cảnh báo phụ huynh
+                        </>
+                      ) : (
+                        <>
+                          <UserCheck className="w-3.5 h-3.5 text-white animate-bounce" />
+                          Liên hệ báo phụ huynh
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="py-8 bg-emerald-50/40 border border-dashed border-emerald-200/60 rounded-2xl p-6 text-center space-y-2">
+            <span className="text-3xl animate-bounce block">✨🎉✨</span>
+            <h4 className="text-xs font-black uppercase tracking-wider text-emerald-850">Chuyên cần đạt mốc an toàn</h4>
+            <p className="text-[10px] text-emerald-700/80 font-bold max-w-md mx-auto">
+              Không phát hiện thấy trường hợp học sinh nào vắng từ {absenceThreshold} buổi trở lên ở bộ lọc hiện tại. Chúc mừng nỗ lực học tập của lớp!
+            </p>
+          </div>
+        )}
       </div>
 
       {/* MAIN BENTO LAYOUT (GOLDEN HONOR SCROLL & CLASS METRICS) */}
@@ -1103,32 +1397,29 @@ export default function DashboardTab({
               </span>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
-              <div className="bg-white p-3.5 rounded-xl border border-slate-200/75 hover:border-slate-300 transition shadow-xs">
-                <div className="flex items-center gap-1.5">
-                  <Users className="w-4 h-4 text-slate-400" />
-                  <span className="text-xs text-slate-400 font-bold block">Sĩ số học sinh</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5 text-left">
+              {/* TỔNG SỸ SỐ card exactly styled like photo */}
+              <div className="bg-white rounded-[24px] border border-slate-300 p-5 md:p-6 flex items-center gap-5 shadow-[0_2px_8px_-3px_rgba(0,0,0,0.05)] hover:border-indigo-200 transition-all duration-300 min-h-[105px]">
+                <div className="p-3 bg-indigo-50/60 text-indigo-600 rounded-full shrink-0">
+                  <Users className="w-7 h-7 md:w-8 md:h-8" />
                 </div>
-                <strong className="text-2xl text-slate-800 block mt-1">{stats.totalStudentsInClass} em</strong>
-                <p className="text-[9px] text-slate-400 mt-1">Toàn bộ danh sách lớp học</p>
+                <div className="space-y-0.5 min-w-0">
+                  <span className="text-[10px] sm:text-[11px] text-slate-400 font-black tracking-widest block uppercase">TỔNG SỸ SỐ</span>
+                  <strong className="text-2xl sm:text-3xl text-slate-900 block font-black leading-none">{stats.totalStudentsInClass}</strong>
+                  <span className="text-[10px] sm:text-[11px] text-emerald-650 font-bold block mt-1">{stats.maleCount} Nam • {stats.femaleCount} Nữ</span>
+                </div>
               </div>
-              
-              <div className="bg-white p-3.5 rounded-xl border border-slate-200/75 hover:border-slate-300 transition shadow-xs">
-                <div className="flex items-center gap-1.5">
-                  <UserCheck className="w-4 h-4 text-emerald-500" />
-                  <span className="text-xs text-emerald-600 font-bold block text-left">Đồng bộ máy trạm</span>
+
+              {/* VẮNG HÔM NAY card exactly styled like photo */}
+              <div className="bg-white rounded-[24px] border border-slate-300 p-5 md:p-6 flex items-center gap-5 shadow-[0_2px_8px_-3px_rgba(0,0,0,0.05)] hover:border-rose-200 transition-all duration-300 min-h-[105px]">
+                <div className="p-3 bg-rose-50/60 text-rose-500 rounded-full shrink-0">
+                  <AlertTriangle className="w-7 h-7 md:w-8 md:h-8 animate-pulse" />
                 </div>
-                <strong className="text-2xl text-emerald-600 block mt-1">{stats.assignedStudents} em</strong>
-                <p className="text-[9px] text-slate-400 mt-1">Đã gán và cố định chỗ ngồi</p>
-              </div>
-              
-              <div className="bg-white p-3.5 rounded-xl border border-slate-200/75 hover:border-slate-300 transition shadow-xs">
-                <div className="flex items-center gap-1.5">
-                  <HelpCircle className="w-4 h-4 text-rose-500" />
-                  <span className="text-xs text-rose-600 font-bold block text-left">Chưa gán vị trí</span>
+                <div className="space-y-0.5 min-w-0">
+                  <span className="text-[10px] sm:text-[11px] text-slate-400 font-black tracking-widest block uppercase">VẮNG HÔM NAY</span>
+                  <strong className="text-2xl sm:text-3xl text-slate-900 block font-black leading-none">{stats.todayTotalAbsent}</strong>
+                  <span className="text-[10px] sm:text-[11px] text-slate-500 font-bold block mt-1">{stats.todayExcusedCount} Phép • {stats.todayUnexcusedCount} Không phép</span>
                 </div>
-                <strong className="text-2xl text-rose-600 block mt-1">{stats.unassignedStudents} em</strong>
-                <p className="text-[9px] text-slate-400 mt-1">Đang chờ đăng ký sơ đồ máy</p>
               </div>
             </div>
           </div>
