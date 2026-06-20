@@ -297,6 +297,29 @@ export default function DashboardTab({
   }, [grades, classes, attendanceData, systemDateText, students]);
   
   // Helpers
+  const getStudentCumulativeStars = (studentId: string) => {
+    const emulationState = emulationDataState[studentId] || { cumulativeStars: 0, exchangedStickers: 0, totalDeducted: 0, badges: [] };
+    
+    // Sum from evaluations in evaluationData across all dates and classes
+    let evaluatedSum = 0;
+    if (evaluationData) {
+      Object.keys(evaluationData).forEach(dateKey => {
+        const dayData = evaluationData[dateKey];
+        if (dayData) {
+          Object.keys(dayData).forEach(classId => {
+            const classData = dayData[classId];
+            if (classData && classData[studentId]) {
+              evaluatedSum += classData[studentId].rating || 0;
+            }
+          });
+        }
+      });
+    }
+
+    // Return the max of emulationState's cumulativeStars or the computed sum of evaluation ratings
+    return Math.max(emulationState.cumulativeStars, evaluatedSum);
+  };
+
   const getStudentCurrentStars = (studentId: string) => {
     const emulationState = emulationDataState[studentId] || { cumulativeStars: 0, exchangedStickers: 0, totalDeducted: 0, badges: [] };
     
@@ -304,7 +327,8 @@ export default function DashboardTab({
       ? emulationState.totalDeducted 
       : (emulationState.exchangedStickers || 0) * 5;
 
-    return Math.max(0, emulationState.cumulativeStars - deducted);
+    const cumulative = getStudentCumulativeStars(studentId);
+    return Math.max(0, cumulative - deducted);
   };
 
   // Memoized stats
@@ -354,7 +378,7 @@ export default function DashboardTab({
       todayUnexcusedCount,
       todayTotalAbsent
     };
-  }, [computers, students, selectedClass, seatingChart, emulationDataState, selectedDate, attendanceData]);
+  }, [computers, students, selectedClass, seatingChart, emulationDataState, selectedDate, attendanceData, evaluationData]);
 
   // Filter students for the Golden Board of Honor (having stars >= 20)
   const goldenBoardStudents = useMemo(() => {
@@ -366,7 +390,7 @@ export default function DashboardTab({
         badges: emulationDataState[s.id]?.badges || []
       }))
       .sort((a, b) => b.stars - a.stars);
-  }, [students, selectedClass, emulationDataState]);
+  }, [students, selectedClass, emulationDataState, evaluationData]);
 
   const activeClassObj = classes.find(c => c.id === selectedClass);
 
@@ -390,7 +414,8 @@ export default function DashboardTab({
         const deducted = emulationState.totalDeducted !== undefined 
           ? emulationState.totalDeducted 
           : (emulationState.exchangedStickers || 0) * 5;
-        const currentStars = Math.max(0, emulationState.cumulativeStars - deducted);
+        const cumulativeStars = getStudentCumulativeStars(st.id);
+        const currentStars = Math.max(0, cumulativeStars - deducted);
         
         totalStars += currentStars;
         totalStickers += emulationState.exchangedStickers || 0;
@@ -408,30 +433,50 @@ export default function DashboardTab({
         'Sĩ số': studentCount,
       };
     }).sort((a, b) => b['Tổng sao thi đua'] - a['Tổng sao thi đua']);
-  }, [activeClassObj, classes, students, emulationDataState]);
+  }, [activeClassObj, classes, students, emulationDataState, evaluationData]);
 
   const topSchoolStudents = useMemo(() => {
-    return students
+    const list = students
       .map(s => {
         const emulationState = emulationDataState[s.id] || { cumulativeStars: 0, exchangedStickers: 0, totalDeducted: 0, badges: [] };
         const deducted = emulationState.totalDeducted !== undefined 
           ? emulationState.totalDeducted 
           : (emulationState.exchangedStickers || 0) * 5;
-        const currentStars = Math.max(0, emulationState.cumulativeStars - deducted);
+        const cumulativeStars = getStudentCumulativeStars(s.id);
+        const currentStars = Math.max(0, cumulativeStars - deducted);
         const classObj = classes.find(c => c.id === s.classId);
         
         return {
-          ...s,
-          cumulativeStars: emulationState.cumulativeStars,
+          id: s.id,
+          name: s.name,
+          cumulativeStars: cumulativeStars,
           currentStars,
           className: classObj ? classObj.name : s.classId,
           exchangedStickers: emulationState.exchangedStickers || 0,
-          badges: emulationState.badges || []
+          badges: emulationState.badges || [],
+          isPlaceholder: false
         };
       })
-      .sort((a, b) => b.cumulativeStars - a.cumulativeStars || b.currentStars - a.currentStars)
+      .sort((a, b) => b.currentStars - a.currentStars || b.cumulativeStars - a.cumulativeStars)
       .slice(0, 5);
-  }, [students, classes, emulationDataState]);
+
+    // Dynamic padding so the scoreboard structure holds exactly 5 slots for clean presentation
+    while (list.length < 5) {
+      const idx = list.length;
+      list.push({
+        id: `placeholder-${idx}`,
+        name: 'Học sinh thi đua danh dự',
+        cumulativeStars: 0,
+        currentStars: 0,
+        className: 'Chưa xếp',
+        exchangedStickers: 0,
+        badges: [],
+        isPlaceholder: true
+      });
+    }
+
+    return list;
+  }, [students, classes, emulationDataState, evaluationData]);
 
   const activeMetricConfig = useMemo(() => {
     switch (emulationMetric) {
@@ -951,16 +996,16 @@ export default function DashboardTab({
           </div>
         </div>
 
-        {/* Right Column Grid: Class Emulation summary card & School Top 5 layout */}
-        <div className="space-y-6 flex flex-col justify-stretch">
+        {/* Right Column Grid: Top 5 School scoreboard & Class Emulation summary card */}
+        <div className="space-y-6 flex flex-col h-full justify-between">
           
-          {/* Class Emulation summary card */}
-          <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col justify-between text-left relative overflow-hidden flex-1">
+          {/* Class Emulation summary card (Quỹ Thi Đua Lớp) - optimized to fit content tightly */}
+          <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 flex flex-col text-left relative overflow-hidden flex-none h-auto">
             {/* Subtle graphical background node */}
             <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-full translate-x-6 -translate-y-6"></div>
             
-            <div className="space-y-4 relative z-10">
-              <div className="border-b border-slate-100 pb-2.5">
+            <div className="space-y-3.5 relative z-10">
+              <div className="border-b border-slate-100 pb-2">
                 <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 bg-amber-500 rounded-full"></span>
                   Quỹ Thi Đua Lớp <span className="bg-amber-500 text-white text-[11px] font-black px-2 py-0.5 rounded-lg border border-yellow-300">
@@ -969,17 +1014,17 @@ export default function DashboardTab({
                 <p className="text-[10px] text-slate-400 font-medium">Theo dõi hoạt động tích lũy phần thưởng học đường</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-3.5">
-                <div className="bg-slate-50/80 p-3 rounded-2xl border border-slate-100 hover:bg-slate-50 transition">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-slate-50/80 p-2.5 rounded-2xl border border-slate-100 hover:bg-slate-50 transition">
                   <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wide">Sao tích lũy lớp</span>
-                  <strong className="text-xl md:text-2xl text-amber-600 mt-1.5 block font-black">
+                  <strong className="text-lg text-amber-600 mt-1 block font-black">
                     {stats.totalClassStars} ⭐
                   </strong>
                   <span className="text-[8px] text-slate-450 block mt-0.5">Thống kê toàn khóa</span>
                 </div>
-                <div className="bg-slate-50/80 p-3 rounded-2xl border border-slate-100 hover:bg-slate-50 transition">
+                <div className="bg-slate-50/80 p-2.5 rounded-2xl border border-slate-100 hover:bg-slate-50 transition">
                   <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wide">Stickers đổi quà</span>
-                  <strong className="text-xl md:text-2xl text-indigo-600 mt-1.5 block font-black">
+                  <strong className="text-lg text-indigo-600 mt-1 block font-black">
                     {stats.totalStickersExchanged} 🎁
                   </strong>
                   <span className="text-[8px] text-indigo-400 font-bold block mt-0.5">Đặt tủ dán học tập</span>
@@ -997,8 +1042,8 @@ export default function DashboardTab({
             <div className="relative z-10 space-y-3.5 flex-1 flex flex-col justify-between">
               <div>
                 <div className="border-b border-indigo-850 pb-2.5">
-                  <h3 className="text-xs font-black text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
-                    <span className="text-sm animate-pulse">⭐</span> TOP 5 SAO TOÀN TRƯỜNG
+                  <h3 className="text-xs font-black text-amber-400 uppercase tracking-widest flex items-center gap-1.5 animate-pulse">
+                    <span>⭐</span> TOP 5 SAO TOÀN TRƯỜNG
                   </h3>
                   <p className="text-[10px] text-indigo-350 font-medium">Bảng vàng vinh danh điểm tích lũy thi đua học đường</p>
                 </div>
@@ -1014,11 +1059,17 @@ export default function DashboardTab({
                       : index === 2 
                       ? "Tinh Tú Lập Trình 💫" 
                       : "Ngôi Sao Đỏ 🌟";
+                    
+                    const isPl = st.isPlaceholder;
 
                     return (
                       <div 
                         key={st.id} 
-                        className="flex items-center justify-between p-2 rounded-xl bg-indigo-950/50 hover:bg-indigo-900/45 border border-indigo-900/50 transition-colors duration-200"
+                        className={`flex items-center justify-between p-2 rounded-xl transition-colors duration-200 border ${
+                          isPl 
+                            ? "bg-indigo-950/20 border-indigo-950/35 opacity-40" 
+                            : "bg-indigo-950/50 hover:bg-indigo-900/45 border-indigo-900/50"
+                        }`}
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
                           <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black ${
@@ -1031,29 +1082,30 @@ export default function DashboardTab({
                           <div className="min-w-0">
                             <p className="text-[12px] font-bold text-slate-100 truncate flex items-center gap-1.5">
                               {st.name}
-                              <span className="text-[9px] font-black bg-indigo-505/30 text-indigo-300 px-1.5 py-0.2 rounded border border-indigo-700/20">
-                                {st.className}
-                              </span>
+                              {!isPl && (
+                                <span className="text-[9px] font-black bg-indigo-500/20 text-indigo-300 px-1.5 py-0.2 rounded border border-indigo-700/20">
+                                  {st.className}
+                                </span>
+                              )}
                             </p>
-                            <p className="text-[8px] text-slate-400 font-extrabold uppercase tracking-wide">{title}</p>
+                            <p className="text-[8px] text-slate-450 font-extrabold uppercase tracking-wide">
+                              {isPl ? "Chưa đạt hạng xếp học đường" : title}
+                            </p>
                           </div>
                         </div>
                         <div className="text-right shrink-0">
                           <span className="text-xs text-amber-400 font-black flex items-center justify-end gap-0.5">
-                            {st.cumulativeStars} <span className="text-[10px] text-yellow-450">⭐</span>
+                            {st.currentStars} <span className="text-[10px] text-yellow-450">⭐</span>
                           </span>
-                          {st.exchangedStickers > 0 && (
-                            <span className="text-[8px] text-indigo-300 font-semibold block">
-                              (Đã đổi {st.exchangedStickers} 🎁)
+                          {!isPl && (
+                            <span className="text-[8.5px] text-indigo-300 font-semibold block mt-0.5">
+                              {st.exchangedStickers > 0 ? `Đã đổi ${st.exchangedStickers} 🎁 / tích luỹ ${st.cumulativeStars} ⭐` : `Tích luỹ: ${st.cumulativeStars} ⭐`}
                             </span>
                           )}
                         </div>
                       </div>
                     );
                   })}
-                  {topSchoolStudents.length === 0 && (
-                    <p className="text-center text-[11px] text-slate-500 py-4">Chưa có học sinh nào tích lũy sao</p>
-                  )}
                 </div>
               </div>
 
@@ -1081,8 +1133,8 @@ export default function DashboardTab({
                 <span className="bg-amber-500 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-md">
                   GÓC THI ĐUA KHỐI HỌC
                 </span>
-                <span className="text-[10px] text-slate-400 font-bold lowercase">
-                  (Khối lớp của {activeClassObj?.name || selectedClass})
+                <span className="text-[10px] text-slate-400 font-bold">
+                  (Lớp: {activeClassObj?.name || selectedClass})
                 </span>
               </h3>
               <p className="text-[11px] text-slate-400 font-medium">

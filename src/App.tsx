@@ -445,14 +445,14 @@ export default function App() {
             <div>
               <h1 className="text-xl sm:text-2xl font-black uppercase tracking-wider">Hệ Thống Số Quản Lý Phòng Học Tin Học</h1>
               <p className="text-xs text-amber-100 font-semibold flex flex-wrap items-center gap-1.5 mt-1">
-                <span>Trường Tiểu Học Long Định</span>
+                <span className="bg-amber-500 text-white text-[12px] font-black px-2 py-0.5 rounded-lg border border-yellow-300">Trường Tiểu học Long Định</span>
                 <span>•</span>
                 <span className="inline-flex items-center gap-1 bg-amber-700/40 px-2 py-0.5 rounded-lg text-[9px] text-white">
                   <span className={`w-1.5 h-1.5 rounded-full ${supabaseError ? 'bg-red-400 animate-pulse' : 'bg-emerald-400'}`}></span>
                   Supabase {supabaseError ? 'Lỗi' : 'Đồng bộ'}
                 </span>
                 <span>•</span>
-                <span>Người chịu trách nhiệm: <strong className="underline text-white font-black">{currentUser ? currentUser.name : 'Chưa đăng nhập'}</strong></span>
+                <span>Người chịu trách nhiệm: <strong className="text-white font-black">{currentUser ? currentUser.name : 'Chưa đăng nhập'}</strong></span>
               </p>
             </div>
           </div>
@@ -501,30 +501,35 @@ export default function App() {
 
       {/* STICKY MAIN NAVIGATION BAR */}
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex overflow-x-auto no-scrollbar py-2 gap-1.5 items-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          
+          {/* Subtle mobile scrolling gradient indicator overlays */}
+          <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-white to-transparent pointer-events-none z-10 md:hidden" />
+          <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-white to-transparent pointer-events-none z-10 md:hidden" />
+
+          <div className="flex overflow-x-auto no-scrollbar py-2.5 gap-3 items-center w-full">
             
             <button
               onClick={() => setActiveTab('dashboard')}
-              className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition whitespace-nowrap ${
+              className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition whitespace-nowrap cursor-pointer active:scale-95 ${
                 activeTab === 'dashboard' 
                   ? 'bg-amber-100 text-amber-900 border border-amber-200 shadow-sm' 
                   : 'text-slate-500 hover:bg-slate-100'
               }`}
             >
-              <Home className="w-4 h-4" /> Tổng quan
+              <Home className="w-4 h-4" />Tổng quan
             </button>
             
             {hasAdminOrTeacherAccess && (
               <button
                 onClick={() => setActiveTab('students')}
-                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition whitespace-nowrap ${
+                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition whitespace-nowrap cursor-pointer active:scale-95 ${
                   activeTab === 'students' 
                     ? 'bg-amber-100 text-amber-900 border border-amber-200 shadow-sm' 
                     : 'text-slate-500 hover:bg-slate-100'
                 }`}
               >
-                <Users className="w-4 h-4" /> Học sinh
+                <Users className="w-4 h-4" />Học sinh
               </button>
             )}
 
@@ -532,33 +537,33 @@ export default function App() {
             {hasAdminOrTeacherAccess && (
               <button
                 onClick={() => setActiveTab('classes-management')}
-                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition whitespace-nowrap ${
+                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition whitespace-nowrap cursor-pointer active:scale-95 ${
                   activeTab === 'classes-management' 
-                    ? 'bg-amber-100 text-amber-900 border border-amber-200 shadow-sm' 
+                    ? 'bg-amber-105 text-amber-900 border border-amber-200 shadow-sm' 
                     : 'text-slate-500 hover:bg-slate-100'
                 }`}
               >
-                <Layers className="w-4 h-4" /> Khối & Lớp
+                <Layers className="w-4 h-4" />Khối & Lớp
               </button>
             )}
 
             {hasAdminOrTeacherAccess && (
               <button
                 onClick={() => setActiveTab('attendance')}
-                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition whitespace-nowrap ${
+                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition whitespace-nowrap cursor-pointer active:scale-95 ${
                   activeTab === 'attendance' 
                     ? 'bg-amber-100 text-amber-900 border border-amber-200 shadow-sm' 
                     : 'text-slate-500 hover:bg-slate-100'
                 }`}
               >
-                <ClipboardCheck className="w-4 h-4" /> Điểm danh
+                <ClipboardCheck className="w-4 h-4" />Điểm danh
               </button>
             )}
 
             {hasAdminOrTeacherAccess && (
               <button
                 onClick={() => setActiveTab('evaluation')}
-                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition whitespace-nowrap ${
+                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition whitespace-nowrap cursor-pointer active:scale-95 ${
                   activeTab === 'evaluation' 
                     ? 'bg-amber-100 text-amber-900 border border-amber-200 shadow-sm' 
                     : 'text-slate-500 hover:bg-slate-100'
@@ -571,7 +576,7 @@ export default function App() {
             {hasAdminOrTeacherAccess && (
               <button
                 onClick={() => setActiveTab('emulation')}
-                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap relative ${
+                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap relative cursor-pointer active:scale-95 ${
                   activeTab === 'emulation'
                     ? 'bg-amber-100 text-amber-900 border-2 border-amber-400 shadow-sm font-black'
                     : 'text-slate-500 hover:bg-slate-100'
@@ -581,8 +586,7 @@ export default function App() {
                     : ''
                 }`}
               >
-                <Sparkles className="w-4 h-4" />
-                <span>Góc Thi Đua</span>
+                <Sparkles className="w-4 h-4" /><span>Thi Đua</span>
                 {isRedemptionPeriod && (
                   <span className="ml-1 bg-yellow-300 text-red-700 text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase animate-bounce border border-white">
                     Đổi Quà 🎁
@@ -594,61 +598,61 @@ export default function App() {
             {hasAdminOrTeacherAccess && (
               <button
                 onClick={() => setActiveTab('seating')}
-                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition whitespace-nowrap ${
+                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition whitespace-nowrap cursor-pointer active:scale-95 ${
                   activeTab === 'seating' 
                     ? 'bg-amber-100 text-amber-900 border border-amber-200 shadow-sm' 
                     : 'text-slate-500 hover:bg-slate-100'
                 }`}
               >
-                <Monitor className="w-4 h-4" /> Sơ đồ phòng máy
+                <Monitor className="w-4 h-4" />Phòng máy
               </button>
             )}
 
             <button
               onClick={() => setActiveTab('resources')}
-              className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition whitespace-nowrap ${
+              className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition whitespace-nowrap cursor-pointer active:scale-95 ${
                 activeTab === 'resources' 
                   ? 'bg-amber-100 text-amber-900 border border-amber-200 shadow-sm' 
                   : 'text-slate-500 hover:bg-slate-100'
               }`}
             >
-              <BookOpen className="w-4 h-4" /> Học liệu số
+              <BookOpen className="w-4 h-4" />Học liệu số
             </button>
 
             {/* Admin only route */}
             {currentUser && currentUser.role.includes('Admin') && (
               <button
                 onClick={() => setActiveTab('admin')}
-                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition whitespace-nowrap ${
+                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition whitespace-nowrap cursor-pointer active:scale-95 ${
                   activeTab === 'admin' 
                     ? 'bg-amber-100 text-amber-900 border border-amber-200 shadow-sm' 
                     : 'text-slate-500 hover:bg-slate-100'
                 }`}
               >
-                <Settings className="w-4 h-4" /> Quản trị
+                <Settings className="w-4 h-4" />Quản trị
               </button>
             )}
 
             {/* Authentication Button Container */}
-            <div className="ml-auto flex items-center pl-4 border-l">
+            <div className="ml-auto flex items-center pl-4 border-l border-slate-200 shrink-0">
               {!currentUser ? (
                 <button
                   onClick={() => setIsLoginModalOpen(true)}
-                  className="flex items-center gap-1 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-amber-600 border-2 border-amber-400 hover:bg-amber-50 shadow-sm transition"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-amber-600 border-2 border-amber-400 hover:bg-amber-50 shadow-sm transition cursor-pointer active:scale-95"
                 >
-                  <LogIn className="w-4 h-4" /> Đăng nhập
+                  <LogIn className="w-4 h-4" />Đăng nhập
                 </button>
               ) : (
                 <div className="flex items-center gap-3">
-                  <span className="hidden lg:inline text-[10px] font-black text-slate-500 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-full flex items-center gap-1 shadow-sm">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="hidden lg:inline-flex text-[10px] font-black text-slate-500 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-full items-center gap-1 shadow-sm">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
                     <span>{currentUser.role}: <strong className="text-slate-700 font-extrabold">{currentUser.name}</strong></span>
                   </span>
                   <button
                     onClick={handleLogout}
-                    className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-bold text-red-600 border border-red-200 hover:bg-red-50 transition cursor-pointer"
+                    className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-bold text-red-600 border border-red-200 hover:bg-red-50 transition cursor-pointer active:scale-95"
                   >
-                    <LogOut className="w-4 h-4" /> Đăng xuất
+                    <LogOut className="w-4 h-4" />Đăng xuất
                   </button>
                 </div>
               )}
