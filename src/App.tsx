@@ -332,7 +332,7 @@ export default function App() {
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const foundUser = members.find(
-      (m) => m.username === loginForm.username.trim().toLowerCase() && loginForm.password === '123'
+      (m) => m.username === loginForm.username.trim().toLowerCase() && loginForm.password === '123456'
     );
 
     if (foundUser) {
@@ -340,7 +340,7 @@ export default function App() {
       setIsLoginModalOpen(false);
       showToast(`Đăng nhập thành công! Chào thầy cô: ${foundUser.name}`);
     } else {
-      showToast('Tên đăng nhập không chính xác hoặc mật khẩu (mặc định: 123) chưa đúng!', 'error');
+      showToast('Tên đăng nhập không chính xác hoặc mật khẩu chưa đúng!', 'error');
     }
   };
 
@@ -425,7 +425,7 @@ export default function App() {
       {/* Toast Notification block */}
       {toast.show && (
         <div 
-          className={`fixed bottom-5 right-5 z-50 flex items-center gap-2.5 px-5 py-3.5 rounded-2xl shadow-2xl text-white transition-all transform translate-y-0 text-sm font-extrabold ${
+          className={`fixed bottom-5 right-5 z-[100] flex items-center gap-2.5 px-5 py-3.5 rounded-2xl shadow-2xl text-white transition-all transform translate-y-0 text-sm font-extrabold ${
             toast.type === 'error' ? 'bg-red-500 border border-red-600' : 'bg-emerald-600 border border-emerald-700'
           }`}
         >
