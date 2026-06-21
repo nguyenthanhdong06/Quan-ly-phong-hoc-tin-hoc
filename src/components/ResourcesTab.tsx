@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { DocumentItem } from '../types';
-import { UploadCloud, FileText, Trash2, Download, BookOpen, Layers, CheckCircle2, Search, X, AlertCircle, ShieldCheck, Pencil } from 'lucide-react';
+import { UploadCloud, FileText, Trash2, Download, BookOpen, Layers, CheckCircle2, Search, X, AlertCircle, ShieldCheck, Pencil, ExternalLink } from 'lucide-react';
 
 interface ResourcesTabProps {
   documents: DocumentItem[];
@@ -22,6 +22,9 @@ export default function ResourcesTab({
   const [newType, setNewType] = useState('KHGD');
   const [newDesc, setNewDesc] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [driveLink, setDriveLink] = useState('');
+  const [isDriveModalOpen, setIsDriveModalOpen] = useState(false);
+  const [tempDriveLink, setTempDriveLink] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [documentToDelete, setDocumentToDelete] = useState<{ id: string; title: string } | null>(null);
@@ -123,6 +126,9 @@ export default function ResourcesTab({
       } catch (err) {
         console.warn('URL.createObjectURL failed:', err);
       }
+    } else if (driveLink) {
+      fileSize = 'Liên kết GG Drive';
+      fileUrl = driveLink.trim();
     }
 
     const isAdmin = currentUser?.role?.toLowerCase().includes('admin');
@@ -143,6 +149,7 @@ export default function ResourcesTab({
     setNewType('KHGD');
     setNewDesc('');
     setSelectedFile(null);
+    setDriveLink('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -176,6 +183,11 @@ export default function ResourcesTab({
   };
 
   const handleDownloadDocument = (doc: DocumentItem) => {
+    if (doc.fileUrl && (doc.fileUrl.startsWith('http') || doc.fileUrl.includes('drive.google.com'))) {
+      window.open(doc.fileUrl, '_blank');
+      showToast(`Đã mở liên kết học liệu trực tuyến: ${doc.title}`, 'success');
+      return;
+    }
     if (doc.fileUrl && doc.fileUrl !== '#') {
       const link = document.createElement('a');
       link.href = doc.fileUrl;
@@ -274,16 +286,15 @@ export default function ResourcesTab({
 
             {/* Fully Functional drag-and-drop & click uploader */}
             <div 
-              onClick={() => fileInputRef.current?.click()}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
-              className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all ${
+              className={`border-2 border-dashed rounded-xl p-5 text-center transition-all ${
                 isDragging 
                   ? 'border-amber-500 bg-amber-50/50 scale-[1.02]' 
-                  : selectedFile 
+                  : (selectedFile || driveLink)
                     ? 'border-emerald-400 bg-emerald-50/10' 
-                    : 'border-slate-200 hover:border-amber-400 bg-slate-50'
+                    : 'border-slate-200 hover:border-slate-300 bg-slate-50'
               }`}
             >
               <input 
@@ -317,12 +328,55 @@ export default function ResourcesTab({
                     Hủy chọn file
                   </button>
                 </div>
+              ) : driveLink ? (
+                <div className="space-y-1">
+                  <div className="flex items-center justify-center gap-1.5 text-emerald-600">
+                    <CheckCircle2 className="w-5 h-5" />
+                    <span className="text-xs font-black block">Đã liên kết Google Drive!</span>
+                  </div>
+                  <p className="text-[10.5px] font-bold text-slate-700 truncate max-w-[210px] mx-auto" title={driveLink}>
+                    {driveLink}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDriveLink('');
+                    }}
+                    className="mt-1.5 text-[10px] bg-slate-200 hover:bg-slate-350 text-slate-600 px-2.5 py-1.5 rounded-lg font-black transition cursor-pointer"
+                  >
+                    Hủy liên kết Drive
+                  </button>
+                </div>
               ) : (
-                <>
-                  <UploadCloud className={`w-8 h-8 mx-auto mb-1 transition-colors ${isDragging ? 'text-amber-500' : 'text-slate-350'}`} />
-                  <span className="text-xs font-extrabold text-amber-600 block hover:underline">Chọn file từ máy tính</span>
-                  <p className="text-[10px] text-slate-400 mt-1">PDF, PPTX, DOCX tối đa 50MB</p>
-                </>
+                <div className="space-y-3">
+                  <UploadCloud className={`w-8 h-8 mx-auto -mb-1 transition-colors ${isDragging ? 'text-amber-500' : 'text-slate-350'}`} />
+                  <div className="flex flex-col items-center justify-center gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="text-xs font-black text-amber-600 hover:underline cursor-pointer bg-transparent border-none outline-none p-0"
+                    >
+                      Chọn file từ máy tính
+                    </button>
+                    <div className="w-full flex items-center justify-center gap-2">
+                      <div className="h-px bg-slate-200 w-12" />
+                      <span className="text-[9px] text-slate-350 uppercase tracking-wider font-extrabold">hoặc</span>
+                      <div className="h-px bg-slate-200 w-12" />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTempDriveLink(driveLink);
+                        setIsDriveModalOpen(true);
+                      }}
+                      className="text-xs font-black text-emerald-600 hover:underline cursor-pointer inline-flex items-center gap-0.5 bg-transparent border-none outline-none p-0"
+                    >
+                      Thêm liên kết Google Drive
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-1">PDF, PPTX, DOCX hoặc link Google Drive</p>
+                </div>
               )}
             </div>
 
@@ -395,10 +449,14 @@ export default function ResourcesTab({
                       <div className="flex items-center gap-1.5 shrink-0 self-end md:self-center">
                         <button
                           onClick={() => handleDownloadDocument(doc)}
-                          title="Tải về kiểm tra tệp"
+                          title={doc.fileUrl && (doc.fileUrl.startsWith('http') || doc.fileUrl.includes('drive.google.com')) ? "Mở liên kết Google Drive" : "Tải về kiểm tra tệp"}
                           className="p-1.5 hover:bg-slate-100 text-slate-600 rounded-lg border border-slate-200 transition cursor-pointer"
                         >
-                          <Download className="w-3.5 h-3.5" />
+                          {doc.fileUrl && (doc.fileUrl.startsWith('http') || doc.fileUrl.includes('drive.google.com')) ? (
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          ) : (
+                            <Download className="w-3.5 h-3.5" />
+                          )}
                         </button>
                         <button
                           onClick={() => startEditing(doc)}
@@ -522,9 +580,13 @@ export default function ResourcesTab({
                             <button
                               onClick={() => handleDownloadDocument(doc)}
                               className="p-1.5 hover:bg-slate-100 text-slate-650 border border-slate-200 rounded-lg transition cursor-pointer"
-                              title="Tải về máy"
+                              title={doc.fileUrl && (doc.fileUrl.startsWith('http') || doc.fileUrl.includes('drive.google.com')) ? "Mở liên kết Google Drive" : "Tải về máy"}
                             >
-                              <Download className="w-3.5 h-3.5" />
+                              {doc.fileUrl && (doc.fileUrl.startsWith('http') || doc.fileUrl.includes('drive.google.com')) ? (
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              ) : (
+                                <Download className="w-3.5 h-3.5" />
+                              )}
                             </button>
                           )}
                           <button
@@ -653,7 +715,15 @@ export default function ResourcesTab({
                               onClick={() => handleDownloadDocument(doc)}
                               className="bg-white hover:bg-slate-150 border border-slate-200 text-slate-700 font-extrabold text-[10px] px-2.5 py-1.5 rounded flex items-center gap-1 shadow-sm transition cursor-pointer"
                             >
-                              <Download className="w-3 h-3 text-slate-600" /> Tải về
+                              {doc.fileUrl && (doc.fileUrl.startsWith('http') || doc.fileUrl.includes('drive.google.com')) ? (
+                                <>
+                                  <ExternalLink className="w-3 h-3 text-slate-605" /> Mở link
+                                </>
+                              ) : (
+                                <>
+                                  <Download className="w-3 h-3 text-slate-600" /> Tải về
+                                </>
+                              )}
                             </button>
                           </div>
                         </div>
@@ -706,7 +776,15 @@ export default function ResourcesTab({
                               onClick={() => handleDownloadDocument(doc)}
                               className="bg-white hover:bg-slate-150 border border-slate-200 text-slate-700 font-extrabold text-[10px] px-2.5 py-1.5 rounded flex items-center gap-1 shadow-sm transition cursor-pointer"
                             >
-                              <Download className="w-3 h-3 text-slate-600" /> Tải về
+                              {doc.fileUrl && (doc.fileUrl.startsWith('http') || doc.fileUrl.includes('drive.google.com')) ? (
+                                <>
+                                  <ExternalLink className="w-3 h-3 text-slate-605" /> Mở link
+                                </>
+                              ) : (
+                                <>
+                                  <Download className="w-3 h-3 text-slate-600" /> Tải về
+                                </>
+                              )}
                             </button>
                           </div>
                         </div>
@@ -888,6 +966,66 @@ export default function ResourcesTab({
                 className="px-4 py-2 bg-amber-600 hover:bg-amber-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl shadow-sm hover:shadow transition cursor-pointer disabled:cursor-not-allowed"
               >
                 Lưu thay đổi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* GOOGLE DRIVE LINK DIALOG MODAL */}
+      {isDriveModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 font-sans">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150 text-left">
+            <div className="flex items-center gap-3 text-emerald-600 border-b border-slate-100 pb-3">
+              <div className="p-2 bg-emerald-50 rounded-full shrink-0">
+                <svg className="w-5 h-5 text-emerald-600 animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polygon points="3 6 9 6 12 12 6 12" /><polygon points="12 12 18 12 15 18 9 18" /><polygon points="18 12 15 6 9 6 12 12" /></svg>
+              </div>
+              <div>
+                <h4 className="font-extrabold text-slate-800 text-sm uppercase tracking-wider font-sans">Liên kết Google Drive</h4>
+                <p className="text-[10px] text-slate-400 font-medium">Nhập đường dẫn tài liệu Google Drive chia sẻ công khai</p>
+              </div>
+            </div>
+            
+            <div className="py-4 space-y-4">
+              <div className="space-y-1">
+                <label className="block text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Đường dẫn Google Drive / Link chia sẻ</label>
+                <input
+                  type="url"
+                  value={tempDriveLink}
+                  onChange={(e) => setTempDriveLink(e.target.value)}
+                  placeholder="https://drive.google.com/file/d/... hoặc link thư mục"
+                  className="w-full text-xs p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none font-medium text-slate-800 bg-slate-50/50"
+                  required
+                />
+                <p className="text-[9.5px] text-slate-450 leading-relaxed mt-1">
+                  * Hãy đảm bảo quyền chia sẻ của tệp hoặc thư mục được đặt thành <strong className="text-emerald-600 font-black">"Bất kỳ ai có đường liên kết này đều có thể xem"</strong> để người dùng khác có thể truy cập được bình thường.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 text-xs font-bold pt-3 border-t border-slate-100">
+              <button
+                onClick={() => {
+                  setIsDriveModalOpen(false);
+                  setTempDriveLink('');
+                }}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition cursor-pointer"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                onClick={() => {
+                  if (tempDriveLink.trim()) {
+                    setDriveLink(tempDriveLink.trim());
+                    setIsDriveModalOpen(false);
+                    setTempDriveLink('');
+                    showToast('Đã thêm liên kết Google Drive thành công!', 'success');
+                  }
+                }}
+                disabled={!tempDriveLink.trim()}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl shadow-sm hover:shadow transition cursor-pointer disabled:cursor-not-allowed"
+              >
+                Xác nhận
               </button>
             </div>
           </div>
