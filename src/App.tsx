@@ -43,7 +43,10 @@ import {
   LogIn,
   LogOut,
   X,
-  ShieldCheck
+  ShieldCheck,
+  Menu,
+  ChevronsLeft,
+  ChevronsRight
 } from 'lucide-react';
 
 export default function App() {
@@ -159,6 +162,10 @@ export default function App() {
     return local ? JSON.parse(local) : null;
   });
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
+    return localStorage.getItem('sidebar_collapsed') === 'true';
+  });
   const [loginForm, setLoginForm] = useState({ username: '', password: '' });
 
   // Custom Toast State
@@ -420,7 +427,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans transition-all">
+    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col md:flex-row font-sans transition-all relative">
       
       {/* Toast Notification block */}
       {toast.show && (
@@ -434,25 +441,353 @@ export default function App() {
         </div>
       )}
 
+      {/* MOBILE SIDEBAR BACKDROP OVERLAY */}
+      {isMobileMenuOpen && (
+        <div 
+          onClick={() => setIsMobileMenuOpen(false)}
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-30 md:hidden animate-fadeIn"
+        />
+      )}
+
+      {/* VERTICAL SIDEBAR MENU */}
+      <aside className={`
+        fixed inset-y-0 left-0 z-40 bg-[#113f43] text-white flex flex-col shadow-2xl transition-all duration-300 ease-in-out shrink-0 border-r border-[#1a5a5e]/25
+        md:sticky md:top-0 md:h-screen md:translate-x-0
+        ${isSidebarCollapsed ? 'w-64 md:w-16' : 'w-64'}
+        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+      `}>
+        {/* Sidebar Header Brand */}
+        <div className={`p-4 bg-[#0a2c2f] border-b border-[#247c81]/30 flex items-center justify-between shadow-sm shrink-0 ${isSidebarCollapsed ? 'md:flex-col md:gap-3 md:p-3' : ''}`}>
+          <div className={`flex items-center gap-2.5 text-left ${isSidebarCollapsed ? 'md:flex-col md:text-center' : ''}`}>
+            <div className="bg-gradient-to-br from-amber-400 to-amber-500 p-2 rounded-xl text-[#0a2c2f] shadow-md border border-amber-300 flex items-center justify-center shrink-0">
+              <Monitor className="w-5 h-5 animate-pulse" />
+            </div>
+            {!isSidebarCollapsed && (
+              <div className="transition-all duration-300">
+                <h1 className="font-extrabold text-xl uppercase tracking-widest text-white leading-none mb-1">CCM 1.0</h1>
+                <p className="text-[11px] text-[#a6d5d8] font-bold leading-none">Trường Tiểu học Long Định</p>
+              </div>
+            )}
+          </div>
+          
+          {/* Collapse toggle and close buttons */}
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => {
+                const next = !isSidebarCollapsed;
+                setIsSidebarCollapsed(next);
+                localStorage.setItem('sidebar_collapsed', String(next));
+              }}
+              className="hidden md:inline-flex p-1.5 rounded-lg hover:bg-white/10 text-white cursor-pointer transition-all active:scale-90"
+              title={isSidebarCollapsed ? "Mở rộng menu" : "Thu gọn menu"}
+            >
+              {isSidebarCollapsed ? (
+                <ChevronsRight className="w-4 h-4 text-amber-300 animate-pulse" />
+              ) : (
+                <ChevronsLeft className="w-4 h-4 text-[#e2f1f2]/80" />
+              )}
+            </button>
+            <button 
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="p-1 rounded-lg hover:bg-white/10 text-white md:hidden cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Vertical Items List */}
+        <div className="flex-1 py-2 px-3 space-y-1 overflow-y-auto no-scrollbar scroll-smooth">
+          
+          <button
+            onClick={() => {
+              setActiveTab('dashboard');
+              setIsMobileMenuOpen(false);
+            }}
+            title={isSidebarCollapsed ? "Tổng quan" : ""}
+            className={`flex items-center gap-3 w-full px-4 py-2 rounded-xl text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 ${
+              isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
+            } ${
+              activeTab === 'dashboard'
+                ? 'bg-[#175358] text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
+                : 'text-[#e2f1f2]/80 hover:bg-white/5 hover:text-white'
+            }`}
+          >
+            <Home className="w-4 h-4 shrink-0" />
+            <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Tổng quan</span>
+          </button>
+
+          {hasAdminOrTeacherAccess && (
+            <button
+              onClick={() => {
+                setActiveTab('students');
+                setIsMobileMenuOpen(false);
+              }}
+              title={isSidebarCollapsed ? "Học sinh" : ""}
+              className={`flex items-center gap-3 w-full px-4 py-2 rounded-xl text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 ${
+                isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
+              } ${
+                activeTab === 'students'
+                  ? 'bg-[#175358] text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
+                  : 'text-[#e2f1f2]/80 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              <Users className="w-4 h-4 shrink-0" />
+              <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Học sinh</span>
+            </button>
+          )}
+
+          {hasAdminOrTeacherAccess && (
+            <button
+              onClick={() => {
+                setActiveTab('classes-management');
+                setIsMobileMenuOpen(false);
+              }}
+              title={isSidebarCollapsed ? "Khối & Lớp" : ""}
+              className={`flex items-center gap-3 w-full px-4 py-2 rounded-xl text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 ${
+                isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
+              } ${
+                activeTab === 'classes-management'
+                  ? 'bg-[#175358] text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
+                  : 'text-[#e2f1f2]/80 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              <Layers className="w-4 h-4 shrink-0" />
+              <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Khối & Lớp</span>
+            </button>
+          )}
+
+          {hasAdminOrTeacherAccess && (
+            <button
+              onClick={() => {
+                setActiveTab('attendance');
+                setIsMobileMenuOpen(false);
+              }}
+              title={isSidebarCollapsed ? "Điểm danh (Sổ điểm danh)" : ""}
+              className={`flex items-center gap-3 w-full px-4 py-2 rounded-xl text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 ${
+                isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
+              } ${
+                activeTab === 'attendance'
+                  ? 'bg-[#175358] text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
+                  : 'text-[#e2f1f2]/80 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              <ClipboardCheck className="w-4 h-4 shrink-0" />
+              <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Điểm danh</span>
+            </button>
+          )}
+
+          {hasAdminOrTeacherAccess && (
+            <button
+              onClick={() => {
+                setActiveTab('evaluation');
+                setIsMobileMenuOpen(false);
+              }}
+              title={isSidebarCollapsed ? "Sổ nhận xét học trực quan" : ""}
+              className={`flex items-center gap-3 w-full px-4 py-2 rounded-xl text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 ${
+                isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
+              } ${
+                activeTab === 'evaluation'
+                  ? 'bg-[#175358] text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
+                  : 'text-[#e2f1f2]/80 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              <Award className="w-4 h-4 shrink-0" />
+              <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Nhận xét</span>
+            </button>
+          )}
+
+          {hasAdminOrTeacherAccess && (
+            <button
+              onClick={() => {
+                setActiveTab('emulation');
+                setIsMobileMenuOpen(false);
+              }}
+              title={isSidebarCollapsed ? "Phong trào thi đua / Đổi quà" : ""}
+              className={`flex items-center gap-3 w-full px-4 py-2 rounded-xl text-[11px] md:text-xs font-black uppercase tracking-wider transition-all relative cursor-pointer active:scale-95 ${
+                isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
+              } ${
+                activeTab === 'emulation'
+                  ? 'bg-[#175358] text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
+                  : 'text-[#e2f1f2]/80 hover:bg-white/5 hover:text-white'
+              } ${
+                isRedemptionPeriod 
+                  ? 'animate-pulse bg-gradient-to-r from-red-650 via-amber-650 to-red-650 text-white border-2 border-yellow-300 shadow' 
+                  : ''
+              }`}
+            >
+              <Sparkles className="w-4 h-4 shrink-0" />
+              <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Thi Đua</span>
+              {isRedemptionPeriod && (
+                <span className={`ml-auto bg-yellow-300 text-red-700 text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-tight shrink-0 ${isSidebarCollapsed ? 'md:hidden' : ''}`}>
+                  Quà 🎁
+                </span>
+              )}
+            </button>
+          )}
+
+          {hasAdminOrTeacherAccess && (
+            <button
+              onClick={() => {
+                setActiveTab('seating');
+                setIsMobileMenuOpen(false);
+              }}
+              title={isSidebarCollapsed ? "Sơ đồ máy & Chỗ ngồi" : ""}
+              className={`flex items-center gap-3 w-full px-4 py-2 rounded-xl text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 ${
+                isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
+              } ${
+                activeTab === 'seating'
+                  ? 'bg-[#175358] text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
+                  : 'text-[#e2f1f2]/80 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              <Monitor className="w-4 h-4 shrink-0" />
+              <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Phòng máy</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => {
+              setActiveTab('resources');
+              setIsMobileMenuOpen(false);
+            }}
+            title={isSidebarCollapsed ? "Học liệu số & Tài nguyên" : ""}
+            className={`flex items-center gap-3 w-full px-4 py-2 rounded-xl text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 ${
+              isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
+            } ${
+              activeTab === 'resources'
+                ? 'bg-[#175358] text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
+                : 'text-[#e2f1f2]/80 hover:bg-white/5 hover:text-white'
+            }`}
+          >
+            <BookOpen className="w-4 h-4 shrink-0" />
+            <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Học liệu số</span>
+          </button>
+
+          {currentUser && currentUser.role.includes('Admin') && (
+            <button
+              onClick={() => {
+                setActiveTab('admin');
+                setIsMobileMenuOpen(false);
+              }}
+              title={isSidebarCollapsed ? "Bảng quản trị hệ thống" : ""}
+              className={`flex items-center gap-3 w-full px-4 py-2 rounded-xl text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 ${
+                isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
+              } ${
+                activeTab === 'admin'
+                  ? 'bg-[#175358] text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
+                  : 'text-[#e2f1f2]/80 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              <Settings className="w-4 h-4 shrink-0" />
+              <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Quản trị</span>
+            </button>
+          )}
+
+          {/* Account Profile & Authentication block */}
+          <div className="pt-3 border-t border-[#247c81]/25 mt-2.5 space-y-1.5 shrink-0">
+            {!currentUser ? (
+               <button
+                onClick={() => {
+                  setIsLoginModalOpen(true);
+                  setIsMobileMenuOpen(false);
+                }}
+                title={isSidebarCollapsed ? "Đăng nhập" : ""}
+                className={`flex items-center gap-3 w-full px-4 py-2 rounded-xl text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer text-[#e2f1f2]/80 hover:bg-white/5 hover:text-white active:scale-95 ${
+                  isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
+                }`}
+              >
+                <LogIn className="w-4 h-4 shrink-0" />
+                <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Đăng nhập</span>
+              </button>
+            ) : (
+              <div className="space-y-1.5">
+                <div className={`px-4 py-2 rounded-xl bg-[#0a2c2f]/90 border border-[#247c81]/35 flex items-center ${isSidebarCollapsed ? 'md:justify-center md:px-2' : 'gap-3'}`}>
+                  <ShieldCheck className="w-4 h-4 text-emerald-400 animate-pulse shrink-0" />
+                  {!isSidebarCollapsed && (
+                    <div className="min-w-0 flex-1 text-left">
+                      <span className="block text-[8px] font-black text-emerald-300 uppercase tracking-widest leading-none mb-1">
+                        {currentUser.role === 'Admin' ? 'QUẢN TRỊ VIÊN (ADMIN)' : currentUser.role.toUpperCase()}
+                      </span>
+                      <p className="text-xs font-black text-white truncate leading-none">
+                        {currentUser.name}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  title={isSidebarCollapsed ? "Đăng xuất" : ""}
+                  className={`flex items-center gap-3 w-full px-4 py-2 rounded-xl text-[11px] md:text-xs font-black uppercase tracking-wider text-red-200 hover:bg-[#802222]/30 hover:text-white transition-all cursor-pointer active:scale-95 border border-red-500/20 ${
+                    isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
+                  }`}
+                >
+                  <LogOut className="w-4 h-4 text-red-400 shrink-0" />
+                  <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Đăng xuất</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+        </div>
+
+        {/* Sidebar Footer credit */}
+        <div className={`p-3.5 bg-[#0a2c2f]/75 border-t border-[#247c81]/25 text-center shrink-0 ${isSidebarCollapsed ? 'md:hidden' : ''}`}>
+          <p className="text-[9px] text-[#a6d5d8]/70 font-medium">Bản quyền © 2026 bởi</p>
+          <p className="text-[9px] text-amber-300 font-extrabold uppercase tracking-widest mt-0.5">Nguyễn Thanh Đồng</p>
+        </div>
+
+      </aside>
+
+      {/* RIGHT MAIN PANEL WRAPPER */}
+      <div className="flex-1 flex flex-col min-w-0">
+
+        {/* TOP NAVIGATION BAR - Show only on mobile for menu toggling */}
+        <nav className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs h-14 flex items-center px-4 shrink-0 justify-between md:hidden animate-fadeIn">
+          
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-black uppercase tracking-wider text-[#1e6a70]">T.H Long Định</span>
+          </div>
+
+          {/* Right helper info & Mobile hamburger toggle menu */}
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-100/60 px-3 py-1 rounded-full border border-slate-250/20">
+              {systemDateText}
+            </span>
+            
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="p-2 text-slate-500 hover:bg-slate-100 rounded-xl transition cursor-pointer"
+              title="Menu dọc"
+            >
+              <Menu className="w-5 h-5 text-[#1e6a70]" />
+            </button>
+          </div>
+
+        </nav>
+
       {/* HEADER SECTION PANEL */}
-      <header className="bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-md">
+      <header className="bg-gradient-to-r from-[#113f43] via-[#175358] to-[#1e6a70] text-white shadow-xl sticky top-14 md:top-0 z-20 transition-all border-b border-[#247c81]/30">
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           
           <div className="flex items-center gap-3 text-left">
-            <div className="bg-white p-2.5 rounded-xl text-amber-600 shadow-inner">
+            <div className="bg-gradient-to-br from-amber-400 to-amber-500 p-2.5 rounded-xl text-[#0a2c2f] shadow-md border border-amber-300 flex items-center justify-center shrink-0">
               <Monitor className="w-6 h-6 animate-pulse" />
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-black uppercase tracking-wider">Hệ Thống Số Quản Lý Phòng Học Tin Học</h1>
-              <p className="text-xs text-amber-100 font-semibold flex flex-wrap items-center gap-1.5 mt-1">
-                <span className="bg-amber-500 text-white text-[12px] font-black px-2 py-0.5 rounded-lg border border-yellow-300">Trường Tiểu học Long Định</span>
-                <span>•</span>
-                <span className="inline-flex items-center gap-1 bg-amber-700/40 px-2 py-0.5 rounded-lg text-[9px] text-white">
-                  <span className={`w-1.5 h-1.5 rounded-full ${supabaseError ? 'bg-red-400 animate-pulse' : 'bg-emerald-400'}`}></span>
+              <h1 className="text-xl sm:text-2xl font-black uppercase tracking-wider text-white drop-shadow-sm">Hệ Thống Số Quản Lý Phòng Học Tin Học</h1>
+              <p className="text-xs text-[#a6d5d8] font-semibold flex flex-wrap items-center gap-1.5 mt-1">
+                <span className="bg-amber-400/20 text-amber-300 border border-amber-400/40 text-[12px] font-black px-2.5 py-0.5 rounded-lg shadow-sm backdrop-blur-xs">Trường Tiểu học Long Định</span>
+                <span className="text-[#a6d5d8]/60">•</span>
+                <span className="inline-flex items-center gap-1 bg-emerald-500/15 border border-emerald-500/35 px-2.5 py-0.5 rounded-lg text-[9px] text-[#2fe0b1] font-bold">
+                  <span className={`w-1.5 h-1.5 rounded-full ${supabaseError ? 'bg-red-400 animate-pulse' : 'bg-emerald-400 shrink-0'}`}></span>
                   Supabase {supabaseError ? 'Lỗi' : 'Đồng bộ'}
                 </span>
-                <span>•</span>
-                <span>Người chịu trách nhiệm: <strong className="text-white font-black">{currentUser ? currentUser.name : 'Chưa đăng nhập'}</strong></span>
+                <span className="text-[#a6d5d8]/60">•</span>
+                <span>Người chịu trách nhiệm: <strong className="text-amber-300 font-extrabold">{currentUser ? currentUser.name : 'Chưa đăng nhập'}</strong></span>
               </p>
             </div>
           </div>
@@ -460,16 +795,16 @@ export default function App() {
           <div className="flex flex-wrap items-center gap-2">
             
             {/* Grades quick selections */}
-            <div className="bg-amber-700/35 rounded-xl p-1 flex items-center gap-1 border border-amber-400/40">
-              <span className="text-[10px] px-2 font-black text-amber-200 uppercase tracking-wider">Khối:</span>
+            <div className="bg-white/10 backdrop-blur-md rounded-xl p-1 flex items-center gap-1 border border-white/10 shadow-inner">
+              <span className="text-[10px] px-2 font-black text-teal-200 uppercase tracking-wider">Khối:</span>
               {grades.map(g => (
                 <button
                   key={g.id}
                   onClick={() => setSelectedGrade(g.id)}
                   className={`px-3 py-1 text-xs font-black rounded-lg transition-all ${
                     selectedGrade === g.id 
-                      ? 'bg-white text-amber-700 shadow-sm border border-white' 
-                      : 'hover:bg-amber-600/50 text-white'
+                      ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-[#0a2c2f] shadow-md border border-amber-300 font-extrabold' 
+                      : 'hover:bg-white/10 text-white/90'
                   }`}
                 >
                   {g.id}
@@ -478,12 +813,12 @@ export default function App() {
             </div>
 
             {/* Classes selector select */}
-            <div className="bg-amber-700/35 rounded-xl p-1 flex items-center gap-1 border border-amber-400/40">
-              <span className="text-[10px] px-2 font-black text-amber-200 uppercase tracking-wider">Lớp:</span>
+            <div className="bg-white/10 backdrop-blur-md rounded-xl p-1 flex items-center gap-1 border border-white/10 shadow-inner">
+              <span className="text-[10px] px-2 font-black text-teal-200 uppercase tracking-wider">Lớp:</span>
               <select
                 value={selectedClass}
                 onChange={(e) => setSelectedClass(e.target.value)}
-                className="bg-amber-700 text-white font-extrabold text-xs rounded-lg border-none focus:ring-2 focus:ring-white p-1 cursor-pointer pr-5"
+                className="bg-[#113f43]/90 text-white font-extrabold text-xs rounded-lg border border-white/10 focus:ring-2 focus:ring-amber-400 p-1 cursor-pointer pr-5"
               >
                 {filteredActiveClasses.map(c => (
                   <option key={c.id} value={c.id}>{c.name}</option>
@@ -499,168 +834,6 @@ export default function App() {
         </div>
       </header>
 
-      {/* STICKY MAIN NAVIGATION BAR */}
-      <nav className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          
-          {/* Subtle mobile scrolling gradient indicator overlays */}
-          <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-white to-transparent pointer-events-none z-10 md:hidden" />
-          <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-white to-transparent pointer-events-none z-10 md:hidden" />
-
-          <div className="flex overflow-x-auto no-scrollbar py-2.5 gap-3 items-center w-full">
-            
-            <button
-              onClick={() => setActiveTab('dashboard')}
-              className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition whitespace-nowrap cursor-pointer active:scale-95 ${
-                activeTab === 'dashboard' 
-                  ? 'bg-amber-100 text-amber-900 border border-amber-200 shadow-sm' 
-                  : 'text-slate-500 hover:bg-slate-100'
-              }`}
-            >
-              <Home className="w-4 h-4" />Tổng quan
-            </button>
-            
-            {hasAdminOrTeacherAccess && (
-              <button
-                onClick={() => setActiveTab('students')}
-                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition whitespace-nowrap cursor-pointer active:scale-95 ${
-                  activeTab === 'students' 
-                    ? 'bg-amber-100 text-amber-900 border border-amber-200 shadow-sm' 
-                    : 'text-slate-500 hover:bg-slate-100'
-                }`}
-              >
-                <Users className="w-4 h-4" />Học sinh
-              </button>
-            )}
-
-            {/* New CRUD Class & Grade tab */}
-            {hasAdminOrTeacherAccess && (
-              <button
-                onClick={() => setActiveTab('classes-management')}
-                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition whitespace-nowrap cursor-pointer active:scale-95 ${
-                  activeTab === 'classes-management' 
-                    ? 'bg-amber-105 text-amber-900 border border-amber-200 shadow-sm' 
-                    : 'text-slate-500 hover:bg-slate-100'
-                }`}
-              >
-                <Layers className="w-4 h-4" />Khối & Lớp
-              </button>
-            )}
-
-            {hasAdminOrTeacherAccess && (
-              <button
-                onClick={() => setActiveTab('attendance')}
-                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition whitespace-nowrap cursor-pointer active:scale-95 ${
-                  activeTab === 'attendance' 
-                    ? 'bg-amber-100 text-amber-900 border border-amber-200 shadow-sm' 
-                    : 'text-slate-500 hover:bg-slate-100'
-                }`}
-              >
-                <ClipboardCheck className="w-4 h-4" />Điểm danh
-              </button>
-            )}
-
-            {hasAdminOrTeacherAccess && (
-              <button
-                onClick={() => setActiveTab('evaluation')}
-                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition whitespace-nowrap cursor-pointer active:scale-95 ${
-                  activeTab === 'evaluation' 
-                    ? 'bg-amber-100 text-amber-900 border border-amber-200 shadow-sm' 
-                    : 'text-slate-500 hover:bg-slate-100'
-                }`}
-              >
-                <Award className="w-4 h-4" /> Nhận xét
-              </button>
-            )}
-
-            {hasAdminOrTeacherAccess && (
-              <button
-                onClick={() => setActiveTab('emulation')}
-                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap relative cursor-pointer active:scale-95 ${
-                  activeTab === 'emulation'
-                    ? 'bg-amber-100 text-amber-900 border-2 border-amber-400 shadow-sm font-black'
-                    : 'text-slate-500 hover:bg-slate-100'
-                } ${
-                  isRedemptionPeriod 
-                    ? 'animate-pulse bg-gradient-to-r from-red-500 via-amber-500 to-red-500 text-white border-2 border-yellow-300 shadow scale-105' 
-                    : ''
-                }`}
-              >
-                <Sparkles className="w-4 h-4" /><span>Thi Đua</span>
-                {isRedemptionPeriod && (
-                  <span className="ml-1 bg-yellow-300 text-red-700 text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase animate-bounce border border-white">
-                    Đổi Quà 🎁
-                  </span>
-                )}
-              </button>
-            )}
-
-            {hasAdminOrTeacherAccess && (
-              <button
-                onClick={() => setActiveTab('seating')}
-                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition whitespace-nowrap cursor-pointer active:scale-95 ${
-                  activeTab === 'seating' 
-                    ? 'bg-amber-100 text-amber-900 border border-amber-200 shadow-sm' 
-                    : 'text-slate-500 hover:bg-slate-100'
-                }`}
-              >
-                <Monitor className="w-4 h-4" />Phòng máy
-              </button>
-            )}
-
-            <button
-              onClick={() => setActiveTab('resources')}
-              className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition whitespace-nowrap cursor-pointer active:scale-95 ${
-                activeTab === 'resources' 
-                  ? 'bg-amber-100 text-amber-900 border border-amber-200 shadow-sm' 
-                  : 'text-slate-500 hover:bg-slate-100'
-              }`}
-            >
-              <BookOpen className="w-4 h-4" />Học liệu số
-            </button>
-
-            {/* Admin only route */}
-            {currentUser && currentUser.role.includes('Admin') && (
-              <button
-                onClick={() => setActiveTab('admin')}
-                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition whitespace-nowrap cursor-pointer active:scale-95 ${
-                  activeTab === 'admin' 
-                    ? 'bg-amber-100 text-amber-900 border border-amber-200 shadow-sm' 
-                    : 'text-slate-500 hover:bg-slate-100'
-                }`}
-              >
-                <Settings className="w-4 h-4" />Quản trị
-              </button>
-            )}
-
-            {/* Authentication Button Container */}
-            <div className="ml-auto flex items-center pl-4 border-l border-slate-200 shrink-0">
-              {!currentUser ? (
-                <button
-                  onClick={() => setIsLoginModalOpen(true)}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-amber-600 border-2 border-amber-400 hover:bg-amber-50 shadow-sm transition cursor-pointer active:scale-95"
-                >
-                  <LogIn className="w-4 h-4" />Đăng nhập
-                </button>
-              ) : (
-                <div className="flex items-center gap-3">
-                  <span className="hidden lg:inline-flex text-[10px] font-black text-slate-500 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-full items-center gap-1 shadow-sm">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
-                    <span>{currentUser.role}: <strong className="text-slate-700 font-extrabold">{currentUser.name}</strong></span>
-                  </span>
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-bold text-red-600 border border-red-200 hover:bg-red-50 transition cursor-pointer active:scale-95"
-                  >
-                    <LogOut className="w-4 h-4" />Đăng xuất
-                  </button>
-                </div>
-              )}
-            </div>
-
-          </div>
-        </div>
-      </nav>
 
       {/* MAIN SCREEN LOADERS */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 animate-fadeIn">
@@ -866,11 +1039,19 @@ export default function App() {
       )}
 
       {/* FOOTER */}
-      <footer className="bg-slate-900 text-slate-400 text-xs py-6 border-t border-slate-800 text-center space-y-1 mt-auto">
-        <p className="font-bold text-white uppercase tracking-wider">Hệ Thống Số Quản Lý Phòng Học Tin Học Trường Tiểu Học Long Định</p>
-        <p><strong className="text-white">© 2026. Xây dựng và hoàn thiện bởi Giáo Viên Nguyễn Thanh Đồng.</strong></p>
-        <p><strong className="text-slate-400">Email: nguyenthanhdong.hutech@gmail.com</strong></p>
+      <footer className="bg-[#0a2326] text-[#a6d5d8]/70 text-xs py-8 border-t border-[#247c81]/25 text-center space-y-2 mt-auto">
+        <p className="font-extrabold text-[#e2f1f2] uppercase tracking-wider text-xs sm:text-sm">Hệ Thống Số Quản Lý Phòng Học Tin Học Trường Tiểu Học Long Định</p>
+        <p className="font-medium text-[11px] sm:text-xs">
+          <span>© 2026. Xây dựng và hoàn thiện bởi Giáo Viên </span>
+          <strong className="text-amber-300 hover:text-amber-200 transition-colors cursor-pointer">Nguyễn Thanh Đồng.</strong>
+        </p>
+        <p className="text-[11px] sm:text-xs text-[#a6d5d8]/55">
+          <span>Liên hệ hỗ trợ qua Email: </span>
+          <span className="text-amber-300/85 underline font-mono select-all hover:text-amber-200 transition-colors">nguyenthanhdong.hutech@gmail.com</span>
+        </p>
       </footer>
+
+      </div> {/* RIGHT MAIN PANEL WRAPPER CLOSE */}
 
     </div>
   );

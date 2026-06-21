@@ -71,6 +71,9 @@ export default function StudentsTab({
   const [editGender, setEditGender] = useState<'Nam' | 'Nữ'>('Nam');
   const [editNote, setEditNote] = useState('');
 
+  // Sợ bấm nhầm nút xóa của học sinh
+  const [studentToDelete, setStudentToDelete] = useState<{ id: string; name: string } | null>(null);
+
   const handleStartEdit = (student: Student) => {
     setEditingStudentId(student.id);
     setEditCode(student.code);
@@ -558,7 +561,7 @@ export default function StudentsTab({
                       </td>
                       <td className="py-3.5 px-4 text-center">
                         <button
-                          onClick={() => handleDeleteStudent(s.id, s.name)}
+                          onClick={() => setStudentToDelete({ id: s.id, name: s.name })}
                           className="text-slate-400 hover:text-red-500 p-1.5 hover:bg-red-50 rounded transition inline-block cursor-pointer"
                           title="Xóa học sinh này"
                           disabled={isEditing}
@@ -586,6 +589,47 @@ export default function StudentsTab({
         </div>
 
       </div>
+
+      {/* STUDENT DELETE CONFIRMATION DIALOG MODAL */}
+      {studentToDelete && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3 text-red-650 border-b border-slate-100 pb-3 text-left">
+              <div className="p-2 bg-red-50 rounded-full text-red-600 shrink-0">
+                <AlertCircle className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="font-black text-slate-800 text-sm uppercase tracking-wider">Xác nhận xóa học sinh</h4>
+                <p className="text-[10px] text-slate-400 font-medium">Hành động này có thể xóa mất dữ liệu học sinh</p>
+              </div>
+            </div>
+            
+            <div className="py-4 text-left">
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Bạn có chắc chắn muốn xóa học sinh <strong className="text-red-600 font-extrabold">"{studentToDelete.name}"</strong> khỏi cơ sở dữ liệu lớp học? Hồ sơ thi đua, số sao tích luỹ và quà đã đổi của học sinh này sẽ bị gỡ hoàn toàn.
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2 text-xs">
+              <button
+                onClick={() => setStudentToDelete(null)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl transition cursor-pointer"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                onClick={() => {
+                  handleDeleteStudent(studentToDelete.id, studentToDelete.name);
+                  setStudentToDelete(null);
+                }}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-extrabold rounded-xl shadow-sm hover:shadow transition cursor-pointer"
+              >
+                Xác nhận Xóa
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

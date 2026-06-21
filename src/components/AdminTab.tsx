@@ -601,7 +601,7 @@ export default function AdminTab({
                     <tr key={member.id} className="hover:bg-slate-50/50">
                       <td className="py-3 px-4">
                         <p className="font-extrabold text-slate-800">{member.name}</p>
-                        <p className="text-[10px] text-slate-400">Username: <strong>{member.username}</strong> (Pass mặc định: 123)</p>
+                        <p className="text-[10px] text-slate-400">Username: <strong>{member.username}</strong> (Pass mặc định: 123456)</p>
                       </td>
                       <td className="py-3 px-4">
                         <p className="font-semibold text-slate-700">{member.email}</p>

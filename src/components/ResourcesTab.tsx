@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { DocumentItem } from '../types';
-import { UploadCloud, FileText, Trash2, Download, BookOpen, Layers, CheckCircle2, Search, X } from 'lucide-react';
+import { UploadCloud, FileText, Trash2, Download, BookOpen, Layers, CheckCircle2, Search, X, AlertCircle } from 'lucide-react';
 
 interface ResourcesTabProps {
   documents: DocumentItem[];
@@ -22,6 +22,7 @@ export default function ResourcesTab({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [documentToDelete, setDocumentToDelete] = useState<{ id: string; title: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Process a selected file
@@ -269,7 +270,7 @@ export default function ResourcesTab({
               type="submit"
               className="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs py-2.5 rounded-lg transition"
             >
-              Xác nhận Lưu trữ lên Thư Viện
+              Xác nhận
             </button>
           </form>
         </div>
@@ -354,7 +355,7 @@ export default function ResourcesTab({
                               <h4 className="text-xs font-black text-slate-800 line-clamp-2 leading-tight">{doc.title}</h4>
                               {currentUser?.role?.includes('Admin') && (
                                 <button
-                                  onClick={() => handleDeleteDocument(doc.id, doc.title)}
+                                  onClick={() => setDocumentToDelete({ id: doc.id, title: doc.title })}
                                   className="text-slate-400 hover:text-red-500 transition focus:outline-none cursor-pointer"
                                   title="Xóa học liệu"
                                 >
@@ -398,7 +399,7 @@ export default function ResourcesTab({
                               <h4 className="text-xs font-black text-slate-800 line-clamp-2 leading-tight">{doc.title}</h4>
                               {currentUser?.role?.includes('Admin') && (
                                 <button
-                                  onClick={() => handleDeleteDocument(doc.id, doc.title)}
+                                  onClick={() => setDocumentToDelete({ id: doc.id, title: doc.title })}
                                   className="text-slate-400 hover:text-red-500 transition focus:outline-none cursor-pointer"
                                   title="Xóa tài liệu"
                                 >
@@ -431,6 +432,47 @@ export default function ResourcesTab({
         </div>
 
       </div>
+
+      {/* DOCUMENT DELETE CONFIRMATION DIALOG MODAL */}
+      {documentToDelete && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150 text-left">
+            <div className="flex items-center gap-3 text-red-650 border-b border-slate-100 pb-3">
+              <div className="p-2 bg-red-50 rounded-full text-red-600 shrink-0">
+                <AlertCircle className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="font-black text-slate-800 text-sm uppercase tracking-wider font-sans">Xác nhận</h4>
+                <p className="text-[10px] text-slate-400 font-medium">Hành động này có thể làm mất học liệu</p>
+              </div>
+            </div>
+            
+            <div className="py-4">
+              <p className="text-xs text-slate-650 leading-relaxed">
+                Bạn có chắc chắn muốn xóa tài liệu học liệu <strong className="text-red-600 font-extrabold">"{documentToDelete.title}"</strong>? Toàn bộ liên kết tải xuống nội bộ sẽ bị thu hồi và không thể khôi phục.
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2 text-xs font-bold">
+              <button
+                onClick={() => setDocumentToDelete(null)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition cursor-pointer"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                onClick={() => {
+                  handleDeleteDocument(documentToDelete.id, documentToDelete.title);
+                  setDocumentToDelete(null);
+                }}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-sm hover:shadow transition cursor-pointer"
+              >
+                Xác nhận
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
