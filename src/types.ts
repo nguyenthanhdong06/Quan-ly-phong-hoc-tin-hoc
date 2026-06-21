@@ -38,6 +38,7 @@ export interface DocumentItem {
   description?: string;
   status?: 'pending' | 'approved' | 'rejected';
   rejectionReason?: string;
+  removedFromMyDocs?: boolean;
 }
 
 export interface Member {

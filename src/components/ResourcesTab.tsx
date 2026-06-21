@@ -164,8 +164,15 @@ export default function ResourcesTab({
         console.warn(e);
       }
     }
-    setDocuments(prev => prev.filter(d => d.id !== id));
-    showToast(`Đã xóa thành công học liệu: ${title}`, 'success');
+    const isUserAdmin = currentUser?.role?.toLowerCase().includes('admin');
+    const isApproved = doc?.status === 'approved' || doc?.status === undefined;
+    if (!isUserAdmin && isApproved) {
+      setDocuments(prev => prev.map(d => d.id === id ? { ...d, removedFromMyDocs: true } : d));
+      showToast(`Đã xóa thành công học liệu khỏi danh sách đóng góp của bạn!`, 'success');
+    } else {
+      setDocuments(prev => prev.filter(d => d.id !== id));
+      showToast(`Đã xóa thành công học liệu: ${title}`, 'success');
+    }
   };
 
   const handleDownloadDocument = (doc: DocumentItem) => {
@@ -463,7 +470,7 @@ export default function ResourcesTab({
                 <div>
                   <h4 className="font-extrabold text-[#113f43] flex items-center gap-1.5 text-xs uppercase tracking-wider font-sans">
                     <FileText className="w-4 h-4 text-amber-500 shrink-0" />
-                    Học liệu của tôi đóng góp ({documents.filter(d => d.author === currentUser.name).length} tệp)
+                    Học liệu của tôi đóng góp ({documents.filter(d => d.author === currentUser.name && !d.removedFromMyDocs).length} tệp)
                   </h4>
                   <p className="text-[10px] text-slate-450 mt-0.5 font-sans">Theo dõi trạng thái kiểm duyệt các học liệu bạn upload lên thư viện hệ thống.</p>
                 </div>
@@ -473,7 +480,7 @@ export default function ResourcesTab({
               </div>
 
               {(() => {
-                const myDocs = documents.filter(d => d.author === currentUser.name);
+                const myDocs = documents.filter(d => d.author === currentUser.name && !d.removedFromMyDocs);
                 if (myDocs.length === 0) {
                   return (
                     <p className="text-xs text-slate-450 italic py-2">Bạn chưa đăng tải đóng góp tệp tài liệu nào.</p>
@@ -511,17 +518,19 @@ export default function ResourcesTab({
                         </div>
                         
                         <div className="flex items-center gap-1 shrink-0">
-                          <button
-                            onClick={() => handleDownloadDocument(doc)}
-                            className="p-1.5 hover:bg-slate-100 text-slate-650 border border-slate-200 rounded-lg transition cursor-pointer"
-                            title="Tải về máy"
-                          >
-                            <Download className="w-3.5 h-3.5" />
-                          </button>
+                          {!(doc.status === 'approved' || doc.status === undefined) && (
+                            <button
+                              onClick={() => handleDownloadDocument(doc)}
+                              className="p-1.5 hover:bg-slate-100 text-slate-650 border border-slate-200 rounded-lg transition cursor-pointer"
+                              title="Tải về máy"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                           <button
                             onClick={() => setDocumentToDelete({ id: doc.id, title: doc.title })}
                             className="p-1.5 hover:bg-red-50 text-red-500 border border-red-100 rounded-lg transition cursor-pointer"
-                            title="Xóa học liệu"
+                            title={doc.status === 'approved' || doc.status === undefined ? "Xóa khỏi danh sách đóng góp" : "Xóa học liệu"}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
