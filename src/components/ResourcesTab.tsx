@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { DocumentItem } from '../types';
-import { UploadCloud, FileText, Trash2, Download, BookOpen, Layers, CheckCircle2, Search, X, AlertCircle } from 'lucide-react';
+import { UploadCloud, FileText, Trash2, Download, BookOpen, Layers, CheckCircle2, Search, X, AlertCircle, ShieldCheck, Pencil } from 'lucide-react';
 
 interface ResourcesTabProps {
   documents: DocumentItem[];
@@ -16,6 +16,8 @@ export default function ResourcesTab({
   showToast
 }: ResourcesTabProps) {
   
+  const isAdmin = currentUser?.role?.toLowerCase().includes('admin');
+  
   const [newTitle, setNewTitle] = useState('');
   const [newType, setNewType] = useState('KHGD');
   const [newDesc, setNewDesc] = useState('');
@@ -23,7 +25,19 @@ export default function ResourcesTab({
   const [isDragging, setIsDragging] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [documentToDelete, setDocumentToDelete] = useState<{ id: string; title: string } | null>(null);
+  const [documentToReject, setDocumentToReject] = useState<{ id: string; title: string } | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+  
+  // Edited states for Admin
+  const [documentToEdit, setDocumentToEdit] = useState<DocumentItem | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editType, setEditType] = useState('');
+  const [editDesc, setEditDesc] = useState('');
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const pendingDocs = documents.filter(d => d.status === 'pending');
+  const rejectedDocs = documents.filter(d => d.status === 'rejected');
 
   // Process a selected file
   const processSelectedFile = (file: File) => {
@@ -111,6 +125,7 @@ export default function ResourcesTab({
       }
     }
 
+    const isAdmin = currentUser?.role?.toLowerCase().includes('admin');
     const item: DocumentItem = {
       id: `doc-${Date.now()}`,
       title: newTitle.trim(),
@@ -119,7 +134,8 @@ export default function ResourcesTab({
       author: currentUser ? currentUser.name : 'Giáo viên bộ môn',
       date: new Date().toISOString().split('T')[0],
       size: fileSize,
-      description: newDesc.trim() || 'Bài giảng mẫu hỗ trợ giáo án lớp học.'
+      description: newDesc.trim() || 'Bài giảng mẫu hỗ trợ giáo án lớp học.',
+      status: isAdmin ? 'approved' : 'pending'
     };
 
     setDocuments(prev => [item, ...prev]);
@@ -130,7 +146,12 @@ export default function ResourcesTab({
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-    showToast('Tải lên học liệu giáo dục mới thành công!', 'success');
+    
+    if (isAdmin) {
+      showToast('Đã đăng và phê duyệt học liệu mới thành công!', 'success');
+    } else {
+      showToast('Tài liệu đã được đăng và đang chờ Quản trị viên xét duyệt!', 'success');
+    }
   };
 
   const handleDeleteDocument = (id: string, title: string) => {
@@ -159,6 +180,38 @@ export default function ResourcesTab({
     } else {
       showToast(`Mẫu tài liệu trực tuyến: Đã mở đường dẫn tải của ${doc.title}`, 'success');
     }
+  };
+
+  const handleApproveDocument = (id: string, title: string) => {
+    setDocuments(prev => prev.map(d => d.id === id ? { ...d, status: 'approved', rejectionReason: undefined } : d));
+    showToast(`Đã phê duyệt tài liệu thành công: ${title}`, 'success');
+  };
+
+  const handleRejectDocument = (id: string, title: string, reason: string) => {
+    setDocuments(prev => prev.map(d => d.id === id ? { ...d, status: 'rejected', rejectionReason: reason || 'Nội dung không phù hợp với mục đích giảng dạy.' } : d));
+    showToast(`Đã từ chối tài liệu: ${title}`, 'error');
+  };
+
+  const startEditing = (doc: DocumentItem) => {
+    setDocumentToEdit(doc);
+    setEditTitle(doc.title);
+    setEditType(doc.type);
+    setEditDesc(doc.description || '');
+  };
+
+  const handleSaveEdit = () => {
+    if (!editTitle.trim()) {
+      showToast('Tên học liệu không được để trống!', 'error');
+      return;
+    }
+    setDocuments(prev => prev.map(d => d.id === documentToEdit?.id ? {
+      ...d,
+      title: editTitle.trim(),
+      type: editType,
+      description: editDesc.trim()
+    } : d));
+    showToast('Đã cập nhật thay đổi học liệu thành công!', 'success');
+    setDocumentToEdit(null);
   };
 
   return (
@@ -278,6 +331,209 @@ export default function ResourcesTab({
         {/* Right column: Library folders view */}
         <div className="lg:col-span-2 bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-6">
           
+          {/* BAN QUẢN TRỊ: KHU VỰC KIỂM SOÁT & XÉT DUYỆT HỌC LIỆU SỐ */}
+          {currentUser?.role?.toLowerCase().includes('admin') && (
+            <div className="bg-[#0c2f33]/5 border border-[#175358]/20 p-5 rounded-2xl space-y-4 text-left font-sans">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#175358]/10 pb-3">
+                <div>
+                  <h4 className="font-extrabold text-[#113f43] flex items-center gap-2 text-sm uppercase tracking-wider">
+                    <ShieldCheck className="w-5 h-5 text-emerald-500 shrink-0" />
+                    Ban Quản Trị: Kiểm Soát & Xét Duyệt Học Liệu
+                  </h4>
+                  <p className="text-[11px] text-slate-500 mt-0.5">Kiểm tra thông tin tài liệu tải lên để ngăn chặn tệp tin rác hoặc lạm dụng hệ thống.</p>
+                </div>
+                {/* Stats badge indicators */}
+                <div className="flex gap-2 text-[10px] font-black">
+                  <span className="bg-amber-100 text-amber-800 px-3 py-1 rounded-lg border border-amber-205">
+                    Chờ duyệt: {pendingDocs.length}
+                  </span>
+                  <span className="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-lg border border-[#175358]/25">
+                    Đã duyệt: {documents.filter(d => d.status === 'approved' || d.status === undefined).length}
+                  </span>
+                </div>
+              </div>
+
+              {pendingDocs.length === 0 ? (
+                <div className="text-center py-6 bg-white/70 border border-[#175358]/10 rounded-xl">
+                  <p className="text-xs font-black text-[#113f43] flex items-center justify-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 animate-bounce" />
+                    Tất cả học liệu đã được duyệt sạch sẽ! Hệ thống an toàn.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3 max-h-[300px] overflow-y-auto no-scrollbar">
+                  {pendingDocs.map(doc => (
+                    <div key={doc.id} className="p-3 bg-white border border-slate-200 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xs hover:border-[#175358]/35 transition-all">
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded ${
+                            doc.type === 'KHGD' 
+                              ? 'bg-emerald-100 text-emerald-850 border border-emerald-200' 
+                              : doc.type === 'Bài giảng'
+                                ? 'bg-blue-100 text-blue-850 border border-blue-200'
+                                : 'bg-purple-100 text-purple-850 border border-purple-200'
+                          }`}>
+                            {doc.type}
+                          </span>
+                          <span className="font-mono text-[9px] font-extrabold text-slate-400">{doc.size}</span>
+                        </div>
+                        <h5 className="text-xs font-black text-slate-800 truncate" title={doc.title}>{doc.title}</h5>
+                        {doc.description && <p className="text-[10px] text-slate-400 line-clamp-1">{doc.description}</p>}
+                        <p className="text-[9px] text-[#113f43] font-bold">
+                          Người đăng: <strong className="text-amber-600 font-extrabold">{doc.author}</strong> • Ngày: {doc.date}
+                        </p>
+                      </div>
+
+                      {/* Control buttons */}
+                      <div className="flex items-center gap-1.5 shrink-0 self-end md:self-center">
+                        <button
+                          onClick={() => handleDownloadDocument(doc)}
+                          title="Tải về kiểm tra tệp"
+                          className="p-1.5 hover:bg-slate-100 text-slate-600 rounded-lg border border-slate-200 transition cursor-pointer"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => startEditing(doc)}
+                          title="Chỉnh sửa thông tin học liệu"
+                          className="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg border border-amber-200 transition cursor-pointer active:scale-95"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleApproveDocument(doc.id, doc.title)}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[10px] px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-sm transition cursor-pointer active:scale-95"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" /> Duyệt qua
+                        </button>
+                        <button
+                          onClick={() => setDocumentToReject({ id: doc.id, title: doc.title })}
+                          className="bg-red-50 text-red-650 hover:bg-red-100 font-black text-[10px] px-3 py-1.5 rounded-lg border border-red-200 transition cursor-pointer active:scale-95"
+                        >
+                          <X className="w-3.5 h-3.5" /> Từ chối
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* HISTORIC / REJECTED LIST - FOR ADMIN TO MANAGE OVERRIDES */}
+              {rejectedDocs.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-slate-200">
+                  <p className="text-[10px] font-black text-red-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <span className="w-2 h-2 bg-red-500 rounded-full animate-ping"></span>
+                    Danh sách tài liệu đã bị từ chối duyệt ({rejectedDocs.length})
+                  </p>
+                  <div className="space-y-1.5 max-h-[150px] overflow-y-auto no-scrollbar">
+                    {rejectedDocs.map(doc => (
+                      <div key={doc.id} className="p-2.5 bg-red-50/40 border border-red-200/55 rounded-xl flex items-center justify-between gap-2 text-[10px] hover:bg-red-50/60 transition">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-extrabold text-slate-700 truncate">{doc.title}</p>
+                          <p className="text-[9.5px] text-slate-400 mt-0.5">
+                            Người đăng: <strong className="text-slate-600">{doc.author}</strong> • Lý do từ chối: <span className="text-red-600 italic font-bold">"{doc.rejectionReason || 'Không phù hợp mục đích.'}"</span>
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={() => handleApproveDocument(doc.id, doc.title)}
+                            className="bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-250 font-black px-2.5 py-1 rounded-lg text-[9px] transition cursor-pointer shadow-xs active:scale-95"
+                          >
+                            Duyệt lại
+                          </button>
+                          <button
+                            onClick={() => setDocumentToDelete({ id: doc.id, title: doc.title })}
+                            className="bg-white hover:bg-red-50 text-red-700 border border-red-200 font-black px-2.5 py-1 rounded-lg text-[9px] transition cursor-pointer shadow-xs active:scale-95"
+                          >
+                            Xóa hẳn
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TRẠNG THÁI HỌC LIỆU ĐÃ ĐĂNG CỦA BẠN (DÀNH CHO GIÁO VIÊN BỘ MÔN) */}
+          {currentUser && !currentUser?.role?.toLowerCase().includes('admin') && (
+            <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl space-y-3.5 text-left font-sans">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h4 className="font-extrabold text-[#113f43] flex items-center gap-1.5 text-xs uppercase tracking-wider font-sans">
+                    <FileText className="w-4 h-4 text-amber-500 shrink-0" />
+                    Học liệu của tôi đóng góp ({documents.filter(d => d.author === currentUser.name).length} tệp)
+                  </h4>
+                  <p className="text-[10px] text-slate-450 mt-0.5 font-sans">Theo dõi trạng thái kiểm duyệt các học liệu bạn upload lên thư viện hệ thống.</p>
+                </div>
+                <div className="text-[9px] bg-slate-200/65 font-bold text-slate-550 px-2 py-0.5 rounded-lg border border-slate-300/40">
+                  Tài khoản: {currentUser.name}
+                </div>
+              </div>
+
+              {(() => {
+                const myDocs = documents.filter(d => d.author === currentUser.name);
+                if (myDocs.length === 0) {
+                  return (
+                    <p className="text-xs text-slate-450 italic py-2">Bạn chưa đăng tải đóng góp tệp tài liệu nào.</p>
+                  );
+                }
+
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                    {myDocs.map(doc => (
+                      <div key={doc.id} className="p-3 bg-white border border-slate-200/80 rounded-xl flex items-center justify-between gap-3 text-left shadow-2xs hover:border-slate-350 transition-all">
+                        <div className="min-w-0 flex-1">
+                          <h5 className="text-xs font-black text-slate-800 truncate" title={doc.title}>{doc.title}</h5>
+                          <div className="flex items-center gap-1.5 mt-1.5">
+                            <span className="text-[8px] font-black text-slate-400 font-mono bg-slate-100 px-1 py-0.5 rounded">{doc.size}</span>
+                            <span>•</span>
+                            {doc.status === 'approved' || doc.status === undefined ? (
+                              <span className="inline-flex items-center gap-0.5 text-[8.5px] font-extrabold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-250">
+                                <CheckCircle2 className="w-2.5 h-2.5" /> Đã duyệt công khai
+                              </span>
+                            ) : doc.status === 'rejected' ? (
+                              <span className="inline-flex items-center gap-0.5 text-[8.5px] font-extrabold text-red-650 bg-red-50/75 px-1.5 py-0.5 rounded border border-red-205">
+                                <X className="w-2.5 h-2.5" /> Bị từ chối
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-0.5 text-[8.5px] font-extrabold text-amber-650 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-250 animate-pulse">
+                                <AlertCircle className="w-2.5 h-2.5 text-amber-500 shrink-0" /> Đang chờ duyệt
+                              </span>
+                            )}
+                          </div>
+                          {doc.status === 'rejected' && doc.rejectionReason && (
+                            <p className="text-[9.5px] text-red-600 font-bold mt-2 bg-red-50/50 p-2 rounded-lg border border-red-100">
+                              Lý do: {doc.rejectionReason}
+                            </p>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={() => handleDownloadDocument(doc)}
+                            className="p-1.5 hover:bg-slate-100 text-slate-650 border border-slate-200 rounded-lg transition cursor-pointer"
+                            title="Tải về máy"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => setDocumentToDelete({ id: doc.id, title: doc.title })}
+                            className="p-1.5 hover:bg-red-50 text-red-500 border border-red-100 rounded-lg transition cursor-pointer"
+                            title="Xóa học liệu"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
           {/* Search bar inside the right block */}
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none w-10">
@@ -312,8 +568,14 @@ export default function ResourcesTab({
               );
             });
 
-            const khgdDocs = filteredDocs.filter(d => d.type === 'KHGD');
-            const slideDocs = filteredDocs.filter(d => d.type === 'Bài giảng' || d.type === 'Bài tập');
+            // Lọc ra các tài liệu đã được duyệt để hiển thị công khai ở thư mục chung
+            const isApprovedDoc = (doc: DocumentItem) => {
+              return doc.status === 'approved' || doc.status === undefined;
+            };
+
+            const approvedFilteredDocs = filteredDocs.filter(isApprovedDoc);
+            const khgdDocs = approvedFilteredDocs.filter(d => d.type === 'KHGD');
+            const slideDocs = approvedFilteredDocs.filter(d => d.type === 'Bài giảng' || d.type === 'Bài tập');
 
             if (searchQuery && filteredDocs.length === 0) {
               return (
@@ -353,14 +615,23 @@ export default function ResourcesTab({
                           <div>
                             <div className="flex justify-between items-start gap-2">
                               <h4 className="text-xs font-black text-slate-800 line-clamp-2 leading-tight">{doc.title}</h4>
-                              {currentUser?.role?.includes('Admin') && (
-                                <button
-                                  onClick={() => setDocumentToDelete({ id: doc.id, title: doc.title })}
-                                  className="text-slate-400 hover:text-red-500 transition focus:outline-none cursor-pointer"
-                                  title="Xóa học liệu"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
+                              {isAdmin && (
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <button
+                                    onClick={() => startEditing(doc)}
+                                    className="text-slate-400 hover:text-amber-500 transition focus:outline-none cursor-pointer"
+                                    title="Sửa học liệu"
+                                  >
+                                    <Pencil className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => setDocumentToDelete({ id: doc.id, title: doc.title })}
+                                    className="text-slate-400 hover:text-red-500 transition focus:outline-none cursor-pointer"
+                                    title="Xóa học liệu"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
                               )}
                             </div>
                             {doc.description && <p className="text-[10px] text-slate-400 line-clamp-2 mt-1.5 leading-snug">{doc.description}</p>}
@@ -397,14 +668,23 @@ export default function ResourcesTab({
                           <div>
                             <div className="flex justify-between items-start gap-2">
                               <h4 className="text-xs font-black text-slate-800 line-clamp-2 leading-tight">{doc.title}</h4>
-                              {currentUser?.role?.includes('Admin') && (
-                                <button
-                                  onClick={() => setDocumentToDelete({ id: doc.id, title: doc.title })}
-                                  className="text-slate-400 hover:text-red-500 transition focus:outline-none cursor-pointer"
-                                  title="Xóa tài liệu"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
+                              {isAdmin && (
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <button
+                                    onClick={() => startEditing(doc)}
+                                    className="text-slate-400 hover:text-amber-500 transition focus:outline-none cursor-pointer"
+                                    title="Sửa học liệu"
+                                  >
+                                    <Pencil className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => setDocumentToDelete({ id: doc.id, title: doc.title })}
+                                    className="text-slate-400 hover:text-red-500 transition focus:outline-none cursor-pointer"
+                                    title="Xóa tài liệu"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
                               )}
                             </div>
                             {doc.description && <p className="text-[10px] text-slate-400 line-clamp-2 mt-1.5 leading-snug">{doc.description}</p>}
@@ -468,6 +748,137 @@ export default function ResourcesTab({
                 className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-sm hover:shadow transition cursor-pointer"
               >
                 Xác nhận
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DOCUMENT REJECT REASON MODAL DIALOG */}
+      {documentToReject && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 font-sans">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150 text-left">
+            <div className="flex items-center gap-3 text-red-650 border-b border-slate-100 pb-3">
+              <div className="p-2 bg-red-50 rounded-full text-red-650 shrink-0">
+                <AlertCircle className="w-5 h-5 text-red-500" />
+              </div>
+              <div>
+                <h4 className="font-extrabold text-slate-800 text-sm uppercase tracking-wider font-sans">Yêu cầu từ chối duyệt</h4>
+                <p className="text-[10px] text-slate-400 font-medium">Gửi ý kiến phản hồi lý do cho người đăng</p>
+              </div>
+            </div>
+            
+            <div className="py-4 space-y-3">
+              <p className="text-xs text-slate-650 leading-relaxed">
+                Nhập lý do từ chối cho học liệu: <strong className="text-slate-800 font-extrabold">"{documentToReject.title}"</strong>
+              </p>
+              <textarea
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                placeholder="Ví dụ: Tài liệu chưa đúng chương trình học, trùng lặp tài liệu cũ, hoặc tệp lỗi..."
+                className="w-full text-xs p-2.5 border border-slate-200 rounded-xl h-24 focus:ring-2 focus:ring-red-400 focus:border-red-405 outline-none font-medium"
+                required
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 text-xs font-bold">
+              <button
+                onClick={() => {
+                  setDocumentToReject(null);
+                  setRejectReason('');
+                }}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition cursor-pointer"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                onClick={() => {
+                  handleRejectDocument(documentToReject.id, documentToReject.title, rejectReason);
+                  setDocumentToReject(null);
+                  setRejectReason('');
+                }}
+                disabled={!rejectReason.trim()}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-300 text-white rounded-xl shadow-sm hover:shadow transition cursor-pointer disabled:cursor-not-allowed"
+              >
+                Xác nhận từ chối
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DOCUMENT EDIT DIALOG MODAL (ADMIN ONLY) */}
+      {isAdmin && documentToEdit && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 font-sans">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150 text-left">
+            <div className="flex items-center gap-3 text-amber-600 border-b border-slate-100 pb-3">
+              <div className="p-2 bg-amber-50 rounded-full shrink-0">
+                <Pencil className="w-5 h-5 text-amber-605" />
+              </div>
+              <div>
+                <h4 className="font-extrabold text-slate-800 text-sm uppercase tracking-wider font-sans">Chỉnh sửa học liệu số</h4>
+                <p className="text-[10px] text-slate-400 font-medium">Thay đổi thông tin và phân loại học liệu dành cho Quản trị viên</p>
+              </div>
+            </div>
+            
+            <div className="py-4 space-y-4">
+              {/* Tiêu đề tệp */}
+              <div className="space-y-1">
+                <label className="block text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Tiêu đề học liệu</label>
+                <input
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  placeholder="Nhập tiêu đề hoặc tên tài liệu học tập..."
+                  className="w-full text-xs p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none font-medium text-slate-800 bg-slate-50/50"
+                  required
+                />
+              </div>
+
+              {/* Loại học liệu */}
+              <div className="space-y-1">
+                <label className="block text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Phân loại thư mục</label>
+                <select
+                  value={editType}
+                  onChange={(e) => setEditType(e.target.value)}
+                  className="w-full text-xs p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none font-medium text-slate-800 bg-slate-50/50 cursor-pointer"
+                >
+                  <option value="KHGD">Kế hoạch giáo dục & Phân phối chương trình (KHGD)</option>
+                  <option value="Bài giảng">Bài giảng PowerPoint & Thiết kế slide</option>
+                  <option value="Bài tập">Đề thi, Phiếu học tập & Bài kiểm tra</option>
+                </select>
+              </div>
+
+              {/* Mô tả chi tiết */}
+              <div className="space-y-1">
+                <label className="block text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Mô tả hoặc Hướng dẫn sử dụng</label>
+                <textarea
+                  value={editDesc}
+                  onChange={(e) => setEditDesc(e.target.value)}
+                  placeholder="Nhập nội dung tóm tắt chi tiết, ghi chú bài giảng..."
+                  className="w-full text-xs p-2.5 border border-slate-200 rounded-xl h-24 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none font-medium text-slate-800 bg-slate-50/50"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 text-xs font-bold pt-3 border-t border-slate-100">
+              <button
+                onClick={() => {
+                  setDocumentToEdit(null);
+                  setEditTitle('');
+                  setEditType('');
+                  setEditDesc('');
+                }}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition cursor-pointer"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                disabled={!editTitle.trim()}
+                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl shadow-sm hover:shadow transition cursor-pointer disabled:cursor-not-allowed"
+              >
+                Lưu thay đổi
               </button>
             </div>
           </div>

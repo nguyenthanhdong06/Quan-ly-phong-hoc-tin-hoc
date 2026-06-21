@@ -36,6 +36,8 @@ export interface DocumentItem {
   date: string;
   size: string;
   description?: string;
+  status?: 'pending' | 'approved' | 'rejected';
+  rejectionReason?: string;
 }
 
 export interface Member {

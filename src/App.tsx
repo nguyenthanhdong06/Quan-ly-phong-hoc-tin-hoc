@@ -646,23 +646,39 @@ export default function App() {
             </button>
           )}
 
-          <button
-            onClick={() => {
-              setActiveTab('resources');
-              setIsMobileMenuOpen(false);
-            }}
-            title={isSidebarCollapsed ? "Học liệu số & Tài nguyên" : ""}
-            className={`flex items-center gap-3 w-full px-4 py-2 rounded-xl text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 ${
-              isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
-            } ${
-              activeTab === 'resources'
-                ? 'bg-[#175358] text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
-                : 'text-[#e2f1f2]/80 hover:bg-white/5 hover:text-white'
-            }`}
-          >
-            <BookOpen className="w-4 h-4 shrink-0" />
-            <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Học liệu số</span>
-          </button>
+          {(() => {
+            const isUserAdmin = currentUser?.role?.toLowerCase().includes('admin');
+            const pendingCount = isUserAdmin ? (documents ? documents.filter(d => d.status === 'pending').length : 0) : 0;
+            return (
+              <button
+                onClick={() => {
+                  setActiveTab('resources');
+                  setIsMobileMenuOpen(false);
+                }}
+                title={isSidebarCollapsed ? `Học liệu số & Tài nguyên${pendingCount > 0 ? ` (${pendingCount} chờ duyệt)` : ''}` : ""}
+                className={`flex items-center gap-3 w-full px-4 py-2 rounded-xl text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 relative ${
+                  isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
+                } ${
+                  activeTab === 'resources'
+                    ? 'bg-[#175358] text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
+                    : 'text-[#e2f1f2]/80 hover:bg-white/5 hover:text-white'
+                }`}
+              >
+                <div className="relative shrink-0 flex items-center justify-center">
+                  <BookOpen className="w-4 h-4" />
+                  {pendingCount > 0 && isSidebarCollapsed && (
+                    <span className="absolute -top-1.5 -right-1.5 w-2 h-2 bg-red-500 rounded-full animate-pulse border border-[#0d3437]" />
+                  )}
+                </div>
+                <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Học liệu số</span>
+                {pendingCount > 0 && !isSidebarCollapsed && (
+                  <span className="ml-auto bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full animate-pulse leading-none shadow-sm shrink-0">
+                    {pendingCount}
+                  </span>
+                )}
+              </button>
+            );
+          })()}
 
           {currentUser && currentUser.role.includes('Admin') && (
             <button
