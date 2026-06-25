@@ -24,6 +24,7 @@ import EmulationTab from './components/EmulationTab';
 import SeatingTab from './components/SeatingTab';
 import ResourcesTab from './components/ResourcesTab';
 import AdminTab from './components/AdminTab';
+import TimetableTab from './components/TimetableTab';
 
 // Supabase services
 import { loadAllSupabaseStates, saveSupabaseState } from './supabaseClient';
@@ -46,7 +47,8 @@ import {
   ShieldCheck,
   Menu,
   ChevronsLeft,
-  ChevronsRight
+  ChevronsRight,
+  Calendar
 } from 'lucide-react';
 
 export default function App() {
@@ -646,6 +648,26 @@ export default function App() {
             </button>
           )}
 
+          {hasAdminOrTeacherAccess && (
+            <button
+              onClick={() => {
+                setActiveTab('timetable');
+                setIsMobileMenuOpen(false);
+              }}
+              title={isSidebarCollapsed ? "Thời khóa biểu giảng dạy" : ""}
+              className={`flex items-center gap-3 w-full px-4 py-2 rounded-xl text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 ${
+                isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
+              } ${
+                activeTab === 'timetable'
+                  ? 'bg-[#175358] text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
+                  : 'text-[#e2f1f2]/80 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              <Calendar className="w-4 h-4 shrink-0" />
+              <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Thời khóa biểu</span>
+            </button>
+          )}
+
           {(() => {
             const isUserAdmin = currentUser?.role?.toLowerCase().includes('admin');
             const pendingCount = isUserAdmin ? (documents ? documents.filter(d => d.status === 'pending').length : 0) : 0;
@@ -950,6 +972,15 @@ export default function App() {
             setActiveAssignModal={setActiveAssignModal}
             showToast={showToast}
             classroomColumns={classroomColumns}
+          />
+        )}
+
+        {activeTab === 'timetable' && hasAdminOrTeacherAccess && (
+          <TimetableTab
+            timetableData={timetableData}
+            members={members}
+            currentUser={currentUser}
+            showToast={showToast}
           />
         )}
 
