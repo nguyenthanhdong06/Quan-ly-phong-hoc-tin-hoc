@@ -744,7 +744,7 @@ export default function TimetableTab({
               
               {/* Center Header */}
               <div className="text-center mb-8">
-                <h1 className="text-2xl font-black uppercase tracking-wide text-neutral-900">THỜI KHÓA BIỂU (2024-2025) TỪ 9/9/2024</h1>
+                <h1 className="text-2xl font-black uppercase tracking-wide text-neutral-900">THỜI KHÓA BIỂU (2025-2026) TỪ 9/9/2025</h1>
                 <h2 className="text-base font-bold uppercase mt-1.5 text-neutral-800">
                   GIÁO VIÊN: {selectedTeacher?.name.toUpperCase()} – LỚP 2 BUỔI/ NGÀY
                 </h2>
