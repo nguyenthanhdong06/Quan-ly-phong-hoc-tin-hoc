@@ -276,7 +276,7 @@ export default function EvaluationTab({
         <div className="text-left">
           <h3 className="font-extrabold text-slate-800 text-sm">Danh sách học sinh đánh giá ({filteredStudents.length}/{classStudents.length})</h3>
           <p className="text-[11px] text-slate-400">
-            Tìm kiếm nhanh học sinh và tăng/giảm sao, gắn tag hoặc đánh giá chi tiết.
+            Tìm kiếm nhanh học sinh và tăng/giảm sao, click chọn vào thẻ học sinh để đánh giá chi tiết.
           </p>
         </div>
         <div className="relative w-full sm:w-80">
