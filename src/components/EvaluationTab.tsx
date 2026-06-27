@@ -1,6 +1,6 @@
 import React from 'react';
-import { Student, EvaluationData, SeatingChart, Computer } from '../types';
-import { Star, MessageSquare, Tag, Calendar, Save, Award, Search, X } from 'lucide-react';
+import { Student, EvaluationData, SeatingChart, Computer, EmulationDataState } from '../types';
+import { Star, Calendar, Search, X, Award, MessageSquare, Tag } from 'lucide-react';
 
 interface EvaluationTabProps {
   selectedClass: string;
@@ -14,7 +14,78 @@ interface EvaluationTabProps {
   showToast: (message: string, type?: 'success' | 'error') => void;
   systemDateText: string;
   setEmulationDataState: any;
+  emulationDataState: EmulationDataState;
 }
+
+// Deterministic helper to get a cute avatar based on student's ID/name to match the exact design in screenshots
+const getStudentAvatar = (studentId: string) => {
+  let hash = 0;
+  for (let i = 0; i < studentId.length; i++) {
+    hash = studentId.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  hash = Math.abs(hash);
+
+  const avatars = [
+    { emoji: "🐼", bg: "bg-indigo-50 border-indigo-100" },
+    { emoji: "🐰", bg: "bg-emerald-50 border-emerald-100" },
+    { emoji: "🦁", bg: "bg-amber-50 border-amber-100" },
+    { emoji: "🦊", bg: "bg-orange-50 border-orange-100" },
+    { emoji: "🐯", bg: "bg-yellow-50 border-yellow-100" },
+    { emoji: "🐨", bg: "bg-slate-100/80 border-slate-200" },
+    { emoji: "🐸", bg: "bg-green-50 border-green-100" },
+    { emoji: "🐷", bg: "bg-pink-50 border-pink-100" },
+    { emoji: "🐻", bg: "bg-amber-100/60 border-amber-200" },
+    { emoji: "🦉", bg: "bg-purple-50 border-purple-100" },
+    { emoji: "🐱", bg: "bg-rose-50 border-rose-100" },
+    { emoji: "🐶", bg: "bg-blue-50 border-blue-100" },
+    { emoji: "🐧", bg: "bg-slate-100/80 border-slate-100"},
+    { emoji: "🐥", bg: "bg-rose-50 border-rose-100"},
+    { emoji: "🦄", bg: "bg-rose-50 border-rose-100"}
+  ];
+
+  return avatars[hash % avatars.length];
+};
+
+// Helper to format student name for short display to fit card perfectly while keeping native tooltip for hover
+const formatDisplayName = (fullName: string) => {
+  if (!fullName) return '';
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length > 2) {
+    // Return last 2 words (e.g. "Nguyễn Thị Mộng Mơ" -> "Mộng Mơ")
+    return parts.slice(-2).join(' ');
+  }
+  return fullName;
+};
+
+// Helper to get achievement badge info based on cumulative stars
+const getStudentBadge = (stars: number) => {
+  if (stars >= 20) {
+    return {
+      type: 'diamond',
+      label: 'Kim Cương',
+      ringClass: 'ring-[3.5px] ring-cyan-400 ring-offset-2 shadow-[0_0_15px_rgba(34,211,238,0.55)]',
+      badgeClass: 'bg-gradient-to-r from-cyan-400 via-sky-400 to-indigo-500 text-white border-cyan-200 text-[8px] font-black',
+      emoji: '💎'
+    };
+  } else if (stars >= 10) {
+    return {
+      type: 'gold',
+      label: 'Huy hiệu Vàng',
+      ringClass: 'ring-[3.5px] ring-amber-400 ring-offset-2 shadow-[0_0_15px_rgba(251,191,36,0.55)]',
+      badgeClass: 'bg-gradient-to-r from-amber-400 to-yellow-500 text-white border-amber-200 text-[8px] font-black',
+      emoji: '👑'
+    };
+  } else if (stars >= 5) {
+    return {
+      type: 'silver',
+      label: 'Huy hiệu Bạc',
+      ringClass: 'ring-[3.5px] ring-slate-300 ring-offset-2 shadow-[0_0_8px_rgba(148,163,184,0.35)]',
+      badgeClass: 'bg-gradient-to-r from-slate-300 to-slate-400 text-white border-slate-200 text-[8px] font-black',
+      emoji: '🥈'
+    };
+  }
+  return null;
+};
 
 export default function EvaluationTab({
   selectedClass,
@@ -27,14 +98,17 @@ export default function EvaluationTab({
   setEvaluationData,
   showToast,
   systemDateText,
-  setEmulationDataState
+  setEmulationDataState,
+  emulationDataState
 }: EvaluationTabProps) {
   
   const [searchTerm, setSearchTerm] = React.useState('');
+  const [selectedStudent, setSelectedStudent] = React.useState<Student | null>(null);
 
   // Reset search term when class changes for perfect UX
   React.useEffect(() => {
     setSearchTerm('');
+    setSelectedStudent(null);
   }, [selectedClass]);
 
   const classStudents = students.filter(s => s.classId === selectedClass);
@@ -116,6 +190,40 @@ export default function EvaluationTab({
     });
   };
 
+  const handleAwardStars = (studentId: string, delta: number, label: string) => {
+    // 1. Award / adjust the cumulative stars in EmulationState!
+    setEmulationDataState((prev: any) => {
+      const studentEmulation = prev[studentId] || { cumulativeStars: 0, exchangedStickers: 0, totalDeducted: 0, badges: [] };
+      const newCumulative = Math.max(0, studentEmulation.cumulativeStars + delta);
+      return {
+        ...prev,
+        [studentId]: {
+          ...studentEmulation,
+          cumulativeStars: newCumulative
+        }
+      };
+    });
+
+    // 2. Also register the action tag inside evaluationData for the current day!
+    setEvaluationData(prev => {
+      const dayData = { ...(prev[selectedDate] || {}) };
+      const classData = { ...(dayData[selectedClass] || {}) };
+      const currentEval = classData[studentId] || { rating: 0, comment: '', tags: [] };
+      
+      const tagText = `${delta > 0 ? '🟢' : '🔴'} ${label} (${delta > 0 ? '+' : ''}${delta}⭐)`;
+      let newTags = [...currentEval.tags];
+      if (!newTags.includes(tagText)) {
+        newTags.push(tagText);
+      }
+      
+      classData[studentId] = { ...currentEval, tags: newTags };
+      dayData[selectedClass] = classData;
+      return { ...prev, [selectedDate]: dayData };
+    });
+
+    showToast(`Đã ${delta > 0 ? 'khen thưởng (+)' : 'nhắc nhở (-)'}${Math.abs(delta)} ⭐: ${label}`);
+  };
+
   const handleSave = () => {
     showToast(`Đã lưu thành công ý kiến đánh giá học kỳ ngày ${selectedDate.split('-').reverse().join('/')} cho lớp ${selectedClass}!`);
   };
@@ -194,109 +302,212 @@ export default function EvaluationTab({
         </div>
       </div>
 
-      {/* Grid of student evaluations */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {filteredStudents.map((s) => {
-          const evalObj = currentDaysEvaluations[s.id] || { rating: 0, comment: '', tags: [] };
-          
-          // Get quick computer seat allocation status
-          const seatId = Object.keys(seatingChart[selectedClass] || {}).find(k => seatingChart[selectedClass][k] === s.id);
-          const seatObj = seatId ? computers.find(c => c.id === seatId) : null;
+      {/* Grid of student evaluation cards */}
+      {filteredStudents.length > 0 ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+          {filteredStudents.map((s) => {
+            const seatId = Object.keys(seatingChart[selectedClass] || {}).find(k => seatingChart[selectedClass][k] === s.id);
+            const seatObj = seatId ? computers.find(c => c.id === seatId) : null;
+            
+            // Get emulation stats to display the exact cumulative stars
+            const emulationObj = emulationDataState[s.id] || { cumulativeStars: 0, exchangedStickers: 0, totalDeducted: 0, badges: [] };
+            const cumulativeStars = emulationObj.cumulativeStars;
 
-          return (
-            <div 
-              key={s.id} 
-              className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 hover:border-amber-300 transition-all flex flex-col justify-between gap-4 text-left"
-            >
-              <div className="space-y-3.5">
-                
-                {/* Visual Name & computer ID row */}
-                <div className="flex justify-between items-start">
-                  <div>
-                    <strong className="text-sm font-extrabold text-slate-800 block">{s.name}</strong>
-                    <span className="text-[10px] text-slate-400 font-mono">ID: {s.code} • Giới tính: {s.gender}</span>
+            const avatar = getStudentAvatar(s.id);
+            const badge = getStudentBadge(cumulativeStars);
+
+            return (
+              <div 
+                key={s.id} 
+                onClick={() => setSelectedStudent(s)}
+                className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 hover:border-amber-400 hover:shadow-md transition-all flex flex-col items-center justify-center relative text-center select-none cursor-pointer group active:scale-95 duration-150"
+              >
+                {/* Star count badge at Top-Right */}
+                <div className="absolute top-2.5 right-2.5 bg-amber-50 text-amber-700 px-2 py-0.5 rounded-lg text-[10px] font-black border border-amber-200/60 flex items-center gap-0.5 shadow-3xs group-hover:bg-amber-100/50 transition-colors">
+                  <Star className="w-3 h-3 fill-amber-500 text-amber-500 shrink-0" />
+                  <span>{cumulativeStars}</span>
+                </div>
+
+                {/* Circular Avatar with Achievement Badge Frame */}
+                <div className="relative my-2 shrink-0">
+                  <div className={`w-16 h-16 rounded-full flex items-center justify-center text-3xl border-2 border-white group-hover:scale-105 transition-transform duration-200 ${avatar.bg} ${badge ? badge.ringClass : 'shadow-xs'}`}>
+                    {avatar.emoji}
                   </div>
-                  
-                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                    seatObj ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-slate-100 text-slate-500 border'
-                  }`}>
-                    {seatObj ? `📍 Ngồi: 💻${seatObj.name}` : '❌ Chưa xếp máy'}
-                  </span>
+                  {badge && (
+                    <span className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-full text-[7.5px] font-black border uppercase tracking-wider whitespace-nowrap shadow-xs flex items-center gap-0.5 scale-90 group-hover:scale-95 transition-all ${badge.badgeClass}`}>
+                      <span>{badge.emoji}</span>
+                      <span>{badge.label}</span>
+                    </span>
+                  )}
                 </div>
 
-                {/* Rating Stars picker (1 to 5) */}
-                <div className="flex items-center gap-1.5 py-1">
-                  <span className="text-xs font-bold text-slate-405 mr-1 flex items-center gap-1">
-                    <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                    Chấm thi đua:
-                  </span>
-                  {[1, 2, 3, 4, 5].map(starNum => (
-                    <button
-                      key={starNum}
-                      type="button"
-                      onClick={() => handleSetRating(s.id, starNum)}
-                      className={`text-2xl transition transform hover:scale-115 focus:outline-none ${
-                        starNum <= evalObj.rating ? 'text-amber-400 drop-shadow-sm' : 'text-slate-200'
-                      }`}
-                    >
-                      ★
-                    </button>
-                  ))}
-                </div>
+                {/* Full Name */}
+                <strong className="text-sm font-extrabold text-slate-800 leading-tight mt-3 block truncate max-w-full" title={s.name}>
+                  {formatDisplayName(s.name)}
+                </strong>
 
-                {/* Tags Effort Quick assignment */}
-                <div className="space-y-1">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Năng lực thực hành & Nỗ lực học tập:</span>
-                  <div className="flex flex-wrap gap-1">
-                    {availableTags.map(tag => {
-                      const isSelected = evalObj.tags.includes(tag);
-                      return (
-                        <button
-                          key={tag}
-                          type="button"
-                          onClick={() => handleToggleTag(s.id, tag)}
-                          className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition-all ${
-                            isSelected 
-                              ? 'bg-amber-500 text-white border border-amber-600 shadow-sm' 
-                              : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200'
-                          }`}
-                        >
-                          {tag}
-                        </button>
-                      );
-                    })}
+                {/* Machine Pill Badge instead of Level */}
+                <span className="inline-block bg-indigo-50 text-indigo-600 border border-indigo-100/40 px-3 py-0.5 rounded-full text-[10px] font-black mt-2">
+                  {seatObj ? `💻 ${seatObj.name}` : 'Chưa xếp máy'}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <>
+          {classStudents.length > 0 && (
+            <div className="py-16 text-center text-slate-400 border border-dashed rounded-3xl font-medium bg-white">
+              Không tìm thấy học sinh nào phù hợp với từ khóa "<strong>{searchTerm}</strong>".
+            </div>
+          )}
+
+          {classStudents.length === 0 && (
+            <div className="py-16 text-center text-slate-400 border border-dashed rounded-3xl font-medium bg-white">
+              Lớp học "{selectedClass}" hiện chưa có bất kỳ học sinh nào trong danh sách. Hãy nạp danh sách học sinh trước khi chấm điểm.
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Edit Evaluation Modal */}
+      {selectedStudent && (() => {
+        const s = selectedStudent;
+        const evalObj = currentDaysEvaluations[s.id] || { rating: 0, comment: '', tags: [] };
+        const seatId = Object.keys(seatingChart[selectedClass] || {}).find(k => seatingChart[selectedClass][k] === s.id);
+        const seatObj = seatId ? computers.find(c => c.id === seatId) : null;
+        const emulationObj = emulationDataState[s.id] || { cumulativeStars: 0, exchangedStickers: 0, totalDeducted: 0, badges: [] };
+        const cumulativeStars = emulationObj.cumulativeStars;
+        const avatar = getStudentAvatar(s.id);
+        const badge = getStudentBadge(cumulativeStars);
+
+        return (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+            <div className="bg-white w-full max-w-lg rounded-3xl p-6 shadow-xl border border-slate-100/80 flex flex-col relative animate-in fade-in zoom-in-95 duration-200">
+              {/* Modal Close Button */}
+              <button 
+                onClick={() => setSelectedStudent(null)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 bg-slate-50 hover:bg-slate-100 p-1.5 rounded-full transition-colors cursor-pointer focus:outline-none"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              {/* Student Identification Info */}
+              <div className="flex items-center gap-4 border-b border-slate-100 pb-4 mb-4">
+                <div className="relative shrink-0 my-1">
+                  <div className={`w-14 h-14 rounded-full flex items-center justify-center text-3xl border-2 border-white ${avatar.bg} ${badge ? badge.ringClass : 'shadow-xs'}`}>
+                    {avatar.emoji}
+                  </div>
+                  {badge && (
+                    <span className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-full text-[7.5px] font-black border uppercase tracking-wider whitespace-nowrap shadow-xs flex items-center gap-0.5 ${badge.badgeClass}`}>
+                      <span>{badge.emoji}</span>
+                      <span>{badge.label}</span>
+                    </span>
+                  )}
+                </div>
+                <div className="text-left">
+                  <h3 className="font-extrabold text-slate-800 text-lg leading-tight">{s.name}</h3>
+                  <div className="text-xs font-bold text-amber-600 mt-1 flex items-center gap-1">
+                    <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500 shrink-0" />
+                    <span>Đang có: {cumulativeStars} Sao</span>
+                  </div>
+                  <div className="text-[10px] text-slate-400 font-medium mt-1 flex gap-2 items-center">
+                    <span>{s.code}</span>
+                    <span>•</span>
+                    <span className="bg-indigo-50 text-indigo-600 px-2.5 py-0.5 rounded-full font-bold">
+                      {seatObj ? `💻 ${seatObj.name}` : 'Chưa xếp máy'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Interactive Inputs */}
+              <div className="space-y-6 text-left">
+                {/* KHEN THƯỜNG (TẶNG SAO) */}
+                <div className="space-y-2.5">
+                  <h4 className="text-[11px] font-black text-emerald-600 uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="text-emerald-500">➕</span> KHEN THƯỜNG (TẶNG SAO)
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { label: "Phát biểu", value: 5 },
+                      { label: "Làm bài đủ", value: 3 },
+                      { label: "Giúp đỡ bạn", value: 2 },
+                      { label: "Trực nhật", value: 10 }
+                    ].map((opt) => (
+                      <button
+                        key={opt.label}
+                        type="button"
+                        onClick={() => handleAwardStars(s.id, opt.value, opt.label)}
+                        className="bg-emerald-50/70 hover:bg-emerald-100/80 active:scale-95 border border-emerald-200/50 hover:border-emerald-300 rounded-2xl p-3 flex items-center justify-between transition-all cursor-pointer group text-left"
+                      >
+                        <span className="text-xs font-extrabold text-emerald-800 group-hover:text-emerald-950 truncate pr-1">
+                          {opt.label}
+                        </span>
+                        <span className="bg-emerald-500 text-white px-2.5 py-0.5 rounded-full text-[10px] font-black shrink-0 flex items-center gap-0.5 shadow-3xs">
+                          +{opt.value} ⭐️
+                        </span>
+                      </button>
+                    ))}
                   </div>
                 </div>
 
-                {/* Custom Comment Opinion text */}
-                <div className="space-y-1">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Nhận xét chi tiết của Giáo viên:</span>
-                  <textarea
+                {/* NHẮC NHỞ (TRỪ SAO) */}
+                <div className="space-y-2.5">
+                  <h4 className="text-[11px] font-black text-rose-600 uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="text-rose-500">➖</span> NHẮC NHỞ (TRỪ SAO)
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { label: "Nói chuyện", value: -2 },
+                      { label: "Quên sách", value: -5 },
+                      { label: "Đi học muộn", value: -3 }
+                    ].map((opt) => (
+                      <button
+                        key={opt.label}
+                        type="button"
+                        onClick={() => handleAwardStars(s.id, opt.value, opt.label)}
+                        className="bg-rose-50/70 hover:bg-rose-100/80 active:scale-95 border border-rose-200/50 hover:border-rose-300 rounded-2xl p-3 flex items-center justify-between transition-all cursor-pointer group text-left"
+                      >
+                        <span className="text-xs font-extrabold text-rose-800 group-hover:text-rose-950 truncate pr-1">
+                          {opt.label}
+                        </span>
+                        <span className="bg-rose-500 text-white px-2.5 py-0.5 rounded-full text-[10px] font-black shrink-0 flex items-center gap-0.5 shadow-3xs">
+                          {opt.value} ⭐️
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Teacher Comment */}
+                <div className="space-y-1.5">
+                  <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider block">
+                    Ý kiến / Nhận xét của giáo viên:
+                  </span>
+                  <input
+                    type="text"
                     value={evalObj.comment}
                     onChange={(e) => handleSetComment(s.id, e.target.value)}
-                    placeholder="Ghi nhận xét của bé (ví dụ: Chăm chú lắng nghe, hoàn thành xuất sắc, hoặc còn lơ đãng...)"
-                    className="w-full text-xs p-2.5 border border-slate-200 rounded-xl h-20 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    placeholder="Ghi nhận xét chi tiết (VD: Làm bài tốt, phát biểu)..."
+                    className="w-full text-xs px-3.5 py-2.5 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-slate-50/50 hover:bg-white focus:bg-white transition-all font-semibold"
                   />
                 </div>
-
               </div>
+
+              {/* Close/Done button */}
+              <button
+                onClick={() => setSelectedStudent(null)}
+                className="mt-6 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-3 px-4 rounded-2xl transition-all cursor-pointer text-center"
+              >
+                Xong & Đóng
+              </button>
             </div>
-          );
-        })}
-
-        {classStudents.length > 0 && filteredStudents.length === 0 && (
-          <div className="col-span-full py-16 text-center text-slate-400 border border-dashed rounded-3xl font-medium">
-            Không tìm thấy học sinh nào phù hợp với từ khóa "<strong>{searchTerm}</strong>".
           </div>
-        )}
-
-        {classStudents.length === 0 && (
-          <div className="col-span-full py-16 text-center text-slate-400 border border-dashed rounded-3xl font-medium">
-            Lớp học "{selectedClass}" hiện chưa có bất kỳ học sinh nào trong danh sách. Hãy nạp danh sách học sinh trước khi chấm điểm.
-          </div>
-        )}
-      </div>
+        );
+      })()}
 
     </div>
   );
 }
+

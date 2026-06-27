@@ -74,6 +74,15 @@ export default function StudentsTab({
   // Sợ bấm nhầm nút xóa của học sinh
   const [studentToDelete, setStudentToDelete] = useState<{ id: string; name: string } | null>(null);
 
+  // Phân trang danh sách học sinh
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState<10 | 20 | 50>(10);
+
+  // Reset trang khi đổi lớp hoặc tìm kiếm để tránh bị trang trống
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedClass, searchTerm]);
+
   const handleStartEdit = (student: Student) => {
     setEditingStudentId(student.id);
     setEditCode(student.code);
@@ -268,6 +277,13 @@ export default function StudentsTab({
     s.code.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const totalItems = filteredStudents.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const paginatedStudents = filteredStudents.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   return (
     <div className="space-y-6">
 
@@ -459,21 +475,22 @@ export default function StudentsTab({
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase">
-                  <th className="py-3 px-4 w-12">STT</th>
-                  <th className="py-3 px-4 w-28">Mã HS</th>
-                  <th className="py-3 px-4 w-44">Họ và Tên</th>
-                  <th className="py-3 px-4 w-24">Giới tính</th>
-                  <th className="py-3 px-4">Ghi chú</th>
-                  <th className="py-3 px-4 text-center w-28">Chỉnh sửa</th>
-                  <th className="py-3 px-4 text-center w-16">Xóa</th>
+                  <th className="py-3 px-4 w-12 whitespace-nowrap">STT</th>
+                  <th className="py-3 px-4 w-28 whitespace-nowrap">Mã HS</th>
+                  <th className="py-3 px-4 w-60 whitespace-nowrap">Họ và Tên</th>
+                  <th className="py-3 px-4 w-24 whitespace-nowrap">Giới tính</th>
+                  <th className="py-3 px-4 whitespace-nowrap">Ghi chú</th>
+                  <th className="py-3 px-4 text-center w-28 whitespace-nowrap">Chỉnh sửa</th>
+                  <th className="py-3 px-4 text-center w-16 whitespace-nowrap">Xóa</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredStudents.map((s, index) => {
+                {paginatedStudents.map((s, idx) => {
                   const isEditing = editingStudentId === s.id;
+                  const stt = (currentPage - 1) * itemsPerPage + idx + 1;
                   return (
                     <tr key={s.id} className="hover:bg-slate-50/50 transition">
-                      <td className="py-3.5 px-4 font-semibold text-slate-400">{index + 1}</td>
+                      <td className="py-3.5 px-4 font-semibold text-slate-400">{stt}</td>
                       <td className="py-3.5 px-4">
                         {isEditing ? (
                           <input
@@ -495,7 +512,7 @@ export default function StudentsTab({
                             className="w-full border border-amber-300 rounded-lg px-2 py-1.5 text-xs font-extrabold text-slate-800 bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
                           />
                         ) : (
-                          <span className="font-extrabold text-slate-800">{s.name}</span>
+                          <span className="font-extrabold text-slate-800 whitespace-nowrap">{s.name}</span>
                         )}
                       </td>
                       <td className="py-3.5 px-4">
@@ -584,6 +601,76 @@ export default function StudentsTab({
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Phân trang danh sách học sinh */}
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-slate-100 text-xs text-slate-500">
+            {/* Items per page selector */}
+            <div className="flex items-center gap-2 font-semibold">
+              <span>Hiển thị</span>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => {
+                  setItemsPerPage(Number(e.target.value) as 10 | 20 | 50);
+                  setCurrentPage(1);
+                }}
+                className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-amber-500 focus:outline-none font-bold text-slate-700 cursor-pointer transition"
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+              </select>
+              <span>học sinh / trang</span>
+            </div>
+
+            {/* Status information */}
+            {totalItems > 0 && (
+              <div className="font-bold text-slate-400">
+                Hiển thị <span className="text-slate-650">{(currentPage - 1) * itemsPerPage + 1}</span> - <span className="text-slate-650">{Math.min(currentPage * itemsPerPage, totalItems)}</span> trên <span className="text-amber-600">{totalItems}</span> học sinh
+              </div>
+            )}
+
+            {/* Pagination controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="px-2.5 py-1.5 border border-slate-200 rounded-xl bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-white disabled:cursor-not-allowed font-bold transition cursor-pointer flex items-center"
+                >
+                  ‹ Trước
+                </button>
+                
+                {Array.from({ length: totalPages }).map((_, i) => {
+                  const pageNum = i + 1;
+                  const isCurrent = pageNum === currentPage;
+                  return (
+                    <button
+                      key={pageNum}
+                      type="button"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`w-8 h-8 font-extrabold rounded-xl border transition cursor-pointer text-center ${
+                        isCurrent
+                          ? 'bg-amber-500 border-amber-500 text-white shadow-3xs'
+                          : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-2.5 py-1.5 border border-slate-200 rounded-xl bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-white disabled:cursor-not-allowed font-bold transition cursor-pointer flex items-center"
+                >
+                  Sau ›
+                </button>
+              </div>
+            )}
           </div>
 
         </div>

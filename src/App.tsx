@@ -946,6 +946,7 @@ export default function App() {
             showToast={showToast}
             systemDateText={systemDateText}
             setEmulationDataState={setEmulationDataState}
+            emulationDataState={emulationDataState}
           />
         )}
 

@@ -128,7 +128,6 @@ export default function DashboardTab({
 }: DashboardTabProps) {
   
   const [showDbInfo, setShowDbInfo] = useState(true);
-  const [activeTipIndex, setActiveTipIndex] = useState(0);
   const [emulationMetric, setEmulationMetric] = useState<'total' | 'average' | 'stickers'>('total');
 
   // Attendance automatic warning system states
@@ -513,30 +512,6 @@ export default function DashboardTab({
         };
     }
   }, [emulationMetric]);
-
-  // Dynamic technology tips for school students
-  const techTips = [
-    {
-      title: "Tư thế ngồi chuẩn tin học",
-      content: "Ngồi thẳng lưng, mắt cách màn hình máy tính từ 40-50cm, khuỷu tay vuông góc để không mỏi vai gáy nhé bé ơi!",
-      icon: "🧘"
-    },
-    {
-      title: "An toàn phòng máy số",
-      content: "Nhớ lau khô tay trước khi bật máy và tuyệt đối không mang nước uống hay bánh kẹo vào phòng thực hành nha.",
-      icon: "⚡"
-    },
-    {
-      title: "Mẹo gõ phím mười ngón",
-      content: "Hãy đặt ngón trỏ tay trái lên phím F và ngón trỏ tay phải lên phím J để định vị bàn phím dễ dàng mà không cần nhìn bàn phím.",
-      icon: "🎹"
-    },
-    {
-      title: "Bảo vệ tài khoản cá nhân",
-      content: "Luôn ghi nhớ mật khẩu học tập của mình và tuyệt đối không chia sẻ mật khẩu cho các bạn khác trong lớp lý thuyết.",
-      icon: "🔐"
-    }
-  ];
 
   // Slogan based on class selection
   const educationalSlogan = useMemo(() => {
@@ -1428,10 +1403,10 @@ export default function DashboardTab({
       </div>
 
       {/* DETAILED LESSON ALLOCATION & METADATA DASHBOARD */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="w-full">
         
-        {/* Left component: Detailed allocation chart/info list */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-3xl shadow-sm border border-slate-100 space-y-4">
+        {/* Detailed allocation chart/info list */}
+        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 space-y-4 w-full">
           <h3 className="text-base font-black text-slate-800 border-b pb-2 flex items-center gap-2 text-left">
             <span className="w-2.5 h-2.5 bg-indigo-600 rounded-full"></span>
             Thông tin phân bổ tiết học hiện tại
@@ -1489,8 +1464,8 @@ export default function DashboardTab({
               </h4>
               <div className="space-y-2">
                 {documents.slice(0, 2).map(d => (
-                  <div key={d.id} className="text-xs flex justify-between items-center p-2.5 bg-white rounded-xl border border-slate-100 shadow-3xs hover:border-amber-350 transition">
-                    <span className="truncate font-semibold text-slate-700 max-w-[170px]">{d.title}</span>
+                  <div key={d.id} className="text-xs flex justify-between items-center p-2.5 bg-white rounded-xl border border-slate-100 shadow-3xs hover:border-amber-350 transition min-w-0">
+                    <span className="truncate font-semibold text-slate-700 flex-1 min-w-0 mr-3" title={d.title}>{d.title}</span>
                     <span className="bg-amber-100 text-amber-900 px-2 py-0.5 rounded-lg text-[9px] font-bold shrink-0">
                       {d.type}
                     </span>
@@ -1522,46 +1497,6 @@ export default function DashboardTab({
               <p className="text-[10px] text-slate-400 italic mt-3">Hệ thống phân quyền đầy đủ cho tài khoản của bạn.</p>
             </div>
 
-          </div>
-        </div>
-
-        {/* Right component: Educational Smart Tips (Góc mẹo hay phòng máy) */}
-        <div className="bg-gradient-to-br from-indigo-50/80 to-slate-50/50 p-6 rounded-3xl shadow-sm border border-indigo-100 flex flex-col justify-between text-left">
-          <div className="space-y-4">
-            <h3 className="text-xs font-black text-indigo-950 uppercase tracking-widest flex items-center gap-1.5">
-              <Lightbulb className="w-4.5 h-4.5 text-yellow-500 shrink-0" />
-              Mẹo hay Học đường Tin học
-            </h3>
-            <p className="text-[11px] text-slate-500 leading-relaxed font-semibold">
-              Hãy chia sẻ những kiến thức bổ ích này cho học sinh trước mỗi buổi thực hành để tạo thói quen tốt nhé!
-            </p>
-            
-            <div className="bg-white p-4 rounded-2.5xl shadow-xs border border-indigo-100/50 space-y-2 relative group min-h-[140px] flex flex-col justify-between transition-all">
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2">
-                  <span className="text-xl shrink-0">{techTips[activeTipIndex].icon}</span>
-                  <h4 className="text-xs font-black text-indigo-950">{techTips[activeTipIndex].title}</h4>
-                </div>
-                <p className="text-[11px] text-slate-600 leading-relaxed font-medium">
-                  "{techTips[activeTipIndex].content}"
-                </p>
-              </div>
-
-              <div className="flex justify-end gap-1.5">
-                {techTips.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setActiveTipIndex(i)}
-                    className={`w-2 h-2 rounded-full transition-all duration-300 ${activeTipIndex === i ? 'bg-indigo-600 w-4' : 'bg-slate-200'}`}
-                    title={`Mẹo hay ${i+1}`}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="pt-4 border-t border-indigo-100 mt-6 text-center text-[10px] text-indigo-400 font-bold">
-            Trường học sáng tạo - Nuôi dưỡng tương lai số
           </div>
         </div>
 
