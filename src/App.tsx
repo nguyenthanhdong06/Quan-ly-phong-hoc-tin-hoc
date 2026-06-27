@@ -160,9 +160,19 @@ export default function App() {
 
   // Authentication session
   const [currentUser, setCurrentUser] = useState<Member | null>(() => {
-    const local = localStorage.getItem('school_current_user');
+    const local = sessionStorage.getItem('school_current_user');
     return local ? JSON.parse(local) : null;
   });
+  
+  // Cài đặt tự động đăng xuất do không hoạt động (phút) - 0 là tắt
+  const [inactivityLimit, setInactivityLimit] = useState<number>(() => {
+    const saved = localStorage.getItem('school_inactivity_limit');
+    return saved ? parseInt(saved, 10) : 10; // Mặc định tự động đăng xuất sau 10 phút
+  });
+
+  const [secondsLeft, setSecondsLeft] = useState<number>(inactivityLimit * 60);
+  const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
+
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
@@ -274,9 +284,9 @@ export default function App() {
 
   useEffect(() => {
     if (currentUser) {
-      localStorage.setItem('school_current_user', JSON.stringify(currentUser));
+      sessionStorage.setItem('school_current_user', JSON.stringify(currentUser));
     } else {
-      localStorage.removeItem('school_current_user');
+      sessionStorage.removeItem('school_current_user');
     }
   }, [currentUser]);
 
@@ -360,6 +370,55 @@ export default function App() {
     setCurrentUser(null);
     setActiveTab('dashboard');
   };
+
+  // --- EFFECT: INACTIVITY SECURITY AUTO LOGOUT ---
+  useEffect(() => {
+    localStorage.setItem('school_inactivity_limit', inactivityLimit.toString());
+    setSecondsLeft(inactivityLimit * 60);
+  }, [inactivityLimit]);
+
+  useEffect(() => {
+    if (!currentUser || inactivityLimit === 0) {
+      setSecondsLeft(0);
+      setIsWarningModalOpen(false);
+      return;
+    }
+
+    setSecondsLeft(inactivityLimit * 60);
+
+    const timer = setInterval(() => {
+      setSecondsLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setCurrentUser(null);
+          setActiveTab('dashboard');
+          setIsWarningModalOpen(false);
+          showToast('Hệ thống tự động đăng xuất do không hoạt động để bảo mật thông tin!', 'error');
+          return 0;
+        }
+
+        if (prev === 31) {
+          setIsWarningModalOpen(true);
+        }
+
+        return prev - 1;
+      });
+    }, 1000);
+
+    const handleUserActivity = () => {
+      if (!isWarningModalOpen) {
+        setSecondsLeft(inactivityLimit * 60);
+      }
+    };
+
+    const activityEvents = ['mousemove', 'keydown', 'mousedown', 'scroll', 'touchstart', 'click'];
+    activityEvents.forEach(evt => window.addEventListener(evt, handleUserActivity));
+
+    return () => {
+      clearInterval(timer);
+      activityEvents.forEach(evt => window.removeEventListener(evt, handleUserActivity));
+    };
+  }, [currentUser, inactivityLimit, isWarningModalOpen]);
 
   // --- MANUAL CLOUD SYNCHRONIZATION ACTION SERVICES ---
   const forceFetchFromSupabase = async () => {
@@ -753,6 +812,36 @@ export default function App() {
                     </div>
                   )}
                 </div>
+
+                {/* Security Section (Auto-Logout Controller) */}
+                {!isSidebarCollapsed && (
+                  <div className="px-3.5 py-2.5 rounded-xl bg-[#072123] border border-[#247c81]/20 text-left text-[10px] text-[#a6d5d8] space-y-1.5 animate-fadeIn">
+                    <div className="flex items-center justify-between font-bold">
+                      <span className="text-emerald-350">🛡️ Tự động thoát</span>
+                      {inactivityLimit > 0 && (
+                        <span className="bg-amber-400/20 text-amber-300 px-1.5 py-0.5 rounded font-mono font-bold animate-pulse">
+                          {Math.floor(secondsLeft / 60)}:{(secondsLeft % 60).toString().padStart(2, '0')}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between gap-1.5 pt-0.5">
+                      <span className="text-[9px] text-[#a6d5d8]/70">Không h.động:</span>
+                      <select
+                        value={inactivityLimit}
+                        onChange={(e) => setInactivityLimit(Number(e.target.value))}
+                        className="bg-[#0f3437] text-[#e2f1f2] border border-[#247c81]/30 rounded px-1 py-0.5 font-bold text-[9px] focus:outline-none focus:ring-1 focus:ring-amber-400 cursor-pointer"
+                      >
+                        <option value={0}>Tắt</option>
+                        <option value={2}>2 phút</option>
+                        <option value={5}>5 phút</option>
+                        <option value={10}>10 phút</option>
+                        <option value={15}>15 phút</option>
+                        <option value={30}>30 phút</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+
                 <button
                   onClick={() => {
                     handleLogout();
@@ -1082,6 +1171,74 @@ export default function App() {
               </div>
 
             </form>
+
+          </div>
+        </div>
+      )}
+
+      {/* INACTIVITY WARNING MODAL */}
+      {isWarningModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden border border-rose-100 transform transition-all scale-100 animate-in zoom-in-95 duration-200">
+            
+            <div className="bg-gradient-to-r from-rose-500 via-amber-500 to-amber-600 p-6 text-white text-left flex items-center gap-4">
+              <div className="bg-white/10 p-3 rounded-2xl shrink-0 animate-bounce flex items-center justify-center">
+                <ShieldCheck className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-base uppercase tracking-wider">
+                  ⚠️ Cảnh Báo An Ninh Phiên Làm Việc
+                </h3>
+                <p className="text-[10px] text-rose-100 font-semibold mt-0.5">
+                  Bảo vệ thông tin & phòng ngừa người khác sử dụng trái phép
+                </p>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4 text-left">
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Hệ thống phát hiện tài khoản của thầy/cô <strong className="text-slate-800 font-bold">{currentUser?.name}</strong> đang tạm thời không hoạt động. Để đảm bảo an toàn tuyệt đối cho điểm số và dữ liệu học sinh, phiên làm việc sẽ tự động kết thúc sau:
+              </p>
+
+              <div className="flex flex-col items-center justify-center bg-rose-50/50 border border-rose-100 rounded-2xl py-5 space-y-1">
+                <span className="text-3xl font-black font-mono text-rose-600 tracking-wider animate-pulse">
+                  00:{secondsLeft.toString().padStart(2, '0')}
+                </span>
+                <span className="text-[10px] font-black text-rose-500 uppercase tracking-widest">Giây còn lại</span>
+              </div>
+
+              <p className="text-[10px] text-slate-450 italic text-center leading-relaxed">
+                * Di chuyển chuột hoặc gõ phím không tự động gia hạn khi bảng cảnh báo này đang hiện lên. Vui lòng bấm nút bên dưới để xác nhận thầy/cô vẫn đang làm việc.
+              </p>
+
+              <div className="pt-2 flex flex-col sm:flex-row gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCurrentUser(null);
+                    setActiveTab('dashboard');
+                    setIsWarningModalOpen(false);
+                    showToast('Đã chủ động đăng xuất an toàn!', 'success');
+                  }}
+                  className="w-full sm:w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-4 py-2.5 rounded-xl text-xs transition cursor-pointer"
+                >
+                  Đăng xuất ngay
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSecondsLeft(inactivityLimit * 60);
+                    setIsWarningModalOpen(false);
+                    showToast('Đã tiếp tục duy trì phiên đăng nhập!', 'success');
+                  }}
+                  className="w-full sm:w-2/3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-extrabold px-5 py-2.5 rounded-xl text-xs shadow-md shadow-amber-500/10 flex items-center justify-center gap-1.5 transition cursor-pointer active:scale-95"
+                >
+                  <ShieldCheck className="w-4 h-4 text-white animate-pulse" />
+                  <span>Tôi vẫn đang làm việc!</span>
+                </button>
+              </div>
+
+            </div>
 
           </div>
         </div>
