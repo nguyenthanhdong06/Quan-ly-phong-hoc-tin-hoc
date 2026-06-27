@@ -947,6 +947,7 @@ export default function App() {
             systemDateText={systemDateText}
             setEmulationDataState={setEmulationDataState}
             emulationDataState={emulationDataState}
+            attendanceData={attendanceData}
           />
         )}
 

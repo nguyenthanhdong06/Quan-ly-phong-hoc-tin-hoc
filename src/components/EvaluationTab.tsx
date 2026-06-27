@@ -1,5 +1,5 @@
 import React from 'react';
-import { Student, EvaluationData, SeatingChart, Computer, EmulationDataState } from '../types';
+import { Student, EvaluationData, SeatingChart, Computer, EmulationDataState, AttendanceData } from '../types';
 import { Star, Calendar, Search, X, Award, MessageSquare, Tag } from 'lucide-react';
 
 interface EvaluationTabProps {
@@ -15,6 +15,7 @@ interface EvaluationTabProps {
   systemDateText: string;
   setEmulationDataState: any;
   emulationDataState: EmulationDataState;
+  attendanceData: AttendanceData;
 }
 
 // Deterministic helper to get a cute avatar based on student's ID/name to match the exact design in screenshots
@@ -38,8 +39,8 @@ const getStudentAvatar = (studentId: string) => {
     { emoji: "🦉", bg: "bg-purple-50 border-purple-100" },
     { emoji: "🐱", bg: "bg-rose-50 border-rose-100" },
     { emoji: "🐶", bg: "bg-blue-50 border-blue-100" },
-    { emoji: "🐧", bg: "bg-slate-100/80 border-slate-100"},
-    { emoji: "🐥", bg: "bg-rose-50 border-rose-100"},
+    { emoji: "🐧", bg: "bg-slate-100/80 border-slate-200"},
+    { emoji: "🐥", bg: "bg-rose-50 border-rose-200"},
     { emoji: "🦄", bg: "bg-rose-50 border-rose-100"}
   ];
 
@@ -99,7 +100,8 @@ export default function EvaluationTab({
   showToast,
   systemDateText,
   setEmulationDataState,
-  emulationDataState
+  emulationDataState,
+  attendanceData
 }: EvaluationTabProps) {
   
   const [searchTerm, setSearchTerm] = React.useState('');
@@ -316,6 +318,10 @@ export default function EvaluationTab({
             const avatar = getStudentAvatar(s.id);
             const badge = getStudentBadge(cumulativeStars);
 
+            // Check if student is marked as absent today
+            const attendanceStatus = attendanceData[selectedDate]?.[selectedClass]?.[s.id];
+            const isAbsent = attendanceStatus === 'excused' || attendanceStatus === 'unexcused';
+
             return (
               <div 
                 key={s.id} 
@@ -341,10 +347,20 @@ export default function EvaluationTab({
                   )}
                 </div>
 
-                {/* Full Name */}
-                <strong className="text-sm font-extrabold text-slate-800 leading-tight mt-3 block truncate max-w-full" title={s.name}>
-                  {formatDisplayName(s.name)}
-                </strong>
+                {/* Full Name & Absence Warning */}
+                <div className="flex items-center justify-center gap-1.5 mt-3 max-w-full">
+                  <strong className="text-sm font-extrabold text-slate-800 leading-tight truncate" title={s.name}>
+                    {formatDisplayName(s.name)}
+                  </strong>
+                  {isAbsent && (
+                    <span 
+                      className="inline-flex items-center justify-center bg-rose-50 text-rose-500 border border-rose-100 rounded-full w-4 h-4 text-[9px] font-black shrink-0 cursor-help"
+                      title={attendanceStatus === 'excused' ? 'Vắng học có phép ngày hôm nay' : 'Vắng học không phép ngày hôm nay'}
+                    >
+                      ⚠️
+                    </span>
+                  )}
+                </div>
 
                 {/* Machine Pill Badge instead of Level */}
                 <span className="inline-block bg-indigo-50 text-indigo-600 border border-indigo-100/40 px-3 py-0.5 rounded-full text-[10px] font-black mt-2">
@@ -381,6 +397,10 @@ export default function EvaluationTab({
         const avatar = getStudentAvatar(s.id);
         const badge = getStudentBadge(cumulativeStars);
 
+        // Check if student is marked as absent today
+        const modalAttendanceStatus = attendanceData[selectedDate]?.[selectedClass]?.[s.id];
+        const isModalStudentAbsent = modalAttendanceStatus === 'excused' || modalAttendanceStatus === 'unexcused';
+
         return (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
             <div className="bg-white w-full max-w-lg rounded-3xl p-6 shadow-xl border border-slate-100/80 flex flex-col relative animate-in fade-in zoom-in-95 duration-200">
@@ -406,7 +426,17 @@ export default function EvaluationTab({
                   )}
                 </div>
                 <div className="text-left">
-                  <h3 className="font-extrabold text-slate-800 text-lg leading-tight">{s.name}</h3>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-extrabold text-slate-800 text-lg leading-tight">{s.name}</h3>
+                    {isModalStudentAbsent && (
+                      <span 
+                        className="inline-flex items-center gap-1 bg-rose-50 text-rose-500 border border-rose-100 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider cursor-help"
+                        title={modalAttendanceStatus === 'excused' ? 'Học sinh Vắng học có phép ngày hôm nay' : 'Học sinh Vắng học không phép ngày hôm nay'}
+                      >
+                        ⚠️ Vắng ({modalAttendanceStatus === 'excused' ? 'Có phép' : 'Không phép'})
+                      </span>
+                    )}
+                  </div>
                   <div className="text-xs font-bold text-amber-600 mt-1 flex items-center gap-1">
                     <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500 shrink-0" />
                     <span>Đang có: {cumulativeStars} Sao</span>
