@@ -814,7 +814,7 @@ export default function App() {
                 </div>
 
                 {/* Security Section (Auto-Logout Controller) */}
-                {!isSidebarCollapsed && (
+                {!isSidebarCollapsed && (currentUser?.username?.toLowerCase() === 'admin' || currentUser?.role?.toLowerCase().includes('admin')) && (
                   <div className="px-3.5 py-2.5 rounded-xl bg-[#072123] border border-[#247c81]/20 text-left text-[10px] text-[#a6d5d8] space-y-1.5 animate-fadeIn">
                     <div className="flex items-center justify-between font-bold">
                       <span className="text-emerald-350">🛡️ Tự động thoát</span>
