@@ -45,8 +45,8 @@ const getStudentAvatar = (studentId: string, allStudents?: Student[]) => {
     { emoji: "🐳", bg: "bg-blue-50 border-blue-100"},
     { emoji: "🐋", bg: "bg-blue-50 border-blue-100"},
     { emoji: "🐙", bg: "bg-pink-50 border-pink-100"},
-    { emoji: "🦑", bg: "bg-orange-50 border-orange-100"},
-    { emoji: "🦀", bg: "bg-blue-50 border-pink-100"},
+    { emoji: "🦑", bg: "bg-amber-100/60 border-orange-100"},
+    { emoji: "🦀", bg: "bg-amber-100/60 border-pink-100"},
     { emoji: "🦚", bg: "bg-green-50 border-green-100"},
     { emoji: "🦧", bg: "bg-blue-50 border-blue-100"},
     { emoji: "🕊️", bg: "bg-emerald-50 border-emerald-100"},
@@ -60,7 +60,7 @@ const getStudentAvatar = (studentId: string, allStudents?: Student[]) => {
     { emoji: "🦂", bg: "bg-emerald-50 border-emerald-100"},
     { emoji: "🦖", bg: "bg-emerald-50 border-emerald-100"},
     { emoji: "🦕", bg: "bg-emerald-50 border-emerald-100"},
-    { emoji: "🐲", bg: "bg-emerald-50 border-emerald-100"},
+    { emoji: "🐲", bg: "bg-blue border-emerald-100"},
     { emoji: "🐔", bg: "bg-emerald-50 border-emerald-100"},
     { emoji: "🐓", bg: "bg-emerald-50 border-emerald-100"}
   ];
