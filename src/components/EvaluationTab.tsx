@@ -102,6 +102,19 @@ const StickerAvatar = ({ emoji, studentId, size = 'w-16 h-16', className = '' }:
     'from-[#f472b6] via-[#ec4899] to-[#be185d]', // Flamingo Pink
     'from-[#fb7185] via-[#f43f5e] to-[#be123c]', // Coral Rose Red
     'from-[#38bdf8] via-[#0ea5e9] to-[#0369a1]', // Oceanic Deep Blue
+    'from-[#fecaca] via-[#f87171] to-[#dc2626]', // Cherry Red
+    'from-[#fda4af] via-[#fb7185] to-[#e11d48]', // Rose Red
+    'from-[#f9a8d4] via-[#ec4899] to-[#be185d]', // Bubble Pink
+    'from-[#fbcfe8] via-[#f472b6] to-[#db2777]', // Candy Pink
+    'from-[#ccfbf1] via-[#5eead4] to-[#14b8a6]', // Fresh Teal
+    'from-[#99f6e4] via-[#2dd4bf] to-[#0f766e]', // Aqua Teal
+    'from-[#d1fae5] via-[#34d399] to-[#059669]', // Spring Green
+    'from-[#f0fdf4] via-[#86efac] to-[#22c55e]', // Light Spring
+    'from-[#fef9c3] via-[#fde047] to-[#f59e0b]', // Honey Yellow
+    'from-[#f5d0fe] via-[#d946ef] to-[#a21caf]', // Orchid Pink
+    'from-[#a5f3fc] via-[#22d3ee] to-[#0891b2]', // Aqua Cyan
+    'from-[#6ee7f9] via-[#06b6d4] to-[#0e7490]', // Tropical Cyan
+
   ];
 
   const currentGradient = gradientBgs[hash % gradientBgs.length];
