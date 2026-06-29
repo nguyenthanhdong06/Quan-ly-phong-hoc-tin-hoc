@@ -439,7 +439,7 @@ export default function EvaluationTab({
             const currentStars = Math.max(0, cumulativeStars - deducted);
 
             const avatar = getStudentAvatar(s.id, students);
-            const badge = getStudentBadge(cumulativeStars);
+            const badge = getStudentBadge(currentStars);
 
             // Check if student is marked as absent today
             const attendanceStatus = attendanceData[selectedDate]?.[selectedClass]?.[s.id];
@@ -525,7 +525,7 @@ export default function EvaluationTab({
           : (emulationObj.exchangedStickers || 0) * 5;
         const currentStars = Math.max(0, cumulativeStars - deducted);
         const avatar = getStudentAvatar(s.id, students);
-        const badge = getStudentBadge(cumulativeStars);
+        const badge = getStudentBadge(currentStars);
 
         // Check if student is marked as absent today
         const modalAttendanceStatus = attendanceData[selectedDate]?.[selectedClass]?.[s.id];
