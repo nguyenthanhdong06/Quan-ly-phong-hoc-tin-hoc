@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Grade, ClassItem, Student } from '../types';
-import { Plus, Edit2, Trash2, FolderPlus, HelpCircle, Layers, Users, BookOpen, AlertCircle } from 'lucide-react';
+import { Plus, Edit2, Trash2, FolderPlus, HelpCircle, Layers, Users, BookOpen, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface ClassesTabProps {
   grades: Grade[];
@@ -39,6 +39,16 @@ export default function ClassesTab({
 
   // Grade delete state control
   const [gradeToDelete, setGradeToDelete] = useState<{ id: number; name: string } | null>(null);
+
+  // Collapse state for each grade
+  const [collapsedGrades, setCollapsedGrades] = useState<{ [key: number]: boolean }>({});
+
+  const toggleGradeCollapse = (gradeId: number) => {
+    setCollapsedGrades(prev => ({
+      ...prev,
+      [gradeId]: !prev[gradeId]
+    }));
+  };
 
   // --- LOGIC: KHỐI LỚP (GRADE) ---
   const handleAddGrade = (e: React.FormEvent) => {
@@ -462,12 +472,23 @@ export default function ClassesTab({
 
                         if (gradeClasses.length === 0) return null;
 
+                        const isCollapsed = !!collapsedGrades[grade.id];
                         const customStyle = gradeMap[grade.id] || 'border-slate-500 text-slate-700 bg-slate-50/50 hover:border-slate-400';
 
                         return (
-                          <div key={grade.id} className="space-y-4 bg-slate-50/20 p-4 rounded-2xl border border-slate-100 shadow-3xs">
+                          <div 
+                            key={grade.id} 
+                            className={`bg-slate-50/20 p-4 rounded-2xl border border-slate-100 shadow-3xs transition-all duration-200 ${
+                              isCollapsed ? 'space-y-0' : 'space-y-4'
+                            }`}
+                          >
                             {/* Tiêu đề Khối */}
-                            <div className="flex items-center justify-between border-b pb-2">
+                            <div 
+                              onClick={() => toggleGradeCollapse(grade.id)}
+                              className={`flex items-center justify-between cursor-pointer select-none transition-colors duration-150 p-1 -m-1 rounded-xl hover:bg-slate-100/50 ${
+                                isCollapsed ? '' : 'border-b pb-2'
+                              }`}
+                            >
                               <div className="flex items-center gap-2">
                                 <span className="text-xs font-black uppercase text-slate-700 tracking-wider flex items-center gap-1.5">
                                   🏫 {grade.name}
@@ -476,60 +497,78 @@ export default function ClassesTab({
                                   {gradeClasses.length} lớp học
                                 </span>
                               </div>
+                              <button
+                                type="button"
+                                className="text-[10px] font-extrabold text-slate-500 hover:text-amber-600 flex items-center gap-1 bg-white hover:bg-slate-50 px-2.5 py-1 rounded-full border border-slate-200 hover:border-amber-200 transition-all shadow-3xs cursor-pointer"
+                              >
+                                {isCollapsed ? (
+                                  <>
+                                    <span>Hiện lớp</span>
+                                    <ChevronDown className="w-3 h-3 text-slate-400" />
+                                  </>
+                                ) : (
+                                  <>
+                                    <span>Ẩn bớt</span>
+                                    <ChevronUp className="w-3 h-3 text-slate-400" />
+                                  </>
+                                )}
+                              </button>
                             </div>
 
                             {/* Grid các lớp học thuộc khối học */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              {gradeClasses.map(c => {
-                                const classSts = students.filter(s => s.classId === c.id);
-                                const classStsCount = classSts.length;
-                                const femaleCount = classSts.filter(s => s.gender === 'Nữ').length;
-                                
-                                return (
-                                  <div
-                                    key={c.id} 
-                                    className={`p-4 border-l-4 rounded-2xl bg-white shadow-xs transition-all flex flex-col justify-between gap-3 ${customStyle} border-y border-r border-slate-150`}
-                                  >
-                                    <div>
-                                      <div className="flex justify-between items-start">
-                                        <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-extrabold uppercase">
-                                          {grade.name}
-                                        </span>
-                                        <span className="text-[9px] text-slate-400 font-mono font-bold">MÃ LỚP: {c.id}</span>
+                            {!isCollapsed && (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fadeIn">
+                                {gradeClasses.map(c => {
+                                  const classSts = students.filter(s => s.classId === c.id);
+                                  const classStsCount = classSts.length;
+                                  const femaleCount = classSts.filter(s => s.gender === 'Nữ').length;
+                                  
+                                  return (
+                                    <div
+                                      key={c.id} 
+                                      className={`p-4 border-l-4 rounded-2xl bg-white shadow-xs transition-all flex flex-col justify-between gap-3 ${customStyle} border-y border-r border-slate-150`}
+                                    >
+                                      <div>
+                                        <div className="flex justify-between items-start">
+                                          <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-extrabold uppercase">
+                                            {grade.name}
+                                          </span>
+                                          <span className="text-[9px] text-slate-400 font-mono font-bold">MÃ LỚP: {c.id}</span>
+                                        </div>
+                                        
+                                        <h4 className="font-black text-slate-800 text-base mt-2.5 flex items-center gap-1">
+                                          🏫 {c.name}
+                                        </h4>
+                                        
+                                        <div className="mt-2.5 space-y-1.5 text-xs text-slate-500 font-semibold text-left">
+                                          <p className="flex items-center gap-1 text-slate-600">
+                                            👤 Chủ nhiệm: <strong className="text-slate-800 font-extrabold">{c.teacher}</strong>
+                                          </p>
+                                          <p className="flex items-center gap-1 text-emerald-700">
+                                            📊 Sĩ số: <strong className="text-emerald-800 font-black">{classStsCount} học sinh/ {femaleCount} Nữ</strong>
+                                          </p>
+                                        </div>
                                       </div>
-                                      
-                                      <h4 className="font-black text-slate-800 text-base mt-2.5 flex items-center gap-1">
-                                        🏫 {c.name}
-                                      </h4>
-                                      
-                                      <div className="mt-2.5 space-y-1.5 text-xs text-slate-500 font-semibold text-left">
-                                        <p className="flex items-center gap-1 text-slate-600">
-                                          👤 Chủ nhiệm: <strong className="text-slate-800 font-extrabold">{c.teacher}</strong>
-                                        </p>
-                                        <p className="flex items-center gap-1 text-emerald-700">
-                                          📊 Sĩ số: <strong className="text-emerald-800 font-black">{classStsCount} học sinh/ {femaleCount} Nữ</strong>
-                                        </p>
-                                      </div>
-                                    </div>
 
-                                    <div className="flex gap-2 border-t border-slate-100 pt-2.5 justify-end">
-                                      <button
-                                        onClick={() => handleStartEditClass(c)}
-                                        className="text-[11px] font-black text-slate-600 hover:text-amber-600 flex items-center gap-1 hover:bg-slate-50 px-2.5 py-1.5 rounded-lg border border-transparent hover:border-slate-200 transition"
-                                      >
-                                        <Edit2 className="w-3.5 h-3.5 text-amber-500" /> Sửa
-                                      </button>
-                                      <button
-                                        onClick={() => handlePreDeleteClass(c)}
-                                        className="text-[11px] font-black text-slate-600 hover:text-rose-600 flex items-center gap-1 hover:bg-slate-50 px-2.5 py-1.5 rounded-lg border border-transparent hover:border-slate-200 transition"
-                                      >
-                                        <Trash2 className="w-3.5 h-3.5 text-rose-500" /> Xóa
-                                      </button>
+                                      <div className="flex gap-2 border-t border-slate-100 pt-2.5 justify-end">
+                                        <button
+                                          onClick={() => handleStartEditClass(c)}
+                                          className="text-[11px] font-black text-slate-600 hover:text-amber-600 flex items-center gap-1 hover:bg-slate-50 px-2.5 py-1.5 rounded-lg border border-transparent hover:border-slate-200 transition"
+                                        >
+                                          <Edit2 className="w-3.5 h-3.5 text-amber-500" /> Sửa
+                                        </button>
+                                        <button
+                                          onClick={() => handlePreDeleteClass(c)}
+                                          className="text-[11px] font-black text-slate-600 hover:text-rose-600 flex items-center gap-1 hover:bg-slate-50 px-2.5 py-1.5 rounded-lg border border-transparent hover:border-slate-200 transition"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5 text-rose-500" /> Xóa
+                                        </button>
+                                      </div>
                                     </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
+                                  );
+                                })}
+                              </div>
+                            )}
                           </div>
                         );
                       })}

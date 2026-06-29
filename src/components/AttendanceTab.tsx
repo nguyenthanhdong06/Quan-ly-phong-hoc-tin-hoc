@@ -25,11 +25,18 @@ export default function AttendanceTab({
 }: AttendanceTabProps) {
   
   const [searchTerm, setSearchTerm] = React.useState('');
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const [pageSize, setPageSize] = React.useState(10);
 
   // Reset search term when class changes for perfect UX
   React.useEffect(() => {
     setSearchTerm('');
   }, [selectedClass]);
+
+  // Reset current page when selection or filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedClass, searchTerm, pageSize]);
 
   const classStudents = students.filter(s => s.classId === selectedClass);
   const currentDaysAttendance = attendanceData[selectedDate]?.[selectedClass] || {};
@@ -45,6 +52,14 @@ export default function AttendanceTab({
       );
     });
   }, [classStudents, searchTerm]);
+
+  const totalStudents = filteredStudents.length;
+  const totalPages = Math.ceil(totalStudents / pageSize) || 1;
+
+  const paginatedStudents = React.useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return filteredStudents.slice(startIndex, startIndex + pageSize);
+  }, [filteredStudents, currentPage, pageSize]);
 
   // Metrics
   let presentCount = 0;
@@ -315,7 +330,7 @@ export default function AttendanceTab({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredStudents.map((s, index) => {
+              {paginatedStudents.map((s, index) => {
                 const currentStatus = currentDaysAttendance[s.id] || 'present';
                 // Find true full index in full class list for consistent numbering in UI
                 const originalIndex = classStudents.findIndex(cs => cs.id === s.id);
@@ -377,6 +392,88 @@ export default function AttendanceTab({
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Controls styled matching screenshot */}
+        {filteredStudents.length > 0 && (
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-slate-100 text-xs font-semibold text-slate-500">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+              {/* Page size selector */}
+              <div className="flex items-center gap-2">
+                <span>Hiển thị</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => setPageSize(Number(e.target.value))}
+                  className="bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 font-bold text-slate-700 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={30}>30</option>
+                  <option value={50}>50</option>
+                </select>
+                <span>học sinh / trang</span>
+              </div>
+
+              {/* Items range status */}
+              <div>
+                <span>Hiển thị </span>
+                <span className="font-bold text-slate-700">
+                  {Math.min((currentPage - 1) * pageSize + 1, totalStudents)} - {Math.min(currentPage * pageSize, totalStudents)}
+                </span>
+                <span> trên </span>
+                <strong className="text-amber-600 font-extrabold">{totalStudents}</strong>
+                <span> học sinh</span>
+              </div>
+            </div>
+
+            {/* Pagination buttons */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className={`px-3.5 py-1.5 rounded-full border text-xs font-bold transition flex items-center gap-1 ${
+                  currentPage === 1
+                    ? 'bg-slate-50 text-slate-350 border-slate-150 cursor-not-allowed'
+                    : 'bg-white hover:bg-slate-50 text-slate-600 border-slate-200 cursor-pointer'
+                }`}
+              >
+                ‹ Trước
+              </button>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => {
+                const isActive = pageNum === currentPage;
+                return (
+                  <button
+                    key={pageNum}
+                    type="button"
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`w-8 h-8 rounded-full border text-xs font-black transition flex items-center justify-center ${
+                      isActive
+                        ? 'bg-amber-500 border-amber-500 text-white shadow-sm'
+                        : 'bg-white hover:bg-slate-50 text-slate-600 border-slate-200 cursor-pointer'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+
+              <button
+                type="button"
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className={`px-3.5 py-1.5 rounded-full border text-xs font-bold transition flex items-center gap-1 ${
+                  currentPage === totalPages
+                    ? 'bg-slate-50 text-slate-350 border-slate-150 cursor-not-allowed'
+                    : 'bg-white hover:bg-slate-50 text-slate-600 border-slate-200 cursor-pointer'
+                }`}
+              >
+                Sau ›
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
     </div>
