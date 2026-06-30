@@ -44,10 +44,13 @@ export default function ClassesTab({
   const [collapsedGrades, setCollapsedGrades] = useState<{ [key: number]: boolean }>({});
 
   const toggleGradeCollapse = (gradeId: number) => {
-    setCollapsedGrades(prev => ({
-      ...prev,
-      [gradeId]: !prev[gradeId]
-    }));
+    setCollapsedGrades(prev => {
+      const isCurrentlyCollapsed = prev[gradeId] !== false;
+      return {
+        ...prev,
+        [gradeId]: !isCurrentlyCollapsed
+      };
+    });
   };
 
   // --- LOGIC: KHỐI LỚP (GRADE) ---
@@ -472,7 +475,7 @@ export default function ClassesTab({
 
                         if (gradeClasses.length === 0) return null;
 
-                        const isCollapsed = !!collapsedGrades[grade.id];
+                        const isCollapsed = collapsedGrades[grade.id] !== false;
                         const customStyle = gradeMap[grade.id] || 'border-slate-500 text-slate-700 bg-slate-50/50 hover:border-slate-400';
 
                         return (

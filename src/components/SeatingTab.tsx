@@ -2,6 +2,48 @@ import React from 'react';
 import { Student, Computer, SeatingChart } from '../types';
 import { Monitor, X, Wrench, AlertTriangle, PenTool, Clipboard, Search, Check, ChevronDown, Maximize, Minimize, Tv, ZoomIn, ZoomOut, Sun, Moon } from 'lucide-react';
 
+// Format name: If name has more than 2 words, display only the middle name and first name (last 2 words)
+const formatStudentName = (name: string): string => {
+  if (!name) return '';
+  const trimmed = name.trim();
+  const words = trimmed.split(/\s+/);
+  if (words.length > 2) {
+    return words.slice(-2).join(' ');
+  }
+  return trimmed;
+};
+
+// 3D Pixel/Cartoon Avatar component for boy/girl
+const StudentAvatar3D = ({ gender, size = 'w-10 h-10', name = '' }: { gender: string; size?: string; name?: string }) => {
+  const [error, setError] = React.useState(false);
+  const srcPath = gender === 'Nữ' ? '/Nu.jpg' : '/Nam.jpg';
+
+  if (error) {
+    const isGirl = gender === 'Nữ';
+    return (
+      <div className={`${size} rounded-full flex items-center justify-center font-extrabold border-2 shadow-inner text-lg shrink-0 ${
+        isGirl 
+          ? 'bg-gradient-to-tr from-pink-400 to-rose-300 border-pink-200 text-white' 
+          : 'bg-gradient-to-tr from-blue-400 to-sky-300 border-blue-200 text-white'
+      }`}>
+        {isGirl ? '👧🏻' : '👦🏻'}
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={srcPath}
+      alt={name || "Student Avatar"}
+      referrerPolicy="no-referrer"
+      onError={() => {
+        setError(true);
+      }}
+      className={`${size} rounded-full object-cover border-2 border-slate-200/90 shadow-md hover:scale-105 transition-transform duration-200 shrink-0`}
+    />
+  );
+};
+
 interface SeatingTabProps {
   selectedClass: string;
   computers: Computer[];
@@ -369,17 +411,19 @@ export default function SeatingTab({
 
                       <div className="mt-1.5 pt-1.5 border-t border-black/3 min-h-[30px] flex items-center justify-center">
                         {studentObj ? (
-                          <div className={`px-1.5 py-1 rounded-xl w-full font-black tracking-normal text-center whitespace-normal break-words leading-tight ${
-                            studentObj.name.length > 15 ? 'text-[8.5px]' : 'text-[10px]'
-                          } ${
-                            computer.status === 'Đang hỏng' 
-                              ? 'bg-rose-950 text-rose-100 border border-rose-800' 
-                              : computer.status === 'Bảo trì'
-                              ? 'bg-blue-950 text-blue-100 border border-blue-800'
-                              : 'bg-white text-slate-950 border border-slate-300 shadow-md'
-                          }`}>
-                            <span className="mr-0.5 inline-block">{studentObj.gender === 'Nữ' ? '👧🏻' : '👦🏻'}</span>
-                            {studentObj.name}
+                          <div className="flex flex-col items-center w-full gap-1.5">
+                            {/* 3D Pixel Cartoon Avatar */}
+                            <StudentAvatar3D gender={studentObj.gender} size="w-10 h-10" name={studentObj.name} />
+                            
+                            <div className={`px-2 py-1.5 rounded-xl w-full font-black uppercase tracking-wide text-center whitespace-normal break-words leading-tight text-xs sm:text-[12.5px] ${
+                              computer.status === 'Đang hỏng' 
+                                ? 'bg-rose-950 text-rose-100 border border-rose-800' 
+                                : computer.status === 'Bảo trì'
+                                ? 'bg-blue-950 text-blue-100 border border-blue-800'
+                                : 'bg-white text-slate-900 border border-slate-300 shadow-md'
+                            }`}>
+                              {formatStudentName(studentObj.name)}
+                            </div>
                           </div>
                         ) : (
                           <span className="text-[10px] font-bold tracking-wide italic text-black/40 block">Trống</span>
@@ -854,18 +898,28 @@ export default function SeatingTab({
 
                           <div className="pt-2 border-t border-black/5 min-h-[38px] flex flex-col items-center justify-center">
                             {studentObj ? (
-                              <div className={`px-1.5 py-1.5 rounded-xl w-full text-center font-black shadow-md tracking-normal whitespace-normal break-words leading-tight ${
-                                projectorTheme === 'dark'
-                                  ? 'bg-slate-950 text-amber-300 border border-slate-800'
-                                  : 'bg-white text-slate-950 border border-slate-300'
-                              } ${
-                                scaleSize === 'sm' ? (studentObj.name.length > 15 ? 'text-[8px]' : 'text-[9px]') :
-                                scaleSize === 'md' ? (studentObj.name.length > 15 ? 'text-[9px]' : 'text-[10.5px]') :
-                                scaleSize === 'lg' ? (studentObj.name.length > 15 ? 'text-[10.5px]' : 'text-xs') :
-                                                     (studentObj.name.length > 15 ? 'text-[12.5px]' : 'text-sm')
-                              }`}>
-                                <span className="mr-0.5 inline-block">{studentObj.gender === 'Nữ' ? '👧🏻' : '👦🏻'}</span>
-                                {studentObj.name}
+                              <div className="flex flex-col items-center w-full gap-1.5">
+                                <StudentAvatar3D 
+                                  gender={studentObj.gender} 
+                                  size={
+                                    scaleSize === 'sm' ? 'w-8 h-8' :
+                                    scaleSize === 'md' ? 'w-10 h-10' :
+                                    scaleSize === 'lg' ? 'w-12 h-12' : 'w-14 h-14'
+                                  } 
+                                  name={studentObj.name} 
+                                />
+                                <div className={`px-2 py-1.5 rounded-xl w-full text-center font-black uppercase tracking-wider shadow-md whitespace-normal break-words leading-tight ${
+                                  projectorTheme === 'dark'
+                                    ? 'bg-slate-950 text-amber-300 border border-slate-800'
+                                    : 'bg-white text-slate-900 border border-slate-300'
+                                } ${
+                                  scaleSize === 'sm' ? 'text-[11px] sm:text-xs' :
+                                  scaleSize === 'md' ? 'text-xs sm:text-[13px]' :
+                                  scaleSize === 'lg' ? 'text-[13px] sm:text-sm' :
+                                                       'text-sm sm:text-[15px]'
+                                }`}>
+                                  {formatStudentName(studentObj.name)}
+                                </div>
                               </div>
                             ) : (
                               <span className={`italic block opacity-40 text-[9px] font-black uppercase tracking-wider ${
