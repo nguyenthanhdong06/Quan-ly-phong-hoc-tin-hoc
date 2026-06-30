@@ -462,7 +462,7 @@ export default function EvaluationTab({
                   <StickerAvatar 
                     emoji={avatar.emoji} 
                     studentId={s.id} 
-                    size="w-16 h-16" 
+                    size="w-18 h-18" 
                     className={`${badge ? badge.ringClass : ''}`}
                   />
                   {badge && (
@@ -575,7 +575,7 @@ export default function EvaluationTab({
                     <span>Đang có: {currentStars} Sao</span>
                   </div>
                   <div className="text-[10px] text-slate-400 font-medium mt-1 flex gap-2 items-center">
-                    <span>{s.code}</span>
+                    <span>Lớp: {selectedClass}</span>
                     <span>•</span>
                     <span className="bg-indigo-50 text-indigo-600 px-2.5 py-0.5 rounded-full font-bold">
                       {seatObj ? `💻 ${seatObj.name}` : 'Chưa xếp máy'}

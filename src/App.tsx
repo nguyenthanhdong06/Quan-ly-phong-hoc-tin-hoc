@@ -1048,6 +1048,8 @@ export default function App() {
             setEmulationDataState={setEmulationDataState}
             showToast={showToast}
             isRedemptionPeriod={isRedemptionPeriod}
+            computers={computers}
+            seatingChart={seatingChart}
           />
         )}
 
