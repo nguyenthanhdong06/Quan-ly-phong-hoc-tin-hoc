@@ -17,6 +17,7 @@ export interface Student {
   gender: 'Nam' | 'Nữ';
   classId: string;
   notes?: string;
+  avatarUrl?: string;
 }
 
 export interface Computer {

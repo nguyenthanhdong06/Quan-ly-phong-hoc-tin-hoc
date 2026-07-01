@@ -67,7 +67,7 @@ const getStudentAvatar = (studentId: string, allStudents?: Student[]) => {
 };
 
 // 3D Pixel Sticker Component to render gorgeous glossy cute animal badges
-const StickerAvatar = ({ emoji, studentId, size = 'w-24 h-24', className = '' }: { emoji: string; studentId: string; size?: string; className?: string }) => {
+const StickerAvatar = ({ emoji, studentId, size = 'w-24 h-24', className = '', avatarUrl }: { emoji: string; studentId: string; size?: string; className?: string; avatarUrl?: string }) => {
   let hash = 0;
   for (let i = 0; i < studentId.length; i++) {
     hash = studentId.charCodeAt(i) + ((hash << 5) - hash);
@@ -114,15 +114,23 @@ const StickerAvatar = ({ emoji, studentId, size = 'w-24 h-24', className = '' }:
       {/* Retro digital scanlines for game-aesthetic */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.06)_50%,rgba(0,0,0,0.06)_50%)] bg-[length:100%_4px] pointer-events-none" />
 
-      {/* Cute Emoji with a soft, rich 3D drop-shadow */}
-      <span 
-        className="text-[1.85em] relative z-10 leading-none filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.3)] saturate-120 contrast-105 select-none pointer-events-none transform scale-110"
-        style={{
-          imageRendering: 'pixelated',
-        }}
-      >
-        {emoji}
-      </span>
+      {avatarUrl ? (
+        <img 
+          src={avatarUrl} 
+          alt="Avatar" 
+          className="w-[85%] h-[85%] object-cover rounded-full relative z-10 filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.3)]"
+          referrerPolicy="no-referrer"
+        />
+      ) : (
+        <span 
+          className="text-[1.85em] relative z-10 leading-none filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.3)] saturate-120 contrast-105 select-none pointer-events-none transform scale-110"
+          style={{
+            imageRendering: 'pixelated',
+          }}
+        >
+          {emoji}
+        </span>
+      )}
 
       {/* Glossy epoxy dome reflection (top-half crescent) */}
       <div className="absolute top-[2px] left-[3%] right-[3%] h-[38%] bg-gradient-to-b from-white/35 via-white/8 to-transparent rounded-full opacity-90 pointer-events-none z-20" />
@@ -399,6 +407,8 @@ export default function FireworksCelebration({
   if (!isOpen) return null;
 
   const avatar = getStudentAvatar(studentId, students);
+  const matchedStudent = students.find(s => s.id === studentId);
+  const avatarUrl = matchedStudent?.avatarUrl;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-hidden bg-slate-950/80 backdrop-blur-xs font-sans">
@@ -429,7 +439,7 @@ export default function FireworksCelebration({
         {/* Central 3D pixel sticker & student identity showcase */}
         <div className="flex flex-col items-center space-y-4">
           <div className="p-2 bg-gradient-to-tr from-amber-50 to-orange-50 rounded-full border border-amber-100 shadow-inner">
-            <StickerAvatar emoji={avatar.emoji} studentId={studentId} size="w-24 h-24" />
+            <StickerAvatar emoji={avatar.emoji} studentId={studentId} size="w-24 h-24" avatarUrl={avatarUrl} />
           </div>
 
           <div className="space-y-1">

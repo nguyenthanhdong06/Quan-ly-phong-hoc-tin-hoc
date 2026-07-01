@@ -83,7 +83,7 @@ const getStudentAvatar = (studentId: string, allStudents?: Student[]) => {
 };
 
 // 3D Pixel Sticker Component to render gorgeous glossy cute animal badges
-const StickerAvatar = ({ emoji, studentId, size = 'w-16 h-16', className = '' }: { emoji: string; studentId: string; size?: string; className?: string }) => {
+const StickerAvatar = ({ emoji, studentId, size = 'w-16 h-16', className = '', avatarUrl }: { emoji: string; studentId: string; size?: string; className?: string; avatarUrl?: string }) => {
   let hash = 0;
   for (let i = 0; i < studentId.length; i++) {
     hash = studentId.charCodeAt(i) + ((hash << 5) - hash);
@@ -144,15 +144,24 @@ const StickerAvatar = ({ emoji, studentId, size = 'w-16 h-16', className = '' }:
       {/* Retro digital scanlines for game-aesthetic */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.06)_50%,rgba(0,0,0,0.06)_50%)] bg-[length:100%_4px] pointer-events-none" />
 
-      {/* Cute Emoji with a soft, rich 3D drop-shadow */}
-      <span 
-        className="text-[1.85em] relative z-10 leading-none filter drop-shadow-[0_4px_4px_rgba(0,0,0,0.28)] saturate-120 contrast-105 select-none pointer-events-none transform group-hover:scale-110 duration-200"
-        style={{
-          imageRendering: 'pixelated',
-        }}
-      >
-        {emoji}
-      </span>
+      {/* Cute Emoji or custom Google Drive image with a soft, rich 3D drop-shadow */}
+      {avatarUrl ? (
+        <img 
+          src={avatarUrl} 
+          alt="Avatar" 
+          className="w-[85%] h-[85%] object-cover rounded-full relative z-10 filter drop-shadow-[0_4px_4px_rgba(0,0,0,0.28)]"
+          referrerPolicy="no-referrer"
+        />
+      ) : (
+        <span 
+          className="text-[1.85em] relative z-10 leading-none filter drop-shadow-[0_4px_4px_rgba(0,0,0,0.28)] saturate-120 contrast-105 select-none pointer-events-none transform group-hover:scale-110 duration-200"
+          style={{
+            imageRendering: 'pixelated',
+          }}
+        >
+          {emoji}
+        </span>
+      )}
 
       {/* Glossy epoxy dome reflection (top-half crescent) */}
       <div className="absolute top-[2px] left-[3%] right-[3%] h-[38%] bg-gradient-to-b from-white/35 via-white/8 to-transparent rounded-full opacity-90 pointer-events-none z-20" />
@@ -464,6 +473,7 @@ export default function EvaluationTab({
                     studentId={s.id} 
                     size="w-18 h-18" 
                     className={`${badge ? badge.ringClass : ''}`}
+                    avatarUrl={s.avatarUrl}
                   />
                   {badge && (
                     <span className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-full text-[7.5px] font-black border uppercase tracking-wider whitespace-nowrap shadow-xs flex items-center gap-0.5 scale-90 group-hover:scale-95 transition-all ${badge.badgeClass}`}>
@@ -550,6 +560,7 @@ export default function EvaluationTab({
                     studentId={s.id} 
                     size="w-14 h-14" 
                     className={`${badge ? badge.ringClass : ''}`}
+                    avatarUrl={s.avatarUrl}
                   />
                   {badge && (
                     <span className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-full text-[7.5px] font-black border uppercase tracking-wider whitespace-nowrap shadow-xs flex items-center gap-0.5 ${badge.badgeClass}`}>

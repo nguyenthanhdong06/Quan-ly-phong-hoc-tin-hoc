@@ -23,6 +23,7 @@ import EvaluationTab from './components/EvaluationTab';
 import EmulationTab from './components/EmulationTab';
 import SeatingTab from './components/SeatingTab';
 import ResourcesTab from './components/ResourcesTab';
+import { AvatarGalleryTab } from './components/AvatarGalleryTab';
 import AdminTab from './components/AdminTab';
 import TimetableTab from './components/TimetableTab';
 
@@ -40,18 +41,100 @@ import {
   Sparkles,
   Monitor,
   BookOpen,
+  Image,
   Settings,
   LogIn,
   LogOut,
   X,
+  Shield,
   ShieldCheck,
   Menu,
   ChevronsLeft,
   ChevronsRight,
-  Calendar
+  Calendar,
+  Paintbrush
 } from 'lucide-react';
 
+const THEMES = [
+  {
+    id: 'slate-teal',
+    name: 'Xanh Đá',
+    primary: '#528285',
+    dark: '#3d6264',
+    medium: '#457073',
+    light: '#5d9194',
+    textMuted: '#cfe6e7',
+    dotColor: '#5a9497'
+  },
+  {
+    id: 'crimson-red',
+    name: 'Đỏ Hồng',
+    primary: '#be123c',
+    dark: '#881337',
+    medium: '#9f1239',
+    light: '#e11d48',
+    textMuted: '#ffe4e6',
+    dotColor: '#e11d48'
+  },
+  {
+    id: 'purple-indigo',
+    name: 'Tím Indigo',
+    primary: '#5c6bc0',
+    dark: '#283593',
+    medium: '#3f51b5',
+    light: '#7986cb',
+    textMuted: '#e8eaf6',
+    dotColor: '#6366f1'
+  },
+  {
+    id: 'dark-navy',
+    name: 'Xanh Navy',
+    primary: '#0f355c',
+    dark: '#0a223c',
+    medium: '#154a7d',
+    light: '#1e62a3',
+    textMuted: '#d1e1f0',
+    dotColor: '#0f355c'
+  },
+  {
+    id: 'ocean-blue',
+    name: 'Xanh Dương',
+    primary: '#0284c7',
+    dark: '#0369a1',
+    medium: '#075985',
+    light: '#0ea5e9',
+    textMuted: '#e0f2fe',
+    dotColor: '#0284c7'
+  },
+  {
+    id: 'original',
+    name: 'Xanh Lục',
+    primary: '#113f43',
+    dark: '#0a2c2f',
+    medium: '#175358',
+    light: '#1e6a70',
+    textMuted: '#a6d5d8',
+    dotColor: '#113f43'
+  }
+];
+
 export default function App() {
+  // --- COLOR THEME STATE ---
+  const [currentThemeId, setCurrentThemeId] = useState<string>(() => {
+    return localStorage.getItem('app_theme_id') || 'original';
+  });
+
+  const currentTheme = useMemo(() => {
+    return THEMES.find(t => t.id === currentThemeId) || THEMES[5];
+  }, [currentThemeId]);
+
+  const handleThemeChange = (id: string) => {
+    setCurrentThemeId(id);
+    localStorage.setItem('app_theme_id', id);
+  };
+
+  const [showColorPicker, setShowColorPicker] = useState(false);
+
   // --- STATE INIT FROM LOCAL STORAGE ---
   const [grades, setGrades] = useState<Grade[]>(() => {
     const local = localStorage.getItem('school_grades');
@@ -151,7 +234,7 @@ export default function App() {
   }, []);
 
   // --- INTERACTION / SYSTEM STATES ---
-  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'students', 'classes-management', 'attendance', 'evaluation', 'emulation', 'seating', 'resources', 'admin'
+  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'students', 'classes-management', 'attendance', 'evaluation', 'emulation', 'seating', 'resources', 'avatar-gallery', 'admin'
   const [selectedGrade, setSelectedGrade] = useState<number>(3);
   const [selectedClass, setSelectedClass] = useState<string>('Ba 1');
   const [selectedDate, setSelectedDate] = useState<string>(() => {
@@ -186,6 +269,10 @@ export default function App() {
     message: '',
     type: 'success'
   });
+
+  const getTabStyle = (tabName: string) => {
+    return activeTab === tabName ? { backgroundColor: currentTheme.medium } : {};
+  };
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ show: true, message, type });
@@ -511,22 +598,36 @@ export default function App() {
       )}
 
       {/* VERTICAL SIDEBAR MENU */}
-      <aside className={`
-        fixed inset-y-0 left-0 z-40 bg-[#113f43] text-white flex flex-col shadow-2xl transition-all duration-300 ease-in-out shrink-0 border-r border-[#1a5a5e]/25
-        md:sticky md:top-0 md:h-screen md:translate-x-0
-        ${isSidebarCollapsed ? 'w-64 md:w-16' : 'w-64'}
-        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-      `}>
+      <aside 
+        className={`
+          fixed inset-y-0 left-0 z-40 text-white flex flex-col shadow-2xl transition-all duration-300 ease-in-out shrink-0 border-r
+          md:sticky md:top-0 md:h-screen md:translate-x-0
+          ${isSidebarCollapsed ? 'w-64 md:w-16' : 'w-64'}
+          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        `}
+        style={{ backgroundColor: currentTheme.primary, borderRightColor: 'rgba(255,255,255,0.1)' }}
+      >
         {/* Sidebar Header Brand */}
-        <div className={`p-4 bg-[#0a2c2f] border-b border-[#247c81]/30 flex items-center justify-between shadow-sm shrink-0 ${isSidebarCollapsed ? 'md:flex-col md:gap-3 md:p-3' : ''}`}>
+        <div 
+          className={`p-4 border-b flex items-center justify-between shadow-sm shrink-0 ${isSidebarCollapsed ? 'md:flex-col md:gap-3 md:p-3' : ''}`}
+          style={{ backgroundColor: currentTheme.dark, borderBottomColor: 'rgba(255,255,255,0.1)' }}
+        >
           <div className={`flex items-center gap-2.5 text-left ${isSidebarCollapsed ? 'md:flex-col md:text-center' : ''}`}>
-            <div className="bg-gradient-to-br from-amber-400 to-amber-500 p-2 rounded-xl text-[#0a2c2f] shadow-md border border-amber-300 flex items-center justify-center shrink-0">
+            <div 
+              className="bg-gradient-to-br from-amber-400 to-amber-500 p-2 rounded-xl shadow-md border border-amber-300 flex items-center justify-center shrink-0"
+              style={{ color: currentTheme.dark }}
+            >
               <Monitor className="w-5 h-5 animate-pulse" />
             </div>
             {!isSidebarCollapsed && (
               <div className="transition-all duration-300">
                 <h1 className="font-extrabold text-xl uppercase tracking-widest text-white leading-none mb-1">CCM 1.0</h1>
-                <p className="text-[11px] text-[#a6d5d8] font-bold leading-none">Trường Tiểu học Long Định</p>
+                <p 
+                  className="text-[11px] font-bold leading-none"
+                  style={{ color: currentTheme.textMuted }}
+                >
+                  Trường Tiểu học Long Định
+                </p>
               </div>
             )}
           </div>
@@ -570,9 +671,10 @@ export default function App() {
               isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
             } ${
               activeTab === 'dashboard'
-                ? 'bg-[#175358] text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
-                : 'text-[#e2f1f2]/80 hover:bg-white/5 hover:text-white'
+                ? 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
+                : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
             }`}
+            style={getTabStyle('dashboard')}
           >
             <Home className="w-4 h-4 shrink-0" />
             <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Tổng quan</span>
@@ -589,9 +691,10 @@ export default function App() {
                 isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
               } ${
                 activeTab === 'students'
-                  ? 'bg-[#175358] text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
-                  : 'text-[#e2f1f2]/80 hover:bg-white/5 hover:text-white'
+                  ? 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
+                  : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
               }`}
+              style={getTabStyle('students')}
             >
               <Users className="w-4 h-4 shrink-0" />
               <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Học sinh</span>
@@ -609,9 +712,10 @@ export default function App() {
                 isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
               } ${
                 activeTab === 'classes-management'
-                  ? 'bg-[#175358] text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
-                  : 'text-[#e2f1f2]/80 hover:bg-white/5 hover:text-white'
+                  ? 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
+                  : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
               }`}
+              style={getTabStyle('classes-management')}
             >
               <Layers className="w-4 h-4 shrink-0" />
               <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Khối & Lớp</span>
@@ -629,9 +733,10 @@ export default function App() {
                 isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
               } ${
                 activeTab === 'attendance'
-                  ? 'bg-[#175358] text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
-                  : 'text-[#e2f1f2]/80 hover:bg-white/5 hover:text-white'
+                  ? 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
+                  : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
               }`}
+              style={getTabStyle('attendance')}
             >
               <ClipboardCheck className="w-4 h-4 shrink-0" />
               <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Điểm danh</span>
@@ -649,9 +754,10 @@ export default function App() {
                 isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
               } ${
                 activeTab === 'evaluation'
-                  ? 'bg-[#175358] text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
-                  : 'text-[#e2f1f2]/80 hover:bg-white/5 hover:text-white'
+                  ? 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
+                  : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
               }`}
+              style={getTabStyle('evaluation')}
             >
               <Award className="w-4 h-4 shrink-0" />
               <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Nhận xét</span>
@@ -669,13 +775,14 @@ export default function App() {
                 isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
               } ${
                 activeTab === 'emulation'
-                  ? 'bg-[#175358] text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
-                  : 'text-[#e2f1f2]/80 hover:bg-white/5 hover:text-white'
+                  ? 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
+                  : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
               } ${
                 isRedemptionPeriod 
                   ? 'animate-pulse bg-gradient-to-r from-red-650 via-amber-650 to-red-650 text-white border-2 border-yellow-300 shadow' 
                   : ''
               }`}
+              style={getTabStyle('emulation')}
             >
               <Sparkles className="w-4 h-4 shrink-0" />
               <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Thi Đua</span>
@@ -698,9 +805,10 @@ export default function App() {
                 isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
               } ${
                 activeTab === 'seating'
-                  ? 'bg-[#175358] text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
-                  : 'text-[#e2f1f2]/80 hover:bg-white/5 hover:text-white'
+                  ? 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
+                  : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
               }`}
+              style={getTabStyle('seating')}
             >
               <Monitor className="w-4 h-4 shrink-0" />
               <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Phòng máy</span>
@@ -718,9 +826,10 @@ export default function App() {
                 isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
               } ${
                 activeTab === 'timetable'
-                  ? 'bg-[#175358] text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
-                  : 'text-[#e2f1f2]/80 hover:bg-white/5 hover:text-white'
+                  ? 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
+                  : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
               }`}
+              style={getTabStyle('timetable')}
             >
               <Calendar className="w-4 h-4 shrink-0" />
               <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Thời khóa biểu</span>
@@ -741,14 +850,18 @@ export default function App() {
                   isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
                 } ${
                   activeTab === 'resources'
-                    ? 'bg-[#175358] text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
-                    : 'text-[#e2f1f2]/80 hover:bg-white/5 hover:text-white'
+                    ? 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
+                    : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
                 }`}
+                style={getTabStyle('resources')}
               >
                 <div className="relative shrink-0 flex items-center justify-center">
                   <BookOpen className="w-4 h-4" />
                   {pendingCount > 0 && isSidebarCollapsed && (
-                    <span className="absolute -top-1.5 -right-1.5 w-2 h-2 bg-red-500 rounded-full animate-pulse border border-[#0d3437]" />
+                    <span 
+                      className="absolute -top-1.5 -right-1.5 w-2 h-2 rounded-full animate-pulse border"
+                      style={{ backgroundColor: '#ef4444', borderColor: currentTheme.dark }}
+                    />
                   )}
                 </div>
                 <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Học liệu số</span>
@@ -761,6 +874,28 @@ export default function App() {
             );
           })()}
 
+          {/* Kho avatar menu item */}
+          <button
+            onClick={() => {
+              setActiveTab('avatar-gallery');
+              setIsMobileMenuOpen(false);
+            }}
+            title={isSidebarCollapsed ? "Kho avatar" : ""}
+            className={`flex items-center gap-3 w-full px-4 py-2 rounded-xl text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 relative ${
+              isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
+            } ${
+              activeTab === 'avatar-gallery'
+                ? 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
+                : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
+            }`}
+            style={getTabStyle('avatar-gallery')}
+          >
+            <div className="relative shrink-0 flex items-center justify-center">
+              <Image className="w-4 h-4" />
+            </div>
+            <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Kho avatar</span>
+          </button>
+
           {currentUser && currentUser.role.includes('Admin') && (
             <button
               onClick={() => {
@@ -772,9 +907,10 @@ export default function App() {
                 isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
               } ${
                 activeTab === 'admin'
-                  ? 'bg-[#175358] text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
-                  : 'text-[#e2f1f2]/80 hover:bg-white/5 hover:text-white'
+                  ? 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
+                  : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
               }`}
+              style={getTabStyle('admin')}
             >
               <Settings className="w-4 h-4 shrink-0" />
               <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Quản trị</span>
@@ -790,7 +926,7 @@ export default function App() {
                   setIsMobileMenuOpen(false);
                 }}
                 title={isSidebarCollapsed ? "Đăng nhập" : ""}
-                className={`flex items-center gap-3 w-full px-4 py-2 rounded-xl text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer text-[#e2f1f2]/80 hover:bg-white/5 hover:text-white active:scale-95 ${
+                className={`flex items-center gap-3 w-full px-4 py-2 rounded-xl text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white active:scale-95 ${
                   isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
                 }`}
               >
@@ -815,28 +951,34 @@ export default function App() {
 
                 {/* Security Section (Auto-Logout Controller) */}
                 {!isSidebarCollapsed && (currentUser?.username?.toLowerCase() === 'admin' || currentUser?.role?.toLowerCase().includes('admin')) && (
-                  <div className="px-3.5 py-2.5 rounded-xl bg-[#072123] border border-[#247c81]/20 text-left text-[10px] text-[#a6d5d8] space-y-1.5 animate-fadeIn">
-                    <div className="flex items-center justify-between font-bold">
-                      <span className="text-emerald-350">🛡️ Tự động thoát</span>
+                  <div 
+                    className="p-1.5 px-2 rounded-xl border text-left flex items-center justify-between gap-1.5 animate-fadeIn w-full"
+                    style={{ 
+                      backgroundColor: `${currentTheme.dark}80`, 
+                      borderColor: 'rgba(255,255,255,0.06)' 
+                    }}
+                  >
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <Shield className="w-3.5 h-3.5 text-sky-400 shrink-0" fill="currentColor" fillOpacity={0.25} />
+                      <span className="text-[10px] font-bold text-white/95 truncate">Tự động thoát</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
                       {inactivityLimit > 0 && (
-                        <span className="bg-amber-400/20 text-amber-300 px-1.5 py-0.5 rounded font-mono font-bold animate-pulse">
+                        <span className="bg-amber-400/20 text-amber-300 px-1 py-0.5 rounded font-mono text-[8px] font-bold animate-pulse shrink-0">
                           {Math.floor(secondsLeft / 60)}:{(secondsLeft % 60).toString().padStart(2, '0')}
                         </span>
                       )}
-                    </div>
-                    <div className="flex items-center justify-between gap-1.5 pt-0.5">
-                      <span className="text-[9px] text-[#a6d5d8]/70">Không h.động:</span>
                       <select
                         value={inactivityLimit}
                         onChange={(e) => setInactivityLimit(Number(e.target.value))}
-                        className="bg-[#0f3437] text-[#e2f1f2] border border-[#247c81]/30 rounded px-1 py-0.5 font-bold text-[9px] focus:outline-none focus:ring-1 focus:ring-amber-400 cursor-pointer"
+                        className="bg-black/25 text-white/90 border border-white/10 rounded-lg px-2 py-0.5 font-bold text-[10px] focus:outline-none focus:ring-1 focus:ring-sky-400 cursor-pointer h-6 w-18 appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23ffffff%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')] bg-[length:7px_7px] bg-[right_6px_center] bg-no-repeat pr-4.5"
                       >
-                        <option value={0}>Tắt</option>
-                        <option value={2}>2 phút</option>
-                        <option value={5}>5 phút</option>
-                        <option value={10}>10 phút</option>
-                        <option value={15}>15 phút</option>
-                        <option value={30}>30 phút</option>
+                        <option value={0} className="bg-slate-800 text-white font-bold">Tắt</option>
+                        <option value={2} className="bg-slate-800 text-white font-bold">2 phút</option>
+                        <option value={5} className="bg-slate-800 text-white font-bold">5 phút</option>
+                        <option value={10} className="bg-slate-800 text-white font-bold">10 phút</option>
+                        <option value={15} className="bg-slate-800 text-white font-bold">15 phút</option>
+                        <option value={30} className="bg-slate-800 text-white font-bold">30 phút</option>
                       </select>
                     </div>
                   </div>
@@ -861,10 +1003,76 @@ export default function App() {
 
         </div>
 
-        {/* Sidebar Footer credit */}
-        <div className={`p-3.5 bg-[#0a2c2f]/75 border-t border-[#247c81]/25 text-center shrink-0 ${isSidebarCollapsed ? 'md:hidden' : ''}`}>
-          <p className="text-[9px] text-[#a6d5d8]/70 font-medium">Bản quyền © 2026 bởi</p>
-          <p className="text-[9px] text-amber-300 font-extrabold uppercase tracking-widest mt-0.5">Nguyễn Thanh Đồng</p>
+        {/* Theme Picker & Sidebar Footer credit */}
+        <div 
+          className={`p-2 border-t shrink-0 relative`}
+          style={{ backgroundColor: currentTheme.primary, borderTopColor: 'rgba(255,255,255,0.1)' }}
+        >
+          {/* Color picker pill container (floats above the paintbrush button) */}
+          {showColorPicker && (
+            <div 
+              className={`absolute bottom-11 left-1/2 -translate-x-1/2 z-50 bg-white rounded-full py-1 px-2.5 flex items-center gap-1.5 shadow-2xl border border-slate-150 animate-in fade-in slide-in-from-bottom-2 duration-150 ${isSidebarCollapsed ? 'md:hidden' : ''}`}
+              style={{ width: 'max-content' }}
+            >
+              {THEMES.map((theme) => (
+                <button
+                  key={theme.id}
+                  onClick={() => handleThemeChange(theme.id)}
+                  className={`w-4 h-4 rounded-full transition-all cursor-pointer hover:scale-110 active:scale-90 relative shrink-0 ${
+                    currentThemeId === theme.id ? 'ring-2 ring-amber-400 ring-offset-2' : ''
+                  }`}
+                  style={{ backgroundColor: theme.dotColor }}
+                  title={theme.name}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Paintbrush Toggle Button and Version Text */}
+          <div className={`flex items-center gap-2.5 justify-start ${isSidebarCollapsed ? 'md:justify-center' : ''}`}>
+            {isSidebarCollapsed ? (
+              <div className="relative">
+                {showColorPicker && (
+                  <div 
+                    className="absolute bottom-9 -left-1 z-50 bg-white rounded-full py-1.5 px-1.5 flex flex-col items-center gap-1.5 shadow-2xl border border-slate-150 animate-in fade-in slide-in-from-bottom-2 duration-150"
+                  >
+                    {THEMES.map((theme) => (
+                      <button
+                        key={theme.id}
+                        onClick={() => handleThemeChange(theme.id)}
+                        className={`w-4.5 h-4.5 rounded-full transition-all cursor-pointer hover:scale-110 active:scale-90 relative shrink-0 ${
+                          currentThemeId === theme.id ? 'ring-2 ring-amber-400 ring-offset-2' : ''
+                        }`}
+                        style={{ backgroundColor: theme.dotColor }}
+                        title={theme.name}
+                      />
+                    ))}
+                  </div>
+                )}
+                <button
+                  onClick={() => setShowColorPicker(!showColorPicker)}
+                  className="w-7 h-7 rounded-full bg-white flex items-center justify-center shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer border border-slate-100 shrink-0"
+                  title="Thay đổi màu sắc chủ đạo"
+                >
+                  <Paintbrush className="w-3.5 h-3.5" style={{ color: currentTheme.primary }} />
+                </button>
+              </div>
+            ) : (
+              <>
+                <button
+                  onClick={() => setShowColorPicker(!showColorPicker)}
+                  className="w-7 h-7 rounded-full bg-white flex items-center justify-center shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer border border-slate-100 shrink-0"
+                  title="Thay đổi màu sắc chủ đạo"
+                >
+                  <Paintbrush className="w-3.5 h-3.5" style={{ color: currentTheme.primary }} />
+                </button>
+                <div className="flex flex-col text-left leading-none py-0.5">
+                  <span className="text-[9px] font-black text-white/95">Phiên bản 1.0</span>
+                  <span className="text-[8px] text-white/50 font-semibold mt-0.5">Sở thích cá nhân</span>
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
       </aside>
@@ -876,7 +1084,7 @@ export default function App() {
         <nav className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs h-14 flex items-center px-4 shrink-0 justify-between md:hidden animate-fadeIn">
           
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-black uppercase tracking-wider text-[#1e6a70]">T.H Long Định</span>
+            <span className="text-[11px] font-black uppercase tracking-wider" style={{ color: currentTheme.primary }}>T.H Long Định</span>
           </div>
 
           {/* Right helper info & Mobile hamburger toggle menu */}
@@ -890,30 +1098,39 @@ export default function App() {
               className="p-2 text-slate-500 hover:bg-slate-100 rounded-xl transition cursor-pointer"
               title="Menu dọc"
             >
-              <Menu className="w-5 h-5 text-[#1e6a70]" />
+              <Menu className="w-5 h-5" style={{ color: currentTheme.primary }} />
             </button>
           </div>
 
         </nav>
 
       {/* HEADER SECTION PANEL */}
-      <header className="bg-gradient-to-r from-[#113f43] via-[#175358] to-[#1e6a70] text-white shadow-xl sticky top-14 md:top-0 z-20 transition-all border-b border-[#247c81]/30">
+      <header 
+        className="text-white shadow-xl sticky top-14 md:top-0 z-20 transition-all border-b"
+        style={{ 
+          background: `linear-gradient(to right, ${currentTheme.primary}, ${currentTheme.medium}, ${currentTheme.light})`,
+          borderBottomColor: 'rgba(255,255,255,0.15)'
+        }}
+      >
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           
           <div className="flex items-center gap-3 text-left">
-            <div className="bg-gradient-to-br from-amber-400 to-amber-500 p-2.5 rounded-xl text-[#0a2c2f] shadow-md border border-amber-300 flex items-center justify-center shrink-0">
+            <div 
+              className="bg-gradient-to-br from-amber-400 to-amber-500 p-2.5 rounded-xl shadow-md border border-amber-300 flex items-center justify-center shrink-0"
+              style={{ color: currentTheme.dark }}
+            >
               <Monitor className="w-6 h-6 animate-pulse" />
             </div>
             <div>
               <h1 className="text-xl sm:text-2xl font-black uppercase tracking-wider text-white drop-shadow-sm">Hệ Thống Số Quản Lý Phòng Học Tin Học</h1>
-              <p className="text-xs text-[#a6d5d8] font-semibold flex flex-wrap items-center gap-1.5 mt-1">
+              <p className="text-xs font-semibold flex flex-wrap items-center gap-1.5 mt-1" style={{ color: currentTheme.textMuted }}>
                 <span className="bg-amber-400/20 text-amber-300 border border-amber-400/40 text-[12px] font-black px-2.5 py-0.5 rounded-lg shadow-sm backdrop-blur-xs">Trường Tiểu học Long Định</span>
-                <span className="text-[#a6d5d8]/60">•</span>
+                <span className="text-white/60">•</span>
                 <span className="inline-flex items-center gap-1 bg-emerald-500/15 border border-emerald-500/35 px-2.5 py-0.5 rounded-lg text-[9px] text-[#2fe0b1] font-bold">
                   <span className={`w-1.5 h-1.5 rounded-full ${supabaseError ? 'bg-red-400 animate-pulse' : 'bg-emerald-400 shrink-0'}`}></span>
                   Supabase {supabaseError ? 'Lỗi' : 'Đồng bộ'}
                 </span>
-                <span className="text-[#a6d5d8]/60">•</span>
+                <span className="text-white/60">•</span>
                 <span>Người chịu trách nhiệm: <strong className="text-amber-300 font-extrabold">{currentUser ? currentUser.name : 'Chưa đăng nhập'}</strong></span>
               </p>
             </div>
@@ -1059,6 +1276,7 @@ export default function App() {
             computers={computers}
             setComputers={setComputers}
             students={students}
+            setStudents={setStudents}
             seatingChart={seatingChart}
             setSeatingChart={setSeatingChart}
             activeAssignModal={activeAssignModal}
@@ -1082,6 +1300,17 @@ export default function App() {
             documents={documents}
             setDocuments={setDocuments}
             currentUser={currentUser}
+            showToast={showToast}
+          />
+        )}
+
+        {activeTab === 'avatar-gallery' && (
+          <AvatarGalleryTab
+            students={students}
+            setStudents={setStudents}
+            classes={classes}
+            selectedClass={selectedClass}
+            setSelectedClass={setSelectedClass}
             showToast={showToast}
           />
         )}
@@ -1250,7 +1479,7 @@ export default function App() {
       <footer className="bg-[#0a2326] text-[#a6d5d8]/70 text-xs py-8 border-t border-[#247c81]/25 text-center space-y-2 mt-auto">
         <p className="font-extrabold text-[#e2f1f2] uppercase tracking-wider text-xs sm:text-sm">Hệ Thống Số Quản Lý Phòng Học Tin Học Trường Tiểu Học Long Định</p>
         <p className="font-medium text-[11px] sm:text-xs">
-          <span>© 2026. Xây dựng và hoàn thiện bởi Giáo Viên </span>
+          <span>©2026 Bản quyền thuộc về Giáo Viên </span>
           <strong className="text-amber-300 hover:text-amber-200 transition-colors cursor-pointer">Nguyễn Thanh Đồng.</strong>
         </p>
         <p className="text-[11px] sm:text-xs text-[#a6d5d8]/55">
