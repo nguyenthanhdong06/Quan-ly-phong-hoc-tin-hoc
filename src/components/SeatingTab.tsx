@@ -1,7 +1,7 @@
 import React from 'react';
 import { Student, Computer, SeatingChart } from '../types';
 import { Monitor, X, Wrench, AlertTriangle, PenTool, Clipboard, Search, Check, ChevronDown, Maximize, Minimize, Tv, ZoomIn, ZoomOut, Sun, Moon } from 'lucide-react';
-import { googleDriveAvatars } from './AvatarGalleryTab';
+import { googleDriveAvatars, categorizedAvatars, avatarCategories } from './AvatarGalleryTab';
 
 // Format name: If name has more than 2 words, display only the middle name and first name (last 2 words)
 const formatStudentName = (name: string): string => {
@@ -86,6 +86,13 @@ export default function SeatingTab({
   const [scaleSize, setScaleSize] = React.useState<'sm' | 'md' | 'lg' | 'xl'>('lg');
   const [projectorTheme, setProjectorTheme] = React.useState<'dark' | 'light'>('dark');
   const [avatarChangeStudent, setAvatarChangeStudent] = React.useState<Student | null>(null);
+  const [modalAvatarCategory, setModalAvatarCategory] = React.useState<string>('all');
+
+  React.useEffect(() => {
+    if (avatarChangeStudent) {
+      setModalAvatarCategory('all');
+    }
+  }, [avatarChangeStudent]);
 
   // Drag and drop states for interactive seating rearrangement
   const [draggedOverId, setDraggedOverId] = React.useState<string | null>(null);
@@ -377,7 +384,7 @@ export default function SeatingTab({
                     statusBg = 'bg-blue-400 border-blue-500 text-white hover:bg-blue-500';
                   }
 
-                  let dragClasses = studentObj ? 'cursor-grab active:cursor-grabbing hover:scale-[1.03]' : 'cursor-pointer';
+                  let dragClasses = studentObj ? 'cursor-grab active:cursor-grabbing hover:scale-[1.04] active:scale-[0.96]' : 'cursor-pointer hover:scale-[1.04] active:scale-[0.96]';
                   if (isDraggingThis) {
                     dragClasses = 'opacity-30 border-dashed scale-95 select-none cursor-grabbing';
                   }
@@ -402,7 +409,7 @@ export default function SeatingTab({
                       onDragOver={(e) => handleDragOverCustom(e, computer.id)}
                       onDragLeave={handleDragLeaveCustom}
                       onDrop={(e) => handleDrop(e, computer.id)}
-                      className={`p-3 border-2 rounded-xl text-center shadow-sm transition-all duration-200 transform active:translate-y-0 ${statusBg} ${dragClasses} ${ringClass}`}
+                      className={`p-3 border-2 rounded-xl text-center shadow-sm transition-all duration-200 transform ${statusBg} ${dragClasses} ${ringClass}`}
                       title={studentObj ? `Nhấn giữ để kéo thả đổi chỗ [${studentObj.name}]` : 'Nhấp chuột để gán học sinh'}
                     >
                       <div className="flex justify-between items-center mb-1">
@@ -432,18 +439,18 @@ export default function SeatingTab({
                             >
                               <StudentAvatar3D 
                                 gender={studentObj.gender} 
-                                size="w-10 h-10" 
+                                size="w-14 h-14" 
                                 name={studentObj.name} 
                                 avatarUrl={studentObj.avatarUrl}
                               />
                             </div>
                             
-                            <div className={`px-2 py-1.5 rounded-xl w-full font-black uppercase tracking-wide text-center whitespace-normal break-words leading-tight text-xs sm:text-[12.5px] ${
-                              computer.status === 'Đang hỏng' 
-                                ? 'bg-rose-950 text-rose-100 border border-rose-800' 
-                                : computer.status === 'Bảo trì'
-                                ? 'bg-blue-950 text-blue-100 border border-blue-800'
-                                : 'bg-white text-slate-900 border border-slate-300 shadow-md'
+                            <div className={`px-2 py-1.5 rounded-xl w-full font-extrabold uppercase tracking-wide text-center whitespace-normal break-words leading-tight text-[12px] sm:text-[13.5px] ${
+                               computer.status === 'Đang hỏng' 
+                                 ? 'bg-rose-950 text-rose-100 border border-rose-800' 
+                                 : computer.status === 'Bảo trì'
+                                 ? 'bg-blue-950 text-blue-100 border border-blue-800'
+                                 : 'bg-white text-slate-900 border border-slate-300 shadow-md'
                             }`}>
                               {formatStudentName(studentObj.name)}
                             </div>
@@ -878,7 +885,7 @@ export default function SeatingTab({
                       const isDraggingThis = activeDraggingId === computer.id;
                       const isDraggedOverThis = draggedOverId === computer.id;
 
-                      let dragClasses = studentObj ? 'cursor-grab active:cursor-grabbing hover:scale-[1.03]' : 'cursor-pointer';
+                      let dragClasses = studentObj ? 'cursor-grab active:cursor-grabbing hover:scale-[1.04] active:scale-[0.96]' : 'cursor-pointer hover:scale-[1.04] active:scale-[0.96]';
                       if (isDraggingThis) {
                         dragClasses = 'opacity-30 border-dashed scale-95 select-none cursor-grabbing';
                       }
@@ -903,7 +910,7 @@ export default function SeatingTab({
                           onDragOver={(e) => handleDragOverCustom(e, computer.id)}
                           onDragLeave={handleDragLeaveCustom}
                           onDrop={(e) => handleDrop(e, computer.id)}
-                          className={`border-2 text-center shadow transition-all duration-200 cursor-pointer transform active:translate-y-0 ${
+                          className={`border-2 text-center shadow transition-all duration-200 cursor-pointer transform ${
                             scaleConfig[scaleSize].card
                           } ${statusBg} ${dragClasses} ${ringClass}`}
                           title={studentObj ? `Nhấn giữ để kéo thả đổi chỗ [${studentObj.name}]` : 'Nhấp chuột để gán học sinh'}
@@ -933,23 +940,23 @@ export default function SeatingTab({
                                   <StudentAvatar3D 
                                     gender={studentObj.gender} 
                                     size={
-                                      scaleSize === 'sm' ? 'w-8 h-8' :
-                                      scaleSize === 'md' ? 'w-10 h-10' :
-                                      scaleSize === 'lg' ? 'w-12 h-12' : 'w-14 h-14'
+                                      scaleSize === 'sm' ? 'w-10 h-10' :
+                                      scaleSize === 'md' ? 'w-12 h-12' :
+                                      scaleSize === 'lg' ? 'w-16 h-16' : 'w-20 h-20'
                                     } 
                                     name={studentObj.name} 
                                     avatarUrl={studentObj.avatarUrl}
                                   />
                                 </div>
-                                <div className={`px-2 py-1.5 rounded-xl w-full text-center font-black uppercase tracking-wider shadow-md whitespace-normal break-words leading-tight ${
+                                <div className={`px-2 py-1.5 rounded-xl w-full text-center font-extrabold uppercase tracking-wider shadow-md whitespace-normal break-words leading-tight ${
                                   projectorTheme === 'dark'
                                     ? 'bg-slate-950 text-amber-300 border border-slate-800'
                                     : 'bg-white text-slate-900 border border-slate-300'
                                 } ${
-                                  scaleSize === 'sm' ? 'text-[11px] sm:text-xs' :
-                                  scaleSize === 'md' ? 'text-xs sm:text-[13px]' :
-                                  scaleSize === 'lg' ? 'text-[13px] sm:text-sm' :
-                                                       'text-sm sm:text-[15px]'
+                                  scaleSize === 'sm' ? 'text-[11.5px] sm:text-[12.5px]' :
+                                  scaleSize === 'md' ? 'text-[12.5px] sm:text-[13.5px]' :
+                                  scaleSize === 'lg' ? 'text-[13.5px] sm:text-[14.5px]' :
+                                                       'text-[14.5px] sm:text-[16px]'
                                 }`}>
                                   {formatStudentName(studentObj.name)}
                                 </div>
@@ -1038,17 +1045,38 @@ export default function SeatingTab({
               </div>
             </div>
 
+            {/* Category tabs */}
+            <div className="flex flex-wrap gap-1 mb-3 pb-2 border-b border-slate-100">
+              {avatarCategories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setModalAvatarCategory(cat.id)}
+                  className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all duration-150 cursor-pointer active:scale-95 ${
+                    modalAvatarCategory === cat.id
+                      ? 'bg-amber-500 text-white shadow-sm ring-2 ring-amber-500/20'
+                      : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-150'
+                  }`}
+                >
+                  <span>{cat.icon}</span>
+                  <span>{cat.name}</span>
+                </button>
+              ))}
+            </div>
+
             {/* Grid of Avatars */}
-            <div className="grid grid-cols-4 gap-3 max-h-[260px] overflow-y-auto p-1">
-              {googleDriveAvatars.map((url, idx) => {
-                const isSelected = avatarChangeStudent.avatarUrl === url;
+            <div className="grid grid-cols-4 gap-3 max-h-[220px] overflow-y-auto p-1">
+              {(modalAvatarCategory === 'all' 
+                ? categorizedAvatars 
+                : categorizedAvatars.filter(item => item.category === modalAvatarCategory)
+              ).map((item, idx) => {
+                const isSelected = avatarChangeStudent.avatarUrl === item.url;
                 return (
                   <button
                     key={idx}
                     onClick={() => {
                       setStudents(prev => prev.map(s => {
                         if (s.id === avatarChangeStudent.id) {
-                          return { ...s, avatarUrl: url };
+                          return { ...s, avatarUrl: item.url };
                         }
                         return s;
                       }));
@@ -1058,13 +1086,20 @@ export default function SeatingTab({
                     className={`relative aspect-square rounded-2xl bg-slate-50 border-2 overflow-hidden hover:scale-105 hover:border-amber-400 transition-all cursor-pointer p-1.5 group flex items-center justify-center ${
                       isSelected ? 'border-amber-500 bg-amber-50/50 ring-2 ring-amber-400/20 shadow-md' : 'border-slate-150'
                     }`}
+                    title={item.name}
                   >
                     <img 
-                      src={url} 
-                      alt={`Cute Avatar ${idx + 1}`} 
+                      src={item.url} 
+                      alt={item.name} 
                       className="w-full h-full object-cover rounded-xl"
                       referrerPolicy="no-referrer"
                     />
+                    
+                    {/* Badge for avatar label */}
+                    <div className="absolute bottom-0 inset-x-0 bg-black/60 py-0.5 px-1 text-[8.5px] font-bold text-white text-center opacity-0 group-hover:opacity-100 transition-opacity truncate">
+                      {item.name}
+                    </div>
+
                     {isSelected && (
                       <div className="absolute top-1 right-1 bg-amber-500 text-white rounded-full p-0.5">
                         <Check className="w-2.5 h-2.5 stroke-[4px]" />
@@ -1074,6 +1109,15 @@ export default function SeatingTab({
                 );
               })}
             </div>
+
+            {(modalAvatarCategory === 'all' 
+              ? categorizedAvatars 
+              : categorizedAvatars.filter(item => item.category === modalAvatarCategory)
+            ).length === 0 && (
+              <div className="text-center py-8 text-slate-400 text-xs font-semibold">
+                Không tìm thấy avatar nào trong danh mục này.
+              </div>
+            )}
 
             {/* Footer */}
             <div className="mt-4 pt-4 border-t border-slate-150 flex justify-end">

@@ -11,20 +11,37 @@ interface AvatarGalleryTabProps {
   showToast: (message: string, type?: 'success' | 'error') => void;
 }
 
-export const googleDriveAvatars = [
-  "https://drive.google.com/thumbnail?id=1mjpI3dUOzHY8L5l-y7CkL_s9jw9XriSI&sz=w512",
-  "https://drive.google.com/thumbnail?id=1piSQIYDZsEvxdJgb45Kq1Vykiu32rrE4&sz=w512",
-  "https://drive.google.com/thumbnail?id=1TweRboo4BiKKbuSf_teqSJmf0s0IO-pK&sz=w512",
-  "https://drive.google.com/thumbnail?id=11pJQb5vgMElsQDZt1iZ5D1QzZe5UBbnj&sz=w512",
-  "https://drive.google.com/thumbnail?id=1W5YOyftQNklHQEkjtAT7HyvxKdKaBtj1&sz=w512",
-  "https://drive.google.com/thumbnail?id=14h7AjxbPzKfZ5JGRqxvUdAKuHm7uF26R&sz=w512",
-  "https://drive.google.com/thumbnail?id=1umCvKNjXxW8LeqomzxrN0VwaaENfxrhS&sz=w512",
-  "https://drive.google.com/thumbnail?id=1XC-HABWrm8-BKzzyHcD9UsTBRaRWMO0N&sz=w512",
-  "https://drive.google.com/thumbnail?id=1LPh7RwfLYLL51vQTFoz-hn1hgSg3aKlt&sz=w512",
-  "https://drive.google.com/thumbnail?id=1US3HJNd0lgMKB3FLv3QmDRKvLL8tEudV&sz=w512",
-  "https://drive.google.com/thumbnail?id=1c5UC-8S1QmPwbTJGpSLwmAcFq1DkxZ-_&sz=w512",
-  "https://drive.google.com/thumbnail?id=1hV9fR049ulTD6ooRrNfHwx6Ue92NQvNt&sz=w512"
+export interface AvatarItem {
+  url: string;
+  category: 'con_nguoi' | 'dong_vat' | 'sieu_anh_hung' | 'hoa';
+  name: string;
+}
+
+export const avatarCategories = [
+  { id: 'all', name: 'Tất cả', icon: '✨' },
+  { id: 'con_nguoi', name: 'Con người', icon: '🧑‍🤝‍🧑' },
+  { id: 'dong_vat', name: 'Động vật', icon: '🐼' },
+  { id: 'sieu_anh_hung', name: 'Siêu anh hùng', icon: '🦸' },
+  { id: 'hoa', name: 'Hoa', icon: '🌸' }
+] as const;
+
+export const categorizedAvatars: AvatarItem[] = [
+  // 12 Google Drive Cute Student Avatars categorized under 'con_nguoi'
+  { url: "https://drive.google.com/thumbnail?id=1mjpI3dUOzHY8L5l-y7CkL_s9jw9XriSI&sz=w512", category: 'con_nguoi', name: 'Học sinh nữ 1 (Nháy mắt)' },
+  { url: "https://drive.google.com/thumbnail?id=1piSQIYDZsEvxdJgb45Kq1Vykiu32rrE4&sz=w512", category: 'con_nguoi', name: 'Học sinh nữ 2 (Mũ vàng)' },
+  { url: "https://drive.google.com/thumbnail?id=1TweRboo4BiKKbuSf_teqSJmf0s0IO-pK&sz=w512", category: 'con_nguoi', name: 'Học sinh nữ 3 (Cột tóc)' },
+  { url: "https://drive.google.com/thumbnail?id=11pJQb5vgMElsQDZt1iZ5D1QzZe5UBbnj&sz=w512", category: 'con_nguoi', name: 'Học sinh nữ 4 (Băng đô)' },
+  { url: "https://drive.google.com/thumbnail?id=1W5YOyftQNklHQEkjtAT7HyvxKdKaBtj1&sz=w512", category: 'con_nguoi', name: 'Học sinh nữ 5 (Tì cằm)' },
+  { url: "https://drive.google.com/thumbnail?id=14h7AjxbPzKfZ5JGRqxvUdAKuHm7uF26R&sz=w512", category: 'con_nguoi', name: 'Học sinh nữ 6 (Kính cận)' },
+  { url: "https://drive.google.com/thumbnail?id=1umCvKNjXxW8LeqomzxrN0VwaaENfxrhS&sz=w512", category: 'con_nguoi', name: 'Học sinh nam 1 (Áo vàng)' },
+  { url: "https://drive.google.com/thumbnail?id=1XC-HABWrm8-BKzzyHcD9UsTBRaRWMO0N&sz=w512", category: 'con_nguoi', name: 'Học sinh nam 2 (Mũ ngược)' },
+  { url: "https://drive.google.com/thumbnail?id=1LPh7RwfLYLL51vQTFoz-hn1hgSg3aKlt&sz=w512", category: 'con_nguoi', name: 'Học sinh nam 3 (Kính cận)' },
+  { url: "https://drive.google.com/thumbnail?id=1US3HJNd0lgMKB3FLv3QmDRKvLL8tEudV&sz=w512", category: 'con_nguoi', name: 'Học sinh nam 4 (Áo sọc)' },
+  { url: "https://drive.google.com/thumbnail?id=1c5UC-8S1QmPwbTJGpSLwmAcFq1DkxZ-_&sz=w512", category: 'con_nguoi', name: 'Học sinh nam 5 (Mũ xanh)' },
+  { url: "https://drive.google.com/thumbnail?id=1hV9fR049ulTD6ooRrNfHwx6Ue92NQvNt&sz=w512", category: 'con_nguoi', name: 'Học sinh nam 6 (Áo cam)' }
 ];
+
+export const googleDriveAvatars = categorizedAvatars.map(item => item.url);
 
 // Fallback emoji avatar helper
 const getFallbackAvatar = (studentId: string, allStudents?: Student[]) => {
@@ -46,9 +63,14 @@ export const AvatarGalleryTab: React.FC<AvatarGalleryTabProps> = ({
   showToast,
 }) => {
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
+  const [activeCategory, setActiveCategory] = useState<string>('all');
 
   const classStudents = students.filter(s => s.classId === selectedClass);
   const selectedStudentObj = students.find(s => s.id === selectedStudentId);
+
+  const filteredAvatars = activeCategory === 'all'
+    ? categorizedAvatars
+    : categorizedAvatars.filter(item => item.category === activeCategory);
 
   const handleSelectAvatar = (url: string) => {
     if (!selectedStudentId) {
@@ -232,34 +254,60 @@ export const AvatarGalleryTab: React.FC<AvatarGalleryTabProps> = ({
           </div>
 
           {/* Avatar Gallery Selector Grid */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-xs space-y-4">
-            <h3 className="text-sm font-extrabold text-slate-800 flex items-center gap-2 uppercase tracking-wider border-b pb-3">
-              <Sparkles className="w-4 h-4 text-amber-500" />
-              Bộ sưu tập Avatar Cute từ Google Drive
-            </h3>
+          <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-xs space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-3">
+              <h3 className="text-xs font-extrabold text-slate-800 flex items-center gap-2 tracking-wider">
+                <Sparkles className="w-4 h-4 text-amber-500" />
+                Bộ sưu tập Avatar Cute
+              </h3>
+              
+              {/* Category selector */}
+              <div className="flex flex-wrap gap-1.5">
+                {avatarCategories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setActiveCategory(cat.id)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all duration-150 cursor-pointer active:scale-95 ${
+                      activeCategory === cat.id
+                        ? 'bg-amber-500 text-white shadow-sm ring-2 ring-amber-500/20'
+                        : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-150'
+                    }`}
+                  >
+                    <span>{cat.icon}</span>
+                    <span>{cat.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
 
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
-              {googleDriveAvatars.map((url, idx) => {
-                const isAssigned = selectedStudentObj?.avatarUrl === url;
+              {filteredAvatars.map((item, idx) => {
+                const isAssigned = selectedStudentObj?.avatarUrl === item.url;
                 return (
                   <button
                     key={idx}
                     disabled={!selectedStudentId}
-                    onClick={() => handleSelectAvatar(url)}
+                    onClick={() => handleSelectAvatar(item.url)}
                     className={`relative aspect-square rounded-2xl border-2 overflow-hidden flex items-center justify-center transition-all bg-slate-50 group ${
                       !selectedStudentId
                         ? 'opacity-60 cursor-not-allowed'
                         : isAssigned
                         ? 'border-amber-400 ring-2 ring-amber-400/20 shadow-sm scale-95'
-                        : 'border-slate-100 hover:border-amber-300 hover:scale-105 hover:shadow-xs cursor-pointer'
+                        : 'border-slate-150 hover:border-amber-400 hover:scale-105 hover:shadow-sm cursor-pointer'
                     }`}
+                    title={`${item.name} (${avatarCategories.find(c => c.id === item.category)?.name})`}
                   >
                     <img
-                      src={url}
-                      alt={`Avatar Option ${idx + 1}`}
+                      src={item.url}
+                      alt={item.name}
                       className="w-full h-full object-cover"
                       referrerPolicy="no-referrer"
                     />
+
+                    {/* Badge for avatar label */}
+                    <div className="absolute bottom-0 inset-x-0 bg-black/60 py-0.5 px-1 text-[8.5px] font-bold text-white text-center opacity-0 group-hover:opacity-100 transition-opacity truncate">
+                      {item.name}
+                    </div>
 
                     {isAssigned && (
                       <div className="absolute inset-0 bg-amber-500/20 flex items-center justify-center">
@@ -272,6 +320,12 @@ export const AvatarGalleryTab: React.FC<AvatarGalleryTabProps> = ({
                 );
               })}
             </div>
+
+            {filteredAvatars.length === 0 && (
+              <div className="text-center py-10 text-slate-400 text-xs font-semibold">
+                Không tìm thấy avatar nào trong danh mục này.
+              </div>
+            )}
           </div>
         </div>
       </div>
