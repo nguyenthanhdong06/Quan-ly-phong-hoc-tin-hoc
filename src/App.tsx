@@ -875,26 +875,28 @@ export default function App() {
           })()}
 
           {/* Kho avatar menu item */}
-          <button
-            onClick={() => {
-              setActiveTab('avatar-gallery');
-              setIsMobileMenuOpen(false);
-            }}
-            title={isSidebarCollapsed ? "Kho avatar" : ""}
-            className={`flex items-center gap-3 w-full px-4 py-2 rounded-xl text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 relative ${
-              isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
-            } ${
-              activeTab === 'avatar-gallery'
-                ? 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
-                : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
-            }`}
-            style={getTabStyle('avatar-gallery')}
-          >
-            <div className="relative shrink-0 flex items-center justify-center">
-              <Image className="w-4 h-4" />
-            </div>
-            <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Kho avatar</span>
-          </button>
+          {hasAdminOrTeacherAccess && (
+            <button
+              onClick={() => {
+                setActiveTab('avatar-gallery');
+                setIsMobileMenuOpen(false);
+              }}
+              title={isSidebarCollapsed ? "Kho avatar" : ""}
+              className={`flex items-center gap-3 w-full px-4 py-2 rounded-xl text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 relative ${
+                isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
+              } ${
+                activeTab === 'avatar-gallery'
+                  ? 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
+                  : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
+              }`}
+              style={getTabStyle('avatar-gallery')}
+            >
+              <div className="relative shrink-0 flex items-center justify-center">
+                <Image className="w-4 h-4" />
+              </div>
+              <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Kho avatar</span>
+            </button>
+          )}
 
           {currentUser && currentUser.role.includes('Admin') && (
             <button
@@ -1304,7 +1306,7 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'avatar-gallery' && (
+        {activeTab === 'avatar-gallery' && hasAdminOrTeacherAccess && (
           <AvatarGalleryTab
             students={students}
             setStudents={setStudents}
