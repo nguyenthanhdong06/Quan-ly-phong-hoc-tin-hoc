@@ -82,95 +82,22 @@ const getStudentAvatar = (studentId: string, allStudents?: Student[]) => {
   return avatars[hash % avatars.length];
 };
 
-// 3D Pixel Sticker Component to render gorgeous glossy cute animal badges
-const StickerAvatar = ({ emoji, studentId, size = 'w-16 h-16', className = '', avatarUrl }: { emoji: string; studentId: string; size?: string; className?: string; avatarUrl?: string }) => {
-  let hash = 0;
-  for (let i = 0; i < studentId.length; i++) {
-    hash = studentId.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  hash = Math.abs(hash);
-
-  // Vibrant gradient pairs matching the exact high-end circular 3D backgrounds in the reference image
-  const gradientBgs = [
-    'from-[#5cd6ff] via-[#38bcf2] to-[#1294d9]', // Soft Sky Blue
-    'from-[#6be4a0] via-[#4fd087] to-[#2cb46a]', // Fresh Emerald Mint
-    'from-[#ff8cb8] via-[#f7629b] to-[#dc3a74]', // Candy Strawberry Pink
-    'from-[#ffb443] via-[#f8951d] to-[#d67200]', // Warm Honey Orange
-    'from-[#ab8fff] via-[#8565f4] to-[#6039e1]', // Cosmic Violet Indigo
-    'from-[#ffd93d] via-[#fbc118] to-[#e0a000]', // Golden Sunny Yellow
-    'from-[#4ade80] via-[#22c55e] to-[#15803d]', // Bright Garden Green
-    'from-[#f472b6] via-[#ec4899] to-[#be185d]', // Flamingo Pink
-    'from-[#fb7185] via-[#f43f5e] to-[#be123c]', // Coral Rose Red
-    'from-[#38bdf8] via-[#0ea5e9] to-[#0369a1]', // Oceanic Deep Blue
-    'from-[#fecaca] via-[#f87171] to-[#dc2626]', // Cherry Red
-    'from-[#fda4af] via-[#fb7185] to-[#e11d48]', // Rose Red
-    'from-[#f9a8d4] via-[#ec4899] to-[#be185d]', // Bubble Pink
-    'from-[#fbcfe8] via-[#f472b6] to-[#db2777]', // Candy Pink
-    'from-[#ccfbf1] via-[#5eead4] to-[#14b8a6]', // Fresh Teal
-    'from-[#99f6e4] via-[#2dd4bf] to-[#0f766e]', // Aqua Teal
-    'from-[#d1fae5] via-[#34d399] to-[#059669]', // Spring Green
-    'from-[#f0fdf4] via-[#86efac] to-[#22c55e]', // Light Spring
-    'from-[#fef9c3] via-[#fde047] to-[#f59e0b]', // Honey Yellow
-    'from-[#f5d0fe] via-[#d946ef] to-[#a21caf]', // Orchid Pink
-    'from-[#a5f3fc] via-[#22d3ee] to-[#0891b2]', // Aqua Cyan
-    'from-[#6ee7f9] via-[#06b6d4] to-[#0e7490]', // Tropical Cyan
-
-  ];
-
-  const currentGradient = gradientBgs[hash % gradientBgs.length];
-
+// Simple Avatar Component to render clean, flat circle avatars with student-specific background colors
+const SimpleAvatar = ({ emoji, bg, size = 'w-16 h-16', className = '', avatarUrl }: { emoji: string; bg: string; size?: string; className?: string; avatarUrl?: string }) => {
   return (
-    <div className={`relative rounded-full aspect-square flex items-center justify-center border-4 border-white shadow-[0_5px_12px_rgba(0,0,0,0.18),0_1px_3px_rgba(0,0,0,0.10)] bg-gradient-to-tr ${currentGradient} select-none transition-all duration-300 overflow-hidden ${size} ${className}`}>
-      
-      {/* 3D Pixel grid pattern overlay */}
-      <div 
-        className="absolute inset-0 opacity-12 mix-blend-overlay pointer-events-none" 
-        style={{
-          backgroundImage: `
-            linear-gradient(45deg, #000 25%, transparent 25%), 
-            linear-gradient(-45deg, #000 25%, transparent 25%), 
-            linear-gradient(45deg, transparent 75%, #000 75%), 
-            linear-gradient(-45deg, transparent 75%, #000 75%)
-          `,
-          backgroundSize: '10px 10px',
-          backgroundPosition: '0 0, 0 5px, 5px -5px, -5px 0px'
-        }}
-      />
-
-      {/* Inner radial shading to enhance the 3D globe/lens effect */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_20%,rgba(0,0,0,0.22)_100%)] mix-blend-multiply pointer-events-none rounded-full" />
-      <div className="absolute inset-1 bg-[radial-gradient(circle_at_35%_25%,rgba(255,255,255,0.40)_0%,transparent_55%)] pointer-events-none rounded-full" />
-
-      {/* Retro digital scanlines for game-aesthetic */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.06)_50%,rgba(0,0,0,0.06)_50%)] bg-[length:100%_4px] pointer-events-none" />
-
-      {/* Cute Emoji or custom Google Drive image with a soft, rich 3D drop-shadow */}
+    <div className={`rounded-full flex items-center justify-center border-2 shadow-inner select-none shrink-0 ${bg} ${size} ${className}`}>
       {avatarUrl ? (
         <img 
           src={avatarUrl} 
           alt="Avatar" 
-          className="w-[85%] h-[85%] object-cover rounded-full relative z-10 filter drop-shadow-[0_4px_4px_rgba(0,0,0,0.28)]"
+          className="w-full h-full object-cover rounded-full"
           referrerPolicy="no-referrer"
         />
       ) : (
-        <span 
-          className="text-[1.85em] relative z-10 leading-none filter drop-shadow-[0_4px_4px_rgba(0,0,0,0.28)] saturate-120 contrast-105 select-none pointer-events-none transform group-hover:scale-110 duration-200"
-          style={{
-            imageRendering: 'pixelated',
-          }}
-        >
+        <span className="text-[1.85em] leading-none select-none pointer-events-none">
           {emoji}
         </span>
       )}
-
-      {/* Glossy epoxy dome reflection (top-half crescent) */}
-      <div className="absolute top-[2px] left-[3%] right-[3%] h-[38%] bg-gradient-to-b from-white/35 via-white/8 to-transparent rounded-full opacity-90 pointer-events-none z-20" />
-      
-      {/* 3D glint dot reflection */}
-      <div className="absolute top-[12%] left-[22%] w-1.5 h-1.5 bg-white/75 rounded-full blur-[0.2px] pointer-events-none z-20" />
-
-      {/* Inner circular outline layer */}
-      <div className="absolute inset-0.5 rounded-full border border-white/15 pointer-events-none z-10" />
     </div>
   );
 };
@@ -468,9 +395,9 @@ export default function EvaluationTab({
 
                 {/* Circular Avatar with Achievement Badge Frame */}
                 <div className="relative my-2 shrink-0">
-                  <StickerAvatar 
+                  <SimpleAvatar 
                     emoji={avatar.emoji} 
-                    studentId={s.id} 
+                    bg={avatar.bg}
                     size="w-18 h-18" 
                     className={`${badge ? badge.ringClass : ''}`}
                     avatarUrl={s.avatarUrl}
@@ -555,9 +482,9 @@ export default function EvaluationTab({
               {/* Student Identification Info */}
               <div className="flex items-center gap-4 border-b border-slate-100 pb-4 mb-4">
                 <div className="relative shrink-0 my-1">
-                  <StickerAvatar 
+                  <SimpleAvatar 
                     emoji={avatar.emoji} 
-                    studentId={s.id} 
+                    bg={avatar.bg}
                     size="w-14 h-14" 
                     className={`${badge ? badge.ringClass : ''}`}
                     avatarUrl={s.avatarUrl}
