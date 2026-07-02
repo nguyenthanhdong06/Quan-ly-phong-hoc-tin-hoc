@@ -106,3 +106,11 @@ export interface TimetableData {
   };
 }
 
+export interface MotivationalQuote {
+  id: string;
+  text: string;
+  author: string;
+  isActive: boolean;
+}
+
+

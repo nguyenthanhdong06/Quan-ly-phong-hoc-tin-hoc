@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Grade, ClassItem, Student, Computer, DocumentItem, Member, AttendanceData, EvaluationData, EmulationDataState, SeatingChart, TimetableData } from './types';
+import { Grade, ClassItem, Student, Computer, DocumentItem, Member, AttendanceData, EvaluationData, EmulationDataState, SeatingChart, TimetableData, MotivationalQuote } from './types';
 import {
   defaultGrades,
   defaultClasses,
@@ -11,7 +11,8 @@ import {
   defaultEvaluation,
   defaultEmulation,
   defaultSeating,
-  defaultTimetable
+  defaultTimetable,
+  defaultQuotes
 } from './data/mockData';
 
 // Subcomponents import
@@ -52,7 +53,10 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Calendar,
-  Paintbrush
+  Paintbrush,
+  Database,
+  RefreshCw,
+  Cloud
 } from 'lucide-react';
 
 const THEMES = [
@@ -191,6 +195,11 @@ export default function App() {
     return local ? JSON.parse(local) : defaultTimetable;
   });
 
+  const [quotes, setQuotes] = useState<MotivationalQuote[]>(() => {
+    const local = localStorage.getItem('school_quotes');
+    return local ? JSON.parse(local) : defaultQuotes;
+  });
+
   // --- SUPABASE CLOUD STATUS STATES ---
   const [isLoaded, setIsLoaded] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -215,6 +224,7 @@ export default function App() {
           if (dbStates['school_documents']) setDocuments(dbStates['school_documents']);
           if (dbStates['school_members']) setMembers(dbStates['school_members']);
           if (dbStates['school_timetable_data']) setTimetableData(dbStates['school_timetable_data']);
+          if (dbStates['school_quotes']) setQuotes(dbStates['school_quotes']);
           showToast('Đã đồng bộ hóa toàn bộ cơ sở dữ liệu từ Supabase Cloud!', 'success');
         } else {
           // If Supabase is empty, let the user know and let them push datasets themselves
@@ -255,6 +265,7 @@ export default function App() {
 
   const [secondsLeft, setSecondsLeft] = useState<number>(inactivityLimit * 60);
   const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
+  const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState(false);
 
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -368,6 +379,13 @@ export default function App() {
       saveSupabaseState('school_timetable_data', timetableData);
     }
   }, [timetableData, isLoaded]);
+
+  useEffect(() => {
+    localStorage.setItem('school_quotes', JSON.stringify(quotes));
+    if (isLoaded) {
+      saveSupabaseState('school_quotes', quotes);
+    }
+  }, [quotes, isLoaded]);
 
   useEffect(() => {
     if (currentUser) {
@@ -526,6 +544,7 @@ export default function App() {
         if (dbStates['school_documents']) setDocuments(dbStates['school_documents']);
         if (dbStates['school_members']) setMembers(dbStates['school_members']);
         if (dbStates['school_timetable_data']) setTimetableData(dbStates['school_timetable_data']);
+        if (dbStates['school_quotes']) setQuotes(dbStates['school_quotes']);
         
         showToast('Tải dữ liệu thành công! Đã ghi nhận đè bộ nhớ cục bộ.', 'success');
       } else {
@@ -556,7 +575,8 @@ export default function App() {
         saveSupabaseState('school_emulation_state', emulationDataState),
         saveSupabaseState('school_documents', documents),
         saveSupabaseState('school_members', members),
-        saveSupabaseState('school_timetable_data', timetableData)
+        saveSupabaseState('school_timetable_data', timetableData),
+        saveSupabaseState('school_quotes', quotes)
       ]);
       
       const allSuccess = results.every(r => r === true);
@@ -1128,10 +1148,15 @@ export default function App() {
               <p className="text-xs font-semibold flex flex-wrap items-center gap-1.5 mt-1" style={{ color: currentTheme.textMuted }}>
                 <span className="bg-amber-400/20 text-amber-300 border border-amber-400/40 text-[12px] font-black px-2.5 py-0.5 rounded-lg shadow-sm backdrop-blur-xs">Trường Tiểu học Long Định</span>
                 <span className="text-white/60">•</span>
-                <span className="inline-flex items-center gap-1 bg-emerald-500/15 border border-emerald-500/35 px-2.5 py-0.5 rounded-lg text-[9px] text-[#2fe0b1] font-bold">
+                <button
+                  type="button"
+                  onClick={() => setIsSupabaseModalOpen(true)}
+                  className="inline-flex items-center gap-1 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 px-2.5 py-0.5 rounded-lg text-[9px] text-[#2fe0b1] font-bold cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95"
+                  title="Nhấn để xem bảng trạng thái đồng bộ Supabase Cloud"
+                >
                   <span className={`w-1.5 h-1.5 rounded-full ${supabaseError ? 'bg-red-400 animate-pulse' : 'bg-emerald-400 shrink-0'}`}></span>
                   Supabase {supabaseError ? 'Lỗi' : 'Đồng bộ'}
-                </span>
+                </button>
                 <span className="text-white/60">•</span>
                 <span>Người chịu trách nhiệm: <strong className="text-amber-300 font-extrabold">{currentUser ? currentUser.name : 'Chưa đăng nhập'}</strong></span>
               </p>
@@ -1204,6 +1229,8 @@ export default function App() {
             supabaseError={supabaseError}
             onForceSync={forceFetchFromSupabase}
             onForcePush={forcePushToSupabase}
+            onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
+            quotes={quotes}
           />
         )}
 
@@ -1334,6 +1361,8 @@ export default function App() {
             timetableData={timetableData}
             setTimetableData={setTimetableData}
             classes={classes}
+            quotes={quotes}
+            setQuotes={setQuotes}
           />
         )}
 
@@ -1404,6 +1433,153 @@ export default function App() {
               </div>
 
             </form>
+
+          </div>
+        </div>
+      )}
+
+      {/* SUPABASE SYNCHRONIZATION MODAL */}
+      {isSupabaseModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[60] flex items-center justify-center p-4">
+          <div className="bg-gradient-to-br from-slate-900 to-slate-950 text-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden border border-emerald-500/30 transform transition-all scale-100 animate-in zoom-in-95 duration-200">
+            
+            {/* Header of the Modal */}
+            <div className="bg-gradient-to-r from-emerald-900 via-emerald-950 to-slate-950 p-6 border-b border-emerald-500/20 relative">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+              
+              <div className="flex items-center justify-between relative z-10">
+                <div className="flex items-center gap-3.5 text-left">
+                  <div className="bg-emerald-500/20 p-2.5 rounded-2xl border border-emerald-500/30 shrink-0">
+                    <Database className="w-6 h-6 text-emerald-400" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-2 w-2 relative">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                      </span>
+                      <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400">Đồng bộ đám mây trực tuyến</span>
+                    </div>
+                    <h3 className="font-extrabold text-base uppercase tracking-wider text-emerald-300">
+                      Cơ Sở Dữ Liệu Đám Mây Supabase
+                    </h3>
+                  </div>
+                </div>
+                
+                <button
+                  onClick={() => setIsSupabaseModalOpen(false)}
+                  className="p-2 hover:bg-white/10 text-slate-400 hover:text-white rounded-xl transition cursor-pointer"
+                  title="Đóng cửa sổ"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Body of the Modal */}
+            <div className="p-6 space-y-6 text-left relative z-10">
+              
+              {/* Introduction Text */}
+              <div className="space-y-1">
+                <h4 className="text-xs font-black uppercase tracking-wide text-emerald-300">
+                  KẾT NỐI THÔNG SUỐT VỚI MÁY CHỦ SUPABASE DATABASE
+                </h4>
+                <p className="text-[11px] text-slate-300 leading-relaxed font-medium">
+                  Hạ tầng luôn an toàn. Mọi dữ liệu học sinh, số liệu thi đua, sao tích lũy được bảo toàn tuyệt đối. Dữ liệu được lưu trữ tự động xuống <strong className="text-white">LocalStorage</strong> để hoạt động siêu tốc, sau đó tức thì đồng bộ lên đám mây <strong className="text-emerald-400">Supabase Cloud</strong>.
+                </p>
+              </div>
+
+              {/* Stats Grid inside Modal */}
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                <div className="bg-slate-900/60 p-3 rounded-xl border border-emerald-500/10 text-left">
+                  <span className="block text-[8px] font-black uppercase text-slate-400 tracking-wider">Phân loại Khối</span>
+                  <span className="text-xs font-black text-emerald-300 flex items-center gap-1 mt-1">
+                    <Layers className="w-3.5 h-3.5 text-emerald-500" /> {grades.length} khối
+                  </span>
+                </div>
+                <div className="bg-slate-900/60 p-3 rounded-xl border border-emerald-500/10 text-left">
+                  <span className="block text-[8px] font-black uppercase text-slate-400 tracking-wider">Tổng số lớp</span>
+                  <span className="text-xs font-black text-emerald-300 flex items-center gap-1 mt-1">
+                    🏫 {classes.length} lớp
+                  </span>
+                </div>
+                <div className="bg-slate-900/60 p-3 rounded-xl border border-emerald-500/10 text-left">
+                  <span className="block text-[8px] font-black uppercase text-slate-400 tracking-wider">Học sinh liên kết</span>
+                  <span className="text-xs font-black text-emerald-300 flex items-center gap-1 mt-1">
+                    <Users className="w-3.5 h-3.5 text-emerald-400" /> {students.length} HS
+                  </span>
+                </div>
+                <div className="bg-slate-900/60 p-3 rounded-xl border border-emerald-500/10 text-left">
+                  <span className="block text-[8px] font-black uppercase text-slate-400 tracking-wider">Máy trạm</span>
+                  <span className="text-xs font-black text-emerald-300 flex items-center gap-1 mt-1">
+                    <Monitor className="w-3.5 h-3.5 text-emerald-400" /> {computers.length} chỗ
+                  </span>
+                </div>
+                <div className="bg-slate-900/60 p-3 rounded-xl border border-emerald-500/10 text-left col-span-2 sm:col-span-1">
+                  <span className="block text-[8px] font-black uppercase text-slate-400 tracking-wider">Học liệu số</span>
+                  <span className="text-xs font-black text-emerald-300 flex items-center gap-1 mt-1">
+                    <BookOpen className="w-3.5 h-3.5 text-emerald-400" /> {documents.length} tài liệu
+                  </span>
+                </div>
+              </div>
+
+              {/* Cloud Sync Manual Action panel */}
+              <div className="bg-slate-900/40 border border-slate-800 p-4 rounded-2xl space-y-3">
+                <span className="block text-[10px] font-black uppercase tracking-wider text-slate-400">Các thao tác cưỡng chế đồng bộ</span>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await forceFetchFromSupabase();
+                    }}
+                    disabled={isSyncing}
+                    className="bg-emerald-950/60 hover:bg-emerald-900 border border-emerald-700/50 hover:border-emerald-500/80 text-xs text-white font-extrabold px-4 py-3 rounded-xl flex items-center justify-center gap-2 transition disabled:opacity-50 cursor-pointer active:scale-98"
+                  >
+                    <RefreshCw className={`w-4 h-4 text-emerald-400 ${isSyncing ? 'animate-spin' : ''}`} />
+                    <div className="text-left">
+                      <span className="block text-white">Tải dữ liệu về</span>
+                      <span className="block text-[9px] text-emerald-400/80 font-normal">Ghi đè từ đám mây xuống Local</span>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await forcePushToSupabase();
+                    }}
+                    disabled={isSyncing}
+                    className="bg-indigo-950/60 hover:bg-indigo-900 border border-indigo-700/50 hover:border-indigo-500/80 text-xs text-white font-extrabold px-4 py-3 rounded-xl flex items-center justify-center gap-2 transition disabled:opacity-50 cursor-pointer active:scale-98"
+                  >
+                    <Cloud className="w-4 h-4 text-indigo-400" />
+                    <div className="text-left">
+                      <span className="block text-white">Sao lưu lên đám mây</span>
+                      <span className="block text-[9px] text-indigo-400/80 font-normal">Đẩy đè dữ liệu hiện tại lên Supabase</span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Status footer with connection status */}
+              <div className="flex items-center justify-between border-t border-emerald-500/10 pt-4 text-slate-400 text-[10px] font-semibold">
+                <span className="flex items-center gap-1.5">
+                  Trạng thái kết nối:
+                  {supabaseError ? (
+                    <span className="text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-md border border-rose-500/20 font-bold">{supabaseError}</span>
+                  ) : (
+                    <span className="text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20 font-bold">Hoạt động thông suốt</span>
+                  )}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsSupabaseModalOpen(false)}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-black px-4 py-2 rounded-xl text-xs transition active:scale-95 cursor-pointer shadow-md shadow-emerald-500/10"
+                >
+                  Đồng ý & Đóng
+                </button>
+              </div>
+
+            </div>
 
           </div>
         </div>

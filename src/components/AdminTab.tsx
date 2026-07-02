@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { Member, Computer, Student, ClassItem } from '../types';
-import { UserCheck, Trash2, ShieldAlert, Heart, HardDrive, Cpu, Cloud, Check, Wifi, AlertTriangle, RefreshCw, Database, FileCode, CheckCircle2, X, Calendar, Plus, Clock, User } from 'lucide-react';
+import { Member, Computer, Student, ClassItem, MotivationalQuote } from '../types';
+import { UserCheck, Trash2, ShieldAlert, Heart, HardDrive, Cpu, Cloud, Check, Wifi, AlertTriangle, RefreshCw, Database, FileCode, CheckCircle2, X, Calendar, Plus, Clock, User, Sparkles } from 'lucide-react';
 import { SQL_INITIALIZATION_QUERY } from '../supabaseClient';
 
 interface AdminTabProps {
@@ -19,6 +19,8 @@ interface AdminTabProps {
   timetableData: any;
   setTimetableData: React.Dispatch<React.SetStateAction<any>>;
   classes: ClassItem[];
+  quotes: MotivationalQuote[];
+  setQuotes: React.Dispatch<React.SetStateAction<MotivationalQuote[]>>;
 }
 
 export default function AdminTab({
@@ -36,7 +38,9 @@ export default function AdminTab({
   setStudents,
   timetableData,
   setTimetableData,
-  classes
+  classes,
+  quotes,
+  setQuotes
 }: AdminTabProps) {
 
   // States for adding member
@@ -46,6 +50,48 @@ export default function AdminTab({
   const [newPhone, setNewPhone] = useState('');
   const [copiedSql, setCopiedSql] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+
+  // Quotes management states & handlers
+  const [quoteText, setQuoteText] = useState('');
+  const [quoteAuthor, setQuoteAuthor] = useState('');
+
+  const handleAddQuote = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quoteText.trim()) {
+      showToast('Nội dung câu nói không được để trống!', 'error');
+      return;
+    }
+    const newQuote: MotivationalQuote = {
+      id: `quote-${Date.now()}`,
+      text: quoteText.trim(),
+      author: quoteAuthor.trim() || 'Khuyết danh',
+      isActive: quotes.length === 0
+    };
+    setQuotes(prev => [...prev, newQuote]);
+    setQuoteText('');
+    setQuoteAuthor('');
+    showToast('Đã thêm câu nói tạo động lực mới thành công!', 'success');
+  };
+
+  const handleDeleteQuote = (id: string) => {
+    setQuotes(prev => {
+      const filtered = prev.filter(q => q.id !== id);
+      const wasActive = prev.find(q => q.id === id)?.isActive;
+      if (wasActive && filtered.length > 0) {
+        filtered[0].isActive = true;
+      }
+      return filtered;
+    });
+    showToast('Đã xóa câu nói thành công!', 'success');
+  };
+
+  const handleSetActiveQuote = (id: string) => {
+    setQuotes(prev => prev.map(q => ({
+      ...q,
+      isActive: q.id === id
+    })));
+    showToast('Đã đặt làm câu nói hiển thị chính trên bảng tin!', 'success');
+  };
 
   // States for Active Scheduler Teacher
   const [selectedTeacherUsername, setSelectedTeacherUsername] = useState<string>(() => {
@@ -637,6 +683,127 @@ export default function AdminTab({
 
         </div>
 
+      </div>
+
+      {/* QUẢN LÝ CÂU NÓI TẠO ĐỘNG LỰC CHO HỌC SINH */}
+      <div id="motivational-quotes-section" className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-6 text-left mb-6">
+        <div className="flex items-center gap-2 border-b pb-3">
+          <div className="bg-amber-50 p-2 rounded-xl text-amber-600">
+            <Sparkles className="w-5 h-5 text-amber-600" />
+          </div>
+          <div>
+            <h4 className="font-black text-slate-800 text-base uppercase tracking-wide">
+              Danh ngôn & Câu nói tạo động lực cho học sinh
+            </h4>
+            <p className="text-xs text-slate-400 font-semibold">Tùy chỉnh câu nói truyền cảm hứng hiển thị trên bảng đen ở trang chủ</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Form để thêm câu nói mới */}
+          <form onSubmit={handleAddQuote} className="space-y-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+            <h5 className="font-extrabold text-xs text-slate-600 uppercase tracking-wider">Thêm câu nói mới</h5>
+            
+            <div className="space-y-1">
+              <label className="block text-[10px] font-black text-slate-500 uppercase">Nội dung câu nói *</label>
+              <textarea
+                value={quoteText}
+                onChange={(e) => setQuoteText(e.target.value)}
+                placeholder="Ví dụ: Học vấn làm đẹp con người..."
+                rows={3}
+                className="w-full border border-slate-200 rounded-xl p-3 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none font-bold text-slate-800 bg-white"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-[10px] font-black text-slate-500 uppercase">Tác giả / Nguồn dẫn</label>
+              <input
+                type="text"
+                value={quoteAuthor}
+                onChange={(e) => setQuoteAuthor(e.target.value)}
+                placeholder="Ví dụ: Ngạn ngữ Nga, V.I. Lênin..."
+                className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none font-bold text-slate-800 bg-white"
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs py-2.5 rounded-xl transition shadow cursor-pointer flex items-center justify-center gap-1.5 hover:scale-[1.01]"
+            >
+              <Plus className="w-4 h-4" />
+              Thêm vào danh sách
+            </button>
+          </form>
+
+          {/* Danh sách các câu nói hiện có */}
+          <div className="lg:col-span-2 space-y-3">
+            <h5 className="font-extrabold text-xs text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+              <span>Danh sách hiện có ({quotes.length})</span>
+              <span className="text-[10px] lowercase text-slate-400 font-semibold">(Bấm "Kích hoạt" để hiển thị câu nói lên bảng đen)</span>
+            </h5>
+
+            <div className="border border-slate-100 rounded-xl overflow-hidden max-h-[300px] overflow-y-auto">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-slate-50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase">
+                  <tr>
+                    <th className="p-3">Nội dung câu nói</th>
+                    <th className="p-3 w-32">Tác giả</th>
+                    <th className="p-3 w-40 text-center">Trạng thái</th>
+                    <th className="p-3 w-16 text-center">Xóa</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-bold text-slate-700">
+                  {quotes.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="p-8 text-center text-slate-400 font-medium italic">
+                        Chưa có câu nói nào. Hãy thêm một câu nói truyền động lực ở bên trái!
+                      </td>
+                    </tr>
+                  ) : (
+                    quotes.map((q) => (
+                      <tr 
+                        key={q.id} 
+                        className={`hover:bg-slate-50 transition-colors ${q.isActive ? 'bg-amber-50/20' : ''}`}
+                      >
+                        <td className="p-3 align-middle font-semibold leading-relaxed">
+                          “{q.text}”
+                        </td>
+                        <td className="p-3 align-middle font-bold text-slate-500">
+                          {q.author}
+                        </td>
+                        <td className="p-3 align-middle text-center">
+                          {q.isActive ? (
+                            <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 px-2 py-1 rounded-full text-[10px] font-black uppercase">
+                              <Check className="w-3 h-3" /> Đang hiển thị
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleSetActiveQuote(q.id)}
+                              className="bg-white border border-slate-200 hover:border-amber-500 hover:bg-amber-50 text-slate-600 hover:text-amber-700 px-2.5 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer"
+                            >
+                              Kích hoạt
+                            </button>
+                          )}
+                        </td>
+                        <td className="p-3 align-middle text-center">
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteQuote(q.id)}
+                            className="text-slate-350 hover:text-rose-600 transition p-1 cursor-pointer"
+                            title="Xóa câu nói này"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* 3. TÍNH NĂNG BẢO TRÌ PHÒNG MÁY & DANGER ZONE (Tách biệt khỏi Nhân sự) */}

@@ -39,6 +39,10 @@ export const categorizedAvatars: AvatarItem[] = [
   { url: "https://drive.google.com/thumbnail?id=1US3HJNd0lgMKB3FLv3QmDRKvLL8tEudV&sz=w512", category: 'con_nguoi', name: 'Học sinh nam 4 (Áo sọc)' },
   { url: "https://drive.google.com/thumbnail?id=1c5UC-8S1QmPwbTJGpSLwmAcFq1DkxZ-_&sz=w512", category: 'con_nguoi', name: 'Học sinh nam 5 (Mũ xanh)' },
   { url: "https://drive.google.com/thumbnail?id=1hV9fR049ulTD6ooRrNfHwx6Ue92NQvNt&sz=w512", category: 'con_nguoi', name: 'Học sinh nam 6 (Áo cam)' },
+  { url: "https://drive.google.com/thumbnail?id=16vxF47YQ1GY1KqPYbiF1R_IQIdx-8ZpK&sz=w512", category: 'con_nguoi', name: 'Học sinh mới 1' },
+  { url: "https://drive.google.com/thumbnail?id=1RXCTD99B8btIFDXtGC8bVNl-VfKSJAG1&sz=w512", category: 'con_nguoi', name: 'Học sinh mới 2' },
+  { url: "https://drive.google.com/thumbnail?id=1nLwcdG1Hs82XlRS_aKBDUqs-RDYovdgV&sz=w512", category: 'con_nguoi', name: 'Học sinh mới 3' },
+  { url: "https://drive.google.com/thumbnail?id=1i8zI934pf4HNmWXfLwQlBGCXlkcPGjio&sz=w512", category: 'con_nguoi', name: 'Học sinh mới 4' },
 
   // Cute animal avatars from user-provided Google Drive links under 'dong_vat'
   { url: "https://drive.google.com/thumbnail?id=1kXXjYVaGb2ca4U4So7yqwkkiJx0gHBAs&sz=w512", category: 'dong_vat', name: 'Động vật 1' },
@@ -86,7 +90,8 @@ export const categorizedAvatars: AvatarItem[] = [
   { url: "https://drive.google.com/thumbnail?id=13Emx_Nba_8eu8OgCuhvMck3OFYynV8SI&sz=w512", category: 'dong_vat', name: 'Động vật 43' },
   { url: "https://drive.google.com/thumbnail?id=1GI6mfLGajsCwi1h1Z5bLbgtYIcVOazTv&sz=w512", category: 'dong_vat', name: 'Động vật 44' },
   { url: "https://drive.google.com/thumbnail?id=1t6sN2Eqo_zJWIBEzVvA1GZO97NiYLNsA&sz=w512", category: 'dong_vat', name: 'Động vật 45' },
-  { url: "https://drive.google.com/thumbnail?id=1vNHzrC5ZgMGUYRLKsGx5Y-hQ25Fe8lZ4&sz=w512", category: 'dong_vat', name: 'Động vật 46' }
+  { url: "https://drive.google.com/thumbnail?id=1vNHzrC5ZgMGUYRLKsGx5Y-hQ25Fe8lZ4&sz=w512", category: 'dong_vat', name: 'Động vật 46' },
+  { url: "https://drive.google.com/thumbnail?id=1kIzuP-0RI8e2na7X9_gMoRZ5i9j4Y8fS&sz=w512", category: 'dong_vat', name: 'Động vật mới 1' }
 ];
 
 export const googleDriveAvatars = categorizedAvatars.map(item => item.url);

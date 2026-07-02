@@ -1,4 +1,4 @@
-import { Grade, ClassItem, Student, Computer, DocumentItem, Member, AttendanceData, EvaluationData, EmulationDataState, SeatingChart } from '../types';
+import { Grade, ClassItem, Student, Computer, DocumentItem, Member, AttendanceData, EvaluationData, EmulationDataState, SeatingChart, MotivationalQuote } from '../types';
 
 export const defaultGrades: Grade[] = [
   { id: 3, name: 'Khối 3' },
@@ -169,4 +169,32 @@ export const defaultTimetable = {
     '3-2': { subject: 'Tin học', className: '4²' },
   }
 };
+
+export const defaultQuotes: MotivationalQuote[] = [
+  {
+    id: 'quote-1',
+    text: 'Bộ lông làm đẹp con công, học vấn làm đẹp con người.',
+    author: 'Ngạn ngữ Nga',
+    isActive: true
+  },
+  {
+    id: 'quote-2',
+    text: 'Học, học nữa, học mãi.',
+    author: 'V.I. Lênin',
+    isActive: false
+  },
+  {
+    id: 'quote-3',
+    text: 'Nơi nào có ý chí, nơi đó có con đường.',
+    author: 'Ngạn ngữ Anh',
+    isActive: false
+  },
+  {
+    id: 'quote-4',
+    text: 'Muốn biết phải hỏi, muốn giỏi phải học.',
+    author: 'Tục ngữ Việt Nam',
+    isActive: false
+  }
+];
+
 

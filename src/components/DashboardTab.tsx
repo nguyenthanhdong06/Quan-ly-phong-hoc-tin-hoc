@@ -1,7 +1,7 @@
-import React, { useMemo, useState } from 'react';
-import { Grade, ClassItem, Student, Computer, DocumentItem, EmulationDataState } from '../types';
+import React, { useMemo, useState, useEffect } from 'react';
+import { Grade, ClassItem, Student, Computer, DocumentItem, EmulationDataState, MotivationalQuote } from '../types';
 import { 
-  Award, Monitor, Activity, Radio, AlertTriangle, FileText, ChevronRight, 
+  Award, Monitor, Activity, Radio, AlertTriangle, FileText, ChevronRight, ChevronLeft,
   CheckCircle, HelpCircle, Database, Cloud, RefreshCw, Layers, Users, 
   BookOpen, Sparkles, Trophy, Lightbulb, Compass, ShieldAlert, Zap, UserCheck,
   Calendar, BarChart2, Check, TrendingUp
@@ -104,6 +104,8 @@ interface DashboardTabProps {
   supabaseError?: string | null;
   onForceSync?: () => Promise<void>;
   onForcePush?: () => Promise<void>;
+  onOpenSupabaseModal?: () => void;
+  quotes?: MotivationalQuote[];
 }
 
 export default function DashboardTab({
@@ -124,7 +126,9 @@ export default function DashboardTab({
   isSyncing = false,
   supabaseError = null,
   onForceSync,
-  onForcePush
+  onForcePush,
+  onOpenSupabaseModal,
+  quotes = []
 }: DashboardTabProps) {
   
   const [showDbInfo, setShowDbInfo] = useState(true);
@@ -513,101 +517,146 @@ export default function DashboardTab({
     }
   }, [emulationMetric]);
 
-  // Slogan based on class selection
-  const educationalSlogan = useMemo(() => {
-    const gradeLabel = activeClassObj ? String(activeClassObj.gradeId) : "";
-    if (gradeLabel.includes('3')) return "Nhiệt huyết - Chăm chỉ - Vững bước khám phá bàn phím số!";
-    if (gradeLabel.includes('4')) return "Sáng tạo bài tập trình chiếu - Làm chủ thế giới thông tin!";
-    if (gradeLabel.includes('5')) return "Lập trình Scratch thông minh - Kiến tạo tư duy tương lai rực rỡ!";
-    return "Sáng tạo công nghệ, vươn tầm tri thức học sinh Long Định!";
-  }, [activeClassObj]);
+  // --- CAROUSEL ROTATION FOR MOTIVATIONAL QUOTES ---
+  const [quoteIndex, setQuoteIndex] = useState(0);
+  const [fadeState, setFadeState] = useState<'in' | 'out'>('in');
+
+  // Initialize quote index to active quote's index
+  useEffect(() => {
+    if (quotes && quotes.length > 0) {
+      const activeIdx = quotes.findIndex(q => q.isActive);
+      if (activeIdx !== -1) {
+        setQuoteIndex(activeIdx);
+      }
+    }
+  }, [quotes]);
+
+  // Auto cycle quotes every 8 seconds
+  useEffect(() => {
+    if (!quotes || quotes.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setFadeState('out');
+      setTimeout(() => {
+        setQuoteIndex(prev => (prev + 1) % quotes.length);
+        setFadeState('in');
+      }, 500);
+    }, 8000);
+
+    return () => clearInterval(interval);
+  }, [quotes]);
+
+  const displayedQuote = useMemo(() => {
+    if (!quotes || quotes.length === 0) {
+      return {
+        text: "Bộ lông làm đẹp con công, học vấn làm đẹp con người.",
+        author: "Ngạn ngữ Nga"
+      };
+    }
+    const idx = quoteIndex % quotes.length;
+    return quotes[idx] || quotes[0];
+  }, [quotes, quoteIndex]);
+
+  const handleNextQuote = () => {
+    if (!quotes || quotes.length <= 1) return;
+    setFadeState('out');
+    setTimeout(() => {
+      setQuoteIndex(prev => (prev + 1) % quotes.length);
+      setFadeState('in');
+    }, 400);
+  };
+
+  const handlePrevQuote = () => {
+    if (!quotes || quotes.length <= 1) return;
+    setFadeState('out');
+    setTimeout(() => {
+      setQuoteIndex(prev => (prev - 1 + quotes.length) % quotes.length);
+      setFadeState('in');
+    }, 400);
+  };
+
+  const handleDotClick = (index: number) => {
+    if (index === quoteIndex) return;
+    setFadeState('out');
+    setTimeout(() => {
+      setQuoteIndex(index);
+      setFadeState('in');
+    }, 400);
+  };
 
   return (
     <div className="space-y-6">
-      {/* CLOUD DATABASE CONNECTIVITY MODULE */}
-      {showDbInfo && (
-        <div id="supabase-db-monitor" className="bg-gradient-to-r from-emerald-950/90 to-slate-900/95 border border-emerald-500/30 p-4 rounded-2.5xl text-white shadow-xl relative overflow-hidden transition-all duration-300">
-          <div className="absolute top-0 right-0 w-28 h-28 bg-emerald-500/10 rounded-full blur-3xl"></div>
-          
-          <div className="flex flex-col md:flex-row sm:items-center justify-between gap-4 relative z-10">
-            <div className="flex items-start sm:items-center gap-3 text-left">
-              <div className="bg-emerald-500/20 p-2.5 rounded-2xl border border-emerald-500/30 shrink-0">
-                <Database className="w-5 h-5 text-emerald-400" />
-              </div>
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-2">
-                  <span className="flex h-2 w-2 relative">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                  </span>
-                  <span className="text-[9px] font-black uppercase tracking-wider text-emerald-400">Đồng bộ đám mây trực tuyến</span>
-                </div>
-                <h4 className="text-xs font-black uppercase tracking-wide flex items-center gap-1.5 text-emerald-300">
-                  Kết nối thông suốt với máy chủ Supabase Database
-                </h4>
-                <p className="text-[10px] text-slate-300 font-medium">
-                  Hạ tầng luôn an toàn. Mọi dữ liệu học sinh, số liệu thi đua, sao tích lũy được bảo toàn tuyệt đối.
-                </p>
-              </div>
-            </div>
+      {/* COMPACT WELCOME BANNER (CHALKBOARD THEMED ACCORDING TO USER'S PHOTO) */}
+      <div className="bg-gradient-to-r from-[#143224] to-[#1b4332] p-6.5 rounded-2xl shadow-md border-3 border-[#2a5e44] text-center relative overflow-hidden flex flex-col items-center justify-center min-h-[140px] group/chalkboard">
+        {/* Subtle chalk board texture / reflection overlays */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.06),transparent_70%)] pointer-events-none" />
+        
+        {/* Wooden-like rustic or double thin chalk lines borders inside */}
+        <div className="absolute inset-2 border border-dashed border-emerald-500/20 rounded-xl pointer-events-none" />
 
-            <div className="flex flex-wrap items-center gap-2 self-start sm:self-center">
-              <button
-                type="button"
-                id="btn-force-sync-dashboard"
-                onClick={onForceSync}
-                disabled={isSyncing}
-                className="bg-emerald-850 hover:bg-emerald-800 shadow border border-emerald-700/60 hover:border-emerald-500/80 text-[11px] text-white font-black px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition disabled:opacity-50 cursor-pointer"
-              >
-                <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
-                Đồng bộ lại dữ liệu
-              </button>
-              <button
-                type="button"
-                id="btn-hide-monitor-dashboard"
-                onClick={() => setShowDbInfo(false)}
-                className="bg-stone-850 hover:bg-stone-800 text-[11px] text-slate-400 hover:text-white font-bold px-2.5 py-1.5 rounded-xl border border-slate-700/40 transition cursor-pointer"
-              >
-                Ẩn bảng monitor
-              </button>
-            </div>
-          </div>
+        {/* Navigation Arrows (Visible on hover over the chalkboard) */}
+        {quotes && quotes.length > 1 && (
+          <>
+            <button
+              onClick={handlePrevQuote}
+              type="button"
+              className="absolute left-4 z-20 p-1.5 rounded-full bg-white/5 hover:bg-white/15 text-white/50 hover:text-white transition-all cursor-pointer opacity-0 group-hover/chalkboard:opacity-100 hover:scale-105 active:scale-95"
+              title="Câu nói trước"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button
+              onClick={handleNextQuote}
+              type="button"
+              className="absolute right-4 z-20 p-1.5 rounded-full bg-white/5 hover:bg-white/15 text-white/50 hover:text-white transition-all cursor-pointer opacity-0 group-hover/chalkboard:opacity-100 hover:scale-105 active:scale-95"
+              title="Câu nói tiếp theo"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </>
+        )}
 
-          {/* Quick Metrics from Supabase */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-3 pt-3 border-t border-emerald-500/15 text-left">
-            <div className="bg-slate-900/60 p-2 rounded-xl border border-emerald-500/10">
-              <span className="block text-[8px] font-black uppercase text-slate-400 tracking-wider">Phân loại Khối</span>
-              <span className="text-[11px] font-black text-emerald-300 flex items-center gap-1 mt-0.5">
-                <Layers className="w-3 h-3 text-emerald-500" /> {grades.length} khối tiêu chuẩn
-              </span>
-            </div>
-            <div className="bg-slate-900/60 p-2 rounded-xl border border-emerald-500/10">
-              <span className="block text-[8px] font-black uppercase text-slate-400 tracking-wider">Tổng số lớp</span>
-              <span className="text-[11px] font-black text-emerald-300 flex items-center gap-1 mt-0.5">
-                🏫 {classes.length} Lớp đang quản lý
-              </span>
-            </div>
-            <div className="bg-slate-900/60 p-2 rounded-xl border border-emerald-500/10">
-              <span className="block text-[8px] font-black uppercase text-slate-400 tracking-wider">Học sinh liên kết</span>
-              <span className="text-[11px] font-black text-emerald-300 flex items-center gap-1 mt-0.5">
-                <Users className="w-3 h-3 text-emerald-400" /> {students.length} học sinh
-              </span>
-            </div>
-            <div className="bg-slate-900/60 p-2 rounded-xl border border-emerald-500/10">
-              <span className="block text-[8px] font-black uppercase text-slate-400 tracking-wider">Máy trạm</span>
-              <span className="text-[11px] font-black text-emerald-300 flex items-center gap-1 mt-0.5">
-                <Monitor className="w-3 h-3 text-emerald-400" /> {computers.length} chỗ ngồi
-              </span>
-            </div>
-            <div className="bg-slate-900/60 p-2 rounded-xl border border-emerald-500/10 col-span-2 sm:col-span-1">
-              <span className="block text-[8px] font-black uppercase text-slate-400 tracking-wider">Học liệu số</span>
-              <span className="text-[11px] font-black text-emerald-300 flex items-center gap-1 mt-0.5">
-                <BookOpen className="w-3 h-3 text-emerald-400" /> {documents.length} tài liệu số
-              </span>
-            </div>
-          </div>
+        {/* Text Area with Smooth Fade Transitions */}
+        <div 
+          className={`relative z-10 max-w-2xl mx-auto space-y-1 text-center transition-all duration-500 transform ${
+            fadeState === 'in' ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-98 translate-y-1'
+          }`}
+        >
+          <p 
+            className="text-lg sm:text-2xl md:text-3xl text-white font-normal tracking-wide leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)] select-none text-center" 
+            style={{ fontFamily: '"Charm", cursive' }}
+          >
+            “{displayedQuote.text}”
+          </p>
+          {displayedQuote.author && (
+            <p 
+              className="text-xs sm:text-sm text-amber-200/90 font-medium tracking-widest text-center mt-2 select-none" 
+              style={{ fontFamily: '"Charm", cursive' }}
+            >
+              – {displayedQuote.author}
+            </p>
+          )}
         </div>
-      )}
+
+        {/* Pagination Dots */}
+        {quotes && quotes.length > 1 && (
+          <div className="relative z-10 flex items-center justify-center gap-1.5 mt-3">
+            {quotes.map((_, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => handleDotClick(idx)}
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  idx === quoteIndex 
+                    ? 'w-5 bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]' 
+                    : 'w-1.5 bg-emerald-500/30 hover:bg-emerald-400/50'
+                }`}
+                title={`Chuyển đến câu số ${idx + 1}`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* COMPACT HARDWARE STATUS GRID - EXTREMELY LIVELY WITH MICRO INSIGHTS */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
