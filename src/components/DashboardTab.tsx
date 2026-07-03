@@ -517,7 +517,7 @@ export default function DashboardTab({
     }
   }, [emulationMetric]);
 
-  // --- CAROUSEL ROTATION FOR MOTIVATIONAL QUOTES ---
+  // --- CAROUSEL ROTATION FOR MOTIVATIONAL QUOTES (RANDOMIZED & 10s DELAY) ---
   const [quoteIndex, setQuoteIndex] = useState(0);
   const [fadeState, setFadeState] = useState<'in' | 'out'>('in');
 
@@ -531,17 +531,27 @@ export default function DashboardTab({
     }
   }, [quotes]);
 
-  // Auto cycle quotes every 8 seconds
+  // Auto cycle quotes randomly every 10 seconds
   useEffect(() => {
     if (!quotes || quotes.length <= 1) return;
 
     const interval = setInterval(() => {
       setFadeState('out');
       setTimeout(() => {
-        setQuoteIndex(prev => (prev + 1) % quotes.length);
+        setQuoteIndex(prev => {
+          if (quotes.length <= 1) return 0;
+          let nextIdx = prev;
+          let attempts = 0;
+          // Attempt to find a different index to avoid repeating the same quote back-to-back
+          while (nextIdx === prev && attempts < 15) {
+            nextIdx = Math.floor(Math.random() * quotes.length);
+            attempts++;
+          }
+          return nextIdx;
+        });
         setFadeState('in');
       }, 500);
-    }, 8000);
+    }, 10000); // 10 seconds delay
 
     return () => clearInterval(interval);
   }, [quotes]);
@@ -561,7 +571,15 @@ export default function DashboardTab({
     if (!quotes || quotes.length <= 1) return;
     setFadeState('out');
     setTimeout(() => {
-      setQuoteIndex(prev => (prev + 1) % quotes.length);
+      setQuoteIndex(prev => {
+        let nextIdx = prev;
+        let attempts = 0;
+        while (nextIdx === prev && attempts < 15) {
+          nextIdx = Math.floor(Math.random() * quotes.length);
+          attempts++;
+        }
+        return nextIdx;
+      });
       setFadeState('in');
     }, 400);
   };
@@ -570,7 +588,15 @@ export default function DashboardTab({
     if (!quotes || quotes.length <= 1) return;
     setFadeState('out');
     setTimeout(() => {
-      setQuoteIndex(prev => (prev - 1 + quotes.length) % quotes.length);
+      setQuoteIndex(prev => {
+        let nextIdx = prev;
+        let attempts = 0;
+        while (nextIdx === prev && attempts < 15) {
+          nextIdx = Math.floor(Math.random() * quotes.length);
+          attempts++;
+        }
+        return nextIdx;
+      });
       setFadeState('in');
     }, 400);
   };
@@ -587,7 +613,7 @@ export default function DashboardTab({
   return (
     <div className="space-y-6">
       {/* COMPACT WELCOME BANNER (CHALKBOARD THEMED ACCORDING TO USER'S PHOTO) */}
-      <div className="bg-gradient-to-r from-[#143224] to-[#1b4332] p-6.5 rounded-2xl shadow-md border-3 border-[#2a5e44] text-center relative overflow-hidden flex flex-col items-center justify-center min-h-[140px] group/chalkboard">
+      <div className="bg-gradient-to-r from-[#143224] to-[#1b4332] px-12 sm:px-16 py-7 rounded-2xl shadow-md border-3 border-[#2a5e44] text-center relative overflow-hidden flex flex-col items-center justify-center min-h-[140px] group/chalkboard">
         {/* Subtle chalk board texture / reflection overlays */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.06),transparent_70%)] pointer-events-none" />
         
@@ -600,7 +626,7 @@ export default function DashboardTab({
             <button
               onClick={handlePrevQuote}
               type="button"
-              className="absolute left-4 z-20 p-1.5 rounded-full bg-white/5 hover:bg-white/15 text-white/50 hover:text-white transition-all cursor-pointer opacity-0 group-hover/chalkboard:opacity-100 hover:scale-105 active:scale-95"
+              className="absolute left-3 sm:left-4 z-20 p-1.5 rounded-full bg-white/5 hover:bg-white/15 text-white/50 hover:text-white transition-all cursor-pointer opacity-0 group-hover/chalkboard:opacity-100 hover:scale-105 active:scale-95"
               title="Câu nói trước"
             >
               <ChevronLeft className="w-5 h-5" />
@@ -608,7 +634,7 @@ export default function DashboardTab({
             <button
               onClick={handleNextQuote}
               type="button"
-              className="absolute right-4 z-20 p-1.5 rounded-full bg-white/5 hover:bg-white/15 text-white/50 hover:text-white transition-all cursor-pointer opacity-0 group-hover/chalkboard:opacity-100 hover:scale-105 active:scale-95"
+              className="absolute right-3 sm:right-4 z-20 p-1.5 rounded-full bg-white/5 hover:bg-white/15 text-white/50 hover:text-white transition-all cursor-pointer opacity-0 group-hover/chalkboard:opacity-100 hover:scale-105 active:scale-95"
               title="Câu nói tiếp theo"
             >
               <ChevronRight className="w-5 h-5" />
@@ -616,21 +642,21 @@ export default function DashboardTab({
           </>
         )}
 
-        {/* Text Area with Smooth Fade Transitions */}
+        {/* Text Area with Smooth Fade Transitions - Adjusted max-width to 5xl for full-frame text layout */}
         <div 
-          className={`relative z-10 max-w-2xl mx-auto space-y-1 text-center transition-all duration-500 transform ${
+          className={`relative z-10 w-full max-w-5xl mx-auto space-y-1.5 text-center transition-all duration-500 transform ${
             fadeState === 'in' ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-98 translate-y-1'
           }`}
         >
           <p 
-            className="text-lg sm:text-2xl md:text-3xl text-white font-normal tracking-wide leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)] select-none text-center" 
+            className="text-lg sm:text-2xl md:text-3xl text-white font-normal tracking-wide leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)] select-none text-center break-words whitespace-normal px-2" 
             style={{ fontFamily: '"Charm", cursive' }}
           >
             “{displayedQuote.text}”
           </p>
           {displayedQuote.author && (
             <p 
-              className="text-xs sm:text-sm text-amber-200/90 font-medium tracking-widest text-center mt-2 select-none" 
+              className="text-xs sm:text-sm text-amber-200/90 font-medium tracking-widest text-center mt-2.5 select-none break-words whitespace-normal" 
               style={{ fontFamily: '"Charm", cursive' }}
             >
               – {displayedQuote.author}
