@@ -37,10 +37,220 @@ interface PersonalQuestionsTabProps {
 }
 
 const DEFAULT_SUBJECTS: Subject[] = [
+  { id: 'subj-1', name: 'Tin học', gradeId: 1 },
+  { id: 'subj-2', name: 'Tin học', gradeId: 2 },
   { id: 'subj-3', name: 'Tin học', gradeId: 3 },
   { id: 'subj-4', name: 'Tin học', gradeId: 4 },
   { id: 'subj-5', name: 'Tin học', gradeId: 5 }
 ];
+
+const PREDEFINED_TOPICS = [
+  {
+    group: "Chủ đề 1. Máy tính và em",
+    topics: [
+      "Bài 1. Thông tin và quyết định",
+      "Bài 2. Xử lí thông tin",
+      "Bài 3. Máy tính và em",
+      "Bài 4. Làm việc với máy tính",
+      "Bài 5. Sử dụng bàn phím"
+    ]
+  },
+  {
+    group: "Chủ đề 2. Mạng máy tính và Internet",
+    topics: [
+      "Bài 6. Khám phá thông tin trên Internet"
+    ]
+  },
+  {
+    group: "Chủ đề 3. Tổ chức lưu trữ, tìm kiếm và trao đổi thông tin",
+    topics: [
+      "Bài 7. Sắp xếp để dễ tìm",
+      "Bài 8. Sơ đồ hình cây. Tổ chức thông tin trong máy tính",
+      "Bài 9. Thực hành với tệp và thư mục trong máy tính"
+    ]
+  },
+  {
+    group: "Chủ đề 4. Đạo đức, pháp luật và văn hoá trong môi trường số",
+    topics: [
+      "Bài 10. Bảo vệ thông tin khi dùng máy tính"
+    ]
+  },
+  {
+    group: "Chủ đề 5. Ứng dụng tin học",
+    topics: [
+      "Bài 11. Bài trình chiếu của em",
+      "Bài 12. Tìm hiểu về thế giới tự nhiên",
+      "Bài 13. Luyện tập sử dụng chuột"
+    ]
+  },
+  {
+    group: "Chủ đề 6. Giải quyết vấn đề với sự trợ giúp của máy tính",
+    topics: [
+      "Bài 14. Em thực hiện công việc như thế nào?",
+      "Bài 15. Công việc được thực hiện theo điều kiện",
+      "Bài 16. Công việc của em và sự trợ giúp của máy tính"
+    ]
+  }
+];
+
+const PREDEFINED_TOPICS_BY_GRADE: Record<number, typeof PREDEFINED_TOPICS> = {
+  1: [
+    {
+      group: "Chủ đề 1. Làm quen với máy tính",
+      topics: [
+        "Bài 1. Bộ phận của máy tính",
+        "Bài 2. Tư thế ngồi học máy tính đúng"
+      ]
+    },
+    {
+      group: "Chủ đề 2. Sử dụng chuột máy tính",
+      topics: [
+        "Bài 3. Làm quen chuột máy tính và các thao tác cơ bản",
+        "Bài 4. Thực hành sử dụng chuột máy tính"
+      ]
+    },
+    {
+      group: "Chủ đề 3. Vừa chơi vừa học cùng máy tính",
+      topics: [
+        "Bài 5. Bé tập vẽ hình cơ bản với Paint",
+        "Bài 6. Trò chơi trí tuệ giúp rèn luyện tư duy"
+      ]
+    }
+  ],
+  2: [
+    {
+      group: "Chủ đề 1. Máy tính xung quanh em",
+      topics: [
+        "Bài 1. Các loại máy tính và vai trò của chúng",
+        "Bài 2. Khởi động và tắt máy tính đúng cách"
+      ]
+    },
+    {
+      group: "Chủ đề 2. Làm quen với bàn phím",
+      topics: [
+        "Bài 3. Các hàng phím chính trên bàn phím",
+        "Bài 4. Thực hành đặt tay trên bàn phím"
+      ]
+    },
+    {
+      group: "Chủ đề 3. Sáng tạo kỹ thuật số",
+      topics: [
+        "Bài 5. Tập tô màu và vẽ tranh với các công cụ nâng cao",
+        "Bài 6. Sử dụng trò chơi giáo dục ôn luyện kiến thức"
+      ]
+    }
+  ],
+  3: PREDEFINED_TOPICS,
+  4: [
+    {
+      group: "Chủ đề 1. Máy tính và em",
+      topics: [
+        "Bài 1. Phần cứng và phần mềm máy tính",
+        "Bài 2. Gõ bàn phím đúng cách"
+      ]
+    },
+    {
+      group: "Chủ đề 2. Mạng máy tính và Internet",
+      topics: [
+        "Bài 3. Thông tin trên trang web"
+      ]
+    },
+    {
+      group: "Chủ đề 3. Tổ chức lưu trữ, tìm kiếm và trao đổi thông tin",
+      topics: [
+        "Bài 4. Tìm kiếm thông tin trên Internet",
+        "Bài 5. Thao tác với tệp và thư mục"
+      ]
+    },
+    {
+      group: "Chủ đề 4. Đạo đức, pháp luật và văn hoá trong môi trường số",
+      topics: [
+        "Bài 6. Sử dụng phần mềm khi được phép"
+      ]
+    },
+    {
+      group: "Chủ đề 5. Ứng dụng tin học",
+      topics: [
+        "Bài 7. Tạo bài trình chiếu",
+        "Bài 8. Định dạng văn bản trên trang chiếu",
+        "Bài 9. Hiệu ứng chuyển trang",
+        "Bài 10. Phần mềm soạn thảo văn bản",
+        "Bài 11. Chỉnh sửa văn bản",
+        "Bài 12A. Thực hành sử dụng công cụ đa phương tiện",
+        "Bài 12B. Phần mềm luyện gõ bàn phím"
+      ]
+    },
+    {
+      group: "Chủ đề 6. Giải quyết vấn đề với sự trợ giúp của máy tính",
+      topics: [
+        "Bài 13. Chơi với máy tính",
+        "Bài 14. Khám phá môi trường lập trình trực quan",
+        "Bài 15. Tạo chương trình máy tính để diễn tả ý tưởng",
+        "Bài 16. Chương trình của em"
+      ]
+    }
+  ],
+  5: [
+    {
+      group: "Chủ đề 1. Máy tính và em",
+      topics: [
+        "Bài 1. Em có thể làm gì với máy tính?"
+      ]
+    },
+    {
+      group: "Chủ đề 2. Mạng máy tính và Internet",
+      topics: [
+        "Bài 2. Tìm kiếm thông tin trên website"
+      ]
+    },
+    {
+      group: "Chủ đề 3. Tổ chức lưu trữ, tìm kiếm và trao đổi thông tin",
+      topics: [
+        "Bài 3. Tìm kiếm thông tin trong giải quyết vấn đề",
+        "Bài 4. Cây thư mục"
+      ]
+    },
+    {
+      group: "Chủ đề 4. Đạo đức, pháp luật và văn hoá trong môi trường số",
+      topics: [
+        "Bài 5. Bản quyền nội dung thông tin"
+      ]
+    },
+    {
+      group: "Chủ đề 5. Ứng dụng tin học",
+      topics: [
+        "Bài 6. Định dạng kí tự và bố trí hình ảnh trong văn bản",
+        "Bài 7. Thực hành soạn thảo văn bản"
+      ]
+    },
+    {
+      group: "A. Sử dụng phần mềm đồ hoạ tạo sản phẩm số đơn giản",
+      topics: [
+        "Bài 8A. Làm quen với phần mềm đồ hoạ",
+        "Bài 9A. Sử dụng phần mềm đồ hoạ tạo sản phẩm số"
+      ]
+    },
+    {
+      group: "B. Sử dụng công cụ đa phương tiện hỗ trợ tạo sản phẩm đơn giản",
+      topics: [
+        "Bài 8B. Làm sản phẩm thủ công theo video hướng dẫn",
+        "Bài 9B. Thực hành tạo đồ dùng gia đình theo video hướng dẫn"
+      ]
+    },
+    {
+      group: "Chủ đề 6. Giải quyết vấn đề với sự trợ giúp của máy tính",
+      topics: [
+        "Bài 10. Cấu trúc tuần tự",
+        "Bài 11. Cấu trúc lặp",
+        "Bài 12. Thực hành sử dụng lệnh lặp",
+        "Bài 13. Cấu trúc rẽ nhánh",
+        "Bài 14. Sử dụng biến trong chương trình",
+        "Bài 15. Sử dụng biểu thức trong chương trình",
+        "Bài 16. Từ kịch bản đến chương trình"
+      ]
+    }
+  ]
+};
 
 const DEFAULT_QUESTIONS: Question[] = [
   {
@@ -271,13 +481,37 @@ export function PersonalQuestionsTab({ currentUser, showToast, selectedGrade = 3
   const [formExplanation, setFormExplanation] = useState('');
   const [formDifficulty, setFormDifficulty] = useState<'Dễ' | 'Trung bình' | 'Khó'>('Dễ');
   const [formCategory, setFormCategory] = useState('');
+  const [isCustomCategory, setIsCustomCategory] = useState(false);
+  const [formGradeId, setFormGradeId] = useState<number>(3);
+  const [formSubjectId, setFormSubjectId] = useState<string>('');
 
   // Bulk Import States
   const [bulkText, setBulkText] = useState('');
   const [importSubjectId, setImportSubjectId] = useState<string>(() => selectedSubjectId);
   const [importDifficulty, setImportDifficulty] = useState<'Dễ' | 'Trung bình' | 'Khó'>('Dễ');
   const [importCategory, setImportCategory] = useState('Luyện tập tổng hợp');
+  const [isCustomImportCategory, setIsCustomImportCategory] = useState(false);
   const [parsedPreview, setParsedPreview] = useState<Question[]>([]);
+
+  const importGradeId = useMemo(() => {
+    const subj = subjects.find(s => s.id === importSubjectId) || selectedSubject;
+    return subj ? subj.gradeId : 3;
+  }, [subjects, importSubjectId, selectedSubject]);
+
+  const importGradeTopics = useMemo(() => {
+    return PREDEFINED_TOPICS_BY_GRADE[importGradeId] || [];
+  }, [importGradeId]);
+
+  useEffect(() => {
+    const subj = subjects.find(s => s.id === importSubjectId) || selectedSubject;
+    if (subj) {
+      const newGrade = subj.gradeId;
+      const gradeTopics = PREDEFINED_TOPICS_BY_GRADE[newGrade] || [];
+      const defaultCat = (gradeTopics[0] && gradeTopics[0].topics[0]) || '';
+      setImportCategory(defaultCat);
+      setIsCustomImportCategory(false);
+    }
+  }, [importSubjectId, subjects, selectedSubject]);
 
   // Import JSON trigger ref for subjects
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -356,7 +590,17 @@ export function PersonalQuestionsTab({ currentUser, showToast, selectedGrade = 3
     setFormCorrectIndex(0);
     setFormExplanation('');
     setFormDifficulty('Dễ');
-    setFormCategory(categories[0] || 'Luyện tập chung');
+    setFormSubjectId(selectedSubject.id);
+    
+    const currentGrade = selectedSubject.gradeId || 3;
+    setFormGradeId(currentGrade);
+    
+    // Default to the first topic in predefined topics list for this grade
+    const gradeTopics = PREDEFINED_TOPICS_BY_GRADE[currentGrade] || [];
+    const defaultCat = (gradeTopics[0] && gradeTopics[0].topics[0]) || '';
+    setFormCategory(defaultCat);
+    setIsCustomCategory(false);
+    
     setIsQuestionModalOpen(true);
   };
 
@@ -368,6 +612,15 @@ export function PersonalQuestionsTab({ currentUser, showToast, selectedGrade = 3
     setFormExplanation(q.explanation || '');
     setFormDifficulty(q.difficulty);
     setFormCategory(q.category);
+    setFormSubjectId(q.subjectId || selectedSubjectId || '');
+    
+    const currentGrade = q.gradeId || 3;
+    setFormGradeId(currentGrade);
+    
+    const gradeTopics = PREDEFINED_TOPICS_BY_GRADE[currentGrade] || [];
+    const isPredefined = gradeTopics.flatMap(g => g.topics).includes(q.category);
+    setIsCustomCategory(!isPredefined);
+    
     setIsQuestionModalOpen(true);
   };
 
@@ -388,6 +641,12 @@ export function PersonalQuestionsTab({ currentUser, showToast, selectedGrade = 3
       return;
     }
 
+    // Find corresponding subject for the selected formSubjectId or formGradeId
+    let targetSubject = subjects.find(s => s.id === formSubjectId);
+    if (!targetSubject) {
+      targetSubject = subjects.find(s => s.gradeId === formGradeId) || selectedSubject;
+    }
+
     if (editingQuestion) {
       setQuestions(prev => prev.map(q => q.id === editingQuestion.id ? {
         ...q,
@@ -396,7 +655,9 @@ export function PersonalQuestionsTab({ currentUser, showToast, selectedGrade = 3
         correctIndex: formCorrectIndex,
         explanation: formExplanation.trim() || undefined,
         difficulty: formDifficulty,
-        category: formCategory.trim()
+        gradeId: formGradeId,
+        category: formCategory.trim(),
+        subjectId: targetSubject ? targetSubject.id : q.subjectId
       } : q));
       showToast('Cập nhật câu hỏi thành công!');
     } else {
@@ -407,10 +668,10 @@ export function PersonalQuestionsTab({ currentUser, showToast, selectedGrade = 3
         correctIndex: formCorrectIndex,
         explanation: formExplanation.trim() || undefined,
         difficulty: formDifficulty,
-        gradeId: selectedSubject.gradeId,
+        gradeId: formGradeId,
         category: formCategory.trim(),
         authorId: userId,
-        subjectId: selectedSubject.id
+        subjectId: targetSubject ? targetSubject.id : selectedSubject.id
       };
       setQuestions(prev => [newQ, ...prev]);
       showToast('Thêm câu hỏi mới thành công!');
@@ -1157,13 +1418,47 @@ Giải thích: Phím Backspace xóa ký tự trước (bên trái) con trỏ, c�
                 </div>
                 <div>
                   <label className="text-[10px] text-slate-500 font-bold block mb-1">Gán Chủ Đề (Chung)</label>
-                  <input
-                    type="text"
-                    value={importCategory}
-                    onChange={(e) => setImportCategory(e.target.value)}
-                    placeholder="Luyện tập tổng hợp, Phần cứng..."
-                    className="w-full bg-white border border-slate-250 rounded-lg px-2.5 py-1 text-xs font-semibold text-slate-700 focus:ring-1 focus:ring-orange-500"
-                  />
+                  <select
+                    value={
+                      (PREDEFINED_TOPICS_BY_GRADE[importGradeId] || [])
+                        .flatMap(g => g.topics)
+                        .includes(importCategory) && !isCustomImportCategory
+                        ? importCategory
+                        : "custom"
+                    }
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === "custom") {
+                        setIsCustomImportCategory(true);
+                        setImportCategory("");
+                      } else {
+                        setIsCustomImportCategory(false);
+                        setImportCategory(val);
+                      }
+                    }}
+                    className="w-full bg-white border border-slate-250 rounded-lg px-2 py-1 text-xs font-bold text-slate-700 cursor-pointer focus:ring-1 focus:ring-orange-500"
+                  >
+                    <option value="">-- Chọn chủ đề --</option>
+                    {(PREDEFINED_TOPICS_BY_GRADE[importGradeId] || []).map((group, gIdx) => (
+                      <optgroup key={gIdx} label={group.group}>
+                        {group.topics.map((topic, tIdx) => (
+                          <option key={tIdx} value={topic}>{topic}</option>
+                        ))}
+                      </optgroup>
+                    ))}
+                    <option value="custom">✏️ Nhập chủ đề tùy chỉnh...</option>
+                  </select>
+
+                  {(isCustomImportCategory || !(PREDEFINED_TOPICS_BY_GRADE[importGradeId] || []).flatMap(g => g.topics).includes(importCategory)) && (
+                    <input
+                      type="text"
+                      required
+                      value={importCategory}
+                      onChange={(e) => setImportCategory(e.target.value)}
+                      placeholder="Ví dụ: Lập trình Scratch, Vẽ Paint..."
+                      className="w-full mt-1.5 bg-white border border-slate-250 rounded-lg px-2.5 py-1 text-xs font-semibold text-slate-700 focus:ring-1 focus:ring-orange-500"
+                    />
+                  )}
                 </div>
               </div>
 
@@ -1405,7 +1700,61 @@ Giải thích: Thao tác này thường dùng để mở chương trình.`}
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] text-slate-500 font-black uppercase tracking-wider block">Bộ môn *</label>
+                  <select
+                    value={formSubjectId}
+                    onChange={(e) => {
+                      const subjId = e.target.value;
+                      setFormSubjectId(subjId);
+                      const subj = subjects.find(s => s.id === subjId);
+                      if (subj) {
+                        const newGrade = subj.gradeId;
+                        setFormGradeId(newGrade);
+                        // Auto update category to first topic in the new grade
+                        const gradeTopics = PREDEFINED_TOPICS_BY_GRADE[newGrade] || [];
+                        const defaultCat = (gradeTopics[0] && gradeTopics[0].topics[0]) || '';
+                        setFormCategory(defaultCat);
+                        setIsCustomCategory(false);
+                      }
+                    }}
+                    className="w-full bg-slate-50 border border-slate-250 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
+                  >
+                    {subjects.map(s => (
+                      <option key={s.id} value={s.id}>📚 {s.name} - Lớp {s.gradeId}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] text-slate-500 font-black uppercase tracking-wider block">Khối lớp *</label>
+                  <select
+                    value={formGradeId}
+                    onChange={(e) => {
+                      const newGrade = Number(e.target.value);
+                      setFormGradeId(newGrade);
+                      // Auto select first subject of this new grade if exists
+                      const firstSubj = subjects.find(s => s.gradeId === newGrade);
+                      if (firstSubj) {
+                        setFormSubjectId(firstSubj.id);
+                      }
+                      // Auto update category to first topic in the new grade
+                      const gradeTopics = PREDEFINED_TOPICS_BY_GRADE[newGrade] || [];
+                      const defaultCat = (gradeTopics[0] && gradeTopics[0].topics[0]) || '';
+                      setFormCategory(defaultCat);
+                      setIsCustomCategory(false);
+                    }}
+                    className="w-full bg-slate-50 border border-slate-250 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
+                  >
+                    <option value={1}>🏫 Khối 1</option>
+                    <option value={2}>🏫 Khối 2</option>
+                    <option value={3}>🏫 Khối 3</option>
+                    <option value={4}>🏫 Khối 4</option>
+                    <option value={5}>🏫 Khối 5</option>
+                  </select>
+                </div>
+
                 <div className="space-y-1">
                   <label className="text-[10px] text-slate-500 font-black uppercase tracking-wider block">Đáp án chính xác *</label>
                   <select
@@ -1436,14 +1785,49 @@ Giải thích: Thao tác này thường dùng để mở chương trình.`}
 
               <div className="space-y-1">
                 <label className="text-[10px] text-slate-500 font-black uppercase tracking-wider block">Chủ đề phân nhóm *</label>
-                <input
-                  type="text"
-                  required
-                  value={formCategory}
-                  onChange={(e) => setFormCategory(e.target.value)}
-                  placeholder="Ví dụ: Lập trình Scratch, Vẽ Paint, Sử dụng phím..."
-                  className="w-full bg-slate-50 border border-slate-250 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-600 focus:bg-white transition-all shadow-inner"
-                />
+                <div className="space-y-2">
+                  <select
+                    value={
+                      (PREDEFINED_TOPICS_BY_GRADE[formGradeId] || [])
+                        .flatMap(g => g.topics)
+                        .includes(formCategory) && !isCustomCategory
+                        ? formCategory
+                        : "custom"
+                    }
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === "custom") {
+                        setIsCustomCategory(true);
+                        setFormCategory("");
+                      } else {
+                        setIsCustomCategory(false);
+                        setFormCategory(val);
+                      }
+                    }}
+                    className="w-full bg-slate-50 border border-slate-250 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-600 focus:bg-white transition-all cursor-pointer shadow-sm"
+                  >
+                    <option value="">-- Chọn chủ đề phân nhóm --</option>
+                    {(PREDEFINED_TOPICS_BY_GRADE[formGradeId] || []).map((group, gIdx) => (
+                      <optgroup key={gIdx} label={group.group}>
+                        {group.topics.map((topic, tIdx) => (
+                          <option key={tIdx} value={topic}>{topic}</option>
+                        ))}
+                      </optgroup>
+                    ))}
+                    <option value="custom">✏️ Nhập chủ đề tùy chỉnh khác...</option>
+                  </select>
+
+                  {(isCustomCategory || !(PREDEFINED_TOPICS_BY_GRADE[formGradeId] || []).flatMap(g => g.topics).includes(formCategory)) && (
+                    <input
+                      type="text"
+                      required
+                      value={formCategory}
+                      onChange={(e) => setFormCategory(e.target.value)}
+                      placeholder="Ví dụ: Lập trình Scratch, Vẽ Paint, Sử dụng phím..."
+                      className="w-full bg-slate-50 border border-slate-250 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-600 focus:bg-white transition-all shadow-inner"
+                    />
+                  )}
+                </div>
               </div>
 
               <div className="space-y-1">
