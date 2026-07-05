@@ -179,8 +179,24 @@ export default function DashboardTab({
     }
   }, [currentUser]);
 
+  // Lấy storage key gắn với từng tài khoản giáo viên/admin
+  const getTodoStorageKey = () => {
+    const userId = currentUser ? (currentUser.username || currentUser.id || 'default') : 'default';
+    return `school_teacher_todos_${userId}`;
+  };
+
+  const getDefaultTodos = (): TeacherTodo[] => [
+    { id: 'todo-1', text: 'Điểm danh học sinh đầu giờ học', completed: true, createdAt: new Date().toISOString(), priority: 'high', category: 'teaching' },
+    { id: 'todo-2', text: 'Kiểm tra máy trạm hỏng & cập nhật trạng thái phòng máy', completed: false, createdAt: new Date().toISOString(), priority: 'high', category: 'setup' },
+    { id: 'todo-3', text: 'Giao đề thực hành tuần này lên máy chủ', completed: false, createdAt: new Date().toISOString(), priority: 'medium', category: 'teaching' },
+    { id: 'todo-4', text: 'Chấm điểm cộng sao thi đua cho các nhóm hoạt động tốt', completed: false, createdAt: new Date().toISOString(), priority: 'medium', category: 'teaching' },
+    { id: 'todo-5', text: 'Tắt nguồn hệ thống máy trạm & thiết bị chiếu sáng khi ra về', completed: false, createdAt: new Date().toISOString(), priority: 'high', category: 'maintenance' }
+  ];
+
   const [todos, setTodos] = useState<TeacherTodo[]>(() => {
-    const local = localStorage.getItem('school_teacher_todos');
+    const userId = currentUser ? (currentUser.username || currentUser.id || 'default') : 'default';
+    const key = `school_teacher_todos_${userId}`;
+    const local = localStorage.getItem(key);
     if (local) {
       try {
         return JSON.parse(local);
@@ -201,9 +217,27 @@ export default function DashboardTab({
   const [newTodoPriority, setNewTodoPriority] = useState<'high' | 'medium' | 'low'>('medium');
   const [newTodoCategory, setNewTodoCategory] = useState<'teaching' | 'setup' | 'maintenance' | 'other'>('teaching');
 
+  // Khi currentUser thay đổi (ví dụ đăng xuất / đăng nhập tài khoản khác), load lại danh sách của user đó
   useEffect(() => {
-    localStorage.setItem('school_teacher_todos', JSON.stringify(todos));
-  }, [todos]);
+    const key = getTodoStorageKey();
+    const local = localStorage.getItem(key);
+    if (local) {
+      try {
+        setTodos(JSON.parse(local));
+      } catch (e) {
+        console.error(e);
+        setTodos(getDefaultTodos());
+      }
+    } else {
+      setTodos(getDefaultTodos());
+    }
+  }, [currentUser]);
+
+  // Tự động lưu vào localStorage đúng key của user khi danh sách todos thay đổi
+  useEffect(() => {
+    const key = getTodoStorageKey();
+    localStorage.setItem(key, JSON.stringify(todos));
+  }, [todos, currentUser]);
 
   const handleAddTodo = (e: React.FormEvent) => {
     e.preventDefault();
