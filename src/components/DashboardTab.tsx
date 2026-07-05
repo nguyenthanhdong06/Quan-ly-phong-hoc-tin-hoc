@@ -1,10 +1,10 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { Grade, ClassItem, Student, Computer, DocumentItem, EmulationDataState, MotivationalQuote } from '../types';
+import { Grade, ClassItem, Student, Computer, DocumentItem, EmulationDataState, MotivationalQuote, TeacherTodo } from '../types';
 import { 
   Award, Monitor, Activity, Radio, AlertTriangle, FileText, ChevronRight, ChevronLeft,
   CheckCircle, HelpCircle, Database, Cloud, RefreshCw, Layers, Users, 
   BookOpen, Sparkles, Trophy, Lightbulb, Compass, ShieldAlert, Zap, UserCheck,
-  Calendar, BarChart2, Check, TrendingUp
+  Calendar, BarChart2, Check, TrendingUp, CheckSquare, Square, Trash2, Plus, ListTodo, Flag, Edit3, X
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -163,6 +163,110 @@ export default function DashboardTab({
       prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
     );
   };
+
+
+  // --- TEACHER TO-DO LIST STATES & HANDLERS ---
+  const [isTodoModalOpen, setIsTodoModalOpen] = useState(false);
+
+  // Trigger popup khi giáo viên/admin đăng nhập vào hệ thống
+  useEffect(() => {
+    if (currentUser && (currentUser.role?.includes('Giáo viên') || currentUser.role?.includes('Admin'))) {
+      const alreadyShown = sessionStorage.getItem(`todo_modal_shown_${currentUser.username || currentUser.id || 'default'}`);
+      if (!alreadyShown) {
+        setIsTodoModalOpen(true);
+        sessionStorage.setItem(`todo_modal_shown_${currentUser.username || currentUser.id || 'default'}`, 'true');
+      }
+    }
+  }, [currentUser]);
+
+  const [todos, setTodos] = useState<TeacherTodo[]>(() => {
+    const local = localStorage.getItem('school_teacher_todos');
+    if (local) {
+      try {
+        return JSON.parse(local);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return [
+      { id: 'todo-1', text: 'Điểm danh học sinh đầu giờ học', completed: true, createdAt: new Date().toISOString(), priority: 'high', category: 'teaching' },
+      { id: 'todo-2', text: 'Kiểm tra máy trạm hỏng & cập nhật trạng thái phòng máy', completed: false, createdAt: new Date().toISOString(), priority: 'high', category: 'setup' },
+      { id: 'todo-3', text: 'Giao đề thực hành tuần này lên máy chủ', completed: false, createdAt: new Date().toISOString(), priority: 'medium', category: 'teaching' },
+      { id: 'todo-4', text: 'Chấm điểm cộng sao thi đua cho các nhóm hoạt động tốt', completed: false, createdAt: new Date().toISOString(), priority: 'medium', category: 'teaching' },
+      { id: 'todo-5', text: 'Tắt nguồn hệ thống máy trạm & thiết bị chiếu sáng khi ra về', completed: false, createdAt: new Date().toISOString(), priority: 'high', category: 'maintenance' }
+    ];
+  });
+
+  const [newTodoText, setNewTodoText] = useState('');
+  const [newTodoPriority, setNewTodoPriority] = useState<'high' | 'medium' | 'low'>('medium');
+  const [newTodoCategory, setNewTodoCategory] = useState<'teaching' | 'setup' | 'maintenance' | 'other'>('teaching');
+
+  useEffect(() => {
+    localStorage.setItem('school_teacher_todos', JSON.stringify(todos));
+  }, [todos]);
+
+  const handleAddTodo = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTodoText.trim()) {
+      triggerLocalToast('Nội dung công việc không được để trống!', 'info');
+      return;
+    }
+    const newTodo: TeacherTodo = {
+      id: `todo-${Date.now()}`,
+      text: newTodoText.trim(),
+      completed: false,
+      createdAt: new Date().toISOString(),
+      priority: newTodoPriority,
+      category: newTodoCategory
+    };
+    setTodos(prev => [newTodo, ...prev]);
+    setNewTodoText('');
+    triggerLocalToast('Đã thêm công việc nhắc nhở thành công!');
+  };
+
+  const handleToggleTodo = (id: string) => {
+    setTodos(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
+  };
+
+  const handleDeleteTodo = (id: string) => {
+    setTodos(prev => prev.filter(t => t.id !== id));
+    triggerLocalToast('Đã xóa công việc khỏi danh sách!');
+  };
+
+  const handleClearCompletedTodos = () => {
+    setTodos(prev => prev.filter(t => !t.completed));
+    triggerLocalToast('Đã dọn dẹp các công việc đã hoàn thành!');
+  };
+
+  const [todoFilter, setTodoFilter] = useState<'all' | 'pending' | 'completed'>('all');
+
+  const handleResetDefaultTodos = () => {
+    setTodos([
+      { id: 'todo-1', text: 'Điểm danh học sinh đầu giờ học', completed: true, createdAt: new Date().toISOString(), priority: 'high', category: 'teaching' },
+      { id: 'todo-2', text: 'Kiểm tra máy trạm hỏng & cập nhật trạng thái phòng máy', completed: false, createdAt: new Date().toISOString(), priority: 'high', category: 'setup' },
+      { id: 'todo-3', text: 'Giao đề thực hành tuần này lên máy chủ', completed: false, createdAt: new Date().toISOString(), priority: 'medium', category: 'teaching' },
+      { id: 'todo-4', text: 'Chấm điểm cộng sao thi đua cho các nhóm hoạt động tốt', completed: false, createdAt: new Date().toISOString(), priority: 'medium', category: 'teaching' },
+      { id: 'todo-5', text: 'Tắt nguồn hệ thống máy trạm & thiết bị chiếu sáng khi ra về', completed: false, createdAt: new Date().toISOString(), priority: 'high', category: 'maintenance' }
+    ]);
+    triggerLocalToast('Đã khôi phục danh mục công việc mặc định cho buổi giảng dạy!');
+  };
+
+  const filteredTodos = useMemo(() => {
+    if (todoFilter === 'pending') {
+      return todos.filter(t => !t.completed);
+    }
+    if (todoFilter === 'completed') {
+      return todos.filter(t => t.completed);
+    }
+    return todos;
+  }, [todos, todoFilter]);
+
+  const todoCompletionStats = useMemo(() => {
+    const total = todos.length;
+    const completed = todos.filter(t => t.completed).length;
+    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+    return { total, completed, percentage };
+  }, [todos]);
 
   const studentAbsenceAlerts = useMemo(() => {
     if (!attendanceData || !students) return [];
@@ -762,6 +866,292 @@ export default function DashboardTab({
         <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2 px-4 py-3 rounded-2xl bg-amber-950 border border-amber-800 text-white shadow-xl text-xs font-bold animate-pulse">
           <span className="text-sm">🛡️</span>
           <span>{localToast.message}</span>
+        </div>
+      )}
+
+      {/* POPUP MODAL FOR TEACHER TO-DO PLANNER */}
+      {isTodoModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4.5 border-b border-indigo-50 bg-slate-50/50">
+              <div className="flex items-center gap-3 text-left">
+                <div className="bg-indigo-50 text-indigo-600 p-2 rounded-xl border border-indigo-100/50">
+                  <ListTodo className="w-5.5 h-5.5 text-indigo-650" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                    Sổ tay nhắc nhở công việc buổi dạy
+                    <span className="bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+                      {todoCompletionStats.completed}/{todoCompletionStats.total} Đã xong
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-slate-400 font-semibold">Kiểm soát các đầu việc cần làm trong tiết dạy của thầy cô</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleResetDefaultTodos}
+                  className="text-[10px] font-black text-indigo-600 hover:text-indigo-850 border border-indigo-150 hover:border-indigo-300 bg-indigo-50/30 px-3 py-1.5 rounded-xl transition flex items-center gap-1 cursor-pointer"
+                  title="Khôi phục danh sách việc cần làm mặc định"
+                >
+                  <RefreshCw className="w-3 h-3 text-indigo-650 animate-spin" style={{ animationDuration: isSyncing ? '3s' : '0s' }} />
+                  Khôi phục mẫu
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsTodoModalOpen(false)}
+                  className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                  title="Đóng cửa sổ"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 overflow-y-auto space-y-5 text-left">
+              {/* Progress Bar */}
+              {todoCompletionStats.total > 0 && (
+                <div className="space-y-1 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                  <div className="flex justify-between items-center text-[10px] font-bold">
+                    <span className="text-slate-500 uppercase tracking-wider">Tiến độ hoàn thành công việc:</span>
+                    <span className={`${todoCompletionStats.percentage === 100 ? 'text-emerald-600' : 'text-indigo-600'} font-mono`}>
+                      {todoCompletionStats.percentage}% ({todoCompletionStats.completed}/{todoCompletionStats.total})
+                    </span>
+                  </div>
+                  <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full transition-all duration-500 rounded-full ${
+                        todoCompletionStats.percentage === 100 
+                          ? 'bg-gradient-to-r from-emerald-500 to-teal-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]' 
+                          : 'bg-gradient-to-r from-indigo-500 to-blue-500'
+                      }`}
+                      style={{ width: `${todoCompletionStats.percentage}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* Add Todo Form Card - Column Span 5 */}
+                <form onSubmit={handleAddTodo} className="lg:col-span-5 bg-slate-50/60 p-4.5 rounded-2.5xl border border-slate-150/70 space-y-4 flex flex-col justify-between">
+                  <div className="space-y-3.5">
+                    <div className="space-y-1 text-left">
+                      <label className="text-[10px] text-slate-500 font-black uppercase tracking-wider block">Nội dung công việc</label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={newTodoText}
+                          onChange={(e) => setNewTodoText(e.target.value)}
+                          placeholder="Ví dụ: Kiểm tra máy số 15 bị sập nguồn..."
+                          className="w-full bg-white border border-slate-250 rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-inner"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1 text-left">
+                        <label className="text-[10px] text-slate-500 font-black uppercase tracking-wider block">Mức độ ưu tiên</label>
+                        <select
+                          value={newTodoPriority}
+                          onChange={(e) => setNewTodoPriority(e.target.value as 'high' | 'medium' | 'low')}
+                          className="w-full bg-white border border-slate-250 rounded-xl px-3 py-1.5 text-[11px] font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer"
+                        >
+                          <option value="high">🔴 Cao (High)</option>
+                          <option value="medium">🟡 Vừa (Medium)</option>
+                          <option value="low">🔵 Thấp (Low)</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-1 text-left">
+                        <label className="text-[10px] text-slate-500 font-black uppercase tracking-wider block">Nhóm công việc</label>
+                        <select
+                          value={newTodoCategory}
+                          onChange={(e) => setNewTodoCategory(e.target.value as 'teaching' | 'setup' | 'maintenance' | 'other')}
+                          className="w-full bg-white border border-slate-250 rounded-xl px-3 py-1.5 text-[11px] font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer"
+                        >
+                          <option value="teaching">📚 Giảng dạy</option>
+                          <option value="setup">⚙️ Phòng máy</option>
+                          <option value="maintenance">🔌 Tắt máy / Bảo trì</option>
+                          <option value="other">📝 Khác</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md transition-all cursor-pointer mt-4"
+                  >
+                    <Plus className="w-4 h-4 text-white" />
+                    Thêm việc cần làm
+                  </button>
+                </form>
+
+                {/* Todo List Card - Column Span 7 */}
+                <div className="lg:col-span-7 bg-white rounded-2.5xl flex flex-col justify-between">
+                  <div className="space-y-3.5">
+                    {/* Filter Row & Bulk actions */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                      <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200/60 text-xs">
+                        <button
+                          type="button"
+                          onClick={() => setTodoFilter('all')}
+                          className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition cursor-pointer ${
+                            todoFilter === 'all' 
+                              ? 'bg-white text-indigo-600 shadow-sm border-b border-indigo-50' 
+                              : 'text-slate-500 hover:text-slate-800'
+                          }`}
+                        >
+                          Tất cả ({todos.length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setTodoFilter('pending')}
+                          className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition cursor-pointer ${
+                            todoFilter === 'pending' 
+                              ? 'bg-white text-indigo-600 shadow-sm border-b border-indigo-50' 
+                              : 'text-slate-500 hover:text-slate-800'
+                          }`}
+                        >
+                          Chưa xong ({todos.filter(t => !t.completed).length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setTodoFilter('completed')}
+                          className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition cursor-pointer ${
+                            todoFilter === 'completed' 
+                              ? 'bg-white text-indigo-600 shadow-sm border-b border-indigo-50' 
+                              : 'text-slate-500 hover:text-slate-800'
+                          }`}
+                        >
+                          Đã xong ({todos.filter(t => t.completed).length})
+                        </button>
+                      </div>
+
+                      {todos.some(t => t.completed) && (
+                        <button
+                          type="button"
+                          onClick={handleClearCompletedTodos}
+                          className="text-[10px] font-black text-rose-600 hover:text-rose-800 hover:bg-rose-50 px-2.5 py-1.5 rounded-xl border border-transparent hover:border-rose-200 transition cursor-pointer"
+                        >
+                          Dọn việc đã xong
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Scrollable list items */}
+                    <div className="space-y-2.5 max-h-[250px] overflow-y-auto pr-1">
+                      {filteredTodos.map(todo => {
+                        const priorityLabel = todo.priority === 'high' ? 'Cao' : todo.priority === 'medium' ? 'Vừa' : 'Thấp';
+                        const priorityClass = todo.priority === 'high' 
+                          ? 'bg-rose-50 border border-rose-150 text-rose-600' 
+                          : todo.priority === 'medium' 
+                          ? 'bg-amber-50 border border-amber-150 text-amber-600' 
+                          : 'bg-blue-50 border border-blue-150 text-blue-600';
+
+                        const categoryLabel = todo.category === 'teaching' 
+                          ? '📚 Giảng dạy' 
+                          : todo.category === 'setup' 
+                          ? '⚙️ Phòng máy' 
+                          : todo.category === 'maintenance' 
+                          ? '🔌 Tắt máy' 
+                          : '📝 Khác';
+
+                        return (
+                          <div 
+                            key={todo.id}
+                            className={`group/todo flex items-center justify-between p-3 rounded-2xl border transition-all duration-200 ${
+                              todo.completed 
+                                ? 'bg-slate-50/70 border-slate-150/60 opacity-60' 
+                                : 'bg-slate-50/20 border-slate-200/80 hover:bg-white hover:border-indigo-300 hover:shadow-sm'
+                            }`}
+                          >
+                            <div className="flex items-start gap-3 flex-1 min-w-0">
+                              {/* Interactive custom Checkbox */}
+                              <button
+                                type="button"
+                                onClick={() => handleToggleTodo(todo.id)}
+                                className="mt-0.5 text-slate-400 hover:text-indigo-600 transition shrink-0 cursor-pointer"
+                              >
+                                {todo.completed ? (
+                                  <CheckSquare className="w-4.5 h-4.5 text-indigo-600" />
+                                ) : (
+                                  <Square className="w-4.5 h-4.5 text-slate-300 hover:border-indigo-500" />
+                                )}
+                              </button>
+
+                              <div className="min-w-0 text-left">
+                                <p 
+                                  onClick={() => handleToggleTodo(todo.id)}
+                                  className={`text-[12px] font-bold cursor-pointer select-none transition break-words ${
+                                    todo.completed 
+                                      ? 'line-through text-slate-400 font-medium' 
+                                      : 'text-slate-700 hover:text-indigo-600 font-bold'
+                                  }`}
+                                >
+                                  {todo.text}
+                                </p>
+                                <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                  <span className={`text-[8.5px] font-black px-1.5 py-0.2 rounded-md ${priorityClass}`}>
+                                    Ưu tiên: {priorityLabel}
+                                  </span>
+                                  <span className="text-[8.5px] bg-slate-100 text-slate-500 font-extrabold px-1.5 py-0.2 rounded-md border border-slate-200/50">
+                                    {categoryLabel}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Delete item button */}
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteTodo(todo.id)}
+                              className="p-1.5 text-slate-350 hover:text-rose-600 hover:bg-rose-50 rounded-lg opacity-0 group-hover/todo:opacity-100 transition cursor-pointer shrink-0"
+                              title="Xóa công việc"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        );
+                      })}
+
+                      {filteredTodos.length === 0 && (
+                        <div className="py-10 bg-slate-50/50 border border-dashed border-slate-200 rounded-2xl text-center space-y-2">
+                          <span className="text-2xl animate-bounce block">📋✨</span>
+                          <h4 className="text-xs font-bold text-slate-500 uppercase">Trống lịch trình nhắc nhở</h4>
+                          <p className="text-[10px] text-slate-400 font-medium max-w-sm mx-auto px-4">
+                            {todoFilter === 'pending' 
+                              ? 'Tuyệt vời! Thầy cô đã hoàn thành tất cả các nhiệm vụ được giao cho lớp này rồi.' 
+                              : todoFilter === 'completed'
+                              ? 'Chưa có công việc nào được hoàn tất. Hãy tích cực thực hiện các đầu việc nhé!'
+                              : 'Thầy cô hãy thêm việc mới hoặc nhấn "Khôi phục mẫu buổi dạy" để có danh sách mặc định.'}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setIsTodoModalOpen(false)}
+                className="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer"
+              >
+                Đóng lại
+              </button>
+            </div>
+
+          </div>
         </div>
       )}
 

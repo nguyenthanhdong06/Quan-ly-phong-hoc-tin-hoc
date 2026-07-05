@@ -113,4 +113,13 @@ export interface MotivationalQuote {
   isActive: boolean;
 }
 
+export interface TeacherTodo {
+  id: string;
+  text: string;
+  completed: boolean;
+  createdAt: string;
+  priority: 'high' | 'medium' | 'low';
+  category: 'teaching' | 'setup' | 'maintenance' | 'other';
+}
+
 
