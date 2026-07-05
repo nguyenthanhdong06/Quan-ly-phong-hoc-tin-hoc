@@ -122,4 +122,18 @@ export interface TeacherTodo {
   category: 'teaching' | 'setup' | 'maintenance' | 'other';
 }
 
+export interface Question {
+  id: string;
+  title: string;
+  options: string[];
+  correctIndex: number; // 0 to 3
+  explanation?: string;
+  difficulty: 'Dễ' | 'Trung bình' | 'Khó';
+  gradeId: number;
+  category: string;
+  authorId: string;
+  subjectId?: string;
+}
+
+
 

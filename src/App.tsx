@@ -27,6 +27,8 @@ import ResourcesTab from './components/ResourcesTab';
 import { AvatarGalleryTab } from './components/AvatarGalleryTab';
 import AdminTab from './components/AdminTab';
 import TimetableTab from './components/TimetableTab';
+import { InteractiveGamesTab } from './components/InteractiveGamesTab';
+import { PersonalQuestionsTab } from './components/PersonalQuestionsTab';
 
 // Supabase services
 import { loadAllSupabaseStates, saveSupabaseState } from './supabaseClient';
@@ -56,7 +58,8 @@ import {
   Paintbrush,
   Database,
   RefreshCw,
-  Cloud
+  Cloud,
+  Gamepad2
 } from 'lucide-react';
 
 const THEMES = [
@@ -244,12 +247,19 @@ export default function App() {
   }, []);
 
   // --- INTERACTION / SYSTEM STATES ---
-  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'students', 'classes-management', 'attendance', 'evaluation', 'emulation', 'seating', 'resources', 'avatar-gallery', 'admin'
+  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'students', 'classes-management', 'attendance', 'evaluation', 'emulation', 'seating', 'resources', 'avatar-gallery', 'admin', 'interactive-games', 'personal-questions'
   const [selectedGrade, setSelectedGrade] = useState<number>(3);
   const [selectedClass, setSelectedClass] = useState<string>('Ba 1');
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     return new Date().toISOString().split('T')[0];
   });
+
+  // Auto-expand Trò chơi menu if submenus are active
+  useEffect(() => {
+    if (activeTab === 'interactive-games' || activeTab === 'personal-questions') {
+      setIsGameMenuOpen(true);
+    }
+  }, [activeTab]);
 
   // Authentication session
   const [currentUser, setCurrentUser] = useState<Member | null>(() => {
@@ -266,6 +276,7 @@ export default function App() {
   const [secondsLeft, setSecondsLeft] = useState<number>(inactivityLimit * 60);
   const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
   const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState(false);
+  const [isGameMenuOpen, setIsGameMenuOpen] = useState(false);
 
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -782,6 +793,73 @@ export default function App() {
               <Award className="w-4 h-4 shrink-0" />
               <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Nhận xét</span>
             </button>
+          )}
+
+          {hasAdminOrTeacherAccess && (
+            <div className="space-y-1">
+              <button
+                onClick={() => {
+                  setIsGameMenuOpen(!isGameMenuOpen);
+                }}
+                title={isSidebarCollapsed ? "Trò chơi học tập" : ""}
+                className={`flex items-center gap-3 w-full px-4 py-2 rounded-xl text-[11px] md:text-xs font-black uppercase tracking-wider transition-all relative cursor-pointer active:scale-95 ${
+                  isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
+                } ${
+                  activeTab === 'interactive-games' || activeTab === 'personal-questions'
+                    ? 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
+                    : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
+                }`}
+                style={getTabStyle(activeTab === 'interactive-games' || activeTab === 'personal-questions' ? activeTab : '')}
+              >
+                <Gamepad2 className="w-4 h-4 shrink-0" />
+                <span className={isSidebarCollapsed ? 'md:hidden' : 'flex-1 text-left'}>Trò chơi</span>
+                {!isSidebarCollapsed && (
+                  <span className="text-white/60 text-[8px] transition-transform duration-200" style={{ transform: isGameMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                    ▼
+                  </span>
+                )}
+              </button>
+
+              {/* Submenus */}
+              {isGameMenuOpen && (
+                <div className={`${isSidebarCollapsed ? 'flex flex-col items-center gap-1 py-1' : 'pl-4 space-y-1'} animate-in slide-in-from-top-1 duration-150`}>
+                  <button
+                    onClick={() => {
+                      setActiveTab('interactive-games');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    title="Trò chơi tương tác"
+                    className={`flex items-center gap-2 rounded-lg text-[10px] font-bold tracking-wide transition-all cursor-pointer ${
+                      isSidebarCollapsed ? 'w-8 h-8 justify-center p-0 text-sm' : 'w-full px-3 py-1.5'
+                    } ${
+                      activeTab === 'interactive-games'
+                        ? 'text-amber-300 bg-white/10'
+                        : 'text-[#e2f1f2]/70 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <span className="text-xs shrink-0">🎮</span>
+                    {!isSidebarCollapsed && <span className="truncate">Trò chơi tương tác</span>}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActiveTab('personal-questions');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    title="Kho câu hỏi cá nhân"
+                    className={`flex items-center gap-2 rounded-lg text-[10px] font-bold tracking-wide transition-all cursor-pointer ${
+                      isSidebarCollapsed ? 'w-8 h-8 justify-center p-0 text-sm' : 'w-full px-3 py-1.5'
+                    } ${
+                      activeTab === 'personal-questions'
+                        ? 'text-amber-300 bg-white/10'
+                        : 'text-[#e2f1f2]/70 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <span className="text-xs shrink-0">📚</span>
+                    {!isSidebarCollapsed && <span className="truncate">Kho câu hỏi cá nhân</span>}
+                  </button>
+                </div>
+              )}
+            </div>
           )}
 
           {hasAdminOrTeacherAccess && (
@@ -1363,6 +1441,22 @@ export default function App() {
             classes={classes}
             quotes={quotes}
             setQuotes={setQuotes}
+          />
+        )}
+
+        {activeTab === 'interactive-games' && hasAdminOrTeacherAccess && (
+          <InteractiveGamesTab
+            currentUser={currentUser}
+            showToast={showToast}
+            selectedGrade={selectedGrade}
+          />
+        )}
+
+        {activeTab === 'personal-questions' && hasAdminOrTeacherAccess && (
+          <PersonalQuestionsTab
+            currentUser={currentUser}
+            showToast={showToast}
+            selectedGrade={selectedGrade}
           />
         )}
 
