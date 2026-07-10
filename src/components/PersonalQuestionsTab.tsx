@@ -773,12 +773,14 @@ export function PersonalQuestionsTab({ currentUser, showToast, selectedGrade = 3
       return;
     }
     const lines = text.split('\n');
-    const parsed: Question[] = [];
+    const parsed: (Question & { optionLineIndices?: number[]; answerLineIndex?: number })[] = [];
     
     let currentTitle = '';
     let currentOptions: string[] = [];
+    let currentOptionLineIndices: number[] = [];
     let currentCorrectIndex = -1;
     let currentExplanation = '';
+    let currentAnswerLineIndex = -1;
     
     const saveCurrent = () => {
       const cleanTitle = currentTitle.trim().replace(/^Câu\s+\d+[:.]\s*/i, '').trim();
@@ -799,22 +801,36 @@ export function PersonalQuestionsTab({ currentUser, showToast, selectedGrade = 3
           gradeId: destSubject ? destSubject.gradeId : 3,
           category: importCategory.trim() || 'Luyện tập tổng hợp',
           authorId: userId,
-          subjectId: destSubject ? destSubject.id : 'subj-3'
+          subjectId: destSubject ? destSubject.id : 'subj-3',
+          optionLineIndices: [...currentOptionLineIndices],
+          answerLineIndex: currentAnswerLineIndex !== -1 ? currentAnswerLineIndex : undefined
         });
       }
       currentTitle = '';
       currentOptions = [];
+      currentOptionLineIndices = [];
       currentCorrectIndex = -1;
       currentExplanation = '';
+      currentAnswerLineIndex = -1;
     };
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
       if (!line) continue;
 
-      const optionMatch = line.match(/^([A-D])\s*[\.\/\)]\s*(.*)$/i);
+      const optionMatch = line.match(/^(\*?)\s*([A-D])\s*([\.\/\)])\s*(\*?)\s*(.*)$/i);
       if (optionMatch) {
-        currentOptions.push(optionMatch[2].trim());
+        const isLeadingStar = optionMatch[1] === '*';
+        const isMiddleStar = optionMatch[4] === '*';
+        const letter = optionMatch[2].toUpperCase();
+        const oIdx = letter.charCodeAt(0) - 65;
+
+        currentOptions.push(optionMatch[5].trim());
+        currentOptionLineIndices.push(i);
+
+        if (isLeadingStar || isMiddleStar) {
+          currentCorrectIndex = oIdx;
+        }
         continue;
       }
 
@@ -822,6 +838,7 @@ export function PersonalQuestionsTab({ currentUser, showToast, selectedGrade = 3
       if (answerMatch) {
         const letter = answerMatch[2].toUpperCase();
         currentCorrectIndex = letter.charCodeAt(0) - 65;
+        currentAnswerLineIndex = i;
         continue;
       }
 
@@ -845,6 +862,54 @@ export function PersonalQuestionsTab({ currentUser, showToast, selectedGrade = 3
     }
     saveCurrent();
     setParsedPreview(parsed);
+  };
+
+  const handleSelectCorrectOptionInPreview = (qIdx: number, optIdx: number) => {
+    const lines = bulkText.split('\n');
+    const q = parsedPreview[qIdx] as (Question & { optionLineIndices?: number[]; answerLineIndex?: number });
+    if (!q) return;
+
+    // Update in-memory correct index first for immediate feedback
+    const updatedPreview = [...parsedPreview];
+    updatedPreview[qIdx] = {
+      ...q,
+      correctIndex: optIdx
+    };
+    setParsedPreview(updatedPreview);
+
+    // Synchronize to the bulkText options
+    if (q.optionLineIndices && q.optionLineIndices.length > 0) {
+      q.optionLineIndices.forEach((lineIndex, oIdx) => {
+        const line = lines[lineIndex];
+        const m = line.match(/^(\*?)\s*([A-D])\s*([\.\/\)])\s*(\*?)\s*(.*)$/i);
+        if (m) {
+          const letter = m[2];
+          const delim = m[3];
+          const content = m[5];
+          if (oIdx === optIdx) {
+            lines[lineIndex] = `*${letter}${delim} ${content}`;
+          } else {
+            lines[lineIndex] = `${letter}${delim} ${content}`;
+          }
+        }
+      });
+    }
+
+    // Synchronize to the bulkText answer line if present
+    if (q.answerLineIndex !== undefined && q.answerLineIndex !== -1) {
+      const lineIndex = q.answerLineIndex;
+      const line = lines[lineIndex];
+      const m = line.match(/^(Đáp\s+án|Đáp\s+án\s+đúng|ANSWER|Key|Chọn)([:\s\-]+)([A-D])/i);
+      if (m) {
+        const prefix = m[1];
+        const separator = m[2];
+        const newLetter = String.fromCharCode(65 + optIdx);
+        lines[lineIndex] = `${prefix}${separator}${newLetter}`;
+      }
+    }
+
+    const newBulkText = lines.join('\n');
+    setBulkText(newBulkText);
   };
 
   useEffect(() => {
@@ -1502,16 +1567,18 @@ Giải thích: Phím Backspace xóa ký tự trước (bên trái) con trỏ, c�
                 Hướng dẫn viết câu hỏi định dạng mẫu chuẩn
               </h4>
               <p className="leading-relaxed font-medium">
-                Hệ thống tự động phát hiện và chuyển đổi câu hỏi trắc nghiệm của thầy cô khi viết đúng quy chuẩn Aiken:
+                Hệ thống hỗ trợ bóc tách định dạng Aiken tiêu chuẩn (ví dụ: <code className="bg-slate-100 px-1 py-0.5 rounded text-indigo-600 font-mono font-bold">Đáp án: B</code>) hoặc thêm trực tiếp ký tự <code className="bg-slate-100 px-1 py-0.5 rounded text-orange-600 font-mono font-bold">*</code> vào trước đáp án đúng (ví dụ: <code className="bg-slate-100 px-1 py-0.5 rounded text-orange-600 font-mono font-bold">*B. Thân máy</code>). 
+              </p>
+              <p className="leading-relaxed font-medium text-indigo-650 font-bold">
+                💡 Thầy cô có thể click trực tiếp vào đáp án trong "Bảng xem trước câu hỏi" bên phải để đồng bộ đáp án đúng tự động!
               </p>
               <div className="bg-white p-3 rounded-xl border border-slate-200 font-mono text-[10px] leading-relaxed text-slate-600 whitespace-pre-wrap select-all">
-{`Câu 1: Thao tác nháy đúp chuột có nghĩa là gì?
-A. Nhấn nút trái và giữ nguyên
-B. Nhấn nhanh nút trái hai lần liên tiếp
-C. Nhấn nút phải một lần
-D. Nhấn nút giữa một lần
-Đáp án: B
-Giải thích: Thao tác này thường dùng để mở chương trình.`}
+{`Câu 1: Thiết bị nào dưới đây là "bộ não" của máy tính?
+A. Chuột máy tính
+*B. Thân máy (CPU)
+C. Màn hình
+D. Máy in
+Giải thích: Bộ vi xử lý (CPU) điều khiển mọi hoạt động của máy tính.`}
               </div>
             </div>
           </div>
@@ -1551,18 +1618,24 @@ Giải thích: Thao tác này thường dùng để mở chương trình.`}
                         {q.options.map((opt, oIdx) => {
                           const isCorrect = oIdx === q.correctIndex;
                           return (
-                            <div key={oIdx} className={`px-2.5 py-1.5 rounded-lg text-[10px] font-semibold flex items-center gap-2 border ${
-                              isCorrect 
-                                ? 'bg-emerald-50 border-emerald-200 text-emerald-800 font-extrabold'
-                                : 'bg-slate-50 border-slate-150 text-slate-500'
-                            }`}>
-                              <span className={`w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center shrink-0 ${
+                            <button
+                              type="button"
+                              key={oIdx}
+                              onClick={() => handleSelectCorrectOptionInPreview(idx, oIdx)}
+                              className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[10px] font-semibold flex items-center gap-2 border transition-all cursor-pointer ${
+                                isCorrect 
+                                  ? 'bg-emerald-50 border-emerald-200 text-emerald-800 font-extrabold shadow-2xs'
+                                  : 'bg-slate-50 border-slate-150 text-slate-500 hover:bg-indigo-50/40 hover:border-indigo-200 hover:text-slate-700'
+                              }`}
+                              title="Click để chọn làm đáp án đúng"
+                            >
+                              <span className={`w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center shrink-0 transition-colors ${
                                 isCorrect ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-500'
                               }`}>
                                 {String.fromCharCode(65 + oIdx)}
                               </span>
                               <span className="truncate flex-1 text-left">{opt}</span>
-                            </div>
+                            </button>
                           );
                         })}
                       </div>
