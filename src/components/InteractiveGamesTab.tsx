@@ -1068,72 +1068,65 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
 
   return (
     <div className="space-y-6 text-left">
-      {/* Sound Controller in header */}
-      <div className="flex justify-between items-center bg-slate-50 p-3 rounded-2xl border border-slate-200/50">
-        <div className="flex items-center gap-2">
-          <span className="flex h-2 w-2 relative">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-          </span>
-          <span className="text-[11px] font-black text-slate-500 uppercase tracking-wider">Hệ thống Trò chơi Tương tác v3.5</span>
+      {/* Unified Interactive Games Header */}
+      {activeSubGame === null && (
+        <div className="flex flex-col sm:flex-row justify-between items-center bg-gradient-to-r from-blue-500/5 via-indigo-500/5 to-transparent p-4 rounded-3xl border border-slate-200/60 gap-4">
+          <div className="flex items-center gap-3">
+            <span className="flex h-2.5 w-2.5 relative shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+            </span>
+            <div>
+              <h2 className="text-sm sm:text-base font-black text-slate-800 uppercase tracking-wide">Trò Chơi Tương Tác Lớp Học</h2>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Hoạt động đố vui & Trò chơi vận động</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-3 shrink-0">
+            {/* General Stats Pill */}
+            <div className="bg-slate-50/85 px-3 py-1.5 rounded-2xl border border-slate-200/50 flex items-center gap-2">
+              <div className="bg-amber-100 text-amber-700 p-1 rounded-lg">
+                <Trophy className="w-3.5 h-3.5" />
+              </div>
+              <div className="text-left leading-none">
+                <span className="text-[8px] text-slate-450 font-black block uppercase tracking-wider">Kho Trò Chơi</span>
+                <strong className="text-[11px] font-black text-slate-700">6 Phòng Game</strong>
+              </div>
+            </div>
+
+            {/* Sound Controller */}
+            <button
+              onClick={() => {
+                setSoundEnabled(!soundEnabled);
+                triggerSound('click');
+              }}
+              className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 border transition-all cursor-pointer ${
+                soundEnabled 
+                  ? 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100/50' 
+                  : 'bg-slate-100 border-slate-200 text-slate-400 hover:bg-slate-200/50'
+              }`}
+            >
+              {soundEnabled ? (
+                <>
+                  <Volume2 className="w-3.5 h-3.5" />
+                  Âm thanh: BẬT
+                </>
+              ) : (
+                <>
+                  <VolumeX className="w-3.5 h-3.5" />
+                  Âm thanh: TẮT
+                </>
+              )}
+            </button>
+          </div>
         </div>
-        
-        <button
-          onClick={() => {
-            setSoundEnabled(!soundEnabled);
-            triggerSound('click');
-          }}
-          className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 border transition-all cursor-pointer ${
-            soundEnabled 
-              ? 'bg-amber-50 border-amber-200 text-amber-700' 
-              : 'bg-slate-100 border-slate-200 text-slate-400'
-          }`}
-        >
-          {soundEnabled ? (
-            <>
-              <Volume2 className="w-3.5 h-3.5" />
-              Âm thanh: BẬT
-            </>
-          ) : (
-            <>
-              <VolumeX className="w-3.5 h-3.5" />
-              Âm thanh: TẮT
-            </>
-          )}
-        </button>
-      </div>
+      )}
 
       {/* ============================================================== */}
       {/* --- LOBBY GAME CATALOG DIRECTORY ---                           */}
       {/* ============================================================== */}
       {activeSubGame === null && (
         <div className="space-y-6 animate-in fade-in duration-200">
-          {/* Banner Header Header */}
-          <div className="bg-gradient-to-r from-blue-500/10 via-indigo-500/5 to-transparent p-6 rounded-3xl border border-blue-150 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">Mới nhất</span>
-                <span className="text-slate-400 font-semibold">•</span>
-                <span className="text-xs text-blue-600 font-bold flex items-center gap-1">
-                  <Gamepad2 className="w-4 h-4 animate-bounce" />
-                  Đại học công nghệ nhí
-                </span>
-              </div>
-              <h2 className="text-xl font-black text-slate-800 uppercase tracking-wide">Trò Chơi Tương Tác Phòng Tin Học</h2>
-              <p className="text-xs text-slate-500 font-semibold">Tích hợp các hoạt động đố vui trắc nghiệm, huấn luyện phản xạ gõ mười ngón và đấu trí đối kháng bổ ích.</p>
-            </div>
-
-            {/* General Stats Pill */}
-            <div className="bg-slate-100/80 px-4 py-2 rounded-2xl border border-slate-200/60 flex items-center gap-3">
-              <div className="bg-amber-100 text-amber-700 p-1.5 rounded-lg">
-                <Trophy className="w-4 h-4" />
-              </div>
-              <div className="text-left leading-none">
-                <span className="text-[9px] text-slate-450 font-black block uppercase">Kho Trò Chơi</span>
-                <strong className="text-xs font-black text-slate-700">6 Phòng Game</strong>
-              </div>
-            </div>
-          </div>
 
           {/* Search bar & filter */}
           <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
@@ -1228,22 +1221,48 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
       {/* --- GAME 1: VÒNG QUAY MAY MẮN (LUCKY WHEEL) DISPLAY ---        */}
       {/* ============================================================== */}
       {activeSubGame === 'lucky-wheel' && (
-        <div className="bg-white rounded-3xl shadow-sm border border-slate-100 flex flex-col h-[85vh] animate-in zoom-in-95 duration-200 overflow-hidden">
-          <div className="flex justify-between items-center border-b border-slate-100 pb-4 p-6 shrink-0 bg-slate-50/50">
+        <div className="bg-white rounded-3xl shadow-sm border border-slate-100 flex flex-col h-[90vh] animate-in zoom-in-95 duration-200 overflow-hidden">
+          <div className="flex justify-between items-center border-b border-slate-100 py-2.5 px-4 shrink-0 bg-slate-50/50 gap-4">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  setActiveSubGame(null);
+                  triggerSound('click');
+                }}
+                className="text-xs font-black text-slate-550 hover:text-slate-800 flex items-center gap-1.5 cursor-pointer transition hover:bg-slate-200/50 py-1 px-2.5 rounded-lg border border-slate-200 bg-white"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                Quay lại danh sách
+              </button>
+
+              <span className="bg-amber-100 text-amber-800 text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">
+                🎡 Vòng Quay May Mắn
+              </span>
+            </div>
+
             <button
               onClick={() => {
-                setActiveSubGame(null);
+                setSoundEnabled(!soundEnabled);
                 triggerSound('click');
               }}
-              className="text-xs font-black text-slate-500 hover:text-slate-800 flex items-center gap-1 cursor-pointer transition"
+              className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 border transition-all cursor-pointer ${
+                soundEnabled 
+                  ? 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100/50' 
+                  : 'bg-slate-100 border-slate-200 text-slate-400 hover:bg-slate-200/50'
+              }`}
             >
-              <ArrowLeft className="w-4 h-4" />
-              Quay lại danh sách
+              {soundEnabled ? (
+                <>
+                  <Volume2 className="w-3.5 h-3.5" />
+                  Âm thanh: BẬT
+                </>
+              ) : (
+                <>
+                  <VolumeX className="w-3.5 h-3.5" />
+                  Âm thanh: TẮT
+                </>
+              )}
             </button>
-
-            <span className="bg-amber-100 text-amber-800 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
-              🎡 Vòng Quay May Mắn
-            </span>
           </div>
 
           <div className="flex-1 w-full h-full min-h-[500px]">
@@ -1262,21 +1281,47 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
       {/* ============================================================== */}
       {activeSubGame === 'tug-of-war' && (
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 space-y-6 animate-in zoom-in-95 duration-200">
-          <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+          <div className="flex justify-between items-center border-b border-slate-100 pb-4 gap-4">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  setActiveSubGame(null);
+                  triggerSound('click');
+                }}
+                className="text-xs font-black text-slate-550 hover:text-slate-800 flex items-center gap-1.5 cursor-pointer transition hover:bg-slate-100 py-1 px-2.5 rounded-lg border border-slate-200 bg-white"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                Quay lại danh sách
+              </button>
+
+              <span className="bg-blue-100 text-blue-800 text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">
+                🪢 Kéo Co Trí Tuệ
+              </span>
+            </div>
+
             <button
               onClick={() => {
-                setActiveSubGame(null);
+                setSoundEnabled(!soundEnabled);
                 triggerSound('click');
               }}
-              className="text-xs font-black text-slate-500 hover:text-slate-800 flex items-center gap-1"
+              className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 border transition-all cursor-pointer ${
+                soundEnabled 
+                  ? 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100/50' 
+                  : 'bg-slate-100 border-slate-200 text-slate-400 hover:bg-slate-200/50'
+              }`}
             >
-              <ArrowLeft className="w-4 h-4" />
-              Quay lại danh sách
+              {soundEnabled ? (
+                <>
+                  <Volume2 className="w-3.5 h-3.5" />
+                  Âm thanh: BẬT
+                </>
+              ) : (
+                <>
+                  <VolumeX className="w-3.5 h-3.5" />
+                  Âm thanh: TẮT
+                </>
+              )}
             </button>
-
-            <span className="bg-blue-100 text-blue-800 text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">
-              🪢 Kéo Co Trí Tuệ
-            </span>
           </div>
 
           {/* Tug of war game board */}
@@ -1420,21 +1465,47 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
       {/* ============================================================== */}
       {activeSubGame === 'gold-miner' && (
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 space-y-6 animate-in zoom-in-95 duration-200">
-          <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+          <div className="flex justify-between items-center border-b border-slate-100 pb-4 gap-4">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  setActiveSubGame(null);
+                  triggerSound('click');
+                }}
+                className="text-xs font-black text-slate-550 hover:text-slate-800 flex items-center gap-1.5 cursor-pointer transition hover:bg-slate-100 py-1 px-2.5 rounded-lg border border-slate-200 bg-white"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                Quay lại danh sách
+              </button>
+
+              <span className="bg-amber-100 text-amber-800 text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">
+                ⛏️ Đào Vàng Trí Tuệ
+              </span>
+            </div>
+
             <button
               onClick={() => {
-                setActiveSubGame(null);
+                setSoundEnabled(!soundEnabled);
                 triggerSound('click');
               }}
-              className="text-xs font-black text-slate-500 hover:text-slate-800 flex items-center gap-1"
+              className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 border transition-all cursor-pointer ${
+                soundEnabled 
+                  ? 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100/50' 
+                  : 'bg-slate-100 border-slate-200 text-slate-400 hover:bg-slate-200/50'
+              }`}
             >
-              <ArrowLeft className="w-4 h-4" />
-              Quay lại danh sách
+              {soundEnabled ? (
+                <>
+                  <Volume2 className="w-3.5 h-3.5" />
+                  Âm thanh: BẬT
+                </>
+              ) : (
+                <>
+                  <VolumeX className="w-3.5 h-3.5" />
+                  Âm thanh: TẮT
+                </>
+              )}
             </button>
-
-            <span className="bg-amber-100 text-amber-800 text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">
-              ⛏️ Đào Vàng Trí Tuệ
-            </span>
           </div>
 
           {/* Gold Miner Game Core layout */}
@@ -1586,21 +1657,47 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
       {/* ============================================================== */}
       {activeSubGame === 'seesaw' && (
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 space-y-6 animate-in zoom-in-95 duration-200">
-          <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+          <div className="flex justify-between items-center border-b border-slate-100 pb-4 gap-4">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  setActiveSubGame(null);
+                  triggerSound('click');
+                }}
+                className="text-xs font-black text-slate-550 hover:text-slate-800 flex items-center gap-1.5 cursor-pointer transition hover:bg-slate-100 py-1 px-2.5 rounded-lg border border-slate-200 bg-white"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                Quay lại danh sách
+              </button>
+
+              <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">
+                ⚖️ Bập Bênh Cân Bằng
+              </span>
+            </div>
+
             <button
               onClick={() => {
-                setActiveSubGame(null);
+                setSoundEnabled(!soundEnabled);
                 triggerSound('click');
               }}
-              className="text-xs font-black text-slate-500 hover:text-slate-800 flex items-center gap-1"
+              className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 border transition-all cursor-pointer ${
+                soundEnabled 
+                  ? 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100/50' 
+                  : 'bg-slate-100 border-slate-200 text-slate-400 hover:bg-slate-200/50'
+              }`}
             >
-              <ArrowLeft className="w-4 h-4" />
-              Quay lại danh sách
+              {soundEnabled ? (
+                <>
+                  <Volume2 className="w-3.5 h-3.5" />
+                  Âm thanh: BẬT
+                </>
+              ) : (
+                <>
+                  <VolumeX className="w-3.5 h-3.5" />
+                  Âm thanh: TẮT
+                </>
+              )}
             </button>
-
-            <span className="bg-emerald-100 text-emerald-800 text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">
-              ⚖️ Bập Bênh Cân Bằng
-            </span>
           </div>
 
           <div className="space-y-6">
@@ -1716,21 +1813,47 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
       {/* ============================================================== */}
       {activeSubGame === 'maze' && (
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 space-y-6 animate-in zoom-in-95 duration-200">
-          <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+          <div className="flex justify-between items-center border-b border-slate-100 pb-4 gap-4">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  setActiveSubGame(null);
+                  triggerSound('click');
+                }}
+                className="text-xs font-black text-slate-550 hover:text-slate-800 flex items-center gap-1.5 cursor-pointer transition hover:bg-slate-100 py-1 px-2.5 rounded-lg border border-slate-200 bg-white"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                Quay lại danh sách
+              </button>
+
+              <span className="bg-cyan-100 text-cyan-800 text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">
+                🌀 Mê Cung Ghép Chữ
+              </span>
+            </div>
+
             <button
               onClick={() => {
-                setActiveSubGame(null);
+                setSoundEnabled(!soundEnabled);
                 triggerSound('click');
               }}
-              className="text-xs font-black text-slate-500 hover:text-slate-800 flex items-center gap-1"
+              className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 border transition-all cursor-pointer ${
+                soundEnabled 
+                  ? 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100/50' 
+                  : 'bg-slate-100 border-slate-200 text-slate-400 hover:bg-slate-200/50'
+              }`}
             >
-              <ArrowLeft className="w-4 h-4" />
-              Quay lại danh sách
+              {soundEnabled ? (
+                <>
+                  <Volume2 className="w-3.5 h-3.5" />
+                  Âm thanh: BẬT
+                </>
+              ) : (
+                <>
+                  <VolumeX className="w-3.5 h-3.5" />
+                  Âm thanh: TẮT
+                </>
+              )}
             </button>
-
-            <span className="bg-cyan-100 text-cyan-800 text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">
-              🌀 Mê Cung Ghép Chữ
-            </span>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -1842,21 +1965,47 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
       {/* ============================================================== */}
       {activeSubGame === 'racing' && (
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 space-y-6 animate-in zoom-in-95 duration-200">
-          <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+          <div className="flex justify-between items-center border-b border-slate-100 pb-4 gap-4">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  setActiveSubGame(null);
+                  triggerSound('click');
+                }}
+                className="text-xs font-black text-slate-550 hover:text-slate-800 flex items-center gap-1.5 cursor-pointer transition hover:bg-slate-100 py-1 px-2.5 rounded-lg border border-slate-200 bg-white"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                Quay lại danh sách
+              </button>
+
+              <span className="bg-red-100 text-red-800 text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">
+                🏎️ Đua Xe Siêu Tốc AI
+              </span>
+            </div>
+
             <button
               onClick={() => {
-                setActiveSubGame(null);
+                setSoundEnabled(!soundEnabled);
                 triggerSound('click');
               }}
-              className="text-xs font-black text-slate-500 hover:text-slate-800 flex items-center gap-1"
+              className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 border transition-all cursor-pointer ${
+                soundEnabled 
+                  ? 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100/50' 
+                  : 'bg-slate-100 border-slate-200 text-slate-400 hover:bg-slate-200/50'
+              }`}
             >
-              <ArrowLeft className="w-4 h-4" />
-              Quay lại danh sách
+              {soundEnabled ? (
+                <>
+                  <Volume2 className="w-3.5 h-3.5" />
+                  Âm thanh: BẬT
+                </>
+              ) : (
+                <>
+                  <VolumeX className="w-3.5 h-3.5" />
+                  Âm thanh: TẮT
+                </>
+              )}
             </button>
-
-            <span className="bg-red-100 text-red-800 text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">
-              🏎️ Đua Xe Siêu Tốc AI
-            </span>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

@@ -485,6 +485,43 @@ export function PersonalQuestionsTab({ currentUser, showToast, selectedGrade = 3
   const [formGradeId, setFormGradeId] = useState<number>(3);
   const [formSubjectId, setFormSubjectId] = useState<string>('');
 
+  // Custom Confirmation Modal state
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText: string;
+    cancelText: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Xác nhận',
+    cancelText: 'Hủy',
+    onConfirm: () => {},
+  });
+
+  const askConfirmation = (options: {
+    title: string;
+    message: string;
+    confirmText?: string;
+    cancelText?: string;
+    onConfirm: () => void;
+  }) => {
+    setConfirmModal({
+      isOpen: true,
+      title: options.title,
+      message: options.message,
+      confirmText: options.confirmText || 'Xác nhận',
+      cancelText: options.cancelText || 'Hủy',
+      onConfirm: () => {
+        options.onConfirm();
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+      }
+    });
+  };
+
   // Bulk Import States
   const [bulkText, setBulkText] = useState('');
   const [importSubjectId, setImportSubjectId] = useState<string>(() => selectedSubjectId);
@@ -567,15 +604,21 @@ export function PersonalQuestionsTab({ currentUser, showToast, selectedGrade = 3
   const handleDeleteSubject = (subj: Subject, e: React.MouseEvent) => {
     e.stopPropagation();
     const count = questions.filter(q => q.subjectId === subj.id).length;
-    if (confirm(`Thầy/Cô có chắc chắn muốn xóa bộ môn "${subj.name} - Lớp ${subj.gradeId}"? \nHành động này sẽ XÓA TOÀN BỘ ${count} câu hỏi thuộc bộ môn này!`)) {
-      setSubjects(prev => prev.filter(s => s.id !== subj.id));
-      setQuestions(prev => prev.filter(q => q.subjectId !== subj.id));
-      if (selectedSubjectId === subj.id) {
-        const remaining = subjects.filter(s => s.id !== subj.id);
-        setSelectedSubjectId(remaining.length > 0 ? remaining[0].id : '');
+    askConfirmation({
+      title: 'Xóa bộ môn?',
+      message: `Thầy/Cô có chắc chắn muốn xóa bộ môn "${subj.name} - Lớp ${subj.gradeId}"? Hành động này sẽ XÓA TOÀN BỘ ${count} câu hỏi thuộc bộ môn này!`,
+      confirmText: 'Xóa ngay',
+      cancelText: 'Hủy bỏ',
+      onConfirm: () => {
+        setSubjects(prev => prev.filter(s => s.id !== subj.id));
+        setQuestions(prev => prev.filter(q => q.subjectId !== subj.id));
+        if (selectedSubjectId === subj.id) {
+          const remaining = subjects.filter(s => s.id !== subj.id);
+          setSelectedSubjectId(remaining.length > 0 ? remaining[0].id : '');
+        }
+        showToast(`Đã xóa bộ môn "${subj.name}" cùng các câu hỏi liên quan.`);
       }
-      showToast(`Đã xóa bộ môn "${subj.name}" cùng các câu hỏi liên quan.`);
-    }
+    });
   };
 
   // Question Modal handlers
@@ -680,10 +723,16 @@ export function PersonalQuestionsTab({ currentUser, showToast, selectedGrade = 3
   };
 
   const handleDeleteQuestion = (id: string) => {
-    if (confirm('Thầy cô có chắc chắn muốn xóa câu hỏi này không?')) {
-      setQuestions(prev => prev.filter(q => q.id !== id));
-      showToast('Đã xóa câu hỏi khỏi kho lưu trữ.');
-    }
+    askConfirmation({
+      title: 'Xóa câu hỏi?',
+      message: 'Thầy cô có chắc chắn muốn xóa câu hỏi này không?',
+      confirmText: 'Xóa ngay',
+      cancelText: 'Hủy bỏ',
+      onConfirm: () => {
+        setQuestions(prev => prev.filter(q => q.id !== id));
+        showToast('Đã xóa câu hỏi khỏi kho lưu trữ.');
+      }
+    });
   };
 
   // Export & Import functions for Subject Cards
@@ -752,18 +801,24 @@ export function PersonalQuestionsTab({ currentUser, showToast, selectedGrade = 3
   };
 
   const handleResetDefaults = () => {
-    if (confirm('Thầy cô muốn khôi phục lại kho câu hỏi mẫu mặc định? Toàn bộ môn học và câu hỏi tùy chỉnh sẽ bị ghi đè.')) {
-      const resetQuestions = DEFAULT_QUESTIONS.map(q => {
-        if (q.gradeId === 3) return { ...q, subjectId: 'subj-3' };
-        if (q.gradeId === 4) return { ...q, subjectId: 'subj-4' };
-        if (q.gradeId === 5) return { ...q, subjectId: 'subj-5' };
-        return { ...q, subjectId: 'subj-3' };
-      });
-      setSubjects(DEFAULT_SUBJECTS);
-      setQuestions(resetQuestions);
-      setSelectedSubjectId('subj-3');
-      showToast('Đã phục hồi danh sách câu hỏi mẫu và bộ môn mặc định.');
-    }
+    askConfirmation({
+      title: 'Khôi phục mặc định?',
+      message: 'Thầy cô muốn khôi phục lại kho câu hỏi mẫu mặc định? Toàn bộ môn học và câu hỏi tùy chỉnh sẽ bị ghi đè.',
+      confirmText: 'Khôi phục',
+      cancelText: 'Hủy bỏ',
+      onConfirm: () => {
+        const resetQuestions = DEFAULT_QUESTIONS.map(q => {
+          if (q.gradeId === 3) return { ...q, subjectId: 'subj-3' };
+          if (q.gradeId === 4) return { ...q, subjectId: 'subj-4' };
+          if (q.gradeId === 5) return { ...q, subjectId: 'subj-5' };
+          return { ...q, subjectId: 'subj-3' };
+        });
+        setSubjects(DEFAULT_SUBJECTS);
+        setQuestions(resetQuestions);
+        setSelectedSubjectId('subj-3');
+        showToast('Đã phục hồi danh sách câu hỏi mẫu và bộ môn mặc định.');
+      }
+    });
   };
 
   // --- AIKEN / TEXT BULK PARSER ---
@@ -1930,6 +1985,45 @@ Giải thích: Bộ vi xử lý (CPU) điều khiển mọi hoạt động của
               >
                 {editingQuestion ? 'Cập nhật ngay' : 'Tạo câu hỏi'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CUSTOM CONFIRMATION MODAL */}
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[100] flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-sm w-full overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150 text-left">
+            <div className="p-6 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="bg-rose-100 text-rose-600 p-2.5 rounded-2xl shrink-0">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <h3 className="font-extrabold text-slate-800 text-base leading-tight">
+                  {confirmModal.title}
+                </h3>
+              </div>
+              
+              <p className="text-xs text-slate-600 font-semibold whitespace-pre-wrap leading-relaxed">
+                {confirmModal.message}
+              </p>
+              
+              <div className="pt-2 flex justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-750 text-xs font-bold px-4 py-2.5 rounded-xl transition cursor-pointer"
+                >
+                  {confirmModal.cancelText}
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmModal.onConfirm}
+                  className="bg-rose-600 hover:bg-rose-700 text-white text-xs font-black px-5 py-2.5 rounded-xl shadow-md cursor-pointer transition-all"
+                >
+                  {confirmModal.confirmText}
+                </button>
+              </div>
             </div>
           </div>
         </div>
