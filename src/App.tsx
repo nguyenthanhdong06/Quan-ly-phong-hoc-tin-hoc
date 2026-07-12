@@ -31,7 +31,7 @@ import { InteractiveGamesTab } from './components/InteractiveGamesTab';
 import { PersonalQuestionsTab } from './components/PersonalQuestionsTab';
 
 // Supabase services
-import { loadAllSupabaseStates, saveSupabaseState } from './supabaseClient';
+import { loadAllSupabaseStates, saveSupabaseState, setSupabaseOnline } from './supabaseClient';
 
 
 // Icons import from Lucide
@@ -625,6 +625,7 @@ export default function App() {
   const forceFetchFromSupabase = async () => {
     setIsSyncing(true);
     setSupabaseError(null);
+    setSupabaseOnline(true); // Reset connection state on manual action
     try {
       showToast('Đang tải dữ liệu đám mây Supabase...', 'success');
       const dbStates = await loadAllSupabaseStates();
@@ -658,6 +659,7 @@ export default function App() {
   const forcePushToSupabase = async () => {
     setIsSyncing(true);
     setSupabaseError(null);
+    setSupabaseOnline(true); // Reset connection state on manual action
     try {
       showToast('Khởi chạy tiến trình đẩy đồng bộ đám mây...', 'success');
       const results = await Promise.all([

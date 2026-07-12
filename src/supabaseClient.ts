@@ -6,6 +6,16 @@ const SUPABASE_ANON_KEY = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || 'e
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+let isSupabaseOnline = true; // Track if Supabase is reachable
+
+export const setSupabaseOnline = (online: boolean) => {
+  isSupabaseOnline = online;
+};
+
+export const getSupabaseOnline = (): boolean => {
+  return isSupabaseOnline;
+};
+
 // Helper check to see if Supabase config is available
 export const isSupabaseConfigured = (): boolean => {
   return !!SUPABASE_URL && !!SUPABASE_ANON_KEY;
@@ -40,6 +50,10 @@ CREATE POLICY "Cho phép truy cập công khai Delete" ON school_states FOR DELE
  * Load all states from Supabase at once
  */
 export async function loadAllSupabaseStates(): Promise<Record<string, any>> {
+  if (!isSupabaseOnline) {
+    console.info('Supabase client is currently offline. Skipping fetch.');
+    return {};
+  }
   try {
     const { data, error } = await supabase
       .from('school_states')
@@ -49,6 +63,8 @@ export async function loadAllSupabaseStates(): Promise<Record<string, any>> {
       console.warn('Supabase fetch error, using local storage/mock fallback:', error.message);
       return {};
     }
+
+    isSupabaseOnline = true; // Successfully connected
 
     if (!data || data.length === 0) {
       return {};
@@ -60,7 +76,12 @@ export async function loadAllSupabaseStates(): Promise<Record<string, any>> {
     });
     return stateMap;
   } catch (err: any) {
-    console.error('Error in loadAllSupabaseStates:', err.message || err);
+    const errMsg = err?.message || String(err);
+    console.warn('Error in loadAllSupabaseStates:', errMsg);
+    if (errMsg.includes('Failed to fetch') || errMsg.includes('fetch') || errMsg.includes('NetworkError')) {
+      isSupabaseOnline = false;
+      console.warn('Supabase offline or unreachable. Background auto-sync is disabled to prevent user warnings.');
+    }
     return {};
   }
 }
@@ -74,6 +95,10 @@ export async function saveSupabaseState(key: string, value: any): Promise<boolea
     localStorage.setItem(key, JSON.stringify(value));
   } catch (e) {
     console.warn('LocalStorage save failed:', e);
+  }
+
+  if (!isSupabaseOnline) {
+    return false;
   }
 
   // Then save to Supabase database
@@ -92,7 +117,12 @@ export async function saveSupabaseState(key: string, value: any): Promise<boolea
     }
     return true;
   } catch (err: any) {
-    console.error(`Error saving to Supabase for key [${key}]:`, err.message || err);
+    const errMsg = err?.message || String(err);
+    console.warn(`Error saving to Supabase for key [${key}]:`, errMsg);
+    if (errMsg.includes('Failed to fetch') || errMsg.includes('fetch') || errMsg.includes('NetworkError')) {
+      isSupabaseOnline = false;
+      console.warn('Supabase offline or unreachable. Background auto-sync is disabled to prevent user warnings.');
+    }
     return false;
   }
 }
