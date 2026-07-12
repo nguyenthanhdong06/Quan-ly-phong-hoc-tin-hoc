@@ -469,7 +469,7 @@ export default function EvaluationTab({
         const isModalStudentAbsent = modalAttendanceStatus === 'excused' || modalAttendanceStatus === 'unexcused';
 
         return (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
             <div className="bg-white w-full max-w-lg rounded-3xl p-6 shadow-xl border border-slate-100/80 flex flex-col relative animate-in fade-in zoom-in-95 duration-200">
               {/* Modal Close Button */}
               <button 

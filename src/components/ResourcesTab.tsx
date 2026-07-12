@@ -802,7 +802,7 @@ export default function ResourcesTab({
 
       {/* DOCUMENT DELETE CONFIRMATION DIALOG MODAL */}
       {documentToDelete && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150 text-left">
             <div className="flex items-center gap-3 text-red-650 border-b border-slate-100 pb-3">
               <div className="p-2 bg-red-50 rounded-full text-red-600 shrink-0">
@@ -843,7 +843,7 @@ export default function ResourcesTab({
 
       {/* DOCUMENT REJECT REASON MODAL DIALOG */}
       {documentToReject && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 font-sans">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-50 p-4 font-sans">
           <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150 text-left">
             <div className="flex items-center gap-3 text-red-650 border-b border-slate-100 pb-3">
               <div className="p-2 bg-red-50 rounded-full text-red-650 shrink-0">
@@ -896,7 +896,7 @@ export default function ResourcesTab({
 
       {/* DOCUMENT EDIT DIALOG MODAL (ADMIN ONLY) */}
       {isAdmin && documentToEdit && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 font-sans">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-50 p-4 font-sans">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150 text-left">
             <div className="flex items-center gap-3 text-amber-600 border-b border-slate-100 pb-3">
               <div className="p-2 bg-amber-50 rounded-full shrink-0">
@@ -974,7 +974,7 @@ export default function ResourcesTab({
 
       {/* GOOGLE DRIVE LINK DIALOG MODAL */}
       {isDriveModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 font-sans">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-50 p-4 font-sans">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150 text-left">
             <div className="flex items-center gap-3 text-emerald-600 border-b border-slate-100 pb-3">
               <div className="p-2 bg-emerald-50 rounded-full shrink-0">

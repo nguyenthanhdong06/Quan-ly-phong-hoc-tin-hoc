@@ -1030,7 +1030,7 @@ export default function App() {
       {isMobileMenuOpen && (
         <div 
           onClick={() => setIsMobileMenuOpen(false)}
-          className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-30 md:hidden animate-fadeIn"
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-30 md:hidden animate-fadeIn"
         />
       )}
 
@@ -1737,7 +1737,7 @@ export default function App() {
 
       {/* LOGIN MODAL BOX DIALOG */}
       {isLoginModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden border border-slate-100 transform transition-all animate-fadeIn">
             
             <div className="bg-gradient-to-r from-amber-500 to-amber-600 p-5 text-white flex justify-between items-center text-left">

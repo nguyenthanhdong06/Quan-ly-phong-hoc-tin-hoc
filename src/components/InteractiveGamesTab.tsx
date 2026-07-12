@@ -643,6 +643,7 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
   const [setupClassId, setSetupClassId] = useState<string>('none');
 
   // --- TRIVIA QUESTIONS REPOSITORY ---
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [triviaQuestions, setTriviaQuestions] = useState<Question[]>([]);
   
   // Load questions from localStorage
@@ -1188,8 +1189,10 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
     const allMerged = [...userQuestions, ...BANK_QUESTIONS];
     const uniqueMap = new Map<string, Question>();
     allMerged.forEach(q => {
-      const subj = q.subjectId || 'Tin học';
-      const key = `${q.gradeId}_${subj}_${q.title.trim().toLowerCase()}`;
+      const rawSubj = q.subjectId || 'Tin học';
+      const foundSubj = allSubjects.find(s => s.id === rawSubj);
+      const subjName = foundSubj ? foundSubj.name : rawSubj;
+      const key = `${q.gradeId}_${subjName}_${q.title.trim().toLowerCase()}`;
       if (!uniqueMap.has(key)) {
         uniqueMap.set(key, q);
       }
@@ -1206,17 +1209,21 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
       if (q.gradeId !== bankSelectedGrade) return false;
       
       // Lọc theo Môn
-      const subj = q.subjectId || 'Tin học';
-      if (subj !== bankSelectedSubject) return false;
+      const rawSubj = q.subjectId || 'Tin học';
+      const foundSubj = allSubjects.find(s => s.id === rawSubj);
+      const subjName = foundSubj ? foundSubj.name : rawSubj;
+      if (subjName !== bankSelectedSubject) return false;
       
       // Lọc theo Chủ đề
       if (bankSelectedTopic !== 'Tất cả') {
-        if (q.category !== bankSelectedTopic) return false;
+        const normQCat = (q.category || '').toLowerCase().replace(/[.:]/g, ' ').replace(/\s+/g, ' ').trim();
+        const normSelectedTopic = bankSelectedTopic.toLowerCase().replace(/[.:]/g, ' ').replace(/\s+/g, ' ').trim();
+        if (normQCat !== normSelectedTopic) return false;
       }
       
       return true;
     });
-  }, [bankSelectedGrade, bankSelectedSubject, bankSelectedTopic, showBankPopup, triviaQuestions]);
+  }, [bankSelectedGrade, bankSelectedSubject, bankSelectedTopic, showBankPopup, triviaQuestions, allSubjects]);
 
   // Lấy các chủ đề tương ứng với Lớp và Môn hiện tại
   const currentBankTopics = React.useMemo(() => {
@@ -1442,41 +1449,44 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
     triggerSound('ding');
   };
 
-  const handleImportJSONQuestions = () => {
-    if (!jsonInput.trim()) {
-      showToast("Vui lòng nhập chuỗi JSON câu hỏi!", "error");
-      return;
-    }
-    try {
-      const parsed = JSON.parse(jsonInput);
-      const isArr = Array.isArray(parsed);
-      const rawItems = isArr ? parsed : [parsed];
-      
-      const formatted: Question[] = rawItems.map((item: any, idx: number) => {
-        return {
-          id: item.id || `q-import-${idx}-${Date.now()}`,
-          title: item.title || item.question || `Câu hỏi nhập khẩu số ${idx + 1}`,
-          options: Array.isArray(item.options) ? item.options : ['Đúng', 'Sai', 'Không biết', 'Khác'],
-          correctIndex: typeof item.correctIndex === 'number' ? item.correctIndex : 0,
-          explanation: item.explanation || '',
-          difficulty: item.difficulty || 'Trung bình',
-          gradeId: item.gradeId || selectedGrade || 3,
-          category: item.category || 'Kéo co',
-          authorId: item.authorId || (currentUser ? (currentUser.id || 'user') : 'user')
-        };
-      });
+  const handleUploadJSONFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
-      const newList = [...triviaQuestions, ...formatted];
-      setTriviaQuestions(newList);
-      const userId = currentUser ? (currentUser.username || currentUser.id || 'default') : 'default';
-      localStorage.setItem(`school_questions_${userId}`, JSON.stringify(newList));
-      setShowJSONModal(false);
-      setJsonInput('');
-      showToast(`📂 Đã nhập thành công ${formatted.length} câu hỏi từ JSON!`, "success");
-      triggerSound('ding');
-    } catch (err) {
-      showToast("Định dạng JSON không hợp lệ! Vui lòng kiểm tra lại.", "error");
-    }
+    const fileReader = new FileReader();
+    fileReader.readAsText(files[0], "UTF-8");
+    fileReader.onload = (event) => {
+      try {
+        const parsed = JSON.parse(event.target?.result as string);
+        const isArr = Array.isArray(parsed);
+        const rawItems = isArr ? parsed : [parsed];
+        
+        const formatted: Question[] = rawItems.map((item: any, idx: number) => {
+          return {
+            id: item.id || `q-import-${idx}-${Date.now()}`,
+            title: item.title || item.question || `Câu hỏi nhập khẩu số ${idx + 1}`,
+            options: Array.isArray(item.options) ? item.options : ['Đúng', 'Sai', 'Không biết', 'Khác'],
+            correctIndex: typeof item.correctIndex === 'number' ? item.correctIndex : 0,
+            explanation: item.explanation || '',
+            difficulty: item.difficulty || 'Trung bình',
+            gradeId: item.gradeId || selectedGrade || 3,
+            category: item.category || 'Kéo co',
+            authorId: item.authorId || (currentUser ? (currentUser.id || 'user') : 'user'),
+            subjectId: item.subjectId || 'Tin học'
+          };
+        });
+
+        const newList = [...triviaQuestions, ...formatted];
+        setTriviaQuestions(newList);
+        const userId = currentUser ? (currentUser.username || currentUser.id || 'default') : 'default';
+        localStorage.setItem(`school_questions_${userId}`, JSON.stringify(newList));
+        showToast(`📂 Đã nhập thành công ${formatted.length} câu hỏi từ tệp JSON!`, "success");
+        triggerSound('ding');
+      } catch (err) {
+        showToast("Định dạng tệp JSON không hợp lệ! Vui lòng kiểm tra lại.", "error");
+      }
+      e.target.value = ''; // Reset input
+    };
   };
 
   // --- GAME 3: ĐÀO VÀNG TRÍ TUỆ STATE & LOGIC ---
@@ -2539,10 +2549,18 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
                         <span>Ngân hàng</span>
                       </button>
 
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        accept=".json"
+                        onChange={handleUploadJSONFile}
+                        className="hidden"
+                      />
+
                       <button
-                        onClick={() => { setShowJSONModal(true); triggerSound('click'); }}
+                        onClick={() => { fileInputRef.current?.click(); triggerSound('click'); }}
                         className="p-2 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-[10px] font-bold flex flex-col items-center justify-center gap-1 shadow-sm transition-all cursor-pointer"
-                        title="Nhập xuất định dạng JSON"
+                        title="Tải câu hỏi từ tệp JSON (Máy tính hoặc Google Drive)"
                       >
                         <FolderOpen className="w-4 h-4" />
                         <span>JSON</span>
@@ -2862,7 +2880,7 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
           {/* MODAL: BẢNG VÀNG - LEADERBOARD RECORDS */}
           {/* ============================================================== */}
           {showTugLeaderboard && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
               <div className="bg-white rounded-3xl w-full max-w-xl max-h-[85vh] flex flex-col overflow-hidden border-2 border-amber-500 shadow-2xl animate-in zoom-in-95 duration-200">
                 {/* Header */}
                 <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-4.5 text-white flex justify-between items-center">
@@ -2958,7 +2976,7 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
           {/* MODAL: THÊM / SỬA CÂU HỎI */}
           {/* ============================================================== */}
           {showQuestionForm && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
               <form
                 onSubmit={handleSaveQForm}
                 className="bg-white rounded-3xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden border-2 border-emerald-500 shadow-2xl animate-in zoom-in-95 duration-200"
@@ -3099,90 +3117,7 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
             </div>
           )}
 
-          {/* ============================================================== */}
-          {/* MODAL: NHẬP XUẤT JSON */}
-          {/* ============================================================== */}
-          {showJSONModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-              <div className="bg-white rounded-3xl w-full max-w-xl max-h-[85vh] flex flex-col overflow-hidden border-2 border-blue-500 shadow-2xl animate-in zoom-in-95 duration-200">
-                {/* Header */}
-                <div className="bg-blue-600 p-4.5 text-white flex justify-between items-center">
-                  <h3 className="font-black text-sm uppercase tracking-wider flex items-center gap-2">
-                    <FolderOpen className="w-5 h-5 text-blue-200" />
-                    NHẬP CÂU HỎI TỪ JSON
-                  </h3>
-                  <button
-                    onClick={() => setShowJSONModal(false)}
-                    className="p-1 hover:bg-white/25 rounded-lg text-white"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
 
-                {/* Content */}
-                <div className="p-5 flex-1 overflow-y-auto space-y-4 text-xs font-semibold">
-                  <p className="text-[11px] text-slate-500 leading-relaxed font-bold">
-                    Dán chuỗi JSON chứa danh sách câu hỏi vào ô dưới đây. Chuỗi JSON phải tuân theo cấu trúc mẫu bên dưới:
-                  </p>
-                  
-                  {/* JSON Code schema block */}
-                  <pre className="bg-slate-800 text-slate-100 p-3 rounded-xl font-mono text-[9px] overflow-x-auto border-2 border-slate-900 leading-relaxed">
-{`[
-  {
-    "title": "Hành tinh nào gần Mặt Trời nhất?",
-    "options": ["Sao Kim", "Sao Hỏa", "Sao Thủy", "Trái Đất"],
-    "correctIndex": 2,
-    "explanation": "Sao Thủy nằm gần Mặt Trời nhất."
-  }
-]`}
-                  </pre>
-
-                  <div className="space-y-1">
-                    <label className="text-amber-900 font-black">Chuỗi JSON câu hỏi *</label>
-                    <textarea
-                      required
-                      value={jsonInput}
-                      onChange={(e) => setJsonInput(e.target.value)}
-                      placeholder="Dán chuỗi JSON mảng câu hỏi tại đây..."
-                      rows={5}
-                      className="w-full bg-[#fafbfc] border border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200 focus:outline-none rounded-xl p-2.5 font-mono text-xs shadow-inner"
-                    />
-                  </div>
-                </div>
-
-                {/* Footer buttons */}
-                <div className="p-4 bg-slate-50 border-t border-slate-150 flex justify-between gap-3">
-                  <button
-                    onClick={() => {
-                      // Quick action to copy current questions as JSON template
-                      const jsonStr = JSON.stringify(triviaQuestions, null, 2);
-                      navigator.clipboard.writeText(jsonStr);
-                      showToast("📋 Đã sao chép danh sách câu hỏi hiện tại vào Clipboard!", "success");
-                    }}
-                    className="text-[10px] font-bold text-blue-600 hover:text-blue-700 p-2.5 border border-blue-200 rounded-xl bg-white hover:bg-blue-50 cursor-pointer shrink-0"
-                  >
-                    Copy Ngân Hàng Hiện Tại
-                  </button>
-
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setShowJSONModal(false)}
-                      className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-black uppercase cursor-pointer"
-                    >
-                      Hủy bỏ
-                    </button>
-
-                    <button
-                      onClick={handleImportJSONQuestions}
-                      className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black uppercase shadow cursor-pointer border-b-2 border-blue-800"
-                    >
-                      Nhập Câu Hỏi
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       )}
 
@@ -3888,7 +3823,7 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
       {/* --- GAME SETUP POPUP MODAL ---                                 */}
       {/* ============================================================== */}
       {setupGame && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden border border-slate-100 transform transition-all animate-fadeIn">
             
             {/* Header section with orange background */}
@@ -4017,7 +3952,7 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
       {/* --- BANK QUESTIONS POPUP MODAL ---                             */}
       {/* ============================================================== */}
       {showBankPopup && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-[32px] w-full max-w-2xl shadow-2xl overflow-hidden border-4 border-[#ffbe6c] transform transition-all animate-fadeIn flex flex-col max-h-[90vh]">
             
             {/* Header section with warm orange-amber background */}

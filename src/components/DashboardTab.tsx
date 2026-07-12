@@ -905,7 +905,7 @@ export default function DashboardTab({
 
       {/* POPUP MODAL FOR TEACHER TO-DO PLANNER */}
       {isTodoModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
             
             {/* Modal Header */}
@@ -1444,7 +1444,7 @@ export default function DashboardTab({
 
               {/* Empty State Banner with elegant styling */}
               {goldenBoardStudents.length === 0 && (
-                <div className="col-span-full py-10 text-center bg-amber-100/50 backdrop-blur-sm border-2 border-dashed border-amber-300/70 rounded-2xl p-6 text-amber-950 text-xs font-semibold flex flex-col items-center justify-center gap-2">
+                <div className="col-span-full py-10 text-center bg-amber-100/50 backdrop-blur-md border-2 border-dashed border-amber-300/70 rounded-2xl p-6 text-amber-950 text-xs font-semibold flex flex-col items-center justify-center gap-2">
                   <span className="text-3xl animate-bounce">✨🏆✨</span>
                   <div className="space-y-1">
                     <p className="font-extrabold text-sm text-amber-950">Chiến dịch thi đua chưa bắt đầu hoặc chưa có ai vượt mức 20 ⭐!</p>

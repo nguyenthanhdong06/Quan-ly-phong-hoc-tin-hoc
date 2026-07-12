@@ -411,7 +411,7 @@ export default function FireworksCelebration({
   const avatarUrl = matchedStudent?.avatarUrl;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-hidden bg-slate-950/80 backdrop-blur-xs font-sans">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-hidden bg-slate-950/80 backdrop-blur-md font-sans">
       {/* Absolute background canvas for full screen fireworks */}
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />
 

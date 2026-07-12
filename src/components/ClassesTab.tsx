@@ -656,7 +656,7 @@ export default function ClassesTab({
         const studentCount = students.filter(s => s.classId === classToDelete.id).length;
         if (studentCount === 0) {
           return (
-            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
               <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-100 transform transition-all animate-fadeIn text-left">
                 <div className="flex items-center gap-3 text-red-650 border-b border-slate-100 pb-3">
                   <div className="p-2 bg-red-50 rounded-full text-red-600 shrink-0">
@@ -693,7 +693,7 @@ export default function ClassesTab({
           );
         }
         return (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden border border-red-100 transform transition-all animate-fadeIn">
               
               <div className="bg-red-500 p-4 text-white flex items-center gap-3">
@@ -777,7 +777,7 @@ export default function ClassesTab({
 
       {/* GRADE DELETE CONFIRMATION DIALOG MODAL */}
       {gradeToDelete && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150 text-left">
             <div className="flex items-center gap-3 text-red-650 border-b border-slate-100 pb-3">
               <div className="p-2 bg-red-50 rounded-full text-red-600 shrink-0">

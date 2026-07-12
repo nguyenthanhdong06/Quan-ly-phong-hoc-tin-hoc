@@ -489,7 +489,7 @@ export default function SeatingTab({
 
       {/* SEATING MODAL PANEL SELECTOR */}
       {activeAssignModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-visible border border-slate-100 transform transition-all animate-fadeIn">
             
             <div className="bg-gradient-to-r from-amber-500 to-amber-600 p-4 text-white flex justify-between items-center rounded-t-2xl">
@@ -1002,7 +1002,7 @@ export default function SeatingTab({
 
       {/* AVATAR CHANGE MODAL */}
       {avatarChangeStudent && (
-        <div className="fixed inset-0 bg-slate-900/65 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/65 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl border border-slate-100 flex flex-col relative animate-in fade-in zoom-in-95 duration-200 text-left">
             {/* Close Button */}
             <button 

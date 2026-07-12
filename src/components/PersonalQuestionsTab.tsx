@@ -1823,7 +1823,7 @@ Giải thích: Bộ vi xử lý (CPU) điều khiển mọi hoạt động của
 
       {/* SUBJECT ADD/EDIT DIALOG POPUP */}
       {isSubjectModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-sm w-full overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150 text-left">
             <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-5 text-white flex justify-between items-center">
               <h3 className="font-extrabold text-sm uppercase tracking-widest flex items-center gap-1.5">
@@ -1887,7 +1887,7 @@ Giải thích: Bộ vi xử lý (CPU) điều khiển mọi hoạt động của
 
       {/* QUESTION ADD/EDIT DIALOG POPUP */}
       {isQuestionModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-2xl w-full max-h-[92vh] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150 text-left">
             <div className="bg-gradient-to-r from-teal-600 to-teal-700 p-5 text-white flex justify-between items-center">
               <div>
@@ -2111,7 +2111,7 @@ Giải thích: Bộ vi xử lý (CPU) điều khiển mọi hoạt động của
 
       {/* CUSTOM CONFIRMATION MODAL */}
       {confirmModal.isOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[100] flex items-center justify-center p-4 animate-fade-in">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-sm w-full overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150 text-left">
             <div className="p-6 space-y-4">
               <div className="flex items-center gap-3">

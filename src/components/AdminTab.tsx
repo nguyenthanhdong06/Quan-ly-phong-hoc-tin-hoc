@@ -872,7 +872,7 @@ export default function AdminTab({
 
       {/* MODAL PHÂN CÔNG THỜI KHÓA BIỂU CHI TIẾT */}
       {editingCell && (
-        <div id="school-timetable-modal" className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div id="school-timetable-modal" className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-100 transform transition-all animate-fadeIn text-left">
             
             {/* Modal title */}
@@ -1120,7 +1120,7 @@ export default function AdminTab({
 
       {/* POP-UP CONFIRMATION FOR DELETING ALL STUDENTS */}
       {isDeleteConfirmOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden border border-slate-100 transform transition-all animate-fadeIn text-left">
             
             <div className="bg-gradient-to-r from-red-500 to-red-650 p-5 text-white flex justify-between items-center">
