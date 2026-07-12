@@ -145,6 +145,37 @@ export default function App() {
     localStorage.setItem('app_theme_id', id);
   };
 
+  // Automated scroll lock for any active full-screen popups
+  useEffect(() => {
+    const checkActiveModals = () => {
+      // Find all fixed full-screen modal overlays in the DOM
+      const activeModals = document.querySelectorAll('.fixed.inset-0');
+      if (activeModals.length > 0) {
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = '';
+      }
+    };
+
+    // Run check initially
+    checkActiveModals();
+
+    // Setup mutation observer to automatically watch for modal additions/removals
+    const observer = new MutationObserver(() => {
+      checkActiveModals();
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+
+    return () => {
+      observer.disconnect();
+      document.body.style.overflow = '';
+    };
+  }, []);
+
   const [showColorPicker, setShowColorPicker] = useState(false);
 
   // --- STATE INIT FROM LOCAL STORAGE ---
@@ -1647,6 +1678,8 @@ export default function App() {
             isRedemptionPeriod={isRedemptionPeriod}
             computers={computers}
             seatingChart={seatingChart}
+            classes={classes}
+            grades={grades}
           />
         )}
 

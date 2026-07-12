@@ -2552,7 +2552,7 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
                       <input
                         type="file"
                         ref={fileInputRef}
-                        accept=".json"
+                        accept=".json,application/json"
                         onChange={handleUploadJSONFile}
                         className="hidden"
                       />
