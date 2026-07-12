@@ -154,6 +154,13 @@ const TOPICS_MAP: Record<number, Record<string, { group: string; topics: string[
           'Bài 3: Làm quen chuột máy tính và các thao tác cơ bản',
           'Bài 4: Thực hành sử dụng chuột máy tính'
         ]
+      },
+      {
+        group: 'Chủ đề 3: Vừa chơi vừa học cùng máy tính',
+        topics: [
+          'Bài 5: Bé tập vẽ hình cơ bản với Paint',
+          'Bài 6: Trò chơi trí tuệ giúp rèn luyện tư duy'
+        ]
       }
     ],
     'Tiếng Việt': [
@@ -197,6 +204,13 @@ const TOPICS_MAP: Record<number, Record<string, { group: string; topics: string[
           'Bài 3: Các hàng phím chính trên bàn phím',
           'Bài 4: Thực hành đặt tay trên bàn phím'
         ]
+      },
+      {
+        group: 'Chủ đề 3: Sáng tạo kỹ thuật số',
+        topics: [
+          'Bài 5: Tập tô màu và vẽ tranh với các công cụ nâng cao',
+          'Bài 6: Sử dụng trò chơi giáo dục ôn luyện kiến thức'
+        ]
       }
     ]
   },
@@ -234,6 +248,36 @@ const TOPICS_MAP: Record<number, Record<string, { group: string; topics: string[
         topics: [
           'Bài 6: Khám phá thông tin trên Internet'
         ]
+      },
+      {
+        group: 'Chủ đề 3: Tổ chức lưu trữ, tìm kiếm và trao đổi thông tin',
+        topics: [
+          'Bài 7: Sắp xếp để dễ tìm',
+          'Bài 8: Sơ đồ hình cây. Tổ chức thông tin trong máy tính',
+          'Bài 9: Thực hành với tệp và thư mục trong máy tính'
+        ]
+      },
+      {
+        group: 'Chủ đề 4: Đạo đức, pháp luật và văn hoá trong môi trường số',
+        topics: [
+          'Bài 10: Bảo vệ thông tin khi dùng máy tính'
+        ]
+      },
+      {
+        group: 'Chủ đề 5: Ứng dụng tin học',
+        topics: [
+          'Bài 11: Bài trình chiếu của em',
+          'Bài 12: Tìm hiểu về thế giới tự nhiên',
+          'Bài 13: Luyện tập sử dụng chuột'
+        ]
+      },
+      {
+        group: 'Chủ đề 6: Giải quyết vấn đề với sự trợ giúp của máy tính',
+        topics: [
+          'Bài 14: Em thực hiện công việc như thế nào?',
+          'Bài 15: Công việc được thực hiện theo điều kiện',
+          'Bài 16: Công việc của em và sự trợ giúp của máy tính'
+        ]
       }
     ]
   },
@@ -254,6 +298,46 @@ const TOPICS_MAP: Record<number, Record<string, { group: string; topics: string[
           'Bài 1: Phần cứng và phần mềm máy tính',
           'Bài 2: Gõ bàn phím đúng cách'
         ]
+      },
+      {
+        group: 'Chủ đề 2: Mạng máy tính và Internet',
+        topics: [
+          'Bài 3: Thông tin trên trang web'
+        ]
+      },
+      {
+        group: 'Chủ đề 3: Tổ chức lưu trữ, tìm kiếm và trao đổi thông tin',
+        topics: [
+          'Bài 4: Tìm kiếm thông tin trên Internet',
+          'Bài 5: Thao tác với tệp và thư mục'
+        ]
+      },
+      {
+        group: 'Chủ đề 4: Đạo đức, pháp luật và văn hoá trong môi trường số',
+        topics: [
+          'Bài 6: Sử dụng phần mềm khi được phép'
+        ]
+      },
+      {
+        group: 'Chủ đề 5: Ứng dụng tin học',
+        topics: [
+          'Bài 7: Tạo bài trình chiếu',
+          'Bài 8: Định dạng văn bản trên trang chiếu',
+          'Bài 9: Hiệu ứng chuyển trang',
+          'Bài 10: Phần mềm soạn thảo văn bản',
+          'Bài 11: Chỉnh sửa văn bản',
+          'Bài 12A: Thực hành sử dụng công cụ đa phương tiện',
+          'Bài 12B: Phần mềm luyện gõ bàn phím'
+        ]
+      },
+      {
+        group: 'Chủ đề 6: Giải quyết vấn đề với sự trợ giúp của máy tính',
+        topics: [
+          'Bài 13: Chơi với máy tính',
+          'Bài 14: Khám phá môi trường lập trình trực quan',
+          'Bài 15: Tạo chương trình máy tính để diễn tả ý tưởng',
+          'Bài 16: Chương trình của em'
+        ]
       }
     ]
   },
@@ -269,10 +353,61 @@ const TOPICS_MAP: Record<number, Record<string, { group: string; topics: string[
     ],
     'Tin học': [
       {
-        group: 'Chủ đề 1: Ứng dụng Tin học',
+        group: 'Chủ đề 1: Máy tính và em',
+        topics: [
+          'Bài 1: Em có thể làm gì với máy tính?'
+        ]
+      },
+      {
+        group: 'Chủ đề 2: Mạng máy tính và Internet',
+        topics: [
+          'Bài 2: Tìm kiếm thông tin trên website'
+        ]
+      },
+      {
+        group: 'Chủ đề 3: Tổ chức lưu trữ, tìm kiếm và trao đổi thông tin',
+        topics: [
+          'Bài 3: Tìm kiếm thông tin trong giải quyết vấn đề',
+          'Bài 4: Cây thư mục'
+        ]
+      },
+      {
+        group: 'Chủ đề 4: Đạo đức, pháp luật và văn hoá trong môi trường số',
+        topics: [
+          'Bài 5: Bản quyền nội dung thông tin'
+        ]
+      },
+      {
+        group: 'Chủ đề 5: Ứng dụng tin học',
         topics: [
           'Bài 6: Định dạng kí tự và bố trí hình ảnh trong văn bản',
           'Bài 7: Thực hành soạn thảo văn bản'
+        ]
+      },
+      {
+        group: 'Chủ đề 5A: Sử dụng phần mềm đồ hoạ tạo sản phẩm số đơn giản',
+        topics: [
+          'Bài 8A: Làm quen với phần mềm đồ hoạ',
+          'Bài 9A: Sử dụng phần mềm đồ hoạ tạo sản phẩm số'
+        ]
+      },
+      {
+        group: 'Chủ đề 5B: Sử dụng công cụ đa phương tiện hỗ trợ tạo sản phẩm đơn giản',
+        topics: [
+          'Bài 8B: Làm sản phẩm thủ công theo video hướng dẫn',
+          'Bài 9B: Thực hành tạo đồ dùng gia đình theo video hướng dẫn'
+        ]
+      },
+      {
+        group: 'Chủ đề 6: Giải quyết vấn đề với sự trợ giúp của máy tính',
+        topics: [
+          'Bài 10: Cấu trúc tuần tự',
+          'Bài 11: Cấu trúc lặp',
+          'Bài 12: Thực hành sử dụng lệnh lặp',
+          'Bài 13: Cấu trúc rẽ nhánh',
+          'Bài 14: Sử dụng biến trong chương trình',
+          'Bài 15: Sử dụng biểu thức trong chương trình',
+          'Bài 16: Từ kịch bản đến chương trình'
         ]
       }
     ]

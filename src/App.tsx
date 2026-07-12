@@ -827,10 +827,10 @@ export default function App() {
                   setIsMobileMenuOpen(false);
                 }}
                 title="Trò chơi tương tác"
-                className={`flex items-center gap-2 rounded-md text-[10px] font-bold tracking-wide transition-all cursor-pointer w-7 h-7 justify-center p-0 text-sm ${
+                className={`flex items-center gap-2 rounded-lg text-[10px] font-bold tracking-wide transition-all cursor-pointer w-7 h-7 justify-center p-0 text-sm ${
                   activeTab === 'interactive-games'
                     ? 'text-amber-300 bg-white/10 font-black'
-                    : 'text-[#e2f1f2]/70 hover:text-white hover:bg-white/5'
+                    : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
                 }`}
               >
                 <span className="text-xs shrink-0">🎮</span>
@@ -841,10 +841,10 @@ export default function App() {
                   setIsMobileMenuOpen(false);
                 }}
                 title="Kho câu hỏi cá nhân"
-                className={`flex items-center gap-2 rounded-md text-[10px] font-bold tracking-wide transition-all cursor-pointer w-7 h-7 justify-center p-0 text-sm ${
+                className={`flex items-center gap-2 rounded-lg text-[10px] font-bold tracking-wide transition-all cursor-pointer w-7 h-7 justify-center p-0 text-sm ${
                   activeTab === 'personal-questions'
                     ? 'text-amber-300 bg-white/10 font-black'
-                    : 'text-[#e2f1f2]/70 hover:text-white hover:bg-white/5'
+                    : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
                 }`}
               >
                 <span className="text-xs shrink-0">📚</span>
@@ -852,19 +852,19 @@ export default function App() {
             </div>
           )
         ) : (
-          <div className={`submenu-transition ${isGameMenuOpen ? 'open mt-0.5 mb-1' : ''}`}>
+          <div className={`submenu-transition ${isGameMenuOpen ? 'open mt-1 mb-2' : ''}`}>
             <div className="overflow-hidden">
-              <div className="pl-3 ml-2 space-y-0.5">
+              <div className="pl-3.5 ml-2 space-y-1 mt-0.5 mb-1">
                 <button
                   onClick={() => {
                     setActiveTab('interactive-games');
                     setIsMobileMenuOpen(false);
                   }}
                   title="Trò chơi tương tác"
-                  className={`flex items-center gap-2 rounded-md text-[10px] font-bold tracking-wide transition-all cursor-pointer w-full px-2 py-1 ${
+                  className={`flex items-center gap-2.5 w-full px-3 py-1.5 rounded-lg text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 ${
                     activeTab === 'interactive-games'
                       ? 'text-amber-300 bg-white/10 border-l-4 border-amber-300 shadow-inner font-black'
-                      : 'text-[#e2f1f2]/70 hover:text-white hover:bg-white/5'
+                      : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
                   }`}
                 >
                   <span className="truncate">Tương tác lớp</span>
@@ -875,10 +875,10 @@ export default function App() {
                     setIsMobileMenuOpen(false);
                   }}
                   title="Kho câu hỏi cá nhân"
-                  className={`flex items-center gap-2 rounded-md text-[10px] font-bold tracking-wide transition-all cursor-pointer w-full px-2 py-1 ${
+                  className={`flex items-center gap-2.5 w-full px-3 py-1.5 rounded-lg text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 ${
                     activeTab === 'personal-questions'
                       ? 'text-amber-300 bg-white/10 border-l-4 border-amber-300 shadow-inner font-black'
-                      : 'text-[#e2f1f2]/70 hover:text-white hover:bg-white/5'
+                      : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
                   }`}
                 >
                   <span className="truncate">Kho câu hỏi</span>
