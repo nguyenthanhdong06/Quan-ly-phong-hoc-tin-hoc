@@ -192,6 +192,17 @@ export default function SeatingTab({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isFullscreen]);
 
+  React.useEffect(() => {
+    if (isFullscreen) {
+      document.body.classList.add('overflow-hidden');
+    } else {
+      document.body.classList.remove('overflow-hidden');
+    }
+    return () => {
+      document.body.classList.remove('overflow-hidden');
+    };
+  }, [isFullscreen]);
+
   const toggleBrowserFullscreen = async () => {
     const nextVal = !isFullscreen;
     setIsFullscreen(nextVal);
@@ -824,7 +835,7 @@ export default function SeatingTab({
             projectorTheme === 'dark' 
               ? 'bg-slate-900 border-slate-800 shadow-2xl' 
               : 'bg-white border-slate-300 shadow-xl'
-          } space-y-8 overflow-x-auto min-w-[1000px]`}>
+          } space-y-8 overflow-auto min-w-[1000px]`}>
             
             {/* Projector Header row: Teachers desk, board, entry */}
             <div className="grid grid-cols-12 gap-5 items-center">

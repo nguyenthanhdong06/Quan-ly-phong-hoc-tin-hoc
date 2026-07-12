@@ -59,7 +59,12 @@ import {
   Database,
   RefreshCw,
   Cloud,
-  Gamepad2
+  Gamepad2,
+  ChevronDown,
+  ChevronRight,
+  GraduationCap,
+  Puzzle,
+  Cpu
 } from 'lucide-react';
 
 const THEMES = [
@@ -254,10 +259,44 @@ export default function App() {
     return new Date().toISOString().split('T')[0];
   });
 
-  // Auto-expand Trò chơi menu if submenus are active
+  // Auto-expand and synchronize menu groups based on activeTab
   useEffect(() => {
-    if (activeTab === 'interactive-games' || activeTab === 'personal-questions') {
-      setIsGameMenuOpen(true);
+    if (activeTab === 'dashboard') {
+      setIsTeachingGroupOpen(false);
+      setIsLearningGroupOpen(false);
+      setIsSystemGroupOpen(false);
+      setIsGameMenuOpen(false);
+      localStorage.setItem('group_teaching_open', 'false');
+      localStorage.setItem('group_learning_open', 'false');
+      localStorage.setItem('group_system_open', 'false');
+    } else if (['students', 'classes-management', 'attendance', 'evaluation', 'seating', 'timetable'].includes(activeTab)) {
+      setIsTeachingGroupOpen(true);
+      setIsLearningGroupOpen(false);
+      setIsSystemGroupOpen(false);
+      setIsGameMenuOpen(false);
+      localStorage.setItem('group_teaching_open', 'true');
+      localStorage.setItem('group_learning_open', 'false');
+      localStorage.setItem('group_system_open', 'false');
+    } else if (['emulation', 'resources', 'avatar-gallery', 'interactive-games', 'personal-questions'].includes(activeTab)) {
+      setIsLearningGroupOpen(true);
+      setIsTeachingGroupOpen(false);
+      setIsSystemGroupOpen(false);
+      localStorage.setItem('group_learning_open', 'true');
+      localStorage.setItem('group_teaching_open', 'false');
+      localStorage.setItem('group_system_open', 'false');
+      if (['interactive-games', 'personal-questions'].includes(activeTab)) {
+        setIsGameMenuOpen(true);
+      } else {
+        setIsGameMenuOpen(false);
+      }
+    } else if (activeTab === 'admin') {
+      setIsSystemGroupOpen(true);
+      setIsTeachingGroupOpen(false);
+      setIsLearningGroupOpen(false);
+      setIsGameMenuOpen(false);
+      localStorage.setItem('group_system_open', 'true');
+      localStorage.setItem('group_teaching_open', 'false');
+      localStorage.setItem('group_learning_open', 'false');
     }
   }, [activeTab]);
 
@@ -277,6 +316,21 @@ export default function App() {
   const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
   const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState(false);
   const [isGameMenuOpen, setIsGameMenuOpen] = useState(false);
+  const [isTeachingGroupOpen, setIsTeachingGroupOpen] = useState<boolean>(() => {
+    return localStorage.getItem('group_teaching_open') !== 'false';
+  });
+  const [isLearningGroupOpen, setIsLearningGroupOpen] = useState<boolean>(() => {
+    return localStorage.getItem('group_learning_open') !== 'false';
+  });
+  const [isSystemGroupOpen, setIsSystemGroupOpen] = useState<boolean>(() => {
+    return localStorage.getItem('group_system_open') !== 'false';
+  });
+
+  const isTeachingGroupActive = isTeachingGroupOpen || ['students', 'classes-management', 'attendance', 'evaluation', 'seating', 'timetable'].includes(activeTab);
+  const isLearningGroupActive = isLearningGroupOpen || ['interactive-games', 'personal-questions', 'emulation', 'resources', 'avatar-gallery'].includes(activeTab);
+  const isSystemGroupActive = isSystemGroupOpen || ['admin'].includes(activeTab);
+  const isDashboardActive = activeTab === 'dashboard' && !isTeachingGroupActive && !isLearningGroupActive && !isSystemGroupActive;
+  const isGameMenuActive = isGameMenuOpen || ['interactive-games', 'personal-questions'].includes(activeTab);
 
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -605,6 +659,358 @@ export default function App() {
     }
   };
 
+  const teachingGroupChildren = (
+    <>
+      <button
+        onClick={() => {
+          setActiveTab('students');
+          setIsMobileMenuOpen(false);
+        }}
+        title={isSidebarCollapsed ? "Học sinh" : ""}
+        className={`flex items-center gap-2.5 w-full px-3 py-1.5 rounded-lg text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 ${
+          isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
+        } ${
+          activeTab === 'students'
+            ? isSidebarCollapsed
+              ? 'text-amber-300 shadow-inner font-black bg-white/10'
+              : 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black bg-white/10'
+            : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
+        }`}
+        style={getTabStyle('students')}
+      >
+        {isSidebarCollapsed && <Users className="w-4 h-4 shrink-0" />}
+        <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Học sinh</span>
+      </button>
+
+      <button
+        onClick={() => {
+          setActiveTab('classes-management');
+          setIsMobileMenuOpen(false);
+        }}
+        title={isSidebarCollapsed ? "Khối & Lớp" : ""}
+        className={`flex items-center gap-2.5 w-full px-3 py-1.5 rounded-lg text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 ${
+          isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
+        } ${
+          activeTab === 'classes-management'
+            ? isSidebarCollapsed
+              ? 'text-amber-300 shadow-inner font-black bg-white/10'
+              : 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black bg-white/10'
+            : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
+        }`}
+        style={getTabStyle('classes-management')}
+      >
+        {isSidebarCollapsed && <Layers className="w-4 h-4 shrink-0" />}
+        <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Khối & Lớp</span>
+      </button>
+
+      <button
+        onClick={() => {
+          setActiveTab('attendance');
+          setIsMobileMenuOpen(false);
+        }}
+        title={isSidebarCollapsed ? "Điểm danh (Sổ điểm danh)" : ""}
+        className={`flex items-center gap-2.5 w-full px-3 py-1.5 rounded-lg text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 ${
+          isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
+        } ${
+          activeTab === 'attendance'
+            ? isSidebarCollapsed
+              ? 'text-amber-300 shadow-inner font-black bg-white/10'
+              : 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black bg-white/10'
+            : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
+        }`}
+        style={getTabStyle('attendance')}
+      >
+        {isSidebarCollapsed && <ClipboardCheck className="w-4 h-4 shrink-0" />}
+        <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Điểm danh</span>
+      </button>
+
+      <button
+        onClick={() => {
+          setActiveTab('evaluation');
+          setIsMobileMenuOpen(false);
+        }}
+        title={isSidebarCollapsed ? "Sổ nhận xét học trực quan" : ""}
+        className={`flex items-center gap-2.5 w-full px-3 py-1.5 rounded-lg text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 ${
+          isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
+        } ${
+          activeTab === 'evaluation'
+            ? isSidebarCollapsed
+              ? 'text-amber-300 shadow-inner font-black bg-white/10'
+              : 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black bg-white/10'
+            : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
+        }`}
+        style={getTabStyle('evaluation')}
+      >
+        {isSidebarCollapsed && <Award className="w-4 h-4 shrink-0" />}
+        <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Nhận xét</span>
+      </button>
+
+      <button
+        onClick={() => {
+          setActiveTab('seating');
+          setIsMobileMenuOpen(false);
+        }}
+        title={isSidebarCollapsed ? "Sơ đồ máy & Chỗ ngồi" : ""}
+        className={`flex items-center gap-2.5 w-full px-3 py-1.5 rounded-lg text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 ${
+          isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
+        } ${
+          activeTab === 'seating'
+            ? isSidebarCollapsed
+              ? 'text-amber-300 shadow-inner font-black bg-white/10'
+              : 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black bg-white/10'
+            : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
+        }`}
+        style={getTabStyle('seating')}
+      >
+        {isSidebarCollapsed && <Monitor className="w-4 h-4 shrink-0" />}
+        <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Phòng máy</span>
+      </button>
+
+      <button
+        onClick={() => {
+          setActiveTab('timetable');
+          setIsMobileMenuOpen(false);
+        }}
+        title={isSidebarCollapsed ? "Thời khóa biểu giảng dạy" : ""}
+        className={`flex items-center gap-2.5 w-full px-3 py-1.5 rounded-lg text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 ${
+          isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
+        } ${
+          activeTab === 'timetable'
+            ? isSidebarCollapsed
+              ? 'text-amber-300 shadow-inner font-black bg-white/10'
+              : 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black bg-white/10'
+            : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
+        }`}
+        style={getTabStyle('timetable')}
+      >
+        {isSidebarCollapsed && <Calendar className="w-4 h-4 shrink-0" />}
+        <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Thời khóa biểu</span>
+      </button>
+    </>
+  );
+
+  const learningGroupChildren = (
+    <>
+      <div className="space-y-0.5">
+        <button
+          onClick={() => {
+            setIsGameMenuOpen(!isGameMenuOpen);
+          }}
+          title={isSidebarCollapsed ? "Trò chơi học tập" : ""}
+          className={`flex items-center gap-2.5 w-full px-3 py-1.5 rounded-lg text-[11px] md:text-xs font-black uppercase tracking-wider transition-all relative cursor-pointer active:scale-95 ${
+            isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
+          } ${
+            isGameMenuActive
+              ? isSidebarCollapsed
+                ? 'text-amber-300 shadow-inner font-black bg-white/10'
+                : 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black bg-white/10'
+              : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
+          }`}
+          style={isGameMenuActive ? { backgroundColor: currentTheme.medium } : {}}
+        >
+          {isSidebarCollapsed && <Gamepad2 className="w-4 h-4 shrink-0" />}
+          <span className={isSidebarCollapsed ? 'md:hidden' : 'flex-1 text-left'}>Trò chơi</span>
+          {!isSidebarCollapsed && (
+            <span className="text-white/60 text-[8px] transition-transform duration-200" style={{ transform: isGameMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+              ▼
+            </span>
+          )}
+        </button>
+
+        {/* Submenus with smooth transition */}
+        {isSidebarCollapsed ? (
+          isGameMenuOpen && (
+            <div className="flex flex-col items-center gap-1 py-1 animate-in slide-in-from-top-1 duration-150">
+              <button
+                onClick={() => {
+                  setActiveTab('interactive-games');
+                  setIsMobileMenuOpen(false);
+                }}
+                title="Trò chơi tương tác"
+                className={`flex items-center gap-2 rounded-md text-[10px] font-bold tracking-wide transition-all cursor-pointer w-7 h-7 justify-center p-0 text-sm ${
+                  activeTab === 'interactive-games'
+                    ? 'text-amber-300 bg-white/10 font-black'
+                    : 'text-[#e2f1f2]/70 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <span className="text-xs shrink-0">🎮</span>
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab('personal-questions');
+                  setIsMobileMenuOpen(false);
+                }}
+                title="Kho câu hỏi cá nhân"
+                className={`flex items-center gap-2 rounded-md text-[10px] font-bold tracking-wide transition-all cursor-pointer w-7 h-7 justify-center p-0 text-sm ${
+                  activeTab === 'personal-questions'
+                    ? 'text-amber-300 bg-white/10 font-black'
+                    : 'text-[#e2f1f2]/70 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <span className="text-xs shrink-0">📚</span>
+              </button>
+            </div>
+          )
+        ) : (
+          <div className={`submenu-transition ${isGameMenuOpen ? 'open mt-0.5 mb-1' : ''}`}>
+            <div className="overflow-hidden">
+              <div className="pl-3 ml-2 space-y-0.5">
+                <button
+                  onClick={() => {
+                    setActiveTab('interactive-games');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  title="Trò chơi tương tác"
+                  className={`flex items-center gap-2 rounded-md text-[10px] font-bold tracking-wide transition-all cursor-pointer w-full px-2 py-1 ${
+                    activeTab === 'interactive-games'
+                      ? 'text-amber-300 bg-white/10 border-l-4 border-amber-300 shadow-inner font-black'
+                      : 'text-[#e2f1f2]/70 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <span className="truncate">Tương tác lớp</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab('personal-questions');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  title="Kho câu hỏi cá nhân"
+                  className={`flex items-center gap-2 rounded-md text-[10px] font-bold tracking-wide transition-all cursor-pointer w-full px-2 py-1 ${
+                    activeTab === 'personal-questions'
+                      ? 'text-amber-300 bg-white/10 border-l-4 border-amber-300 shadow-inner font-black'
+                      : 'text-[#e2f1f2]/70 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <span className="truncate">Kho câu hỏi</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <button
+        onClick={() => {
+          setActiveTab('emulation');
+          setIsMobileMenuOpen(false);
+        }}
+        title={isSidebarCollapsed ? "Phong trào thi đua / Đổi quà" : ""}
+        className={`flex items-center gap-2.5 w-full px-3 py-1.5 rounded-lg text-[11px] md:text-xs font-black uppercase tracking-wider transition-all relative cursor-pointer active:scale-95 ${
+          isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
+        } ${
+          activeTab === 'emulation'
+            ? isSidebarCollapsed
+              ? 'text-amber-300 shadow-inner font-black bg-white/10'
+              : 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black bg-white/10'
+            : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
+        } ${
+          isRedemptionPeriod 
+            ? 'animate-pulse bg-gradient-to-r from-red-650 via-amber-650 to-red-650 text-white border-2 border-yellow-300 shadow' 
+            : ''
+        }`}
+        style={getTabStyle('emulation')}
+      >
+        {isSidebarCollapsed && <Sparkles className="w-4 h-4 shrink-0" />}
+        <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Thi Đua</span>
+        {isRedemptionPeriod && (
+          <span className={`ml-auto bg-yellow-300 text-red-700 text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-tight shrink-0 ${isSidebarCollapsed ? 'md:hidden' : ''}`}>
+            Quà 🎁
+          </span>
+        )}
+      </button>
+
+      {(() => {
+        const isUserAdmin = currentUser?.role?.toLowerCase().includes('admin');
+        const pendingCount = isUserAdmin ? (documents ? documents.filter(d => d.status === 'pending').length : 0) : 0;
+        return (
+          <button
+            onClick={() => {
+              setActiveTab('resources');
+              setIsMobileMenuOpen(false);
+            }}
+            title={isSidebarCollapsed ? `Học liệu số & Tài nguyên${pendingCount > 0 ? ` (${pendingCount} chờ duyệt)` : ''}` : ""}
+            className={`flex items-center gap-2.5 w-full px-3 py-1.5 rounded-lg text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 relative ${
+              isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
+            } ${
+              activeTab === 'resources'
+                ? isSidebarCollapsed
+                  ? 'text-amber-300 shadow-inner font-black bg-white/10'
+                  : 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black bg-white/10'
+                : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
+            }`}
+            style={getTabStyle('resources')}
+          >
+            {isSidebarCollapsed && (
+              <div className="relative shrink-0 flex items-center justify-center">
+                <BookOpen className="w-4 h-4" />
+                {pendingCount > 0 && (
+                  <span 
+                    className="absolute -top-1.5 -right-1.5 w-2 h-2 rounded-full animate-pulse border"
+                    style={{ backgroundColor: '#ef4444', borderColor: currentTheme.dark }}
+                  />
+                )}
+              </div>
+            )}
+            <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Học liệu số</span>
+            {pendingCount > 0 && !isSidebarCollapsed && (
+              <span className="ml-auto bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full animate-pulse leading-none shadow-sm shrink-0">
+                {pendingCount}
+              </span>
+            )}
+          </button>
+        );
+      })()}
+
+      <button
+        onClick={() => {
+          setActiveTab('avatar-gallery');
+          setIsMobileMenuOpen(false);
+        }}
+        title={isSidebarCollapsed ? "Kho avatar" : ""}
+        className={`flex items-center gap-2.5 w-full px-3 py-1.5 rounded-lg text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 relative ${
+          isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
+        } ${
+          activeTab === 'avatar-gallery'
+            ? isSidebarCollapsed
+              ? 'text-amber-300 shadow-inner font-black bg-white/10'
+              : 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black bg-white/10'
+            : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
+        }`}
+        style={getTabStyle('avatar-gallery')}
+      >
+        {isSidebarCollapsed && <Image className="w-4 h-4 shrink-0" />}
+        <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Kho avatar</span>
+      </button>
+    </>
+  );
+
+  const systemGroupChildren = (
+    <>
+      {currentUser && currentUser.role.includes('Admin') && (
+        <button
+          onClick={() => {
+            setActiveTab('admin');
+            setIsMobileMenuOpen(false);
+          }}
+          title={isSidebarCollapsed ? "Bảng quản trị hệ thống" : ""}
+          className={`flex items-center gap-2.5 w-full px-3 py-1.5 rounded-lg text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 ${
+            isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
+          } ${
+            activeTab === 'admin'
+              ? isSidebarCollapsed
+                ? 'text-amber-300 shadow-inner font-black bg-white/10'
+                : 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black bg-white/10'
+              : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
+          }`}
+          style={getTabStyle('admin')}
+        >
+          {isSidebarCollapsed && <Settings className="w-4 h-4 shrink-0" />}
+          <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Quản trị</span>
+        </button>
+      )}
+    </>
+  );
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col md:flex-row font-sans transition-all relative">
       
@@ -631,12 +1037,12 @@ export default function App() {
       {/* VERTICAL SIDEBAR MENU */}
       <aside 
         className={`
-          fixed inset-y-0 left-0 z-40 text-white flex flex-col shadow-2xl transition-all duration-300 ease-in-out shrink-0 border-r
+          fixed inset-y-0 left-0 z-40 text-white flex flex-col shadow-2xl transition-all duration-300 ease-in-out shrink-0
           md:sticky md:top-0 md:h-screen md:translate-x-0
           ${isSidebarCollapsed ? 'w-64 md:w-16' : 'w-64'}
           ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         `}
-        style={{ backgroundColor: currentTheme.primary, borderRightColor: 'rgba(255,255,255,0.1)' }}
+        style={{ backgroundColor: currentTheme.primary }}
       >
         {/* Sidebar Header Brand */}
         <div 
@@ -690,7 +1096,7 @@ export default function App() {
         </div>
 
         {/* Vertical Items List */}
-        <div className="flex-1 py-2 px-3 space-y-1 overflow-y-auto no-scrollbar scroll-smooth">
+        <div className="flex-1 py-1.5 px-2.5 space-y-1 overflow-y-auto no-scrollbar scroll-smooth">
           
           <button
             onClick={() => {
@@ -698,323 +1104,190 @@ export default function App() {
               setIsMobileMenuOpen(false);
             }}
             title={isSidebarCollapsed ? "Tổng quan" : ""}
-            className={`flex items-center gap-3 w-full px-4 py-2 rounded-xl text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 ${
+            className={`flex items-center gap-2.5 w-full px-3 py-1.5 rounded-lg text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 ${
               isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
             } ${
-              activeTab === 'dashboard'
-                ? 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
+              isDashboardActive
+                ? 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black bg-white/10'
                 : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
             }`}
-            style={getTabStyle('dashboard')}
+            style={isDashboardActive ? { backgroundColor: currentTheme.medium } : {}}
           >
             <Home className="w-4 h-4 shrink-0" />
             <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Tổng quan</span>
           </button>
 
+          {/* GROUP 1: GIẢNG DẠY & LỚP HỌC */}
           {hasAdminOrTeacherAccess && (
-            <button
-              onClick={() => {
-                setActiveTab('students');
-                setIsMobileMenuOpen(false);
-              }}
-              title={isSidebarCollapsed ? "Học sinh" : ""}
-              className={`flex items-center gap-3 w-full px-4 py-2 rounded-xl text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 ${
-                isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
-              } ${
-                activeTab === 'students'
-                  ? 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
-                  : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
-              }`}
-              style={getTabStyle('students')}
-            >
-              <Users className="w-4 h-4 shrink-0" />
-              <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Học sinh</span>
-            </button>
-          )}
+            <>
+              {isSidebarCollapsed ? (
+                <div 
+                  className={`flex justify-center py-2 mt-2 border-t border-white/10 pt-3 transition-all ${
+                    isTeachingGroupActive
+                      ? 'text-amber-300 font-bold bg-white/10 rounded-lg shadow-inner'
+                      : 'text-white/35'
+                  }`}
+                  style={isTeachingGroupActive ? { backgroundColor: currentTheme.medium } : {}}
+                  title="Giảng dạy & Lớp"
+                >
+                  <GraduationCap className="w-4 h-4" />
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    const next = !isTeachingGroupOpen;
+                    setIsTeachingGroupOpen(next);
+                    localStorage.setItem('group_teaching_open', next.toString());
+                    if (next) {
+                      setIsLearningGroupOpen(false);
+                      setIsSystemGroupOpen(false);
+                      setIsGameMenuOpen(false);
+                      localStorage.setItem('group_learning_open', 'false');
+                      localStorage.setItem('group_system_open', 'false');
+                    }
+                  }}
+                  className={`flex items-center gap-2.5 w-full px-3 py-1.5 rounded-lg text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer select-none mt-3.5 mb-1 active:scale-95 ${
+                    isTeachingGroupActive
+                      ? 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black bg-white/10'
+                      : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
+                  }`}
+                  style={isTeachingGroupActive ? { backgroundColor: currentTheme.medium } : {}}
+                >
+                  <GraduationCap className="w-4 h-4 shrink-0" />
+                  <span className="flex-1 text-left">Giảng dạy & Lớp</span>
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 text-white/50 shrink-0 ${isTeachingGroupOpen ? 'rotate-0' : '-rotate-90'}`} />
+                </button>
+              )}
 
-          {hasAdminOrTeacherAccess && (
-            <button
-              onClick={() => {
-                setActiveTab('classes-management');
-                setIsMobileMenuOpen(false);
-              }}
-              title={isSidebarCollapsed ? "Khối & Lớp" : ""}
-              className={`flex items-center gap-3 w-full px-4 py-2 rounded-xl text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 ${
-                isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
-              } ${
-                activeTab === 'classes-management'
-                  ? 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
-                  : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
-              }`}
-              style={getTabStyle('classes-management')}
-            >
-              <Layers className="w-4 h-4 shrink-0" />
-              <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Khối & Lớp</span>
-            </button>
-          )}
-
-          {hasAdminOrTeacherAccess && (
-            <button
-              onClick={() => {
-                setActiveTab('attendance');
-                setIsMobileMenuOpen(false);
-              }}
-              title={isSidebarCollapsed ? "Điểm danh (Sổ điểm danh)" : ""}
-              className={`flex items-center gap-3 w-full px-4 py-2 rounded-xl text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 ${
-                isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
-              } ${
-                activeTab === 'attendance'
-                  ? 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
-                  : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
-              }`}
-              style={getTabStyle('attendance')}
-            >
-              <ClipboardCheck className="w-4 h-4 shrink-0" />
-              <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Điểm danh</span>
-            </button>
-          )}
-
-          {hasAdminOrTeacherAccess && (
-            <button
-              onClick={() => {
-                setActiveTab('evaluation');
-                setIsMobileMenuOpen(false);
-              }}
-              title={isSidebarCollapsed ? "Sổ nhận xét học trực quan" : ""}
-              className={`flex items-center gap-3 w-full px-4 py-2 rounded-xl text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 ${
-                isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
-              } ${
-                activeTab === 'evaluation'
-                  ? 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
-                  : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
-              }`}
-              style={getTabStyle('evaluation')}
-            >
-              <Award className="w-4 h-4 shrink-0" />
-              <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Nhận xét</span>
-            </button>
-          )}
-
-          {hasAdminOrTeacherAccess && (
-            <div className="space-y-1">
-              <button
-                onClick={() => {
-                  setIsGameMenuOpen(!isGameMenuOpen);
-                }}
-                title={isSidebarCollapsed ? "Trò chơi học tập" : ""}
-                className={`flex items-center gap-3 w-full px-4 py-2 rounded-xl text-[11px] md:text-xs font-black uppercase tracking-wider transition-all relative cursor-pointer active:scale-95 ${
-                  isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
-                } ${
-                  activeTab === 'interactive-games' || activeTab === 'personal-questions'
-                    ? 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
-                    : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
-                }`}
-                style={getTabStyle(activeTab === 'interactive-games' || activeTab === 'personal-questions' ? activeTab : '')}
-              >
-                <Gamepad2 className="w-4 h-4 shrink-0" />
-                <span className={isSidebarCollapsed ? 'md:hidden' : 'flex-1 text-left'}>Trò chơi</span>
-                {!isSidebarCollapsed && (
-                  <span className="text-white/60 text-[8px] transition-transform duration-200" style={{ transform: isGameMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-                    ▼
-                  </span>
-                )}
-              </button>
-
-              {/* Submenus */}
-              {isGameMenuOpen && (
-                <div className={`${isSidebarCollapsed ? 'flex flex-col items-center gap-1 py-1' : 'pl-4 space-y-1'} animate-in slide-in-from-top-1 duration-150`}>
-                  <button
-                    onClick={() => {
-                      setActiveTab('interactive-games');
-                      setIsMobileMenuOpen(false);
-                    }}
-                    title="Trò chơi tương tác"
-                    className={`flex items-center gap-2 rounded-lg text-[10px] font-bold tracking-wide transition-all cursor-pointer ${
-                      isSidebarCollapsed ? 'w-8 h-8 justify-center p-0 text-sm' : 'w-full px-3 py-1.5'
-                    } ${
-                      activeTab === 'interactive-games'
-                        ? 'text-amber-300 bg-white/10'
-                        : 'text-[#e2f1f2]/70 hover:text-white hover:bg-white/5'
-                    }`}
-                  >
-                    <span className="text-xs shrink-0">🎮</span>
-                    {!isSidebarCollapsed && <span className="truncate">Trò chơi tương tác</span>}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setActiveTab('personal-questions');
-                      setIsMobileMenuOpen(false);
-                    }}
-                    title="Kho câu hỏi cá nhân"
-                    className={`flex items-center gap-2 rounded-lg text-[10px] font-bold tracking-wide transition-all cursor-pointer ${
-                      isSidebarCollapsed ? 'w-8 h-8 justify-center p-0 text-sm' : 'w-full px-3 py-1.5'
-                    } ${
-                      activeTab === 'personal-questions'
-                        ? 'text-amber-300 bg-white/10'
-                        : 'text-[#e2f1f2]/70 hover:text-white hover:bg-white/5'
-                    }`}
-                  >
-                    <span className="text-xs shrink-0">📚</span>
-                    {!isSidebarCollapsed && <span className="truncate">Kho câu hỏi cá nhân</span>}
-                  </button>
+              {isSidebarCollapsed ? (
+                <div className="space-y-0.5 animate-in fade-in duration-200 mt-1">
+                  {teachingGroupChildren}
+                </div>
+              ) : (
+                <div className={`submenu-transition ${isTeachingGroupOpen ? 'open mt-1 mb-2' : ''}`}>
+                  <div className="overflow-hidden">
+                    <div className="pl-3.5 ml-4.5 space-y-1 mt-0.5 mb-1">
+                      {teachingGroupChildren}
+                    </div>
+                  </div>
                 </div>
               )}
-            </div>
+            </>
           )}
 
+          {/* GROUP 2: HỌC TẬP & GIẢI TRÍ */}
           {hasAdminOrTeacherAccess && (
-            <button
-              onClick={() => {
-                setActiveTab('emulation');
-                setIsMobileMenuOpen(false);
-              }}
-              title={isSidebarCollapsed ? "Phong trào thi đua / Đổi quà" : ""}
-              className={`flex items-center gap-3 w-full px-4 py-2 rounded-xl text-[11px] md:text-xs font-black uppercase tracking-wider transition-all relative cursor-pointer active:scale-95 ${
-                isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
-              } ${
-                activeTab === 'emulation'
-                  ? 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
-                  : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
-              } ${
-                isRedemptionPeriod 
-                  ? 'animate-pulse bg-gradient-to-r from-red-650 via-amber-650 to-red-650 text-white border-2 border-yellow-300 shadow' 
-                  : ''
-              }`}
-              style={getTabStyle('emulation')}
-            >
-              <Sparkles className="w-4 h-4 shrink-0" />
-              <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Thi Đua</span>
-              {isRedemptionPeriod && (
-                <span className={`ml-auto bg-yellow-300 text-red-700 text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-tight shrink-0 ${isSidebarCollapsed ? 'md:hidden' : ''}`}>
-                  Quà 🎁
-                </span>
-              )}
-            </button>
-          )}
-
-          {hasAdminOrTeacherAccess && (
-            <button
-              onClick={() => {
-                setActiveTab('seating');
-                setIsMobileMenuOpen(false);
-              }}
-              title={isSidebarCollapsed ? "Sơ đồ máy & Chỗ ngồi" : ""}
-              className={`flex items-center gap-3 w-full px-4 py-2 rounded-xl text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 ${
-                isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
-              } ${
-                activeTab === 'seating'
-                  ? 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
-                  : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
-              }`}
-              style={getTabStyle('seating')}
-            >
-              <Monitor className="w-4 h-4 shrink-0" />
-              <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Phòng máy</span>
-            </button>
-          )}
-
-          {hasAdminOrTeacherAccess && (
-            <button
-              onClick={() => {
-                setActiveTab('timetable');
-                setIsMobileMenuOpen(false);
-              }}
-              title={isSidebarCollapsed ? "Thời khóa biểu giảng dạy" : ""}
-              className={`flex items-center gap-3 w-full px-4 py-2 rounded-xl text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 ${
-                isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
-              } ${
-                activeTab === 'timetable'
-                  ? 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
-                  : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
-              }`}
-              style={getTabStyle('timetable')}
-            >
-              <Calendar className="w-4 h-4 shrink-0" />
-              <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Thời khóa biểu</span>
-            </button>
-          )}
-
-          {(() => {
-            const isUserAdmin = currentUser?.role?.toLowerCase().includes('admin');
-            const pendingCount = isUserAdmin ? (documents ? documents.filter(d => d.status === 'pending').length : 0) : 0;
-            return (
-              <button
-                onClick={() => {
-                  setActiveTab('resources');
-                  setIsMobileMenuOpen(false);
-                }}
-                title={isSidebarCollapsed ? `Học liệu số & Tài nguyên${pendingCount > 0 ? ` (${pendingCount} chờ duyệt)` : ''}` : ""}
-                className={`flex items-center gap-3 w-full px-4 py-2 rounded-xl text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 relative ${
-                  isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
-                } ${
-                  activeTab === 'resources'
-                    ? 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
-                    : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
-                }`}
-                style={getTabStyle('resources')}
-              >
-                <div className="relative shrink-0 flex items-center justify-center">
-                  <BookOpen className="w-4 h-4" />
-                  {pendingCount > 0 && isSidebarCollapsed && (
-                    <span 
-                      className="absolute -top-1.5 -right-1.5 w-2 h-2 rounded-full animate-pulse border"
-                      style={{ backgroundColor: '#ef4444', borderColor: currentTheme.dark }}
-                    />
-                  )}
+            <>
+              {isSidebarCollapsed ? (
+                <div 
+                  className={`flex justify-center py-2 mt-2 border-t border-white/10 pt-3 transition-all ${
+                    isLearningGroupActive
+                      ? 'text-amber-300 font-bold bg-white/10 rounded-lg shadow-inner'
+                      : 'text-white/35'
+                  }`}
+                  style={isLearningGroupActive ? { backgroundColor: currentTheme.medium } : {}}
+                  title="Học tập & Trò chơi"
+                >
+                  <Puzzle className="w-4 h-4" />
                 </div>
-                <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Học liệu số</span>
-                {pendingCount > 0 && !isSidebarCollapsed && (
-                  <span className="ml-auto bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full animate-pulse leading-none shadow-sm shrink-0">
-                    {pendingCount}
-                  </span>
-                )}
-              </button>
-            );
-          })()}
+              ) : (
+                <button
+                  onClick={() => {
+                    const next = !isLearningGroupOpen;
+                    setIsLearningGroupOpen(next);
+                    localStorage.setItem('group_learning_open', next.toString());
+                    if (next) {
+                      setIsTeachingGroupOpen(false);
+                      setIsSystemGroupOpen(false);
+                      localStorage.setItem('group_teaching_open', 'false');
+                      localStorage.setItem('group_system_open', 'false');
+                    }
+                  }}
+                  className={`flex items-center gap-2.5 w-full px-3 py-1.5 rounded-lg text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer select-none mt-3.5 mb-1 active:scale-95 ${
+                    isLearningGroupActive
+                      ? 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black bg-white/10'
+                      : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
+                  }`}
+                  style={isLearningGroupActive ? { backgroundColor: currentTheme.medium } : {}}
+                >
+                  <Puzzle className="w-4 h-4 shrink-0" />
+                  <span className="flex-1 text-left">Học tập & Trò chơi</span>
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 text-white/50 shrink-0 ${isLearningGroupOpen ? 'rotate-0' : '-rotate-90'}`} />
+                </button>
+              )}
 
-          {/* Kho avatar menu item */}
-          {hasAdminOrTeacherAccess && (
-            <button
-              onClick={() => {
-                setActiveTab('avatar-gallery');
-                setIsMobileMenuOpen(false);
-              }}
-              title={isSidebarCollapsed ? "Kho avatar" : ""}
-              className={`flex items-center gap-3 w-full px-4 py-2 rounded-xl text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 relative ${
-                isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
-              } ${
-                activeTab === 'avatar-gallery'
-                  ? 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
-                  : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
-              }`}
-              style={getTabStyle('avatar-gallery')}
-            >
-              <div className="relative shrink-0 flex items-center justify-center">
-                <Image className="w-4 h-4" />
-              </div>
-              <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Kho avatar</span>
-            </button>
+              {isSidebarCollapsed ? (
+                <div className="space-y-0.5 animate-in fade-in duration-200 mt-1">
+                  {learningGroupChildren}
+                </div>
+              ) : (
+                <div className={`submenu-transition ${isLearningGroupOpen ? 'open mt-1 mb-2' : ''}`}>
+                  <div className="overflow-hidden">
+                    <div className="pl-3.5 ml-4.5 space-y-1 mt-0.5 mb-1">
+                      {learningGroupChildren}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
+          {/* GROUP 3: HỆ THỐNG */}
           {currentUser && currentUser.role.includes('Admin') && (
-            <button
-              onClick={() => {
-                setActiveTab('admin');
-                setIsMobileMenuOpen(false);
-              }}
-              title={isSidebarCollapsed ? "Bảng quản trị hệ thống" : ""}
-              className={`flex items-center gap-3 w-full px-4 py-2 rounded-xl text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 ${
-                isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
-              } ${
-                activeTab === 'admin'
-                  ? 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black'
-                  : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
-              }`}
-              style={getTabStyle('admin')}
-            >
-              <Settings className="w-4 h-4 shrink-0" />
-              <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Quản trị</span>
-            </button>
+            <>
+              {isSidebarCollapsed ? (
+                <div 
+                  className={`flex justify-center py-2 mt-2 border-t border-white/10 pt-3 transition-all ${
+                    isSystemGroupActive
+                      ? 'text-amber-300 font-bold bg-white/10 rounded-lg shadow-inner'
+                      : 'text-white/35'
+                  }`}
+                  style={isSystemGroupActive ? { backgroundColor: currentTheme.medium } : {}}
+                  title="Hệ thống"
+                >
+                  <Cpu className="w-4 h-4" />
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    const next = !isSystemGroupOpen;
+                    setIsSystemGroupOpen(next);
+                    localStorage.setItem('group_system_open', next.toString());
+                    if (next) {
+                      setIsTeachingGroupOpen(false);
+                      setIsLearningGroupOpen(false);
+                      setIsGameMenuOpen(false);
+                      localStorage.setItem('group_teaching_open', 'false');
+                      localStorage.setItem('group_learning_open', 'false');
+                    }
+                  }}
+                  className={`flex items-center gap-2.5 w-full px-3 py-1.5 rounded-lg text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer select-none mt-3.5 mb-1 active:scale-95 ${
+                    isSystemGroupActive
+                      ? 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black bg-white/10'
+                      : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
+                  }`}
+                  style={isSystemGroupActive ? { backgroundColor: currentTheme.medium } : {}}
+                >
+                  <Cpu className="w-4 h-4 shrink-0" />
+                  <span className="flex-1 text-left">Hệ thống</span>
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 text-white/50 shrink-0 ${isSystemGroupOpen ? 'rotate-0' : '-rotate-90'}`} />
+                </button>
+              )}
+
+              {isSidebarCollapsed ? (
+                <div className="space-y-0.5 animate-in fade-in duration-200 mt-1">
+                  {systemGroupChildren}
+                </div>
+              ) : (
+                <div className={`submenu-transition ${isSystemGroupOpen ? 'open mt-1 mb-2' : ''}`}>
+                  <div className="overflow-hidden">
+                    <div className="pl-3.5 ml-4.5 space-y-1 mt-0.5 mb-1">
+                      {systemGroupChildren}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
           {/* Account Profile & Authentication block */}

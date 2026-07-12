@@ -561,8 +561,9 @@ export default function EvaluationTab({
                   <div className="grid grid-cols-2 gap-3">
                     {[
                       { label: "Nói chuyện", value: -2 },
-                      { label: "Quên sách", value: -5 },
-                      { label: "Đi học muộn", value: -3 }
+                      { label: "Quên sách,vở,.vv", value: -5 },
+                      { label: "Đi học muộn", value: -3 },
+                      { label: "Vệ sinh chưa tốt", value: -1 }
                     ].map((opt) => (
                       <button
                         key={opt.label}

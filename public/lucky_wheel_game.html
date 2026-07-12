@@ -22,7 +22,10 @@
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
     
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f3f4f6; }
+        html { scrollbar-width: none; -ms-overflow-style: none; }
+        html::-webkit-scrollbar { display: none; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f3f4f6; scrollbar-width: none; -ms-overflow-style: none; }
+        body::-webkit-scrollbar { display: none; }
         /* Ẩn các view và modal ban đầu */
         #quiz-page, #winner-modal, #question-modal, #zalo-modal, #json-generator-modal, #help-modal, #math-tool-modal, #video-modal { display: none; }
         .modal-backdrop { background-color: rgba(0, 0, 0, 0.6); }
@@ -77,7 +80,7 @@
     </button>
 
     <!-- =========== View 1: Vòng Quay (Mặc định) =========== -->
-    <div id="wheel-view" class="flex flex-col lg:flex-row space-y-4 lg:space-y-0 lg:space-x-4 min-h-screen">
+    <div id="wheel-view" class="flex flex-col lg:flex-row space-y-4 lg:space-y-0 lg:space-x-4 min-h-screen lg:items-start">
         
         <!-- Panel Trái -->
         <div class="w-full lg:w-1/4 bg-white p-4 rounded-lg shadow-lg flex flex-col space-y-3 h-fit">
@@ -130,76 +133,116 @@
         </div>
 
         <!-- Panel Giữa -->
-        <div class="w-full lg:w-1/2 flex flex-col items-center justify-center p-4">
-            <h1 class="text-3xl font-extrabold text-gray-800 mb-6 uppercase tracking-wider text-center" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.1)">Vòng Quay May Mắn</h1>
+        <div class="w-full lg:w-1/2 flex flex-col items-center justify-start p-4 h-fit">
             <div class="relative flex items-center justify-center">
                 <!-- Mũi tên chỉ -->
                 <div class="absolute -top-4 left-1/2 -translate-x-1/2 z-20" style="width: 0; height: 0; border-left: 20px solid transparent; border-right: 20px solid transparent; border-top: 30px solid #E74C3C; filter: drop-shadow(0px -2px 2px rgba(0,0,0,0.3))"></div>
                 <!-- Vòng quay -->
-                <div id="wheel-container" class="relative w-80 h-80 md:w-[450px] md:h-[450px] rounded-full border-8 border-white shadow-2xl overflow-hidden"><div id="wheel" class="w-full h-full relative"></div></div>
+                <div id="wheel-container" class="relative w-64 h-64 md:w-80 md:h-80 rounded-full border-8 border-white shadow-2xl overflow-hidden"><div id="wheel" class="w-full h-full relative"></div></div>
                 <!-- Tâm vòng quay -->
                 <div class="absolute w-12 h-12 bg-white rounded-full border-4 border-gray-300 shadow-inner z-10"></div>
             </div>
-            <div id="spin-status" class="mt-6 h-8 text-xl font-semibold text-blue-600 animate-pulse"></div>
+            <div id="spin-status" class="mt-4 h-8 text-lg font-semibold text-blue-600 animate-pulse"></div>
+            <button id="spin-btn" class="btn-press w-64 text-2xl font-bold py-3.5 px-4 rounded-xl shadow-xl text-white transition bg-blue-600 hover:bg-blue-700 border-blue-800 disabled:opacity-50 disabled:cursor-not-allowed">QUAY</button>
         </div>
 
         <!-- Panel Phải -->
-        <div class="w-full lg:w-1/4 bg-white p-4 rounded-lg shadow-lg space-y-4 h-fit">
-            <div class="text-center text-3xl font-bold text-white p-3 rounded-lg" style="background: linear-gradient(135deg, #FF8C00, #FFA500); text-shadow: 2px 2px 4px rgba(0,0,0,0.2); border-bottom: 4px solid #CD6600">MENU</div>
-            <button id="go-to-quiz-btn" class="btn-press w-full flex items-center justify-center space-x-2 bg-green-500 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:bg-green-600 transition border-green-700"><i data-lucide="gamepad-2"></i><span>Tới Trò Chơi</span></button>
-            <button id="reset-btn" class="btn-press w-full flex items-center justify-center space-x-2 bg-red-500 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:bg-red-600 transition border-red-700"><i data-lucide="rotate-ccw"></i><span>Reset game</span></button>
-            <div class="bg-gray-100 p-3 rounded-lg text-center"><p class="text-sm font-semibold text-gray-700">Số học sinh còn lại: <span id="student-count" class="text-lg font-bold text-blue-600 ml-2">0 / 0</span></p></div>
-            <div class="space-y-3 pt-2">
-                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"><label for="no-repeat-checkbox" class="text-sm font-medium text-gray-700 flex items-center"><i data-lucide="smile" class="w-4 h-4 mr-2 text-green-500"></i>Gọi tên không lặp lại</label><input id="no-repeat-checkbox" type="checkbox" class="h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500" checked /></div>
-                <!-- CÂU HỎI KHÔNG LẶP LẠI -->
-                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"><label for="no-repeat-questions-checkbox" class="text-sm font-medium text-gray-700 flex items-center"><i data-lucide="help-circle" class="w-4 h-4 mr-2 text-orange-500"></i>Câu hỏi không lặp lại</label><input id="no-repeat-questions-checkbox" type="checkbox" class="h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500" checked /></div>
+        <div class="w-full lg:w-1/4 bg-white p-3 rounded-lg shadow-lg space-y-3 h-fit">
+            <div class="text-center text-xl font-bold text-white p-2 rounded-lg" style="background: linear-gradient(135deg, #FF8C00, #FFA500); text-shadow: 2px 2px 4px rgba(0,0,0,0.15); border-bottom: 3px solid #CD6600">MENU</div>
+            
+            <!-- Game & Reset Buttons Row -->
+            <div class="grid grid-cols-2 gap-2">
+                <button id="go-to-quiz-btn" class="btn-press w-full flex items-center justify-center space-x-1.5 bg-green-500 text-white font-bold py-2.5 px-2 rounded-lg shadow-md hover:bg-green-600 transition border-green-700 text-xs"><i data-lucide="gamepad-2" class="w-4 h-4"></i><span>Tới Trò Chơi</span></button>
+                <button id="reset-btn" class="btn-press w-full flex items-center justify-center space-x-1.5 bg-red-500 text-white font-bold py-2.5 px-2 rounded-lg shadow-md hover:bg-red-600 transition border-red-700 text-xs"><i data-lucide="rotate-ccw" class="w-4 h-4"></i><span>Reset game</span></button>
+            </div>
+            
+            <div class="bg-gray-100 py-1.5 px-3 rounded-lg text-center"><p class="text-xs font-semibold text-gray-700">Số học sinh còn lại: <span id="student-count" class="text-sm font-bold text-blue-600 ml-1">0 / 0</span></p></div>
+            
+            <div class="space-y-2 pt-1 text-xs">
+                <!-- Checkboxes Row -->
+                <div class="grid grid-cols-2 gap-2">
+                    <label for="no-repeat-checkbox" class="flex items-center space-x-1.5 cursor-pointer p-2 bg-gray-50 rounded-lg border border-gray-150 hover:bg-gray-100 transition">
+                        <input id="no-repeat-checkbox" type="checkbox" class="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" checked />
+                        <span class="font-medium text-gray-700 text-[11px] leading-tight">Gọi không lặp</span>
+                    </label>
+                    <label for="no-repeat-questions-checkbox" class="flex items-center space-x-1.5 cursor-pointer p-2 bg-gray-50 rounded-lg border border-gray-150 hover:bg-gray-100 transition">
+                        <input id="no-repeat-questions-checkbox" type="checkbox" class="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" checked />
+                        <span class="font-medium text-gray-700 text-[11px] leading-tight">Hỏi không lặp</span>
+                    </label>
+                </div>
                 
-                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"><label for="spin-duration-input" class="text-sm font-medium text-gray-700 flex items-center"><i data-lucide="settings" class="w-4 h-4 mr-2 text-gray-500"></i>Thời gian quay (s)</label><input id="spin-duration-input" type="number" min="1" max="20" class="w-16 text-center border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 outline-none border p-1" value="6" /></div>
-                
-                <div class="flex flex-col p-3 bg-gray-50 rounded-lg border border-gray-200 space-y-2">
-                    <label for="spin-sound-select" class="text-sm font-medium text-gray-700 flex items-center"><i data-lucide="music" class="w-4 h-4 mr-2 text-purple-500"></i>Âm thanh vòng quay</label>
-                    <select id="spin-sound-select" class="text-sm border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500 p-1 outline-none border">
+                <!-- Background Music & Spin Duration Row -->
+                <div class="grid grid-cols-2 gap-2">
+                    <label for="bg-music-toggle" class="flex items-center justify-between p-2 bg-gray-50 rounded-lg border border-gray-150 cursor-pointer hover:bg-gray-100 transition">
+                        <span class="font-medium text-gray-700 flex items-center text-[11px]"><i data-lucide="music-4" class="w-3.5 h-3.5 mr-1 text-red-500"></i>Nhạc nền</span>
+                        <input id="bg-music-toggle" type="checkbox" class="h-4 w-4 text-red-600 rounded border-gray-300 focus:ring-red-500" checked />
+                    </label>
+                    <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg border border-gray-150">
+                        <label for="spin-duration-input" class="font-medium text-gray-700 flex items-center text-[11px]"><i data-lucide="settings" class="w-3.5 h-3.5 mr-1 text-gray-500"></i>Thời gian (s)</label>
+                        <input id="spin-duration-input" type="number" min="1" max="20" class="w-10 text-center border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 outline-none border p-0.5 bg-white font-bold text-xs" value="6" />
+                    </div>
+                </div>
+
+                <!-- Spin Sound Selector -->
+                <div class="flex flex-col p-2 bg-gray-50 rounded-lg border border-gray-150 space-y-1">
+                    <label for="spin-sound-select" class="font-medium text-gray-700 flex items-center text-[11px]"><i data-lucide="music" class="w-3.5 h-3.5 mr-1 text-purple-500"></i>Âm thanh vòng quay</label>
+                    <select id="spin-sound-select" class="w-full text-xs border-gray-300 rounded-md p-1 outline-none border bg-white text-gray-700">
                         <optgroup label="Mộc mạc & Cơ học"><option value="woodblock">1. Gõ mõ (Mặc định)</option><option value="tick">2. Tic tắc đồng hồ</option><option value="knock">3. Gõ cửa</option><option value="typewriter">4. Máy đánh chữ</option><option value="switch">5. Bật công tắc</option></optgroup>
                         <optgroup label="Điện tử & Game"><option value="beep">6. Điện tử (Beep)</option><option value="coin">7. Ăn xu (Mario)</option><option value="jump">8. Nhảy (Boing)</option><option value="laser">9. Bắn Laser</option><option value="zap">10. Zap (Glitch)</option></optgroup>
                         <optgroup label="Nhạc cụ"><option value="drop">11. Giọt nước</option><option value="piano">12. Piano</option><option value="bell">13. Chuông gió</option><option value="guitar">14. Guitar</option><option value="xylophone">15. Xylophone</option></optgroup>
                         <optgroup label="Hiệu ứng vui"><option value="pop">16. Bong bóng nổ</option><option value="cork">17. Bật nắp chai</option><option value="fart">18. Âm thanh lạ</option><option value="camera">19. Chụp ảnh</option><option value="whistle">20. Tiếng còi</option></optgroup>
                     </select>
-                    
-                    <!-- Tùy chọn nhạc nền -->
-                    <div class="flex items-center justify-between pt-2 border-t border-gray-200 mt-1">
-                        <label for="bg-music-toggle" class="text-sm font-medium text-gray-700 flex items-center">
-                            <i data-lucide="music-4" class="w-4 h-4 mr-2 text-red-500"></i>Nhạc nền (Chiếc nón KD)
-                        </label>
-                        <input id="bg-music-toggle" type="checkbox" class="h-5 w-5 text-red-600 rounded border-gray-300 focus:ring-red-500" checked />
-                    </div>
                 </div>
             </div>
             
-            <div class="p-3 bg-gray-50 rounded-lg border border-gray-200 space-y-3">
-                <label class="text-sm font-medium text-gray-700 flex items-center"><i data-lucide="list-checks" class="w-4 h-4 mr-2 text-gray-500"></i>Chế độ chơi</label>
-                <div class="space-y-3">
-                    <div class="flex items-center"><input id="mode-all" type="radio" name="game-mode" value="all" class="h-4 w-4 text-blue-600 border-gray-300" checked><label for="mode-all" class="ml-2 block text-sm text-gray-700">Trả lời TẤT CẢ câu hỏi</label></div>
-                    <div class="flex items-center"><input id="mode-random" type="radio" name="game-mode" value="random" class="h-4 w-4 text-blue-600 border-gray-300"><label for="mode-random" class="ml-2 block text-sm text-gray-700">Trả lời SỐ CÂU ngẫu nhiên</label></div>
-                    <div class="pl-6"><label for="random-question-count" class="block text-xs font-medium text-gray-500">Nhập số lượng câu:</label><input id="random-question-count" type="number" min="1" class="w-full mt-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:opacity-70 p-1 border outline-none" value="1" disabled /></div>
-                    <div class="pt-2 border-t border-gray-200"><label class="text-sm font-medium text-gray-700 block mb-2">Cấu hình điểm số:</label><div class="grid grid-cols-2 gap-2"><div><label for="points-correct" class="block text-xs text-green-600 font-semibold">Điểm cộng (Đúng)</label><input id="points-correct" type="number" min="0" class="w-full mt-1 border-gray-300 rounded-md shadow-sm text-center text-sm focus:ring-green-500 focus:border-green-500 p-1 border outline-none" value="1"></div><div><label for="points-wrong" class="block text-xs text-red-600 font-semibold">Điểm trừ (Sai)</label><input id="points-wrong" type="number" min="0" class="w-full mt-1 border-gray-300 rounded-md shadow-sm text-center text-sm focus:ring-red-500 focus:border-red-500 p-1 border outline-none" value="0"></div></div></div>
+            <!-- Game Mode & Point Configurations -->
+            <div class="p-2.5 bg-gray-50 rounded-lg border border-gray-200 space-y-2 text-xs">
+                <div class="font-bold text-gray-700 flex items-center mb-1"><i data-lucide="list-checks" class="w-3.5 h-3.5 mr-1 text-gray-500"></i>Chế độ & Điểm số</div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="flex items-center"><input id="mode-all" type="radio" name="game-mode" value="all" class="h-3.5 w-3.5 text-blue-600" checked><label for="mode-all" class="ml-1 text-[11px] text-gray-700 cursor-pointer">Trả lời tất cả</label></div>
+                    <div class="flex items-center"><input id="mode-random" type="radio" name="game-mode" value="random" class="h-3.5 w-3.5 text-blue-600"><label for="mode-random" class="ml-1 text-[11px] text-gray-700 cursor-pointer">Số câu ngẫu nhiên</label></div>
+                </div>
+                <div class="flex items-center space-x-2 pl-1 bg-white border border-gray-150 p-1 rounded-md">
+                    <label for="random-question-count" class="text-[10px] font-medium text-gray-500 whitespace-nowrap">Nhập số lượng câu:</label>
+                    <input id="random-question-count" type="number" min="1" class="w-full text-center border-gray-300 rounded-md p-0.5 text-xs outline-none border bg-gray-50 disabled:opacity-50" value="1" disabled />
+                </div>
+                <div class="pt-1.5 border-t border-gray-150 grid grid-cols-2 gap-2">
+                    <div><label for="points-correct" class="block text-[10px] text-green-600 font-bold">Điểm đúng (+)</label><input id="points-correct" type="number" min="0" class="w-full border-gray-300 rounded-md text-center p-0.5 text-xs border bg-white" value="1"></div>
+                    <div><label for="points-wrong" class="block text-[10px] text-red-600 font-bold">Điểm sai (-)</label><input id="points-wrong" type="number" min="0" class="w-full border-gray-300 rounded-md text-center p-0.5 text-xs border bg-white" value="0"></div>
                 </div>
             </div>
             
-            <button id="spin-btn" class="btn-press w-full text-2xl font-bold py-4 px-4 rounded-lg shadow-xl text-white transition bg-blue-600 hover:bg-blue-700 border-blue-800 disabled:opacity-50 disabled:cursor-not-allowed">QUAY</button>
-            <button id="download-btn" class="btn-press w-full flex items-center justify-center space-x-2 bg-purple-500 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:bg-purple-600 transition border-purple-700"><i data-lucide="download"></i><span>Tải về file HTML</span></button>
-            <button id="show-zalo-modal-btn" class="btn-press w-full flex items-center justify-center space-x-2 bg-blue-500 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:bg-blue-600 transition border-blue-700"><i data-lucide="message-square-plus"></i><span>Mời tham gia nhóm Zalo</span></button>
-            <hr class="my-4 border-gray-200" />
-            <div class="space-y-3">
-                 <h3 class="text-lg font-bold text-gray-800 text-center">Quản lý câu hỏi</h3>
-                 <p id="question-count-info" class="text-sm text-center text-gray-600">Đang có 0 câu hỏi.</p>
-                 <div id="question-list-ui" class="max-h-60 overflow-y-auto space-y-2 pr-2"></div>
-                 <button id="add-new-question-btn" class="btn-press w-full flex items-center justify-center space-x-2 mt-2 bg-gray-600 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:bg-gray-700 transition border-gray-800"><i data-lucide="plus-circle"></i><span>Thêm Câu Hỏi Mới</span></button>
-                 <button id="show-math-tool-btn" class="btn-press w-full flex items-center justify-center space-x-2 mt-1 bg-pink-500 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:bg-pink-600 transition border-pink-700 text-sm"><i data-lucide="sigma"></i><span>Chuyển đổi công thức</span></button>
-                 <div class="grid grid-cols-2 gap-2 mt-2"><button id="import-questions-btn" class="btn-press w-full flex items-center justify-center space-x-2 bg-teal-500 text-white font-bold py-2 px-3 rounded-lg shadow-md hover:bg-teal-600 transition border-teal-700 text-sm"><i data-lucide="upload-cloud" class="w-4 h-4"></i><span>Import .json</span></button><button id="export-questions-btn" class="btn-press w-full flex items-center justify-center space-x-2 bg-orange-500 text-white font-bold py-2 px-3 rounded-lg shadow-md hover:bg-orange-600 transition border-orange-700 text-sm"><i data-lucide="download-cloud" class="w-4 h-4"></i><span>Export .json</span></button></div>
+            <!-- Download & Zalo Action Row -->
+            <div class="grid grid-cols-2 gap-2">
+                <button id="download-btn" class="btn-press w-full flex items-center justify-center space-x-1.5 bg-purple-500 text-white font-bold py-2 px-2 rounded-lg shadow-md hover:bg-purple-600 transition border-purple-700 text-xs"><i data-lucide="download" class="w-3.5 h-3.5"></i><span>Tải file HTML</span></button>
+                <button id="show-zalo-modal-btn" class="btn-press w-full flex items-center justify-center space-x-1.5 bg-blue-500 text-white font-bold py-2 px-2 rounded-lg shadow-md hover:bg-blue-600 transition border-blue-700 text-xs"><i data-lucide="message-square-plus" class="w-3.5 h-3.5"></i><span>Nhóm Zalo</span></button>
+            </div>
+            
+            <hr class="my-2 border-gray-200" />
+            
+            <!-- Question Manager Section -->
+            <div class="space-y-2">
+                 <h3 class="text-xs font-bold text-gray-700 flex items-center"><i data-lucide="help-circle" class="w-3.5 h-3.5 mr-1 text-blue-500"></i>Quản lý câu hỏi <span id="question-count-info" class="text-[10px] text-gray-500 font-normal ml-auto">0 câu</span></h3>
+                 <div id="question-list-ui" class="max-h-36 overflow-y-auto space-y-1 pr-1 border border-dashed border-gray-200 rounded-md p-1 bg-gray-50"></div>
+                 
+                 <!-- Add Question & Math Tool Grid Row -->
+                 <div class="grid grid-cols-2 gap-2">
+                     <button id="add-new-question-btn" class="btn-press w-full flex items-center justify-center space-x-1 bg-gray-600 text-white font-bold py-2 px-1 rounded-lg shadow-sm hover:bg-gray-700 transition border-gray-800 text-[11px]"><i data-lucide="plus-circle" class="w-3.5 h-3.5"></i><span>Thêm câu hỏi</span></button>
+                     <button id="show-math-tool-btn" class="btn-press w-full flex items-center justify-center space-x-1 bg-pink-500 text-white font-bold py-2 px-1 rounded-lg shadow-sm hover:bg-pink-600 transition border-pink-700 text-[11px]"><i data-lucide="sigma" class="w-3.5 h-3.5"></i><span>Toán/Lý/Hóa</span></button>
+                 </div>
+                 
+                 <!-- Import & Export Buttons -->
+                 <div class="grid grid-cols-2 gap-2">
+                     <button id="import-questions-btn" class="btn-press w-full flex items-center justify-center space-x-1.5 bg-teal-500 text-white font-bold py-1.5 px-2 rounded-lg shadow-md hover:bg-teal-600 transition border-teal-700 text-xs"><i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i><span>Import JSON</span></button>
+                     <button id="export-questions-btn" class="btn-press w-full flex items-center justify-center space-x-1.5 bg-orange-500 text-white font-bold py-1.5 px-2 rounded-lg shadow-md hover:bg-orange-600 transition border-orange-700 text-xs"><i data-lucide="download-cloud" class="w-3.5 h-3.5"></i><span>Export JSON</span></button>
+                 </div>
                  <input type="file" id="import-file-input" accept=".json" class="hidden" />
-                 <button id="show-json-generator-btn" class="btn-press w-full flex items-center justify-center space-x-2 mt-2 bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:bg-indigo-600 transition border-indigo-700 text-sm"><i data-lucide="file-json-2"></i><span>Tạo NH Câu hỏi (từ Text)</span></button>
+                 
+                 <!-- Text Generator Button -->
+                 <button id="show-json-generator-btn" class="btn-press w-full flex items-center justify-center space-x-1.5 bg-indigo-500 text-white font-bold py-2 px-3 rounded-lg shadow-md hover:bg-indigo-600 transition border-indigo-700 text-[11px]"><i data-lucide="file-json-2" class="w-3.5 h-3.5"></i><span>Tạo câu hỏi từ Text</span></button>
             </div>
         </div>
+    </div>
     </div>
 
     <!-- View 2: Quiz Page (Giao diện trắc nghiệm) -->
@@ -222,6 +265,57 @@
 
     <!-- Help Modal -->
     <div id="help-modal" class="fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4"><div class="bg-white rounded-lg shadow-2xl p-6 max-w-3xl w-full relative"><div class="flex justify-between items-center mb-4"><h3 class="text-2xl font-bold text-gray-800 flex items-center"><i data-lucide="book-open" class="text-blue-600 mr-3"></i>Hướng Dẫn Sử Dụng</h3><button id="help-modal-close-btn" type="button" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-6 h-6"></i></button></div><div id="help-modal-content" class="h-[70vh] overflow-y-auto pr-4"><h2>I. Cách sử dụng cơ bản</h2><ul><li><b>Bước 1: Nhập Danh sách Lớp</b><p>Thầy có thể quản lý nhiều lớp học. Bấm dấu (+) để thêm lớp mới, bấm (Bút chì) để đổi tên, và (Thùng rác) để xóa lớp.</p></li><li><b>Bước 2: Quay số</b><p>Bấm nút "QUAY" màu xanh. Nhạc nền sẽ tự động phát.</p></li><li><b>Bước 3: Trắc nghiệm</b><p>Sau khi quay, bấm "Bắt đầu Trắc nghiệm" để kiểm tra kiến thức học sinh được chọn.</p></li></ul><p><b>Tips:</b> Sử dụng công cụ chuyển đổi công thức (Nút màu hồng) để soạn Toán/Lý/Hóa nhanh chóng.</p></div><div class="flex justify-end pt-4 border-t border-gray-200"><button id="help-modal-close-btn-2" type="button" class="btn-press bg-blue-600 text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-blue-700 transition border-blue-800">Đã hiểu</button></div></div></div>
+
+    <!-- Custom Rename Class Modal -->
+    <div id="rename-class-modal" class="fixed inset-0 modal-backdrop items-center justify-center z-50 p-4" style="display: none;">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full space-y-4 relative transform transition-all">
+            <button id="rename-class-close-btn" type="button" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+            <h3 class="text-lg font-bold text-gray-800">Sửa Tên Lớp</h3>
+            <div>
+                <label for="rename-class-input" class="block text-sm font-medium text-gray-700 mb-1">Nhập tên mới cho lớp:</label>
+                <input id="rename-class-input" type="text" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2 border outline-none font-semibold text-gray-800" placeholder="Ví dụ: Lớp 9A" />
+            </div>
+            <div class="flex justify-end space-x-3">
+                <button id="rename-class-cancel-btn" type="button" class="bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition text-sm">Hủy</button>
+                <button id="rename-class-save-btn" type="button" class="btn-press bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 transition border-blue-800 text-sm">Lưu lại</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Add Class Modal -->
+    <div id="add-class-modal" class="fixed inset-0 modal-backdrop items-center justify-center z-50 p-4" style="display: none;">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full space-y-4 relative transform transition-all">
+            <button id="add-class-close-btn" type="button" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+            <h3 class="text-lg font-bold text-gray-800">Thêm Lớp Mới</h3>
+            <div>
+                <label for="add-class-input" class="block text-sm font-medium text-gray-700 mb-1">Nhập tên lớp học mới:</label>
+                <input id="add-class-input" type="text" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2 border outline-none font-semibold text-gray-800" placeholder="Ví dụ: Lớp 9B" />
+            </div>
+            <div class="flex justify-end space-x-3">
+                <button id="add-class-cancel-btn" type="button" class="bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition text-sm">Hủy</button>
+                <button id="add-class-save-btn" type="button" class="btn-press bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-green-700 transition border-green-800 text-sm">Thêm lớp</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Confirm Modal -->
+    <div id="confirm-modal" class="fixed inset-0 modal-backdrop items-center justify-center z-50 p-4" style="display: none;">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full text-center relative transform transition-all space-y-4">
+            <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto shadow-sm">
+                <i data-lucide="alert-triangle" class="w-8 h-8 text-red-600"></i>
+            </div>
+            <h3 id="confirm-modal-title" class="text-lg font-bold text-gray-800">Xác nhận</h3>
+            <p id="confirm-modal-message" class="text-sm text-gray-500"></p>
+            <div class="flex space-x-3">
+                <button id="confirm-modal-cancel-btn" type="button" class="w-1/2 bg-gray-200 text-gray-700 font-bold py-2.5 px-4 rounded-lg hover:bg-gray-300 transition text-sm">Hủy</button>
+                <button id="confirm-modal-ok-btn" type="button" class="w-1/2 bg-red-600 text-white font-bold py-2.5 px-4 rounded-lg shadow-md hover:bg-red-700 transition border-red-800 text-sm">Đồng ý</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Math Tool Modal -->
     <div id="math-tool-modal" class="draggable-modal flex flex-col p-4 space-y-3"><div id="math-tool-modal-header" class="draggable-header flex justify-between items-center border-b pb-2 mb-1 bg-gray-100 p-2 rounded-t"><h3 class="font-bold text-gray-700 flex items-center"><i data-lucide="sigma" class="w-4 h-4 mr-2"></i> Chuyển đổi công thức</h3><button id="math-tool-close-btn" class="text-gray-400 hover:text-red-500"><i data-lucide="x" class="w-5 h-5"></i></button></div><div class="text-xs text-gray-500">Nhập công thức (ví dụ: x2 hoặc H2O)</div><textarea id="math-input" class="w-full border rounded p-2 text-sm h-20 outline-none" placeholder="Nhập công thức tại đây..."></textarea><div class="flex flex-col space-y-2"><label class="text-xs font-semibold text-gray-600">Chọn chế độ:</label><div class="flex space-x-4"><div class="flex items-center"><input type="radio" id="mode-math" name="math-mode" value="math" class="h-4 w-4 text-blue-600" checked><label for="mode-math" class="ml-2 text-xs text-gray-700 cursor-pointer">Toán / Lý (Số mũ: x²)</label></div><div class="flex items-center"><input type="radio" id="mode-chem" name="math-mode" value="chem" class="h-4 w-4 text-green-600"><label for="mode-chem" class="ml-2 text-xs text-gray-700 cursor-pointer">Hóa / Lý (Chỉ số dưới: H₂)</label></div></div></div><div class="bg-gray-50 p-2 rounded border h-16 flex items-center justify-center overflow-hidden relative"><div id="math-preview" class="text-lg text-blue-700"></div><div class="absolute top-0 left-1 text-[10px] text-gray-400">Preview</div></div><textarea id="math-output" class="w-full border rounded p-2 text-sm h-16 bg-gray-100 font-mono text-xs outline-none" readonly placeholder="Kết quả LaTeX..."></textarea><button id="copy-math-btn" class="btn-press w-full bg-indigo-500 text-white font-bold py-2 rounded hover:bg-indigo-600 text-sm"><i data-lucide="copy" class="inline w-4 h-4 mr-1"></i> Copy kết quả</button></div>
@@ -339,6 +433,25 @@
             const renameClassBtn = document.getElementById('rename-class-btn');
             const deleteClassBtn = document.getElementById('delete-class-btn');
             const noRepeatQuestionsCheckbox = document.getElementById('no-repeat-questions-checkbox'); 
+
+            // Custom Modals Elements
+            const renameClassModal = document.getElementById('rename-class-modal');
+            const renameClassInput = document.getElementById('rename-class-input');
+            const renameClassCloseBtn = document.getElementById('rename-class-close-btn');
+            const renameClassCancelBtn = document.getElementById('rename-class-cancel-btn');
+            const renameClassSaveBtn = document.getElementById('rename-class-save-btn');
+
+            const addClassModal = document.getElementById('add-class-modal');
+            const addClassInput = document.getElementById('add-class-input');
+            const addClassCloseBtn = document.getElementById('add-class-close-btn');
+            const addClassCancelBtn = document.getElementById('add-class-cancel-btn');
+            const addClassSaveBtn = document.getElementById('add-class-save-btn');
+
+            const confirmModal = document.getElementById('confirm-modal');
+            const confirmModalTitle = document.getElementById('confirm-modal-title');
+            const confirmModalMessage = document.getElementById('confirm-modal-message');
+            const confirmModalCancelBtn = document.getElementById('confirm-modal-cancel-btn');
+            const confirmModalOkBtn = document.getElementById('confirm-modal-ok-btn');
 
             // Tool Math
             const showMathToolBtn = document.getElementById('show-math-tool-btn');
@@ -723,38 +836,56 @@
                 saveDataToLocalStorage(); 
             }
             
+            // Custom modal helpers
+            let confirmModalCallback = null;
+            function showCustomConfirm(title, message, onOk) {
+                confirmModalTitle.textContent = title;
+                confirmModalMessage.textContent = message;
+                confirmModalCallback = onOk;
+                showModal(confirmModal);
+            }
+
             function handleAddClass() {
                 if (classList.length >= 15) { alert("Thầy chỉ được tạo tối đa 15 lớp ạ."); return; }
-                const name = prompt("Nhập tên lớp mới (ví dụ: Lớp 9A):", `Lớp ${classList.length + 1}`);
-                if (name) {
-                    const newId = Date.now();
-                    classList.push({ id: newId, name: name, students: "" });
-                    currentClassId = newId;
-                    updateClassSelectUI();
-                    saveDataToLocalStorage();
-                }
+                addClassInput.value = `Lớp ${classList.length + 1}`;
+                showModal(addClassModal);
+                setTimeout(() => addClassInput.focus(), 100);
             }
             
             function handleRenameClass() {
-                const currentClass = classList.find(c => c.id == currentClassId);
+                let currentClass = classList.find(c => c.id == currentClassId);
+                if (!currentClass && classList.length > 0) {
+                    currentClass = classList[0];
+                }
                 if (currentClass) {
-                    const newName = prompt("Nhập tên mới cho lớp:", currentClass.name);
-                    if (newName) {
-                        currentClass.name = newName;
-                        updateClassSelectUI();
-                        saveDataToLocalStorage();
-                    }
+                    renameClassInput.value = currentClass.name;
+                    showModal(renameClassModal);
+                    setTimeout(() => renameClassInput.focus(), 100);
+                } else {
+                    alert("Không tìm thấy lớp nào để sửa tên!");
                 }
             }
             
             function handleDeleteClass() {
                 if (classList.length <= 1) { alert("Phải giữ lại ít nhất 1 lớp ạ."); return; }
-                if (confirm("Thầy có chắc chắn muốn xóa lớp này không?")) {
-                    classList = classList.filter(c => c.id != currentClassId);
-                    currentClassId = classList[0].id;
-                    updateClassSelectUI();
-                    saveDataToLocalStorage();
+                let currentClass = classList.find(c => c.id == currentClassId);
+                if (!currentClass && classList.length > 0) {
+                    currentClass = classList[0];
                 }
+                const className = currentClass ? currentClass.name : "lớp học";
+                showCustomConfirm(
+                    "Xác nhận xóa lớp học",
+                    `Thầy có chắc chắn muốn xóa "${className}" không? Tất cả dữ liệu học sinh của lớp này sẽ bị xóa.`,
+                    () => {
+                        const idToDelete = currentClassId;
+                        classList = classList.filter(c => c.id != idToDelete && c.id != String(idToDelete) && String(c.id) != String(idToDelete));
+                        if (classList.length > 0) {
+                            currentClassId = classList[0].id;
+                        }
+                        updateClassSelectUI();
+                        saveDataToLocalStorage();
+                    }
+                );
             }
             
             classSelect.addEventListener('change', (e) => {
@@ -908,14 +1039,14 @@
             
              function renderQuestionList() {
                 questionListUI.innerHTML = '';
-                if (quizData.length === 0) { questionListUI.innerHTML = `<li class="text-sm text-gray-500 italic text-center">Chưa có câu hỏi nào.</li>`; }
+                if (quizData.length === 0) { questionListUI.innerHTML = `<div class="text-xs text-gray-500 italic text-center py-2">Chưa có câu hỏi nào.</div>`; }
                 quizData.forEach(q => {
-                    const li = document.createElement('li');
-                    li.className = 'flex justify-between items-center p-2 bg-gray-50 rounded border border-gray-200';
-                    li.innerHTML = `<span class="text-sm text-gray-750 truncate pr-2" title="${q.question}">${formatContent(q.question)}</span><div class="flex-shrink-0 space-x-2"><button class="edit-question-btn p-1 text-blue-500 hover:text-blue-700" data-id="${q.id}"><i data-lucide="edit-2" class="w-4 h-4"></i></button><button class="delete-question-btn p-1 text-red-500 hover:text-red-700" data-id="${q.id}"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>`;
+                    const li = document.createElement('div');
+                    li.className = 'flex justify-between items-center p-1 px-2 bg-gray-50 rounded border border-gray-150 text-xs';
+                    li.innerHTML = `<span class="text-xs text-gray-700 truncate pr-2 max-w-[140px]" title="${q.question}">${formatContent(q.question)}</span><div class="flex-shrink-0 space-x-1.5"><button class="edit-question-btn p-0.5 text-blue-500 hover:text-blue-700" data-id="${q.id}"><i data-lucide="edit-2" class="w-3.5 h-3.5"></i></button><button class="delete-question-btn p-0.5 text-red-500 hover:text-red-700" data-id="${q.id}"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button></div>`;
                     questionListUI.appendChild(li);
                 });
-                questionCountInfo.textContent = `Đang có ${quizData.length} câu hỏi.`;
+                questionCountInfo.textContent = `Đang có ${quizData.length} câu.`;
                 lucide.createIcons();
                 if (window.renderMathInElement) renderMathInElement(questionListUI, katexOptions);
                 document.querySelectorAll('.edit-question-btn').forEach(btn => { btn.onclick = (e) => handleEditQuestion(e.currentTarget.dataset.id); });
@@ -1030,6 +1161,61 @@
             addClassBtn.addEventListener('click', handleAddClass);
             renameClassBtn.addEventListener('click', handleRenameClass);
             deleteClassBtn.addEventListener('click', handleDeleteClass);
+
+            // Rename Class Modal Listeners
+            renameClassCloseBtn.addEventListener('click', () => hideModal(renameClassModal));
+            renameClassCancelBtn.addEventListener('click', () => hideModal(renameClassModal));
+            renameClassSaveBtn.addEventListener('click', () => {
+                let currentClass = classList.find(c => c.id == currentClassId);
+                if (!currentClass && classList.length > 0) {
+                    currentClass = classList[0];
+                }
+                const newName = renameClassInput.value.trim();
+                if (newName && currentClass) {
+                    currentClass.name = newName;
+                    updateClassSelectUI();
+                    saveDataToLocalStorage();
+                }
+                hideModal(renameClassModal);
+            });
+            renameClassInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    renameClassSaveBtn.click();
+                }
+            });
+
+            // Add Class Modal Listeners
+            addClassCloseBtn.addEventListener('click', () => hideModal(addClassModal));
+            addClassCancelBtn.addEventListener('click', () => hideModal(addClassModal));
+            addClassSaveBtn.addEventListener('click', () => {
+                const name = addClassInput.value.trim();
+                if (name) {
+                    const newId = Date.now();
+                    classList.push({ id: newId, name: name, students: "" });
+                    currentClassId = newId;
+                    updateClassSelectUI();
+                    saveDataToLocalStorage();
+                }
+                hideModal(addClassModal);
+            });
+            addClassInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    addClassSaveBtn.click();
+                }
+            });
+
+            // Confirm Modal Listeners
+            confirmModalCancelBtn.addEventListener('click', () => {
+                confirmModalCallback = null;
+                hideModal(confirmModal);
+            });
+            confirmModalOkBtn.addEventListener('click', () => {
+                if (confirmModalCallback) {
+                    confirmModalCallback();
+                }
+                confirmModalCallback = null;
+                hideModal(confirmModal);
+            });
 
             // Init Code
             loadDataOnStart();

@@ -28,7 +28,16 @@ import {
   ShieldAlert,
   ArrowRight,
   Flag,
-  Sparkle
+  Sparkle,
+  Plus,
+  Trash2,
+  Edit,
+  Clipboard,
+  Image,
+  Music4,
+  FolderOpen,
+  Save,
+  BookOpen
 } from 'lucide-react';
 
 interface InteractiveGamesTabProps {
@@ -103,6 +112,385 @@ const TYPING_TEXTS = [
   "Dat tay dung vi tri phim F va J tren ban phim may tinh.",
   "Hay su dung phan mem Paint de ve nhung buc tranh sang tao.",
   "Nho luu bai va tat nguon may tinh dung cach khi ra ve em nhe!"
+];
+
+const TOPICS_MAP: Record<number, Record<string, { group: string; topics: string[] }[]>> = {
+  1: {
+    'Toán': [
+      {
+        group: 'Chủ đề 1: Các số đến 10',
+        topics: [
+          'Bài 1: Các số 1, 2, 3',
+          'Bài 2: Các số 4, 5, 6',
+          'Bài 3: Các số 7, 8, 9, 10',
+          'Bài 4: Lớn hơn, bé hơn, bằng nhau'
+        ]
+      },
+      {
+        group: 'Chủ đề 2: Phép cộng và phép trừ trong phạm vi 10',
+        topics: [
+          'Bài 5: Phép cộng trong phạm vi 10',
+          'Bài 6: Phép trừ trong phạm vi 10'
+        ]
+      },
+      {
+        group: 'Chủ đề 3: Hình học phẳng',
+        topics: [
+          'Bài 7: Hình tròn, hình tam giác, hình vuông, hình chữ nhật'
+        ]
+      }
+    ],
+    'Tin học': [
+      {
+        group: 'Chủ đề 1: Làm quen với máy tính',
+        topics: [
+          'Bài 1: Bộ phận của máy tính',
+          'Bài 2: Tư thế ngồi học máy tính đúng'
+        ]
+      },
+      {
+        group: 'Chủ đề 2: Sử dụng chuột máy tính',
+        topics: [
+          'Bài 3: Làm quen chuột máy tính và các thao tác cơ bản',
+          'Bài 4: Thực hành sử dụng chuột máy tính'
+        ]
+      }
+    ],
+    'Tiếng Việt': [
+      {
+        group: 'Chủ đề 1: Âm chữ và vần',
+        topics: [
+          'Bài 1: Làm quen với âm và chữ cái',
+          'Bài 2: Tập ghép vần đơn giản'
+        ]
+      }
+    ]
+  },
+  2: {
+    'Toán': [
+      {
+        group: 'Chủ đề 1: Các số trong phạm vi 1000',
+        topics: [
+          'Bài 1: Đọc, viết các số có ba chữ số',
+          'Bài 2: So sánh các số có ba chữ số'
+        ]
+      },
+      {
+        group: 'Chủ đề 2: Phép cộng và phép trừ trong phạm vi 1000',
+        topics: [
+          'Bài 3: Phép cộng có nhớ trong phạm vi 100',
+          'Bài 4: Phép trừ có nhớ trong phạm vi 100'
+        ]
+      }
+    ],
+    'Tin học': [
+      {
+        group: 'Chủ đề 1: Máy tính xung quanh em',
+        topics: [
+          'Bài 1: Các loại máy tính và vai trò của chúng',
+          'Bài 2: Khởi động và tắt máy tính đúng cách'
+        ]
+      },
+      {
+        group: 'Chủ đề 2: Làm quen với bàn phím',
+        topics: [
+          'Bài 3: Các hàng phím chính trên bàn phím',
+          'Bài 4: Thực hành đặt tay trên bàn phím'
+        ]
+      }
+    ]
+  },
+  3: {
+    'Toán': [
+      {
+        group: 'Chủ đề 1: Phép nhân và phép chia trong phạm vi 1000',
+        topics: [
+          'Bài 1: Bảng nhân 3, bảng chia 3',
+          'Bài 2: Bảng nhân 4, bảng chia 4',
+          'Bài 3: Bảng nhân 6, bảng chia 6'
+        ]
+      },
+      {
+        group: 'Chủ đề 2: Hình học và Đo lường',
+        topics: [
+          'Bài 4: Điểm ở giữa, trung điểm của đoạn thẳng',
+          'Bài 5: Hình tròn, tâm, bán kính, đường kính'
+        ]
+      }
+    ],
+    'Tin học': [
+      {
+        group: 'Chủ đề 1: Máy tính và em',
+        topics: [
+          'Bài 1: Thông tin và quyết định',
+          'Bài 2: Xử lí thông tin',
+          'Bài 3: Máy tính và em',
+          'Bài 4: Làm việc với máy tính',
+          'Bài 5: Sử dụng bàn phím'
+        ]
+      },
+      {
+        group: 'Chủ đề 2: Mạng máy tính và Internet',
+        topics: [
+          'Bài 6: Khám phá thông tin trên Internet'
+        ]
+      }
+    ]
+  },
+  4: {
+    'Toán': [
+      {
+        group: 'Chủ đề 1: Số tự nhiên',
+        topics: [
+          'Bài 1: Các số có nhiều chữ số',
+          'Bài 2: So sánh các số tự nhiên'
+        ]
+      }
+    ],
+    'Tin học': [
+      {
+        group: 'Chủ đề 1: Máy tính và em',
+        topics: [
+          'Bài 1: Phần cứng và phần mềm máy tính',
+          'Bài 2: Gõ bàn phím đúng cách'
+        ]
+      }
+    ]
+  },
+  5: {
+    'Toán': [
+      {
+        group: 'Chủ đề 1: Phân số và số thập phân',
+        topics: [
+          'Bài 1: Khái niệm số thập phân',
+          'Bài 2: Cộng trừ hai số thập phân'
+        ]
+      }
+    ],
+    'Tin học': [
+      {
+        group: 'Chủ đề 1: Ứng dụng Tin học',
+        topics: [
+          'Bài 6: Định dạng kí tự và bố trí hình ảnh trong văn bản',
+          'Bài 7: Thực hành soạn thảo văn bản'
+        ]
+      }
+    ]
+  }
+};
+
+const BANK_QUESTIONS: Question[] = [
+  // Lớp 1 - Toán
+  {
+    id: 'bank-1-toan-1',
+    title: '3 + 4 bằng bao nhiêu?',
+    options: ['5', '6', '7', '8'],
+    correctIndex: 2,
+    explanation: 'Ta đếm tiếp: 3 thêm 4 bằng 7.',
+    difficulty: 'Dễ',
+    gradeId: 1,
+    category: 'Bài 5: Phép cộng trong phạm vi 10',
+    authorId: 'system',
+    subjectId: 'Toán'
+  },
+  {
+    id: 'bank-1-toan-2',
+    title: 'Số nào lớn nhất trong các số sau: 3, 9, 5, 7?',
+    options: ['3', '9', '5', '7'],
+    correctIndex: 1,
+    explanation: 'Trong dãy số trên, 9 là số có giá trị lớn nhất.',
+    difficulty: 'Dễ',
+    gradeId: 1,
+    category: 'Bài 4: Lớn hơn, bé hơn, bằng nhau',
+    authorId: 'system',
+    subjectId: 'Toán'
+  },
+  {
+    id: 'bank-1-toan-3',
+    title: '10 - 6 bằng bao nhiêu?',
+    options: ['3', '4', '5', '6'],
+    correctIndex: 1,
+    explanation: '10 bớt đi 6 còn 4.',
+    difficulty: 'Dễ',
+    gradeId: 1,
+    category: 'Bài 6: Phép trừ trong phạm vi 10',
+    authorId: 'system',
+    subjectId: 'Toán'
+  },
+  {
+    id: 'bank-1-toan-4',
+    title: 'Số "Tám" được viết là?',
+    options: ['6', '7', '8', '9'],
+    correctIndex: 2,
+    explanation: 'Chữ "Tám" biểu thị số 8.',
+    difficulty: 'Dễ',
+    gradeId: 1,
+    category: 'Bài 3: Các số 7, 8, 9, 10',
+    authorId: 'system',
+    subjectId: 'Toán'
+  },
+  {
+    id: 'bank-1-toan-5',
+    title: 'Hình nào có 3 cạnh?',
+    options: ['Hình tròn', 'Hình vuông', 'Hình chữ nhật', 'Hình tam giác'],
+    correctIndex: 3,
+    explanation: 'Hình tam giác là hình có 3 cạnh và 3 góc.',
+    difficulty: 'Dễ',
+    gradeId: 1,
+    category: 'Bài 7: Hình tròn, hình tam giác, hình vuông, hình chữ nhật',
+    authorId: 'system',
+    subjectId: 'Toán'
+  },
+  
+  // Lớp 1 - Tin học
+  {
+    id: 'bank-1-tin-1',
+    title: 'Thiết bị nào giúp em di chuyển con trỏ trên màn hình?',
+    options: ['Bàn phím', 'Chuột máy tính', 'Máy in', 'Loa'],
+    correctIndex: 1,
+    explanation: 'Chuột máy tính dùng để điều khiển con trỏ trên màn hình một cách nhanh chóng.',
+    difficulty: 'Dễ',
+    gradeId: 1,
+    category: 'Bài 3: Làm quen chuột máy tính và các thao tác cơ bản',
+    authorId: 'system',
+    subjectId: 'Tin học'
+  },
+
+  // Lớp 2 - Toán
+  {
+    id: 'bank-2-toan-1',
+    title: 'Số liền sau của 99 là bao nhiêu?',
+    options: ['98', '100', '101', '90'],
+    correctIndex: 1,
+    explanation: 'Số liền sau của một số bằng số đó cộng thêm 1: 99 + 1 = 100.',
+    difficulty: 'Dễ',
+    gradeId: 2,
+    category: 'Bài 1: Đọc, viết các số có ba chữ số',
+    authorId: 'system',
+    subjectId: 'Toán'
+  },
+  {
+    id: 'bank-2-toan-2',
+    title: 'Một tuần lễ có mấy ngày?',
+    options: ['5 ngày', '6 ngày', '7 ngày', '8 ngày'],
+    correctIndex: 2,
+    explanation: 'Một tuần có 7 ngày từ Thứ Hai đến Chủ Nhật.',
+    difficulty: 'Dễ',
+    gradeId: 2,
+    category: 'Bài 1: Đọc, viết các số có ba chữ số',
+    authorId: 'system',
+    subjectId: 'Toán'
+  },
+
+  // Lớp 2 - Tin học
+  {
+    id: 'bank-2-tin-1',
+    title: 'Hàng phím cơ sở chứa các phím nào sau đây?',
+    options: ['Q W E R T Y', 'A S D F G H J K L', 'Z X C V B N M', 'Các phím số từ 1 đến 9'],
+    correctIndex: 1,
+    explanation: 'Hàng phím cơ sở có chứa hai phím có gờ F và J, gồm các phím A S D F G H J K L ; .',
+    difficulty: 'Trung bình',
+    gradeId: 2,
+    category: 'Bài 3: Các hàng phím chính trên bàn phím',
+    authorId: 'system',
+    subjectId: 'Tin học'
+  },
+
+  // Lớp 3 - Toán
+  {
+    id: 'bank-3-toan-1',
+    title: 'Trong phép chia cho 5, số dư lớn nhất có thể là bao nhiêu?',
+    options: ['5', '4', '3', '1'],
+    correctIndex: 1,
+    explanation: 'Số dư luôn nhỏ hơn số chia. Vì vậy số dư lớn nhất khi chia cho 5 là 4.',
+    difficulty: 'Trung bình',
+    gradeId: 3,
+    category: 'Bài 1: Bảng nhân 3, bảng chia 3',
+    authorId: 'system',
+    subjectId: 'Toán'
+  },
+  {
+    id: 'bank-3-toan-2',
+    title: 'Hình tròn có bao nhiêu tâm?',
+    options: ['1 tâm', '2 tâm', 'Vô số tâm', 'Không có tâm'],
+    correctIndex: 0,
+    explanation: 'Mỗi hình tròn chỉ có duy nhất một tâm ở chính giữa.',
+    difficulty: 'Dễ',
+    gradeId: 3,
+    category: 'Bài 5: Hình tròn, tâm, bán kính, đường kính',
+    authorId: 'system',
+    subjectId: 'Toán'
+  },
+
+  // Lớp 3 - Tin học
+  {
+    id: 'bank-3-tin-1',
+    title: 'Bộ phận nào của máy tính hiển thị kết quả làm việc?',
+    options: ['Màn hình', 'Bàn phím', 'Chuột', 'Loa'],
+    correctIndex: 0,
+    explanation: 'Màn hình hiển thị hình ảnh và chữ viết, giúp chúng ta thấy kết quả làm việc của máy tính.',
+    difficulty: 'Dễ',
+    gradeId: 3,
+    category: 'Bài 3: Máy tính và em',
+    authorId: 'system',
+    subjectId: 'Tin học'
+  },
+
+  // Lớp 4 - Toán
+  {
+    id: 'bank-4-toan-1',
+    title: 'Số 100 000 đọc là gì?',
+    options: ['Mười nghìn', 'Một trăm nghìn', 'Một triệu', 'Một trăm'],
+    correctIndex: 1,
+    explanation: 'Số 100 000 gồm một chữ số 1 và năm chữ số 0, đọc là một trăm nghìn.',
+    difficulty: 'Dễ',
+    gradeId: 4,
+    category: 'Bài 1: Các số có nhiều chữ số',
+    authorId: 'system',
+    subjectId: 'Toán'
+  },
+
+  // Lớp 4 - Tin học
+  {
+    id: 'bank-4-tin-1',
+    title: 'Thiết bị nào sau đây là phần cứng của máy tính?',
+    options: ['Hệ điều hành Windows', 'Phần mềm Paint', 'Màn hình máy tính', 'Trò chơi luyện gõ'],
+    correctIndex: 2,
+    explanation: 'Màn hình là thiết bị vật lý có thể nhìn thấy và chạm vào nên là phần cứng. Các mục còn lại là phần mềm.',
+    difficulty: 'Dễ',
+    gradeId: 4,
+    category: 'Bài 1: Phần cứng và phần mềm máy tính',
+    authorId: 'system',
+    subjectId: 'Tin học'
+  },
+
+  // Lớp 5 - Toán
+  {
+    id: 'bank-5-toan-1',
+    title: 'Số thập phân gồm có bao nhiêu phần?',
+    options: ['Một phần', 'Hai phần (Phần nguyên và Phần thập phân)', 'Ba phần', 'Bốn phần'],
+    correctIndex: 1,
+    explanation: 'Số thập phân gồm có hai phần: phần nguyên ở bên trái dấu phẩy và phần thập phân ở bên phải dấu phẩy.',
+    difficulty: 'Dễ',
+    gradeId: 5,
+    category: 'Bài 1: Khái niệm số thập phân',
+    authorId: 'system',
+    subjectId: 'Toán'
+  },
+
+  // Lớp 5 - Tin học
+  {
+    id: 'bank-5-tin-1',
+    title: 'Trong Scratch, cấu trúc lặp giúp em làm gì?',
+    options: ['Chạy chương trình từ đầu', 'Lặp lại một hoặc nhiều hành động nhiều lần', 'Xóa bớt nhân vật', 'Thay đổi màu nền'],
+    correctIndex: 1,
+    explanation: 'Cấu trúc lặp giúp thực hiện tự động một chuỗi lệnh lặp đi lặp lại để tối ưu hóa chương trình.',
+    difficulty: 'Trung bình',
+    gradeId: 5,
+    category: 'Bài 11: Cấu trúc lặp',
+    authorId: 'system',
+    subjectId: 'Tin học'
+  }
 ];
 
 export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 }: InteractiveGamesTabProps) {
@@ -427,6 +815,15 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
   };
 
   // --- GAME 2: KÉO CO KIẾN THỨC STATE & LOGIC ---
+  const [tugStarted, setTugStarted] = useState(false);
+  const [tugMode, setTugMode] = useState<'speed' | 'marathon'>('speed');
+  const [tugRedTeam, setTugRedTeam] = useState('Đội Đỏ');
+  const [tugBlueTeam, setTugBlueTeam] = useState('Đội Xanh');
+  const [tugTimeLimit, setTugTimeLimit] = useState(10); // in seconds: 5, 10, 15, 20, 0 (unlimited)
+  const [tugSelectedImageIndex, setTugSelectedImageIndex] = useState(0);
+  const [tugTimeLeft, setTugTimeLeft] = useState(10);
+  const [showTugLeaderboard, setShowTugLeaderboard] = useState(false);
+  
   const [tugRedScore, setTugRedScore] = useState(0);
   const [tugBlueScore, setTugBlueScore] = useState(0);
   const [tugPosition, setTugPosition] = useState(0); // -100 to 100
@@ -435,47 +832,171 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
   const [tugSelectedAns, setTugSelectedAns] = useState<number | null>(null);
   const [tugAnswered, setTugAnswered] = useState(false);
   const [tugWinner, setTugWinner] = useState<'red' | 'blue' | null>(null);
+  const [tugLeaderboard, setTugLeaderboard] = useState<any[]>(() => {
+    try {
+      const stored = localStorage.getItem('tug_leaderboard');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Dynamic countdown timer for active tug of war gameplay
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (tugStarted && !tugAnswered && !tugWinner && tugTimeLimit > 0) {
+      setTugTimeLeft(tugTimeLimit);
+      timer = setInterval(() => {
+        setTugTimeLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            // Time ran out! Mark as answered wrong
+            handleTugAnswer(-1); // -1 means timeout/wrong
+            return 0;
+          }
+          if (prev <= 4) {
+            triggerSound('tick'); // Tick sound for low time
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [tugStarted, tugActiveQIdx, tugTurn, tugAnswered, tugWinner, tugTimeLimit]);
+
+  // Keyboard shortcut listener for Tug of War active playing
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (activeSubGame !== 'tug-of-war' || !tugStarted || tugAnswered || tugWinner) return;
+      
+      const key = e.key;
+      
+      // Blue team keys: '1', '2', '3', '4'
+      if (tugTurn === 'blue') {
+        if (key === '1') { e.preventDefault(); handleTugAnswer(0); }
+        else if (key === '2') { e.preventDefault(); handleTugAnswer(1); }
+        else if (key === '3') { e.preventDefault(); handleTugAnswer(2); }
+        else if (key === '4') { e.preventDefault(); handleTugAnswer(3); }
+      }
+      
+      // Red team keys: ArrowUp, ArrowLeft, ArrowDown, ArrowRight
+      if (tugTurn === 'red') {
+        if (key === 'ArrowUp') { e.preventDefault(); handleTugAnswer(0); }
+        else if (key === 'ArrowLeft') { e.preventDefault(); handleTugAnswer(1); }
+        else if (key === 'ArrowDown') { e.preventDefault(); handleTugAnswer(2); }
+        else if (key === 'ArrowRight') { e.preventDefault(); handleTugAnswer(3); }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [activeSubGame, tugStarted, tugTurn, tugAnswered, tugWinner, triviaQuestions, tugActiveQIdx]);
+
+  const declareTugWinner = (winnerSide: 'red' | 'blue' | 'draw') => {
+    setTugWinner(winnerSide === 'draw' ? 'red' : winnerSide);
+    triggerSound('win');
+    
+    let winnerName = 'Hòa';
+    if (winnerSide === 'red') winnerName = tugRedTeam;
+    if (winnerSide === 'blue') winnerName = tugBlueTeam;
+
+    const newRecord = {
+      id: Date.now().toString(),
+      redTeam: tugRedTeam,
+      blueTeam: tugBlueTeam,
+      winner: winnerSide,
+      winnerName: winnerName,
+      redScore: tugRedScore,
+      blueScore: tugBlueScore,
+      mode: tugMode === 'speed' ? 'Thi Tốc Độ' : 'Đua Đường Dài',
+      date: new Date().toLocaleString('vi-VN')
+    };
+
+    const updated = [newRecord, ...tugLeaderboard].slice(0, 20);
+    setTugLeaderboard(updated);
+    localStorage.setItem('tug_leaderboard', JSON.stringify(updated));
+  };
 
   const handleTugAnswer = (optIdx: number) => {
     if (tugAnswered || tugWinner) return;
     setTugSelectedAns(optIdx);
     setTugAnswered(true);
 
+    if (triviaQuestions.length === 0) return;
     const activeQ = triviaQuestions[tugActiveQIdx % triviaQuestions.length];
     const isCorrect = optIdx === activeQ.correctIndex;
+
+    const teamName = tugTurn === 'red' ? tugRedTeam : tugBlueTeam;
+    const oppTeamName = tugTurn === 'red' ? tugBlueTeam : tugRedTeam;
 
     if (isCorrect) {
       triggerSound('ding');
       if (tugTurn === 'red') {
-        setTugRedScore(s => s + 1);
+        const newScore = tugRedScore + 1;
+        setTugRedScore(newScore);
         setTugPosition(p => {
-          const next = p - 25;
-          if (next <= -75) setTugWinner('red');
+          const shift = tugMode === 'speed' ? -25 : -10;
+          const next = p + shift;
+          if (tugMode === 'speed' && next <= -75) {
+            // Use local state variable for score representation
+            setTimeout(() => {
+              setTugWinner('red');
+              declareTugWinner('red');
+            }, 10);
+          }
           return Math.max(-100, next);
         });
-        showToast("🎉 Đội Đỏ trả lời CHÍNH XÁC! Kéo mạnh về bên Đỏ!", "success");
+        showToast(`🎉 ${teamName} trả lời CHÍNH XÁC! Kéo mạnh về bên ${teamName}!`, "success");
       } else {
-        setTugBlueScore(s => s + 1);
+        const newScore = tugBlueScore + 1;
+        setTugBlueScore(newScore);
         setTugPosition(p => {
-          const next = p + 25;
-          if (next >= 75) setTugWinner('blue');
+          const shift = tugMode === 'speed' ? 25 : 10;
+          const next = p + shift;
+          if (tugMode === 'speed' && next >= 75) {
+            setTimeout(() => {
+              setTugWinner('blue');
+              declareTugWinner('blue');
+            }, 10);
+          }
           return Math.min(100, next);
         });
-        showToast("🎉 Đội Xanh trả lời CHÍNH XÁC! Kéo mạnh về bên Xanh!", "success");
+        showToast(`🎉 ${teamName} trả lời CHÍNH XÁC! Kéo mạnh về bên ${teamName}!`, "success");
       }
     } else {
       triggerSound('lose');
-      if (tugTurn === 'red') {
-        setTugPosition(p => p + 10); // Penalty: pulled slightly to blue side
-        showToast("❌ Đội Đỏ trả lời sai rồi! Cơ hội nghiêng về đội Xanh.", "error");
+      if (optIdx === -1) {
+        showToast(`⏰ Hết giờ! ${teamName} đã mất lượt trả lời.`, "error");
       } else {
-        setTugPosition(p => p - 10); // Penalty: pulled slightly to red side
-        showToast("❌ Đội Xanh trả lời sai rồi! Cơ hội nghiêng về đội Đỏ.", "error");
+        showToast(`❌ ${teamName} trả lời chưa đúng! Cơ hội nghiêng về ${oppTeamName}.`, "error");
+      }
+      if (tugTurn === 'red') {
+        setTugPosition(p => Math.min(100, p + (tugMode === 'speed' ? 10 : 5)));
+      } else {
+        setTugPosition(p => Math.max(-100, p - (tugMode === 'speed' ? 10 : 5)));
       }
     }
   };
 
   const handleNextTug = () => {
+    const maxQuestions = Math.min(10, triviaQuestions.length);
+    if (tugMode === 'marathon' && tugActiveQIdx + 1 >= maxQuestions) {
+      // Determine marathon winner
+      let winnerSide: 'red' | 'blue' | 'draw' = 'draw';
+      if (tugRedScore > tugBlueScore) winnerSide = 'red';
+      else if (tugBlueScore > tugRedScore) winnerSide = 'blue';
+      else {
+        if (tugPosition < 0) winnerSide = 'red';
+        else if (tugPosition > 0) winnerSide = 'blue';
+      }
+      declareTugWinner(winnerSide);
+      return;
+    }
+
     setTugActiveQIdx(prev => prev + 1);
     setTugTurn(prev => prev === 'red' ? 'blue' : 'red');
     setTugSelectedAns(null);
@@ -492,7 +1013,335 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
     setTugSelectedAns(null);
     setTugAnswered(false);
     setTugWinner(null);
+    setTugStarted(false); // Return to lobby on full reset
     triggerSound('click');
+  };
+
+  // --- TUG OF WAR QUESTION BANK MANAGEMENT ---
+  const [showQuestionForm, setShowQuestionForm] = useState(false);
+  const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
+  const [qFormTitle, setQFormTitle] = useState('');
+  const [qFormOptA, setQFormOptA] = useState('');
+  const [qFormOptB, setQFormOptB] = useState('');
+  const [qFormOptC, setQFormOptC] = useState('');
+  const [qFormOptD, setQFormOptD] = useState('');
+  const [qFormCorrect, setQFormCorrect] = useState(0); // index 0-3
+  const [qFormExplanation, setQFormExplanation] = useState('');
+  const [showJSONModal, setShowJSONModal] = useState(false);
+  const [jsonInput, setJsonInput] = useState('');
+
+  // --- STATE FOR BANK QUESTIONS POPUP ---
+  const [showBankPopup, setShowBankPopup] = useState(false);
+  const [bankSelectedGrade, setBankSelectedGrade] = useState<number>(3);
+  const [bankSelectedSubject, setBankSelectedSubject] = useState<string>('Tin học');
+  const [bankSelectedTopic, setBankSelectedTopic] = useState<string>('Tất cả');
+  const [bankSelectedQuestions, setBankSelectedQuestions] = useState<string[]>([]);
+
+  // Lấy toàn bộ câu hỏi đã gộp (tự tạo + mẫu có sẵn)
+  const getMergedBankQuestions = () => {
+    const userId = currentUser ? (currentUser.username || currentUser.id || 'default') : 'default';
+    const localQs = localStorage.getItem(`school_questions_${userId}`);
+    let userQuestions: Question[] = [];
+    if (localQs) {
+      try {
+        userQuestions = JSON.parse(localQs);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    const allMerged = [...userQuestions, ...BANK_QUESTIONS];
+    const uniqueMap = new Map<string, Question>();
+    allMerged.forEach(q => {
+      const subj = q.subjectId || 'Tin học';
+      const key = `${q.gradeId}_${subj}_${q.title.trim().toLowerCase()}`;
+      if (!uniqueMap.has(key)) {
+        uniqueMap.set(key, q);
+      }
+    });
+
+    return Array.from(uniqueMap.values());
+  };
+
+  // Tính câu hỏi thuộc Lớp, Môn và Chủ đề đã chọn
+  const filteredBankQuestions = React.useMemo(() => {
+    const merged = getMergedBankQuestions();
+    return merged.filter(q => {
+      // Lọc theo Lớp
+      if (q.gradeId !== bankSelectedGrade) return false;
+      
+      // Lọc theo Môn
+      const subj = q.subjectId || 'Tin học';
+      if (subj !== bankSelectedSubject) return false;
+      
+      // Lọc theo Chủ đề
+      if (bankSelectedTopic !== 'Tất cả') {
+        if (q.category !== bankSelectedTopic) return false;
+      }
+      
+      return true;
+    });
+  }, [bankSelectedGrade, bankSelectedSubject, bankSelectedTopic, showBankPopup, triviaQuestions]);
+
+  // Lấy các chủ đề tương ứng với Lớp và Môn hiện tại
+  const currentBankTopics = React.useMemo(() => {
+    const topicsForGrade = TOPICS_MAP[bankSelectedGrade];
+    if (topicsForGrade && topicsForGrade[bankSelectedSubject]) {
+      return topicsForGrade[bankSelectedSubject];
+    }
+    return [];
+  }, [bankSelectedGrade, bankSelectedSubject]);
+
+  useEffect(() => {
+    setBankSelectedTopic('Tất cả');
+    setBankSelectedQuestions([]);
+  }, [bankSelectedGrade, bankSelectedSubject]);
+
+  const isAllBankQuestionsSelected = filteredBankQuestions.length > 0 && 
+    filteredBankQuestions.every(q => bankSelectedQuestions.includes(q.id || ''));
+
+  const handleToggleSelectAllBank = () => {
+    if (isAllBankQuestionsSelected) {
+      setBankSelectedQuestions([]);
+    } else {
+      const ids = filteredBankQuestions.map(q => q.id || '');
+      setBankSelectedQuestions(ids);
+    }
+    triggerSound('click');
+  };
+
+  const handleToggleSelectQuestionBank = (qId: string) => {
+    setBankSelectedQuestions(prev => {
+      if (prev.includes(qId)) {
+        return prev.filter(id => id !== qId);
+      } else {
+        return [...prev, qId];
+      }
+    });
+    triggerSound('click');
+  };
+
+  const handleAddSelectedQuestions = () => {
+    if (bankSelectedQuestions.length === 0) {
+      showToast("Vui lòng chọn ít nhất 1 câu hỏi!", "error");
+      return;
+    }
+    
+    const merged = getMergedBankQuestions();
+    const selectedQs = merged.filter(q => bankSelectedQuestions.includes(q.id || ''));
+    
+    if (selectedQs.length === 0) {
+      showToast("Có lỗi xảy ra khi lấy danh sách câu hỏi!", "error");
+      return;
+    }
+
+    setTriviaQuestions(selectedQs);
+    
+    // Lưu vào localStorage
+    const userId = currentUser ? (currentUser.username || currentUser.id || 'default') : 'default';
+    localStorage.setItem(`school_questions_${userId}`, JSON.stringify(selectedQs));
+    
+    setShowBankPopup(false);
+    showToast(`📚 Đã nạp thành công ${selectedQs.length} câu hỏi từ Ngân hàng!`, "success");
+    triggerSound('ding');
+  };
+
+  const handleSeedTugQuestions = () => {
+    const sampleQuestions: Question[] = [
+      {
+        id: 'ts-1',
+        title: 'Bộ phận nào bảo vệ não bộ của cơ thể người?',
+        options: ['Xương sườn', 'Hộp sọ', 'Xương chậu', 'Xương cột sống'],
+        correctIndex: 1,
+        explanation: 'Hộp sọ cấu tạo từ các xương dẹt ghép lại giúp bao bọc và bảo vệ não bộ khỏi chấn động.',
+        difficulty: 'Dễ',
+        gradeId: 3,
+        category: 'Khoa học',
+        authorId: 'system'
+      },
+      {
+        id: 'ts-2',
+        title: 'Trong toán học, số nào là số nguyên tố nhỏ nhất?',
+        options: ['0', '1', '2', '3'],
+        correctIndex: 2,
+        explanation: 'Số 2 là số nguyên tố nhỏ nhất và cũng là số nguyên tố chẵn duy nhất.',
+        difficulty: 'Dễ',
+        gradeId: 3,
+        category: 'Toán học',
+        authorId: 'system'
+      },
+      {
+        id: 'ts-3',
+        title: 'Con sông nào dài nhất thế giới?',
+        options: ['Sông Nile', 'Sông Amazon', 'Sông Mê Kông', 'Sông Hồng'],
+        correctIndex: 0,
+        explanation: 'Sông Nile ở Châu Phi là con sông dài nhất thế giới với chiều dài khoảng 6,650 km.',
+        difficulty: 'Trung bình',
+        gradeId: 4,
+        category: 'Địa lý',
+        authorId: 'system'
+      },
+      {
+        id: 'ts-4',
+        title: 'Sự kiện lịch sử "Chiến thắng Điện Biên Phủ" diễn ra vào năm nào?',
+        options: ['1945', '1954', '1975', '1930'],
+        correctIndex: 1,
+        explanation: 'Chiến thắng Điện Biên Phủ lẫy lừng năm châu, chấn động địa cầu diễn ra vào ngày 7/5/1954.',
+        difficulty: 'Trung bình',
+        gradeId: 5,
+        category: 'Lịch sử',
+        authorId: 'system'
+      },
+      {
+        id: 'ts-5',
+        title: 'Hành tinh nào gần Mặt Trời nhất trong Hệ Mặt Trời?',
+        options: ['Sao Kim', 'Sao Hỏa', 'Sao Thủy', 'Trái Đất'],
+        correctIndex: 2,
+        explanation: 'Sao Thủy (Mercury) là hành tinh nằm gần Mặt Trời nhất, chu kỳ quỹ đạo chỉ khoảng 88 ngày Trái Đất.',
+        difficulty: 'Dễ',
+        gradeId: 4,
+        category: 'Khoa học vũ trụ',
+        authorId: 'system'
+      }
+    ];
+
+    setTriviaQuestions(sampleQuestions);
+    const userId = currentUser ? (currentUser.username || currentUser.id || 'default') : 'default';
+    localStorage.setItem(`school_questions_${userId}`, JSON.stringify(sampleQuestions));
+    showToast("📚 Đã tải 5 câu hỏi mẫu chất lượng cao vào Ngân hàng!", "success");
+    triggerSound('ding');
+  };
+
+  const handleOpenAddQuestion = () => {
+    setEditingQuestion(null);
+    setQFormTitle('');
+    setQFormOptA('');
+    setQFormOptB('');
+    setQFormOptC('');
+    setQFormOptD('');
+    setQFormCorrect(0);
+    setQFormExplanation('');
+    setShowQuestionForm(true);
+    triggerSound('click');
+  };
+
+  const handleOpenEditQuestion = (q: Question) => {
+    setEditingQuestion(q);
+    setQFormTitle(q.title);
+    setQFormOptA(q.options[0] || '');
+    setQFormOptB(q.options[1] || '');
+    setQFormOptC(q.options[2] || '');
+    setQFormOptD(q.options[3] || '');
+    setQFormCorrect(q.correctIndex || 0);
+    setQFormExplanation(q.explanation || '');
+    setShowQuestionForm(true);
+    triggerSound('click');
+  };
+
+  const handleSaveQForm = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!qFormTitle.trim() || !qFormOptA.trim() || !qFormOptB.trim()) {
+      showToast("Vui lòng điền tiêu đề câu hỏi và ít nhất 2 đáp án đầu tiên!", "error");
+      return;
+    }
+
+    const opts = [
+      qFormOptA.trim(),
+      qFormOptB.trim(),
+      qFormOptC.trim() || 'Đáp án C',
+      qFormOptD.trim() || 'Đáp án D'
+    ];
+
+    let updatedList: Question[] = [];
+
+    if (editingQuestion) {
+      updatedList = triviaQuestions.map(q => {
+        if (q.id === editingQuestion.id) {
+          return {
+            ...q,
+            title: qFormTitle.trim(),
+            options: opts,
+            correctIndex: qFormCorrect,
+            explanation: qFormExplanation.trim()
+          };
+        }
+        return q;
+      });
+      showToast("✏️ Cập nhật câu hỏi thành công!", "success");
+    } else {
+      const newQ: Question = {
+        id: 'q-custom-' + Date.now(),
+        title: qFormTitle.trim(),
+        options: opts,
+        correctIndex: qFormCorrect,
+        explanation: qFormExplanation.trim(),
+        difficulty: 'Trung bình',
+        gradeId: selectedGrade || 3,
+        category: 'Kéo co',
+        authorId: currentUser ? (currentUser.id || 'user') : 'user'
+      };
+      updatedList = [...triviaQuestions, newQ];
+      showToast("➕ Thêm câu hỏi mới thành công!", "success");
+    }
+
+    setTriviaQuestions(updatedList);
+    const userId = currentUser ? (currentUser.username || currentUser.id || 'default') : 'default';
+    localStorage.setItem(`school_questions_${userId}`, JSON.stringify(updatedList));
+    setShowQuestionForm(false);
+    triggerSound('ding');
+  };
+
+  const handleDeleteTugQuestion = (qId: string) => {
+    const updated = triviaQuestions.filter(q => q.id !== qId);
+    setTriviaQuestions(updated);
+    const userId = currentUser ? (currentUser.username || currentUser.id || 'default') : 'default';
+    localStorage.setItem(`school_questions_${userId}`, JSON.stringify(updated));
+    showToast("🗑️ Đã xóa câu hỏi khỏi ngân hàng!", "success");
+    triggerSound('lose');
+  };
+
+  const handleSaveQuestionsToLocal = () => {
+    const userId = currentUser ? (currentUser.username || currentUser.id || 'default') : 'default';
+    localStorage.setItem(`school_questions_${userId}`, JSON.stringify(triviaQuestions));
+    showToast("💾 Đã lưu toàn bộ Ngân hàng Câu hỏi!", "success");
+    triggerSound('ding');
+  };
+
+  const handleImportJSONQuestions = () => {
+    if (!jsonInput.trim()) {
+      showToast("Vui lòng nhập chuỗi JSON câu hỏi!", "error");
+      return;
+    }
+    try {
+      const parsed = JSON.parse(jsonInput);
+      const isArr = Array.isArray(parsed);
+      const rawItems = isArr ? parsed : [parsed];
+      
+      const formatted: Question[] = rawItems.map((item: any, idx: number) => {
+        return {
+          id: item.id || `q-import-${idx}-${Date.now()}`,
+          title: item.title || item.question || `Câu hỏi nhập khẩu số ${idx + 1}`,
+          options: Array.isArray(item.options) ? item.options : ['Đúng', 'Sai', 'Không biết', 'Khác'],
+          correctIndex: typeof item.correctIndex === 'number' ? item.correctIndex : 0,
+          explanation: item.explanation || '',
+          difficulty: item.difficulty || 'Trung bình',
+          gradeId: item.gradeId || selectedGrade || 3,
+          category: item.category || 'Kéo co',
+          authorId: item.authorId || (currentUser ? (currentUser.id || 'user') : 'user')
+        };
+      });
+
+      const newList = [...triviaQuestions, ...formatted];
+      setTriviaQuestions(newList);
+      const userId = currentUser ? (currentUser.username || currentUser.id || 'default') : 'default';
+      localStorage.setItem(`school_questions_${userId}`, JSON.stringify(newList));
+      setShowJSONModal(false);
+      setJsonInput('');
+      showToast(`📂 Đã nhập thành công ${formatted.length} câu hỏi từ JSON!`, "success");
+      triggerSound('ding');
+    } catch (err) {
+      showToast("Định dạng JSON không hợp lệ! Vui lòng kiểm tra lại.", "error");
+    }
   };
 
   // --- GAME 3: ĐÀO VÀNG TRÍ TUỆ STATE & LOGIC ---
@@ -1276,26 +2125,24 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
         </div>
       )}
 
-      {/* ============================================================== */}
-      {/* --- GAME 2: KÉO CO KIẾN THỨC (TUG OF WAR) DISPLAY ---          */}
-      {/* ============================================================== */}
       {activeSubGame === 'tug-of-war' && (
-        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 space-y-6 animate-in zoom-in-95 duration-200">
-          <div className="flex justify-between items-center border-b border-slate-100 pb-4 gap-4">
+        <div className="bg-[#fefaf4] p-5 sm:p-7 rounded-3xl shadow-md border-2 border-[#ede4d7] space-y-6 animate-in zoom-in-95 duration-200 text-slate-800">
+          {/* Top navigation controls */}
+          <div className="flex justify-between items-center border-b border-[#e6dcce] pb-4 gap-4">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => {
                   setActiveSubGame(null);
                   triggerSound('click');
                 }}
-                className="text-xs font-black text-slate-550 hover:text-slate-800 flex items-center gap-1.5 cursor-pointer transition hover:bg-slate-100 py-1 px-2.5 rounded-lg border border-slate-200 bg-white"
+                className="text-xs font-black text-amber-900 hover:text-amber-950 flex items-center gap-1.5 cursor-pointer transition hover:bg-[#ebdcc9] py-1.5 px-3 rounded-xl border border-[#d6c7b3] bg-white shadow-sm"
               >
-                <ArrowLeft className="w-3.5 h-3.5" />
+                <ArrowLeft className="w-3.5 h-3.5 text-amber-700" />
                 Quay lại danh sách
               </button>
 
-              <span className="bg-blue-100 text-blue-800 text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">
-                🪢 Kéo Co Trí Tuệ
+              <span className="bg-[#fcf1e3] text-amber-800 text-[11px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider border border-[#ebdcc9] flex items-center gap-1">
+                🪢 Kéo Co Kiến Thức
               </span>
             </div>
 
@@ -1306,7 +2153,7 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
               }}
               className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 border transition-all cursor-pointer ${
                 soundEnabled 
-                  ? 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100/50' 
+                  ? 'bg-amber-100 border-amber-300 text-amber-800 hover:bg-amber-200/50' 
                   : 'bg-slate-100 border-slate-200 text-slate-400 hover:bg-slate-200/50'
               }`}
             >
@@ -1324,139 +2171,883 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
             </button>
           </div>
 
-          {/* Tug of war game board */}
-          <div className="space-y-6">
-            {/* Visual Arena Rope and players */}
-            <div className="bg-gradient-to-b from-sky-50 to-emerald-50/60 p-6 rounded-3xl border border-slate-200/50 relative overflow-hidden min-h-[180px] flex flex-col justify-between">
-              
-              {/* Score indicators */}
-              <div className="flex justify-between items-center w-full relative z-10">
-                <div className="bg-rose-500 text-white rounded-xl px-4 py-1.5 font-black text-xs shadow">
-                  🔴 ĐỘI ĐỎ: {tugRedScore} đ
+          {/* Lobby View */}
+          {!tugStarted ? (
+            <div className="space-y-6">
+              {/* Title Header Block with illustration */}
+              <div className="text-center py-2 space-y-2 relative">
+                <div className="flex justify-center items-center gap-4 text-3xl select-none animate-bounce duration-1000">
+                  <span>👦👧🎒</span>
+                  <span className="text-4xl">🪢</span>
+                  <span>👧👦🎒</span>
                 </div>
-                <div className="text-center bg-white px-3 py-1 rounded-full border border-slate-200 text-[10px] font-bold text-slate-500">
-                  Phân định thắng thua tại vạch ranh giới!
-                </div>
-                <div className="bg-blue-600 text-white rounded-xl px-4 py-1.5 font-black text-xs shadow">
-                  🔵 ĐỘI XANH: {tugBlueScore} đ
-                </div>
+                <h1 className="text-2xl sm:text-3xl font-black text-[#85532d] uppercase tracking-tight font-sans drop-shadow-sm flex items-center justify-center gap-2">
+                  🏆 Kéo Co Kiến Thức 🏆
+                </h1>
+                <p className="text-xs bg-[#ebdcc9]/50 inline-block px-4 py-1 rounded-full text-amber-900 font-bold tracking-wider">
+                  🎮 Trò chơi trắc nghiệm đối kháng siêu vui 🎮
+                </p>
               </div>
 
-              {/* Rope pulling graphic */}
-              <div className="relative w-full h-12 flex items-center justify-center my-4">
-                {/* Tug field center line */}
-                <div className="absolute top-0 bottom-0 w-1 bg-slate-400/40 z-0" />
-                <div className="absolute top-1/2 -translate-y-1/2 left-4 right-4 h-2 bg-yellow-800 rounded-full shadow-inner" />
+              {/* Main setup interface columns */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                {/* Left controls column */}
+                <div className="lg:col-span-7 space-y-4">
+                  {/* Game Mode selection */}
+                  <div className="bg-white p-4 rounded-2xl border-2 border-[#ebdcc9] shadow-sm space-y-3">
+                    <h3 className="text-xs font-black text-amber-900 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-100 pb-1.5">
+                      <Zap className="w-4 h-4 text-amber-600 fill-amber-100" />
+                      Chế Độ Chơi
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <button
+                        onClick={() => { setTugMode('speed'); triggerSound('click'); }}
+                        className={`p-3.5 rounded-xl border-2 text-left transition-all relative overflow-hidden ${
+                          tugMode === 'speed'
+                            ? 'bg-[#fffbf4] border-amber-500 text-amber-950 ring-2 ring-amber-400/20 shadow'
+                            : 'bg-white border-slate-200 text-slate-550 hover:border-slate-350 hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-black text-xs">🏎️ Thi Tốc Độ</span>
+                          {tugMode === 'speed' && <span className="text-amber-600 font-black text-xs">✓</span>}
+                        </div>
+                        <p className="text-[10px] text-slate-500 font-semibold">Ai đạt mốc trước thì thắng ngay lập tức!</p>
+                      </button>
 
-                {/* Pulling Rope Container with dynamic margin offset */}
-                <div 
-                  className="absolute h-8 flex items-center justify-center transition-all duration-500"
-                  style={{ transform: `translateX(${tugPosition}px)` }}
-                >
-                  <span className="text-3xl pr-8">🏃🔴</span>
-                  <div className="w-24 h-1.5 bg-amber-200 border border-amber-400 relative flex items-center justify-center">
-                    <span className="absolute text-xl -mt-5">🚩</span>
+                      <button
+                        onClick={() => { setTugMode('marathon'); triggerSound('click'); }}
+                        className={`p-3.5 rounded-xl border-2 text-left transition-all relative overflow-hidden ${
+                          tugMode === 'marathon'
+                            ? 'bg-[#fffbf4] border-amber-500 text-amber-950 ring-2 ring-amber-400/20 shadow'
+                            : 'bg-white border-slate-200 text-slate-550 hover:border-slate-350 hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-black text-xs">🏋️ Đua Đường Dài</span>
+                          {tugMode === 'marathon' && <span className="text-amber-600 font-black text-xs">✓</span>}
+                        </div>
+                        <p className="text-[10px] text-slate-500 font-semibold">Trả lời 10 câu, so tổng điểm của cả hai đội!</p>
+                      </button>
+                    </div>
                   </div>
-                  <span className="text-3xl pl-8">🔵🏃</span>
+
+                  {/* Team Names inputs */}
+                  <div className="bg-white p-4 rounded-2xl border-2 border-[#ebdcc9] shadow-sm space-y-3">
+                    <h3 className="text-xs font-black text-amber-900 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-100 pb-1.5">
+                      <Users className="w-4 h-4 text-amber-600" />
+                      Đặt Tên Đội
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-blue-600 uppercase tracking-wider flex items-center gap-1">
+                          🔵 Đội Xanh
+                        </label>
+                        <input
+                          type="text"
+                          value={tugBlueTeam}
+                          onChange={(e) => setTugBlueTeam(e.target.value.slice(0, 15))}
+                          placeholder="Đội Xanh"
+                          className="w-full bg-[#f8fafc] border border-blue-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200 focus:outline-none rounded-xl p-2 px-3 text-xs font-bold transition-all text-blue-950 shadow-inner"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-rose-600 uppercase tracking-wider flex items-center gap-1">
+                          🔴 Đội Đỏ
+                        </label>
+                        <input
+                          type="text"
+                          value={tugRedTeam}
+                          onChange={(e) => setTugRedTeam(e.target.value.slice(0, 15))}
+                          placeholder="Đội Đỏ"
+                          className="w-full bg-[#fffcfc] border border-rose-200 focus:border-rose-400 focus:ring-2 focus:ring-rose-200 focus:outline-none rounded-xl p-2 px-3 text-xs font-bold transition-all text-rose-950 shadow-inner"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stopwatch Countdown limit selection */}
+                  <div className="bg-white p-4 rounded-2xl border-2 border-[#ebdcc9] shadow-sm space-y-3">
+                    <h3 className="text-xs font-black text-amber-900 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-100 pb-1.5">
+                      <Timer className="w-4 h-4 text-amber-600" />
+                      Thời Gian Mỗi Câu
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {[5, 10, 15, 20, 0].map((sec) => {
+                        const isSelected = tugTimeLimit === sec;
+                        return (
+                          <button
+                            key={sec}
+                            onClick={() => { setTugTimeLimit(sec); triggerSound('click'); }}
+                            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                              isSelected
+                                ? 'bg-amber-600 border border-amber-700 text-white shadow-md'
+                                : 'bg-[#faf6f0] border border-slate-200 text-slate-700 hover:bg-[#ede4d7]/40'
+                            }`}
+                          >
+                            {sec === 0 ? '♾️ Không giới hạn' : `${sec} giây`}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Character style selection (Đổi ảnh đội) */}
+                  <div className="bg-white p-4 rounded-2xl border-2 border-[#ebdcc9] shadow-sm space-y-3">
+                    <h3 className="text-xs font-black text-amber-900 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-100 pb-1.5">
+                      <Image className="w-4 h-4 text-amber-600" />
+                      Đổi Ảnh Đội Kéo Co
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {[
+                        { label: 'Học Sinh', left: '👦👦🔴', right: '🔵👧👧' },
+                        { label: 'Dã Thú', left: '🐯🐯🔴', right: '🔵🦁🦁' },
+                        { label: 'Ninja', left: '🥷🥷🔴', right: '🔵🥷🥷' },
+                        { label: 'Robot', left: '👾👾🔴', right: '🔵🤖🤖' }
+                      ].map((item, idx) => {
+                        const isSelected = tugSelectedImageIndex === idx;
+                        return (
+                          <button
+                            key={idx}
+                            onClick={() => { setTugSelectedImageIndex(idx); triggerSound('click'); }}
+                            className={`p-2 py-2.5 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-1 cursor-pointer text-center ${
+                              isSelected
+                                ? 'bg-[#fffbf4] border-amber-500 shadow-sm ring-1 ring-amber-400/20'
+                                : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                            }`}
+                          >
+                            <span className="text-xs font-black text-amber-950">{item.label}</span>
+                            <div className="text-[10px] text-slate-400 select-none flex items-center justify-center gap-1 font-mono pt-1">
+                              <span>{item.left.slice(0, 4)}</span>
+                              <span>vs</span>
+                              <span>{item.right.slice(2, 6)}</span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Hotkeys info */}
+                  <div className="bg-white p-4 rounded-2xl border-2 border-[#ebdcc9] shadow-sm space-y-3">
+                    <h3 className="text-xs font-black text-amber-900 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-100 pb-1.5">
+                      <Keyboard className="w-4 h-4 text-amber-600" />
+                      Phím Tắt Khi Chơi (Chọn Đáp Án A, B, C, D)
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4 text-xs font-semibold">
+                      <div className="p-2.5 rounded-xl bg-blue-50/50 border border-blue-100 flex items-center gap-3">
+                        <span className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-[10px] font-black shrink-0">🔵</span>
+                        <div>
+                          <p className="text-[10px] text-blue-800 font-bold uppercase">Phím Đội Xanh</p>
+                          <p className="font-mono text-slate-600 text-xs">Phím số: <strong className="text-blue-600">1, 2, 3, 4</strong></p>
+                        </div>
+                      </div>
+
+                      <div className="p-2.5 rounded-xl bg-rose-50/50 border border-rose-100 flex items-center gap-3">
+                        <span className="w-6 h-6 rounded-full bg-rose-500 text-white flex items-center justify-center text-[10px] font-black shrink-0">🔴</span>
+                        <div>
+                          <p className="text-[10px] text-rose-800 font-bold uppercase">Phím Đội Đỏ</p>
+                          <p className="font-mono text-slate-600 text-xs">Mũi tên: <strong className="text-rose-600">↑, ←, ↓, →</strong></p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Leaderboards action */}
+                  <button
+                    onClick={() => { setShowTugLeaderboard(true); triggerSound('click'); }}
+                    className="w-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white p-3 rounded-2xl font-black uppercase text-xs tracking-wider shadow transition-all flex items-center justify-center gap-2 cursor-pointer border border-amber-600"
+                  >
+                    <Trophy className="w-4 h-4 fill-amber-200" />
+                    BẢNG VÀNG - Lịch sử thi đấu
+                  </button>
+                </div>
+
+                {/* Right Question Bank column */}
+                <div className="lg:col-span-5 space-y-4">
+                  <div className="bg-white p-4 rounded-2xl border-2 border-[#ebdcc9] shadow-sm space-y-4 flex flex-col min-h-[460px]">
+                    {/* Header with counter */}
+                    <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                      <h3 className="text-xs font-black text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
+                        📝 Ngân Hàng Câu Hỏi
+                        <span className="bg-amber-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full">
+                          {triviaQuestions.length} câu
+                        </span>
+                      </h3>
+                    </div>
+
+                    {/* Toolbar buttons */}
+                    <div className="grid grid-cols-4 gap-1 sm:gap-2">
+                      <button
+                        onClick={handleOpenAddQuestion}
+                        className="p-2 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-[10px] font-bold flex flex-col items-center justify-center gap-1 shadow-sm transition-all cursor-pointer"
+                        title="Thêm câu hỏi mới"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Thêm</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setBankSelectedGrade(selectedGrade || 3);
+                          setBankSelectedSubject('Tin học');
+                          setBankSelectedTopic('Tất cả');
+                          setBankSelectedQuestions([]);
+                          setShowBankPopup(true);
+                          triggerSound('click');
+                        }}
+                        className="p-2 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-[10px] font-bold flex flex-col items-center justify-center gap-1 shadow-sm transition-all cursor-pointer"
+                        title="Lấy câu hỏi từ Ngân hàng"
+                      >
+                        <BookOpen className="w-4 h-4" />
+                        <span>Ngân hàng</span>
+                      </button>
+
+                      <button
+                        onClick={() => { setShowJSONModal(true); triggerSound('click'); }}
+                        className="p-2 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-[10px] font-bold flex flex-col items-center justify-center gap-1 shadow-sm transition-all cursor-pointer"
+                        title="Nhập xuất định dạng JSON"
+                      >
+                        <FolderOpen className="w-4 h-4" />
+                        <span>JSON</span>
+                      </button>
+
+                      <button
+                        onClick={handleSaveQuestionsToLocal}
+                        disabled={triviaQuestions.length === 0}
+                        className={`p-2 py-2 rounded-xl text-[10px] font-bold flex flex-col items-center justify-center gap-1 shadow-sm transition-all ${
+                          triviaQuestions.length > 0
+                            ? 'bg-amber-600 hover:bg-amber-700 text-white cursor-pointer'
+                            : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                        }`}
+                        title="Lưu vào trình duyệt"
+                      >
+                        <Save className="w-4 h-4" />
+                        <span>Lưu</span>
+                      </button>
+                    </div>
+
+                    {/* Question List container */}
+                    <div className="flex-1 overflow-y-auto max-h-[300px] border border-slate-100 rounded-xl bg-slate-50/50 p-2 space-y-2">
+                      {triviaQuestions.length === 0 ? (
+                        <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3">
+                          <Clipboard className="w-12 h-12 text-[#e6dcce] animate-pulse" />
+                          <p className="text-xs text-slate-500 font-semibold max-w-[200px] leading-relaxed">
+                            Chưa có câu hỏi nào. Nhấp vào <strong className="text-amber-800">"Ngân hàng"</strong> hoặc <strong className="text-emerald-600">"Thêm"</strong> để bắt đầu!
+                          </p>
+                        </div>
+                      ) : (
+                        triviaQuestions.map((q, idx) => (
+                          <div
+                            key={q.id || idx}
+                            className="bg-white p-2.5 rounded-xl border border-slate-150 flex items-start justify-between gap-2 shadow-sm hover:border-amber-200 transition-all group"
+                          >
+                            <div className="space-y-1 min-w-0 flex-1">
+                              <p className="text-[11px] font-black text-amber-900">Câu {idx + 1}:</p>
+                              <p className="text-xs font-semibold text-slate-800 leading-tight break-words" title={q.title}>
+                                {q.title}
+                              </p>
+                              <div className="flex flex-wrap gap-1 pt-1.5 select-none">
+                                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                                  q.difficulty === 'Dễ' 
+                                    ? 'bg-emerald-50 text-emerald-700' 
+                                    : q.difficulty === 'Khó' 
+                                    ? 'bg-rose-50 text-rose-700' 
+                                    : 'bg-amber-50 text-amber-700'
+                                }`}>
+                                  {q.difficulty}
+                                </span>
+                                <span className="text-[9px] font-medium bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
+                                  Đúng: {String.fromCharCode(65 + q.correctIndex)}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex shrink-0 space-x-1 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={() => handleOpenEditQuestion(q)}
+                                className="p-1 hover:bg-slate-100 text-blue-500 hover:text-blue-700 rounded transition cursor-pointer"
+                                title="Sửa câu hỏi"
+                              >
+                                <Edit className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteTugQuestion(q.id)}
+                                className="p-1 hover:bg-slate-100 text-rose-500 hover:text-rose-700 rounded transition cursor-pointer"
+                                title="Xóa câu hỏi"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Status text */}
-              <div className="text-center relative z-10 font-black text-xs text-slate-700 uppercase tracking-widest">
-                {tugWinner ? (
-                  <span className="text-emerald-600">🏆 Chúc mừng ĐỘI {tugWinner === 'red' ? 'ĐỎ' : 'XANH'} đã chiến thắng chung cuộc!</span>
-                ) : (
-                  <span>Lượt thi đấu của: <strong className={tugTurn === 'red' ? 'text-rose-500' : 'text-blue-600'}>{tugTurn === 'red' ? '🔴 ĐỘI ĐỎ' : '🔵 ĐỘI XANH'}</strong></span>
+              {/* Bottom Play action */}
+              <div className="pt-2 text-center">
+                <button
+                  onClick={() => {
+                    if (triviaQuestions.length === 0) {
+                      showToast("Vui lòng tải hoặc tạo câu hỏi trước khi bắt đầu!", "error");
+                      return;
+                    }
+                    // Initialize game state variables
+                    setTugRedScore(0);
+                    setTugBlueScore(0);
+                    setTugPosition(0);
+                    setTugActiveQIdx(0);
+                    setTugTurn('red');
+                    setTugSelectedAns(null);
+                    setTugAnswered(false);
+                    setTugWinner(null);
+                    setTugStarted(true);
+                    triggerSound('click');
+                  }}
+                  className={`w-full max-w-lg mx-auto bg-gradient-to-b from-[#e58a2d] to-[#bf6c16] hover:from-[#f39c3e] hover:to-[#cd7d27] text-white p-4.5 rounded-2xl text-base font-black uppercase tracking-widest shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-3 transform hover:-translate-y-0.5 cursor-pointer border-t-2 border-[#ffbe6a] border-b-4 border-[#854d12] ${
+                    triviaQuestions.length === 0 ? 'opacity-50 cursor-not-allowed filter grayscale' : ''
+                  }`}
+                >
+                  <Play className="w-5 h-5 fill-white text-white shrink-0 animate-pulse" />
+                  🚀 BẮT ĐẦU KÉO CO! 🚀
+                </button>
+                {triviaQuestions.length === 0 && (
+                  <p className="text-[10px] text-rose-500 font-black mt-2">
+                    ⚠️ Ngân hàng câu hỏi đang trống! Nhấp vào "Ngân hàng" để nạp nhanh.
+                  </p>
                 )}
               </div>
             </div>
-
-            {/* Answer & Question Board */}
-            {tugWinner ? (
-              <div className="bg-emerald-50/50 border border-dashed border-emerald-200 rounded-3xl p-8 text-center space-y-4">
-                <span className="text-5xl">👑🥇🏆</span>
-                <h3 className="text-base font-black text-emerald-800 uppercase tracking-widest">Vòng đấu kết thúc!</h3>
-                <p className="text-xs text-slate-550 max-w-sm mx-auto font-semibold">
-                  Đội {tugWinner === 'red' ? 'Đỏ' : 'Xanh'} đã hoàn thành xuất sắc việc kéo sập ranh giới đối phương nhờ sự thông thái của mình!
-                </p>
-                <button
-                  onClick={resetTugGame}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase px-6 py-3 rounded-xl transition"
-                >
-                  Chơi ván mới
-                </button>
-              </div>
-            ) : (
-              <div className="bg-slate-50 p-6 rounded-2.5xl border border-slate-200 space-y-5 text-left">
-                {/* Active Question */}
-                <div className="space-y-1">
-                  <span className="bg-indigo-50 border border-indigo-150 text-indigo-700 text-[9px] font-black px-2.5 py-0.5 rounded uppercase">
-                    Câu hỏi số {tugActiveQIdx + 1}
-                  </span>
-                  <h4 className="text-sm font-black text-slate-800 pt-1.5">
-                    {triviaQuestions[tugActiveQIdx % triviaQuestions.length].title}
-                  </h4>
-                </div>
-
-                {/* Multiple Options */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {triviaQuestions[tugActiveQIdx % triviaQuestions.length].options.map((opt, oIdx) => {
-                    const isSelected = tugSelectedAns === oIdx;
-                    const isCorrect = oIdx === triviaQuestions[tugActiveQIdx % triviaQuestions.length].correctIndex;
-                    const showCorrectness = tugAnswered;
-
-                    let btnStyle = 'bg-white border-slate-200 text-slate-650 hover:bg-slate-100';
-                    if (showCorrectness) {
-                      if (isCorrect) {
-                        btnStyle = 'bg-emerald-50 border-emerald-400 text-emerald-800 font-bold';
-                      } else if (isSelected) {
-                        btnStyle = 'bg-rose-50 border-rose-400 text-rose-800 font-bold';
-                      } else {
-                        btnStyle = 'bg-white/40 border-slate-150 text-slate-350 opacity-60';
-                      }
-                    }
-
-                    return (
-                      <button
-                        key={oIdx}
-                        onClick={() => handleTugAnswer(oIdx)}
-                        disabled={tugAnswered}
-                        className={`p-3.5 border-2 rounded-2xl text-xs font-semibold flex items-start gap-3 text-left transition-all cursor-pointer ${btnStyle}`}
-                      >
-                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
-                          showCorrectness && isCorrect 
-                            ? 'bg-emerald-500 text-white' 
-                            : showCorrectness && isSelected 
-                            ? 'bg-rose-500 text-white' 
-                            : 'bg-slate-150 text-slate-500'
-                        }`}>
-                          {String.fromCharCode(65 + oIdx)}
-                        </span>
-                        <span className="break-words min-w-0 flex-1">{opt}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Explanation and next controls */}
-                {tugAnswered && (
-                  <div className="pt-3 border-t border-slate-200/50 flex flex-col sm:flex-row justify-between items-center gap-3">
-                    <p className="text-[11px] text-slate-500 italic">
-                      *Gợi ý: {triviaQuestions[tugActiveQIdx % triviaQuestions.length].explanation}
+          ) : (
+            /* Active Tug of War gameplay view */
+            <div className="space-y-6">
+              {/* Gameplay stats with round timer */}
+              <div className="flex flex-col sm:flex-row justify-between items-center bg-[#f7eedf] p-3.5 rounded-2xl border border-[#ebdcc9] gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">🏆</span>
+                  <div>
+                    <p className="text-[10px] text-amber-900 font-bold uppercase tracking-wider">Chế độ thi đấu</p>
+                    <p className="text-xs font-black text-[#5c3415] uppercase">
+                      {tugMode === 'speed' ? '🏎️ Thi Tốc Độ (75 điểm thắng)' : '🏋️ Đua Đường Dài (Tích lũy 10 lượt)'}
                     </p>
-                    
-                    <button
-                      onClick={handleNextTug}
-                      className="bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-xs font-black uppercase px-5 py-2.5 rounded-xl flex items-center gap-1 cursor-pointer shrink-0"
-                    >
-                      Tiếp tục lượt sau
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
+                  </div>
+                </div>
+
+                {/* Round timer indicator */}
+                {tugTimeLimit > 0 && !tugAnswered && !tugWinner && (
+                  <div className="flex items-center gap-2 bg-white px-3.5 py-1.5 rounded-xl shadow-sm border border-[#ebdcc9]">
+                    <Timer className={`w-4 h-4 ${tugTimeLeft <= 4 ? 'text-rose-600 animate-spin' : 'text-amber-600'}`} />
+                    <span className={`text-xs font-black font-mono ${tugTimeLeft <= 4 ? 'text-rose-600 scale-110' : 'text-slate-800'}`}>
+                      ⏱️ Còn lại: {tugTimeLeft}s
+                    </span>
                   </div>
                 )}
+
+                <button
+                  onClick={() => {
+                    setTugStarted(false);
+                    triggerSound('click');
+                  }}
+                  className="text-[10px] font-bold text-amber-800 bg-white border border-[#d6c7b3] hover:bg-slate-50 px-3 py-1.5 rounded-lg shadow-sm"
+                >
+                  ↩ Quay lại Sảnh
+                </button>
               </div>
-            )}
-          </div>
+
+              {/* Visual Arena Rope and players */}
+              <div className="bg-gradient-to-b from-sky-50 to-emerald-50/60 p-5 sm:p-7 rounded-3xl border border-slate-200/50 relative overflow-hidden min-h-[190px] flex flex-col justify-between shadow-inner">
+                {/* Score indicators */}
+                <div className="flex justify-between items-center w-full relative z-10 gap-2">
+                  <div className="bg-rose-500 text-white rounded-xl px-4 py-2 font-black text-xs sm:text-sm shadow flex items-center gap-2">
+                    <span className="shrink-0">🔴</span>
+                    <span className="truncate max-w-[100px]">{tugRedTeam.toUpperCase()}</span>: {tugRedScore} đ
+                  </div>
+                  
+                  <div className="text-center bg-white px-3 py-1 rounded-full border border-slate-200 text-[10px] font-bold text-slate-500 hidden sm:block">
+                    Phân định thắng thua tại vạch ranh giới!
+                  </div>
+                  
+                  <div className="bg-blue-600 text-white rounded-xl px-4 py-2 font-black text-xs sm:text-sm shadow flex items-center gap-2">
+                    <span className="shrink-0">🔵</span>
+                    <span className="truncate max-w-[100px]">{tugBlueTeam.toUpperCase()}</span>: {tugBlueScore} đ
+                  </div>
+                </div>
+
+                {/* Rope pulling graphic */}
+                <div className="relative w-full h-16 flex items-center justify-center my-6">
+                  {/* Tug field center line */}
+                  <div className="absolute top-0 bottom-0 w-1.5 bg-slate-350/50 z-0" />
+                  
+                  {/* Red limits */}
+                  <div className="absolute top-0 bottom-0 left-12 w-0.5 bg-rose-500/20 border-l border-dashed border-rose-500/40" />
+                  <div className="absolute top-0 bottom-0 right-12 w-0.5 bg-blue-500/20 border-r border-dashed border-blue-500/40" />
+
+                  <div className="absolute top-1/2 -translate-y-1/2 left-4 right-4 h-2 bg-amber-800 rounded-full shadow-inner" />
+
+                  {/* Pulling Rope Container with dynamic offset */}
+                  <div 
+                    className="absolute h-12 flex items-center justify-center transition-all duration-500"
+                    style={{ transform: `translateX(${tugPosition}px)` }}
+                  >
+                    {/* Left pulling team */}
+                    <span className="text-2xl sm:text-3xl pr-6 select-none filter drop-shadow">
+                      {tugSelectedImageIndex === 0 && '👦👦🔴'}
+                      {tugSelectedImageIndex === 1 && '🐯🐯🔴'}
+                      {tugSelectedImageIndex === 2 && '🥷🥷🔴'}
+                      {tugSelectedImageIndex === 3 && '👾👾🔴'}
+                    </span>
+                    
+                    {/* Center flag */}
+                    <div className="w-16 h-2 bg-[#d7a15c] border border-amber-600 relative flex items-center justify-center">
+                      <span className="absolute text-xl -mt-6 select-none animate-pulse">🚩</span>
+                    </div>
+                    
+                    {/* Right pulling team */}
+                    <span className="text-2xl sm:text-3xl pl-6 select-none filter drop-shadow">
+                      {tugSelectedImageIndex === 0 && '🔵👧👧'}
+                      {tugSelectedImageIndex === 1 && '🔵🦁🦁'}
+                      {tugSelectedImageIndex === 2 && '🔵🥷🥷'}
+                      {tugSelectedImageIndex === 3 && '🔵🤖🤖'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Status text */}
+                <div className="text-center relative z-10 font-black text-xs text-slate-700 uppercase tracking-widest">
+                  {tugWinner ? (
+                    <span className="text-emerald-600 text-sm bg-white/95 px-4 py-1.5 rounded-full shadow-sm border border-emerald-200">
+                      🏆 Chúc mừng {tugWinner === 'red' ? tugRedTeam.toUpperCase() : tugBlueTeam.toUpperCase()} đã chiến thắng chung cuộc!
+                    </span>
+                  ) : (
+                    <span className="bg-white/80 px-4 py-1.5 rounded-full text-[10px]">
+                      Lượt thi đấu của: <strong className={tugTurn === 'red' ? 'text-rose-500' : 'text-blue-600'}>
+                        {tugTurn === 'red' ? `🔴 ${tugRedTeam.toUpperCase()}` : `🔵 ${tugBlueTeam.toUpperCase()}`}
+                      </strong>
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Answer & Question Board */}
+              {tugWinner ? (
+                <div className="bg-emerald-50/50 border-2 border-dashed border-emerald-300 rounded-3xl p-8 text-center space-y-4 shadow-sm">
+                  <span className="text-5xl select-none animate-bounce block">👑🥇🏆</span>
+                  <h3 className="text-base font-black text-emerald-800 uppercase tracking-widest">Vòng đấu kết thúc!</h3>
+                  <p className="text-xs text-slate-650 max-w-sm mx-auto font-bold">
+                    {tugWinner === 'red' ? tugRedTeam : tugBlueTeam} đã giành chiến thắng thuyết phục nhờ tinh thần thép và sự thông thái của mình!
+                  </p>
+                  <button
+                    onClick={resetTugGame}
+                    className="bg-[#e58a2d] hover:bg-[#cd7d27] text-white text-xs font-black uppercase px-6 py-3 rounded-xl transition shadow-md hover:shadow-lg border-b-4 border-[#854d12]"
+                  >
+                    Quay lại sảnh trò chơi
+                  </button>
+                </div>
+              ) : (
+                <div className="bg-white p-5 sm:p-6 rounded-2.5xl border-2 border-[#ebdcc9] space-y-5 text-left shadow-sm">
+                  {/* Active Question */}
+                  <div className="space-y-1">
+                    <span className="bg-[#fef4e8] border border-[#ebdcc9] text-[#78461b] text-[10px] font-black px-3 py-1 rounded-lg uppercase inline-block">
+                      Câu hỏi số {tugActiveQIdx + 1}
+                    </span>
+                    <h4 className="text-sm sm:text-base font-black text-slate-800 pt-1.5 leading-relaxed">
+                      {triviaQuestions[tugActiveQIdx % triviaQuestions.length]?.title}
+                    </h4>
+                  </div>
+
+                  {/* Multiple Options */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    {triviaQuestions[tugActiveQIdx % triviaQuestions.length]?.options.map((opt, oIdx) => {
+                      const isSelected = tugSelectedAns === oIdx;
+                      const isCorrect = oIdx === triviaQuestions[tugActiveQIdx % triviaQuestions.length].correctIndex;
+                      const showCorrectness = tugAnswered;
+
+                      let btnStyle = 'bg-white border-slate-200 text-slate-650 hover:border-amber-300 hover:bg-amber-50/20';
+                      if (showCorrectness) {
+                        if (isCorrect) {
+                          btnStyle = 'bg-emerald-50 border-emerald-400 text-emerald-800 font-bold';
+                        } else if (isSelected) {
+                          btnStyle = 'bg-rose-50 border-rose-400 text-rose-800 font-bold';
+                        } else {
+                          btnStyle = 'bg-white/40 border-slate-150 text-slate-350 opacity-60';
+                        }
+                      }
+
+                      return (
+                        <button
+                          key={oIdx}
+                          onClick={() => handleTugAnswer(oIdx)}
+                          disabled={tugAnswered}
+                          className={`p-3.5 border-2 rounded-2xl text-xs font-semibold flex items-start gap-3 text-left transition-all cursor-pointer ${btnStyle}`}
+                        >
+                          <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${
+                            showCorrectness && isCorrect 
+                              ? 'bg-emerald-500 text-white' 
+                              : showCorrectness && isSelected 
+                              ? 'bg-rose-500 text-white' 
+                              : 'bg-slate-150 text-slate-500 font-bold'
+                          }`}>
+                            {String.fromCharCode(65 + oIdx)}
+                          </span>
+                          <span className="break-words min-w-0 flex-1">{opt}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Explanation and next controls */}
+                  {tugAnswered && (
+                    <div className="pt-4 border-t border-slate-150 flex flex-col sm:flex-row justify-between items-center gap-3">
+                      <p className="text-[11px] text-slate-500 italic max-w-md">
+                        💡 {triviaQuestions[tugActiveQIdx % triviaQuestions.length]?.explanation || 'Không có giải thích chi tiết.'}
+                      </p>
+                      
+                      <button
+                        onClick={handleNextTug}
+                        className="bg-amber-600 hover:bg-amber-700 text-white text-xs font-black uppercase px-5 py-2.5 rounded-xl flex items-center gap-1 cursor-pointer shrink-0 border-b-2 border-amber-800 shadow"
+                      >
+                        {tugMode === 'marathon' && (tugActiveQIdx + 1 >= Math.min(10, triviaQuestions.length))
+                          ? 'Xem kết quả ván đấu'
+                          : 'Tiếp tục lượt sau'
+                        }
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ============================================================== */}
+          {/* MODAL: BẢNG VÀNG - LEADERBOARD RECORDS */}
+          {/* ============================================================== */}
+          {showTugLeaderboard && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+              <div className="bg-white rounded-3xl w-full max-w-xl max-h-[85vh] flex flex-col overflow-hidden border-2 border-amber-500 shadow-2xl animate-in zoom-in-95 duration-200">
+                {/* Header */}
+                <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-4.5 text-white flex justify-between items-center">
+                  <h3 className="font-black text-sm uppercase tracking-wider flex items-center gap-2">
+                    <Trophy className="w-5 h-5 fill-amber-200" />
+                    BẢNG VÀNG KÉO CO KIẾN THỨC
+                  </h3>
+                  <button
+                    onClick={() => setShowTugLeaderboard(false)}
+                    className="p-1 hover:bg-white/25 rounded-lg text-white"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Content list */}
+                <div className="p-5 flex-1 overflow-y-auto space-y-4">
+                  {tugLeaderboard.length === 0 ? (
+                    <div className="text-center py-10 space-y-2">
+                      <Trophy className="w-12 h-12 text-slate-200 mx-auto" />
+                      <p className="text-xs text-slate-500 font-bold">Chưa ghi nhận trận đấu nào.</p>
+                      <p className="text-[10px] text-slate-400">Hãy chơi một trận đấu để lưu thành tích vào đây!</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2.5">
+                      {tugLeaderboard.map((item, idx) => {
+                        const redWin = item.winner === 'red';
+                        const blueWin = item.winner === 'blue';
+                        return (
+                          <div
+                            key={item.id || idx}
+                            className="bg-slate-50 p-3 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                          >
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="bg-amber-100 text-amber-800 text-[9px] font-black px-1.5 py-0.5 rounded uppercase">
+                                  Top {idx + 1}
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-mono font-medium">{item.date}</span>
+                                <span className="text-[9px] font-bold text-slate-500">({item.mode})</span>
+                              </div>
+                              <div className="text-xs font-bold text-slate-700 pt-1 flex items-center gap-1 flex-wrap">
+                                <span className={redWin ? 'text-rose-600 font-black' : 'text-slate-650'}>
+                                  🔴 {item.redTeam} ({item.redScore}đ)
+                                </span>
+                                <span className="text-slate-400">vs</span>
+                                <span className={blueWin ? 'text-blue-600 font-black' : 'text-slate-650'}>
+                                  🔵 {item.blueTeam} ({item.blueScore}đ)
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="sm:text-right">
+                              <p className="text-[9px] text-slate-400 font-bold uppercase">Nhà Vô Địch</p>
+                              <p className="text-xs font-black text-emerald-600 flex items-center gap-1">
+                                👑 {item.winnerName}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Actions */}
+                <div className="p-4 bg-slate-50 border-t border-slate-150 flex justify-between gap-3">
+                  <button
+                    onClick={() => {
+                      if (window.confirm("Bạn có chắc chắn muốn xóa toàn bộ lịch sử thi đấu?")) {
+                        setTugLeaderboard([]);
+                        localStorage.removeItem('tug_leaderboard');
+                        showToast("Đã xóa toàn bộ lịch sử!", "success");
+                      }
+                    }}
+                    className="text-[10px] font-bold text-rose-600 hover:text-rose-700 p-2 border border-rose-200 rounded-xl bg-white hover:bg-rose-50 cursor-pointer"
+                  >
+                    Xóa sạch lịch sử
+                  </button>
+
+                  <button
+                    onClick={() => setShowTugLeaderboard(false)}
+                    className="px-5 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-xl text-xs font-black uppercase cursor-pointer"
+                  >
+                    Đóng lại
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ============================================================== */}
+          {/* MODAL: THÊM / SỬA CÂU HỎI */}
+          {/* ============================================================== */}
+          {showQuestionForm && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+              <form
+                onSubmit={handleSaveQForm}
+                className="bg-white rounded-3xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden border-2 border-emerald-500 shadow-2xl animate-in zoom-in-95 duration-200"
+              >
+                {/* Header */}
+                <div className="bg-emerald-600 p-4.5 text-white flex justify-between items-center">
+                  <h3 className="font-black text-sm uppercase tracking-wider flex items-center gap-2">
+                    {editingQuestion ? '✏️ CHỈNH SỬA CÂU HỎI' : '➕ THÊM CÂU HỎI MỚI'}
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setShowQuestionForm(false)}
+                    className="p-1 hover:bg-white/25 rounded-lg text-white"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Form fields */}
+                <div className="p-5 flex-1 overflow-y-auto space-y-4 text-xs font-semibold">
+                  <div className="space-y-1">
+                    <label className="text-amber-900 font-black">1. Câu hỏi / Đề bài *</label>
+                    <textarea
+                      required
+                      value={qFormTitle}
+                      onChange={(e) => setQFormTitle(e.target.value)}
+                      placeholder="Ví dụ: Thủ đô của Việt Nam là thành phố nào?"
+                      rows={2}
+                      className="w-full bg-[#fcfcfc] border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 focus:outline-none rounded-xl p-2.5 px-3.5 text-xs transition-all"
+                    />
+                  </div>
+
+                  {/* Options */}
+                  <div className="space-y-2">
+                    <label className="text-amber-900 font-black">2. Các đáp án lựa chọn *</label>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <span className="text-[10px] text-slate-500">Đáp án A *</span>
+                        <input
+                          type="text"
+                          required
+                          value={qFormOptA}
+                          onChange={(e) => setQFormOptA(e.target.value)}
+                          placeholder="Nhập phương án A"
+                          className="w-full bg-[#fcfcfc] border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 focus:outline-none rounded-xl p-2.5 px-3 text-xs"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <span className="text-[10px] text-slate-500">Đáp án B *</span>
+                        <input
+                          type="text"
+                          required
+                          value={qFormOptB}
+                          onChange={(e) => setQFormOptB(e.target.value)}
+                          placeholder="Nhập phương án B"
+                          className="w-full bg-[#fcfcfc] border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 focus:outline-none rounded-xl p-2.5 px-3 text-xs"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <span className="text-[10px] text-slate-500">Đáp án C</span>
+                        <input
+                          type="text"
+                          value={qFormOptC}
+                          onChange={(e) => setQFormOptC(e.target.value)}
+                          placeholder="Nhập phương án C (nếu có)"
+                          className="w-full bg-[#fcfcfc] border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 focus:outline-none rounded-xl p-2.5 px-3 text-xs"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <span className="text-[10px] text-slate-500">Đáp án D</span>
+                        <input
+                          type="text"
+                          value={qFormOptD}
+                          onChange={(e) => setQFormOptD(e.target.value)}
+                          placeholder="Nhập phương án D (nếu có)"
+                          className="w-full bg-[#fcfcfc] border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 focus:outline-none rounded-xl p-2.5 px-3 text-xs"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Correct Index */}
+                  <div className="space-y-1.5">
+                    <label className="text-amber-900 font-black">3. Đáp án chính xác *</label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {[0, 1, 2, 3].map((optIdx) => (
+                        <button
+                          key={optIdx}
+                          type="button"
+                          onClick={() => setQFormCorrect(optIdx)}
+                          className={`p-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                            qFormCorrect === optIdx
+                              ? 'bg-emerald-500 text-white shadow-md'
+                              : 'bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200'
+                          }`}
+                        >
+                          {String.fromCharCode(65 + optIdx)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Explanation */}
+                  <div className="space-y-1">
+                    <label className="text-amber-900 font-black">4. Giải thích / Lời giải gợi ý</label>
+                    <input
+                      type="text"
+                      value={qFormExplanation}
+                      onChange={(e) => setQFormExplanation(e.target.value)}
+                      placeholder="Nhập giải thích ngắn gọn hiển thị khi học sinh trả lời đúng/sai."
+                      className="w-full bg-[#fcfcfc] border border-slate-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 focus:outline-none rounded-xl p-2.5 px-3.5 text-xs"
+                    />
+                  </div>
+                </div>
+
+                {/* Footer buttons */}
+                <div className="p-4 bg-slate-50 border-t border-slate-150 flex justify-end gap-3 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setShowQuestionForm(false)}
+                    className="px-5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-black uppercase cursor-pointer"
+                  >
+                    Hủy bỏ
+                  </button>
+
+                  <button
+                    type="submit"
+                    className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase shadow cursor-pointer border-b-2 border-emerald-800"
+                  >
+                    {editingQuestion ? 'Lưu thay đổi' : 'Tạo câu hỏi'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* ============================================================== */}
+          {/* MODAL: NHẬP XUẤT JSON */}
+          {/* ============================================================== */}
+          {showJSONModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+              <div className="bg-white rounded-3xl w-full max-w-xl max-h-[85vh] flex flex-col overflow-hidden border-2 border-blue-500 shadow-2xl animate-in zoom-in-95 duration-200">
+                {/* Header */}
+                <div className="bg-blue-600 p-4.5 text-white flex justify-between items-center">
+                  <h3 className="font-black text-sm uppercase tracking-wider flex items-center gap-2">
+                    <FolderOpen className="w-5 h-5 text-blue-200" />
+                    NHẬP CÂU HỎI TỪ JSON
+                  </h3>
+                  <button
+                    onClick={() => setShowJSONModal(false)}
+                    className="p-1 hover:bg-white/25 rounded-lg text-white"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Content */}
+                <div className="p-5 flex-1 overflow-y-auto space-y-4 text-xs font-semibold">
+                  <p className="text-[11px] text-slate-500 leading-relaxed font-bold">
+                    Dán chuỗi JSON chứa danh sách câu hỏi vào ô dưới đây. Chuỗi JSON phải tuân theo cấu trúc mẫu bên dưới:
+                  </p>
+                  
+                  {/* JSON Code schema block */}
+                  <pre className="bg-slate-800 text-slate-100 p-3 rounded-xl font-mono text-[9px] overflow-x-auto border-2 border-slate-900 leading-relaxed">
+{`[
+  {
+    "title": "Hành tinh nào gần Mặt Trời nhất?",
+    "options": ["Sao Kim", "Sao Hỏa", "Sao Thủy", "Trái Đất"],
+    "correctIndex": 2,
+    "explanation": "Sao Thủy nằm gần Mặt Trời nhất."
+  }
+]`}
+                  </pre>
+
+                  <div className="space-y-1">
+                    <label className="text-amber-900 font-black">Chuỗi JSON câu hỏi *</label>
+                    <textarea
+                      required
+                      value={jsonInput}
+                      onChange={(e) => setJsonInput(e.target.value)}
+                      placeholder="Dán chuỗi JSON mảng câu hỏi tại đây..."
+                      rows={5}
+                      className="w-full bg-[#fafbfc] border border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200 focus:outline-none rounded-xl p-2.5 font-mono text-xs shadow-inner"
+                    />
+                  </div>
+                </div>
+
+                {/* Footer buttons */}
+                <div className="p-4 bg-slate-50 border-t border-slate-150 flex justify-between gap-3">
+                  <button
+                    onClick={() => {
+                      // Quick action to copy current questions as JSON template
+                      const jsonStr = JSON.stringify(triviaQuestions, null, 2);
+                      navigator.clipboard.writeText(jsonStr);
+                      showToast("📋 Đã sao chép danh sách câu hỏi hiện tại vào Clipboard!", "success");
+                    }}
+                    className="text-[10px] font-bold text-blue-600 hover:text-blue-700 p-2.5 border border-blue-200 rounded-xl bg-white hover:bg-blue-50 cursor-pointer shrink-0"
+                  >
+                    Copy Ngân Hàng Hiện Tại
+                  </button>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setShowJSONModal(false)}
+                      className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-black uppercase cursor-pointer"
+                    >
+                      Hủy bỏ
+                    </button>
+
+                    <button
+                      onClick={handleImportJSONQuestions}
+                      className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black uppercase shadow cursor-pointer border-b-2 border-blue-800"
+                    >
+                      Nhập Câu Hỏi
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -2280,6 +3871,243 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
                 className="bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-black text-xs uppercase tracking-widest px-6 py-3.5 rounded-2xl shadow-md hover:shadow-lg transition active:scale-95 flex items-center gap-2 cursor-pointer border-0"
               >
                 🚀 Bắt đầu chơi ngay!
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* --- BANK QUESTIONS POPUP MODAL ---                             */}
+      {/* ============================================================== */}
+      {showBankPopup && (
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-[32px] w-full max-w-2xl shadow-2xl overflow-hidden border-4 border-[#ffbe6c] transform transition-all animate-fadeIn flex flex-col max-h-[90vh]">
+            
+            {/* Header section with warm orange-amber background */}
+            <div className="bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 p-5 text-white flex justify-between items-center relative border-b-4 border-[#ffbe6c] text-left">
+              <h3 className="text-lg sm:text-xl font-black text-white flex items-center gap-2 drop-shadow-md">
+                <span>📚</span> Ngân Hàng Câu Hỏi Có Sẵn
+              </h3>
+              
+              <button
+                onClick={() => {
+                  setShowBankPopup(false);
+                  triggerSound('click');
+                }}
+                className="bg-red-500 hover:bg-red-600 text-white rounded-2xl p-1.5 transition shadow-md cursor-pointer border-2 border-white flex items-center justify-center"
+                title="Đóng"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Filters section (Grade, Subject, Topic) */}
+            <div className="p-6 pb-2 text-left bg-[#fffdf9] space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Select Grade */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-black text-amber-950/85 flex items-center gap-1.5">
+                    🎓 Chọn Lớp:
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={bankSelectedGrade}
+                      onChange={(e) => {
+                        setBankSelectedGrade(Number(e.target.value));
+                        triggerSound('click');
+                      }}
+                      className="w-full border-2 border-[#ebdcc9] bg-white rounded-2xl px-4 py-3 text-xs font-bold text-amber-950 outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer shadow-sm"
+                    >
+                      <option value={1}>Lớp 1</option>
+                      <option value={2}>Lớp 2</option>
+                      <option value={3}>Lớp 3</option>
+                      <option value={4}>Lớp 4</option>
+                      <option value={5}>Lớp 5</option>
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-amber-700">
+                      <ChevronDown className="w-4 h-4" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Select Subject */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-black text-amber-950/85 flex items-center gap-1.5">
+                    📖 Chọn Môn:
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={bankSelectedSubject}
+                      onChange={(e) => {
+                        setBankSelectedSubject(e.target.value);
+                        triggerSound('click');
+                      }}
+                      className="w-full border-2 border-[#ebdcc9] bg-white rounded-2xl px-4 py-3 text-xs font-bold text-amber-950 outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer shadow-sm"
+                    >
+                      <option value="Toán">Toán</option>
+                      <option value="Tin học">Tin học</option>
+                      <option value="Tiếng Việt">Tiếng Việt</option>
+                      <option value="Khoa học">Khoa học</option>
+                      <option value="Lịch sử & Địa lý">Lịch sử & Địa lý</option>
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-amber-700">
+                      <ChevronDown className="w-4 h-4" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Select Topic / Chapter */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-black text-amber-950/85 flex items-center gap-1.5">
+                  📂 Chủ đề & Bài học:
+                </label>
+                <div className="relative">
+                  <select
+                    value={bankSelectedTopic}
+                    onChange={(e) => {
+                      setBankSelectedTopic(e.target.value);
+                      triggerSound('click');
+                    }}
+                    className="w-full border-2 border-[#ebdcc9] bg-white rounded-2xl px-4 py-3 text-xs font-bold text-amber-950 outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer shadow-sm"
+                  >
+                    <option value="Tất cả">✨ Tất cả chủ đề & bài học</option>
+                    {currentBankTopics.map((grp) => (
+                      <optgroup key={grp.group} label={grp.group}>
+                        {grp.topics.map((topic) => (
+                          <option key={topic} value={topic}>
+                            {topic}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-amber-700">
+                    <ChevronDown className="w-4 h-4" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Select All Banner */}
+              <div className="flex items-center justify-between p-3.5 bg-[#fef5e7] border-2 border-[#fbe9d0] rounded-2xl shadow-sm mt-2">
+                <label className="flex items-center gap-2.5 font-bold text-xs text-amber-950 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={isAllBankQuestionsSelected}
+                    onChange={handleToggleSelectAllBank}
+                    className="w-5 h-5 rounded border-[#ebdcc9] text-orange-500 focus:ring-orange-400 cursor-pointer"
+                  />
+                  Chọn tất cả
+                </label>
+                <span className="text-xs font-black text-orange-600 font-mono">
+                  {bankSelectedQuestions.length} câu đã chọn
+                </span>
+              </div>
+            </div>
+
+            {/* Questions List Section */}
+            <div className="px-6 py-2 overflow-y-auto bg-[#fffdf9] flex-1 text-left min-h-[150px] max-h-[350px]">
+              <div className="space-y-3 pr-1">
+                {filteredBankQuestions.length === 0 ? (
+                  <div className="py-12 text-center text-slate-400 space-y-2">
+                    <p className="text-2xl">🔍</p>
+                    <p className="text-xs font-bold">Không tìm thấy câu hỏi phù hợp!</p>
+                    <p className="text-[10px] text-slate-400">Vui lòng điều chỉnh bộ lọc hoặc chọn lớp/môn học khác.</p>
+                  </div>
+                ) : (
+                  filteredBankQuestions.map((q) => {
+                    const isSelected = bankSelectedQuestions.includes(q.id || '');
+                    return (
+                      <div
+                        key={q.id}
+                        onClick={() => handleToggleSelectQuestionBank(q.id || '')}
+                        className={`p-4 bg-white border-2 rounded-2xl transition-all flex gap-3.5 shadow-sm cursor-pointer hover:border-orange-300 ${
+                          isSelected ? 'border-orange-400 bg-orange-50/10' : 'border-[#ebdcc9]'
+                        }`}
+                      >
+                        <div onClick={(e) => e.stopPropagation()} className="flex items-start">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => handleToggleSelectQuestionBank(q.id || '')}
+                            className="w-5 h-5 rounded border-[#ebdcc9] text-orange-500 focus:ring-orange-400 cursor-pointer"
+                          />
+                        </div>
+
+                        <div className="flex-1 space-y-2.5 text-left">
+                          <div className="flex justify-between items-start gap-2">
+                            <h4 className="font-extrabold text-xs sm:text-sm text-slate-800 leading-snug">
+                              {q.title}
+                            </h4>
+                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
+                              q.difficulty === 'Dễ' 
+                                ? 'bg-green-100 text-green-700' 
+                                : q.difficulty === 'Khó' 
+                                  ? 'bg-red-100 text-red-700' 
+                                  : 'bg-yellow-100 text-yellow-700'
+                            }`}>
+                              {q.difficulty}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                            {q.options.map((opt, oIdx) => {
+                              const isCorrect = oIdx === q.correctIndex;
+                              const prefix = String.fromCharCode(65 + oIdx);
+                              return (
+                                <div
+                                  key={oIdx}
+                                  className={`p-2 px-3.5 rounded-xl font-bold flex items-center gap-1.5 transition ${
+                                    isCorrect 
+                                      ? 'bg-emerald-500 text-white shadow-sm' 
+                                      : 'bg-[#faf6f0] text-amber-950 border border-[#ebdcc9]'
+                                  }`}
+                                >
+                                  <span className="opacity-90">{prefix}. {opt}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {q.explanation && (
+                            <p className="text-[10px] text-slate-500 font-medium italic mt-1 bg-slate-50 p-2 rounded-lg border border-slate-100/70">
+                              💡 {q.explanation}
+                            </p>
+                          )}
+                          
+                          <div className="flex items-center gap-2 pt-1 text-[9px] text-slate-400 font-bold uppercase tracking-wider">
+                            <span>📂 {q.category}</span>
+                            <span>•</span>
+                            <span>👤 {q.authorId === 'system' ? 'Mặc định' : 'Tự tạo'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            {/* Footer actions */}
+            <div className="bg-[#fef9f3] p-5 border-t-2 border-[#fbe9d0] flex justify-end items-center gap-3 rounded-b-[28px]">
+              <button
+                onClick={() => {
+                  setShowBankPopup(false);
+                  triggerSound('click');
+                }}
+                className="px-6 py-3 bg-white border-2 border-[#ebdcc9] text-amber-950 font-black text-xs uppercase tracking-wider rounded-2xl shadow-sm hover:bg-[#faf6f0] transition active:scale-95 cursor-pointer border-0"
+              >
+                Hủy
+              </button>
+              
+              <button
+                onClick={handleAddSelectedQuestions}
+                className="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-md hover:shadow-lg transition active:scale-95 flex items-center gap-2 cursor-pointer border-0"
+              >
+                <CheckCircle className="w-4 h-4" />
+                Thêm câu đã chọn
               </button>
             </div>
 
