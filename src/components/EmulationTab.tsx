@@ -101,36 +101,17 @@ const StickerAvatar = ({ emoji, studentId, size = 'w-16 h-16', className = '', a
   const currentGradient = gradientBgs[hash % gradientBgs.length];
 
   return (
-    <div className={`relative rounded-full aspect-square flex items-center justify-center border-4 border-white shadow-[0_5px_12px_rgba(0,0,0,0.18),0_1px_3px_rgba(0,0,0,0.10)] bg-gradient-to-tr ${currentGradient} select-none transition-all duration-300 overflow-hidden ${size} ${className}`}>
-      <div 
-        className="absolute inset-0 opacity-12 mix-blend-overlay pointer-events-none" 
-        style={{
-          backgroundImage: `
-            linear-gradient(45deg, #000 25%, transparent 25%), 
-            linear-gradient(-45deg, #000 25%, transparent 25%), 
-            linear-gradient(45deg, transparent 75%, #000 75%), 
-            linear-gradient(-45deg, transparent 75%, #000 75%)
-          `,
-          backgroundSize: '10px 10px',
-          backgroundPosition: '0 0, 0 5px, 5px -5px, -5px 0px'
-        }}
-      />
-
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_20%,rgba(0,0,0,0.22)_100%)] mix-blend-multiply pointer-events-none rounded-full" />
-      <div className="absolute inset-1 bg-[radial-gradient(circle_at_35%_25%,rgba(255,255,255,0.40)_0%,transparent_55%)] pointer-events-none rounded-full" />
-
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.06)_50%,rgba(0,0,0,0.06)_50%)] bg-[length:100%_4px] pointer-events-none" />
-
+    <div className={`relative rounded-full aspect-square flex items-center justify-center border-2 border-white shadow-sm bg-gradient-to-tr ${currentGradient} select-none transition-all duration-300 overflow-hidden ${size} ${className}`}>
       {avatarUrl ? (
         <img 
           src={avatarUrl} 
           alt="Avatar" 
-          className="w-[85%] h-[85%] object-cover rounded-full relative z-10 filter drop-shadow-[0_4px_4px_rgba(0,0,0,0.28)]"
+          className="w-[85%] h-[85%] object-cover rounded-full relative z-10"
           referrerPolicy="no-referrer"
         />
       ) : (
         <span 
-          className="text-[1.85em] relative z-10 leading-none filter drop-shadow-[0_4px_4px_rgba(0,0,0,0.28)] saturate-120 contrast-105 select-none pointer-events-none transform group-hover:scale-110 duration-200"
+          className="text-[1.85em] relative z-10 leading-none saturate-120 contrast-105 select-none pointer-events-none transform group-hover:scale-110 duration-200"
           style={{
             imageRendering: 'pixelated',
           }}
@@ -138,10 +119,6 @@ const StickerAvatar = ({ emoji, studentId, size = 'w-16 h-16', className = '', a
           {emoji}
         </span>
       )}
-
-      <div className="absolute top-[2px] left-[3%] right-[3%] h-[38%] bg-gradient-to-b from-white/35 via-white/8 to-transparent rounded-full opacity-90 pointer-events-none z-20" />
-      <div className="absolute top-[12%] left-[22%] w-1.5 h-1.5 bg-white/75 rounded-full blur-[0.2px] pointer-events-none z-20" />
-      <div className="absolute inset-0.5 rounded-full border border-white/15 pointer-events-none z-10" />
     </div>
   );
 };
@@ -1306,7 +1283,7 @@ export default function EmulationTab({
       {/* POPUP MODAL: CHI TIẾT THI ĐUA TỪNG HỌC SINH CỦA LỚP */}
       {viewingDetailClassId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
-          <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden border-2 border-indigo-500 shadow-2xl animate-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-3xl w-full max-w-4xl md:max-w-5xl max-h-[85vh] flex flex-col overflow-hidden border-2 border-indigo-500 shadow-2xl animate-in zoom-in-95 duration-200">
             
             {/* Header */}
             <div className="bg-indigo-600 p-5 text-white flex justify-between items-center text-left">
@@ -1346,13 +1323,13 @@ export default function EmulationTab({
               <div className="overflow-x-auto rounded-xl border border-slate-200">
                 <table className="w-full text-xs text-left border-collapse">
                   <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[9px]">
-                      <th className="p-2.5 text-center w-12">Hạng</th>
-                      <th className="p-2.5">Tên Học Sinh</th>
-                      <th className="p-2.5 text-right">Tổng Sao Tích Lũy</th>
-                      <th className="p-2.5 text-right">Sticker Đã Đổi</th>
-                      <th className="p-2.5 text-right">Sao Còn Lại</th>
-                      <th className="p-2.5 pl-4">Huy Hiệu Sở Hữu</th>
+                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[9px] whitespace-nowrap">
+                      <th className="p-2.5 text-center w-12 whitespace-nowrap">Hạng</th>
+                      <th className="p-2.5 whitespace-nowrap">Tên Học Sinh</th>
+                      <th className="p-2.5 text-right whitespace-nowrap">Tổng Sao Tích Lũy</th>
+                      <th className="p-2.5 text-right whitespace-nowrap">Sticker Đã Đổi</th>
+                      <th className="p-2.5 text-right whitespace-nowrap">Sao Còn Lại</th>
+                      <th className="p-2.5 pl-4 whitespace-nowrap">Huy Hiệu Sở Hữu</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-150 font-semibold text-slate-700">
@@ -1391,7 +1368,7 @@ export default function EmulationTab({
                               {idx + 1}
                             </span>
                           </td>
-                          <td className="p-2.5 font-extrabold text-slate-900 flex items-center gap-1.5 text-left">
+                          <td className="p-2.5 font-extrabold text-slate-900 flex items-center gap-1.5 text-left whitespace-nowrap">
                             <span>{getStudentAvatar(st.id, students).emoji}</span>
                             <span>{st.name}</span>
                           </td>

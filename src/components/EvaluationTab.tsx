@@ -82,19 +82,27 @@ const getStudentAvatar = (studentId: string, allStudents?: Student[]) => {
   return avatars[hash % avatars.length];
 };
 
-// Simple Avatar Component to render clean, flat circle avatars with student-specific background colors
+// Simple Avatar Component to render clean, flat circle avatars with student-specific background colors with gorgeous hover effects
 const SimpleAvatar = ({ emoji, bg, size = 'w-16 h-16', className = '', avatarUrl }: { emoji: string; bg: string; size?: string; className?: string; avatarUrl?: string }) => {
   return (
-    <div className={`rounded-full flex items-center justify-center border-2 shadow-inner select-none shrink-0 ${bg} ${size} ${className}`}>
+    <div className={`rounded-full flex items-center justify-center border-2 shadow-inner select-none shrink-0 ${bg} ${size} ${className} avatar-sparkle-hover relative overflow-hidden`}>
+      {/* Micro-sparkle floating star indicators on hover */}
+      <div className="absolute -top-1 -right-1 text-amber-500 text-xs opacity-0 scale-0 transition-all duration-300 group-hover:opacity-100 group-hover:scale-100 group-hover:rotate-12 pointer-events-none z-20">
+        ✨
+      </div>
+      <div className="absolute -bottom-1 -left-1 text-amber-400 text-[10px] opacity-0 scale-0 transition-all duration-300 group-hover:opacity-100 group-hover:scale-100 group-hover:-rotate-12 pointer-events-none z-20">
+        ✨
+      </div>
+
       {avatarUrl ? (
         <img 
           src={avatarUrl} 
           alt="Avatar" 
-          className="w-full h-full object-cover rounded-full"
+          className="w-full h-full object-cover rounded-full relative z-10 transition-transform duration-300 group-hover:scale-105"
           referrerPolicy="no-referrer"
         />
       ) : (
-        <span className="text-[1.85em] leading-none select-none pointer-events-none">
+        <span className="text-[1.85em] leading-none select-none pointer-events-none relative z-10 transition-transform duration-300 group-hover:scale-115">
           {emoji}
         </span>
       )}
