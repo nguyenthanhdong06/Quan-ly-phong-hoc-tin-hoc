@@ -1682,6 +1682,7 @@ export default function App() {
             seatingChart={seatingChart}
             classes={classes}
             grades={grades}
+            systemDateText={systemDateText}
           />
         )}
 

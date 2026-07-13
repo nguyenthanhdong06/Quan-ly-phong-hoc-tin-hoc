@@ -172,6 +172,7 @@ interface EmulationTabProps {
   seatingChart: SeatingChart;
   classes?: ClassItem[];
   grades?: Grade[];
+  systemDateText?: string;
 }
 
 export default function EmulationTab({
@@ -184,12 +185,27 @@ export default function EmulationTab({
   computers,
   seatingChart,
   classes,
-  grades
+  grades,
+  systemDateText
 }: EmulationTabProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [selectedStudentForReward, setSelectedStudentForReward] = useState<Student | null>(null);
+
+  // Parse active month information dynamically
+  const activeMonthYearLabel = React.useMemo(() => {
+    if (systemDateText) {
+      const match = systemDateText.match(/tháng\s+(\d+)\s+năm\s+(\d+)/i);
+      if (match) {
+        return `Tháng ${match[1]}/${match[2]}`;
+      }
+    }
+    const now = new Date();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const yyyy = now.getFullYear();
+    return `Tháng ${mm}/${yyyy}`;
+  }, [systemDateText]);
   
   // State for celebration fireworks and card popup
   const [celebration, setCelebration] = useState<{
@@ -374,29 +390,29 @@ export default function EmulationTab({
     <div className="space-y-6">
 
       {/* Promotional Banner with Blinking status warning */}
-      <div className="bg-gradient-to-r from-red-500 via-amber-500 to-yellow-500 text-white p-6 rounded-3xl shadow-lg relative overflow-hidden flex flex-col md:flex-row justify-between items-center gap-6 text-left">
-        <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
+      <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white p-4 sm:p-5 rounded-2xl shadow-sm relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-left">
+        <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-xl"></div>
         
-        <div className="flex items-center gap-4 relative z-10">
-          <div className="bg-white/20 p-3 rounded-2xl text-yellow-100 text-4xl shadow-inner animate-bounce">
+        <div className="flex items-center gap-3 relative z-10">
+          <div className="bg-white/20 p-2.5 rounded-xl text-yellow-100 text-2xl shadow-inner shrink-0">
             🏆
           </div>
           <div>
-            <h2 className="text-2xl font-black uppercase tracking-wider">Cửa Hàng Học Tập • Đổi Sao Lấy Quà</h2>
-            <p className="text-xs text-amber-100 font-medium">Tích lũy sao vàng thực hành hàng tháng để nhận được nhiều huy hiệu sticker rực rỡ.</p>
+            <h2 className="text-lg font-black uppercase tracking-wide">Cửa Hàng Học Tập • Đổi Sao Lấy Quà</h2>
+            <p className="text-xs text-amber-100 font-medium">Tích lũy sao vàng hàng tháng đổi lấy sticker huy hiệu rực rỡ.</p>
             
             {isRedemptionPeriod && (
-              <div className="mt-2 inline-flex items-center gap-1.5 bg-red-700 text-yellow-250 text-xs font-black px-3.5 py-1.5 rounded-full border-2 border-yellow-300 animate-pulse">
-                <Sparkles className="w-3.5 h-3.5 animate-spin" />
-                <span>🔔 ĐANG HỖ TRỢ ĐỔI QUÀ ĐẠT ĐỈNH (TỪ NGÀY 1 ĐẾN 15 HÀNG THÁNG)</span>
+              <div className="mt-1.5 inline-flex items-center gap-1 bg-red-600/90 text-white text-[10px] font-black px-2.5 py-0.5 rounded-md border border-white/20">
+                <span className="animate-ping inline-block w-1.5 h-1.5 bg-yellow-300 rounded-full mr-1 shrink-0" />
+                <span>🔔 ĐỔI QUÀ (MỞ CỬA TỪ NGÀY 1 ĐẾN 15 HÀNG THÁNG)</span>
               </div>
             )}
           </div>
         </div>
 
-        <div className="bg-white/20 border border-white/30 px-5 py-3 rounded-2xl text-center relative z-10 w-full md:w-auto">
-          <span className="text-sm font-black text-white block uppercase">Bản tin học kỳ</span>
-          <span className="text-xl font-black text-yellow-200">Tháng 06/2026</span>
+        <div className="bg-white/15 border border-white/20 px-4 py-1.5 rounded-xl text-center relative z-10 w-full md:w-auto shrink-0 flex md:flex-col justify-between md:justify-center items-center gap-2">
+          <span className="text-[10px] font-bold text-amber-100 uppercase tracking-wider block">Bản tin học kỳ</span>
+          <span className="text-sm font-black text-yellow-250 block">{activeMonthYearLabel}</span>
         </div>
       </div>
 

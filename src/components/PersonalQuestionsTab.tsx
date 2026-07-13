@@ -1170,32 +1170,38 @@ Giải thích: Phím Backspace xóa ký tự trước (bên trái) con trỏ, c�
         </button>
       </div>
 
-      {/* Tab Selectors */}
-      <div className="flex border-b border-slate-200 gap-2">
+      {/* Tab Selectors: Styled as extremely polished, eye-catching modern buttons */}
+      <div className="flex flex-wrap items-center gap-3 bg-slate-50 p-2 rounded-2xl border border-slate-200/80 max-w-fit shadow-3xs mb-6 select-none">
         <button
           type="button"
           onClick={() => setInnerTab('manage')}
-          className={`px-5 py-3 text-xs font-black uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 cursor-pointer ${
+          className={`px-5 py-3 text-xs font-black uppercase tracking-wider rounded-xl transition-all duration-300 flex items-center gap-2 cursor-pointer relative overflow-hidden group hover:scale-[1.02] active:scale-[0.98] ${
             innerTab === 'manage'
-              ? 'border-orange-500 text-orange-600 bg-orange-50/10'
-              : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+              ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md shadow-orange-500/25 border-t border-white/10'
+              : 'bg-white hover:bg-slate-100/80 text-slate-600 hover:text-slate-900 border border-slate-200 shadow-4xs'
           }`}
         >
-          <List className="w-4 h-4" />
-          Ngân hàng câu hỏi bộ môn ({questions.length})
+          <List className={`w-4 h-4 transition-transform group-hover:scale-110 duration-200 ${innerTab === 'manage' ? 'text-white' : 'text-slate-500'}`} />
+          Ngân hàng câu hỏi ({questions.length})
         </button>
         <button
           type="button"
           onClick={() => setInnerTab('bulk-import')}
-          className={`px-5 py-3 text-xs font-black uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 cursor-pointer ${
+          className={`px-5 py-3 text-xs font-black uppercase tracking-wider rounded-xl transition-all duration-300 flex items-center gap-2 cursor-pointer relative overflow-hidden group hover:scale-[1.02] active:scale-[0.98] ${
             innerTab === 'bulk-import'
-              ? 'border-orange-500 text-orange-600 bg-orange-50/10'
-              : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+              ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md shadow-orange-500/25 border-t border-white/10'
+              : 'bg-white hover:bg-slate-100/80 text-slate-600 hover:text-slate-900 border border-slate-200 shadow-4xs'
           }`}
         >
-          <ClipboardCheck className="w-4 h-4 text-orange-500" />
-          Nhập nhanh câu hỏi (Từ Word / Excel / Text)
-          <span className="bg-rose-100 text-rose-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full animate-pulse">Hot</span>
+          <ClipboardCheck className={`w-4 h-4 transition-transform group-hover:scale-110 duration-200 ${innerTab === 'bulk-import' ? 'text-white' : 'text-orange-500'}`} />
+          <span>Nhập nhanh từ Word/Excel</span>
+          <span className={`text-[8.5px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-wider shadow-4xs transition-all animate-pulse duration-500 ${
+            innerTab === 'bulk-import' 
+              ? 'bg-white text-orange-600' 
+              : 'bg-rose-500 text-white'
+          }`}>
+            Hot
+          </span>
         </button>
       </div>
 
