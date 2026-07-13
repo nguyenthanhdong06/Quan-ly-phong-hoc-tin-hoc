@@ -741,69 +741,73 @@ export default function EmulationTab({
           </div>
 
           {/* Wall of Fame Grade Top 10 */}
-          <div className="bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-950 text-white p-6 rounded-[32px] border border-indigo-950/45 shadow-xl space-y-4 text-left relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
-            <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="bg-gradient-to-br from-amber-50/50 via-white to-amber-50/20 text-slate-800 p-6 rounded-[32px] border border-amber-500/20 shadow-md space-y-4 text-left relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-48 h-48 bg-amber-400/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-orange-200/15 rounded-full blur-3xl pointer-events-none"></div>
 
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-indigo-800/40 pb-3">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-amber-500/15 pb-3">
               <div>
-                <h4 className="font-extrabold text-white text-sm uppercase tracking-wider flex items-center gap-1.5">
-                  <Sparkles className="w-5 h-5 text-yellow-400 animate-pulse" />
+                <h4 className="font-extrabold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-1.5">
+                  <Sparkles className="w-5 h-5 text-amber-500 animate-pulse" />
                   BẢNG VÀNG VINH DANH KHỐI {selectedGradeId}
                 </h4>
-                <p className="text-[11px] text-indigo-300 font-medium">Top 10 học sinh tích lũy sao vàng xuất sắc nhất toàn khối</p>
+                <p className="text-[11px] text-slate-500 font-medium">Top 10 học sinh tích lũy sao vàng xuất sắc nhất toàn khối</p>
               </div>
-              <span className="text-[10px] font-black text-amber-300 bg-amber-400/25 border border-amber-400/30 px-3.5 py-1.5 rounded-full uppercase flex items-center gap-1 shrink-0">
+              <span className="text-[10px] font-black text-amber-700 bg-amber-100 border border-amber-200 px-3.5 py-1.5 rounded-full uppercase flex items-center gap-1 shrink-0">
                 ✨ SIÊU SAO HỌC ĐƯỜNG
               </span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {topStudentsInGrade.length === 0 ? (
-                <div className="col-span-2 py-8 text-center text-indigo-200 font-bold text-xs">
+                <div className="col-span-2 py-8 text-center text-slate-400 font-bold text-xs">
                   Chưa có dữ liệu học sinh trong khối này.
                 </div>
               ) : (
                 topStudentsInGrade.map((student, idx) => {
                   const studentClass = classes?.find(c => c.id === student.classId);
                   
-                  let rankColor = 'bg-indigo-800/80 text-indigo-200';
-                  let borderColor = 'border-indigo-800/30';
+                  let rankColor = 'w-7 h-7 bg-slate-100 text-slate-600 border border-slate-200/80 font-bold';
+                  let borderColor = 'border-slate-200/60';
+                  let cardBg = 'bg-white hover:bg-amber-50/20';
                   if (idx === 0) {
-                    rankColor = 'bg-amber-400 text-amber-950 font-black';
-                    borderColor = 'border-amber-400/50 shadow-[0_0_12px_rgba(251,191,36,0.2)]';
+                    rankColor = 'w-9 h-9 bg-gradient-to-br from-yellow-300 via-amber-400 to-orange-500 text-amber-950 font-black shadow-md ring-4 ring-amber-400/20 text-sm';
+                    borderColor = 'border-amber-400/40 shadow-[0_0_12px_rgba(251,191,36,0.12)]';
+                    cardBg = 'bg-amber-50/15 hover:bg-amber-50/30';
                   } else if (idx === 1) {
-                    rankColor = 'bg-slate-300 text-slate-900 font-black';
-                    borderColor = 'border-slate-300/40';
+                    rankColor = 'w-8 h-8 bg-gradient-to-br from-slate-100 via-slate-200 to-slate-300 text-slate-800 font-black border border-slate-300 shadow-xs';
+                    borderColor = 'border-slate-300/50';
+                    cardBg = 'bg-slate-50/10 hover:bg-slate-100/30';
                   } else if (idx === 2) {
-                    rankColor = 'bg-orange-400 text-orange-950 font-black';
-                    borderColor = 'border-orange-400/40';
+                    rankColor = 'w-8 h-8 bg-gradient-to-br from-amber-200 via-orange-300 to-amber-600 text-white font-black border border-orange-300/50 shadow-xs';
+                    borderColor = 'border-orange-300/40';
+                    cardBg = 'bg-orange-50/10 hover:bg-orange-50/20';
                   }
 
                   return (
                     <div 
                       key={student.id} 
-                      className={`bg-indigo-950/40 border ${borderColor} rounded-2xl p-3 flex items-center justify-between hover:bg-indigo-900/40 transition-all`}
+                      className={`${cardBg} border ${borderColor} rounded-2xl p-3 flex items-center justify-between transition-all shadow-4xs`}
                     >
                       <div className="flex items-center gap-3">
-                        <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-extrabold ${rankColor}`}>
+                        <span className={`flex items-center justify-center rounded-full shrink-0 ${rankColor}`}>
                           {idx + 1}
                         </span>
                         <span className="text-lg">
                           {getStudentAvatar(student.id, students).emoji}
                         </span>
                         <div>
-                          <strong className="text-xs font-extrabold block text-slate-100">{student.name}</strong>
-                          <span className="text-[10px] text-indigo-300">Lớp {studentClass ? studentClass.name : student.classId}</span>
+                          <strong className="text-xs font-extrabold block text-slate-800">{student.name}</strong>
+                          <span className="text-[10px] text-slate-500">Lớp {studentClass ? studentClass.name : student.classId}</span>
                         </div>
                       </div>
                       
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-black text-amber-400 flex items-center gap-0.5">
-                          {student.cumulativeStars} <Star className="w-3 h-3 fill-amber-400 inline" />
+                        <span className="text-xs font-black text-amber-600 flex items-center gap-0.5">
+                          {student.cumulativeStars} <Star className="w-3 h-3 fill-amber-500 text-amber-500 inline" />
                         </span>
                         {student.exchangedStickers > 0 && (
-                          <span className="bg-pink-500/20 text-pink-300 text-[8px] font-black px-1.5 py-0.5 rounded border border-pink-500/30 uppercase">
+                          <span className="bg-pink-100 text-pink-700 text-[8px] font-black px-1.5 py-0.5 rounded border border-pink-200 uppercase">
                             🎁 {student.exchangedStickers} Sticker
                           </span>
                         )}

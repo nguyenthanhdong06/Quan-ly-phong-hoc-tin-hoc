@@ -1508,18 +1508,18 @@ export default function DashboardTab({
           </div>
 
           {/* TOP 5 STUDENTS OF THE ENTIRE SCHOOL */}
-          <div className="bg-gradient-to-b from-indigo-950 via-slate-900 to-indigo-900 text-white p-5 rounded-3xl shadow-sm border border-indigo-500/20 text-left relative overflow-hidden flex-1 flex flex-col justify-between">
+          <div className="bg-gradient-to-b from-amber-50/50 via-white to-amber-50/20 p-5 rounded-3xl shadow-sm border border-amber-500/20 text-left relative overflow-hidden flex-1 flex flex-col justify-between">
             {/* Ambient background glow highlights */}
-            <div className="absolute -top-12 -right-12 w-32 h-32 bg-amber-400/10 rounded-full blur-2xl"></div>
-            <div className="absolute -bottom-10 -left-10 w-24 h-24 bg-violet-600/10 rounded-full blur-xl"></div>
+            <div className="absolute -top-12 -right-12 w-32 h-32 bg-amber-400/15 rounded-full blur-2xl"></div>
+            <div className="absolute -bottom-10 -left-10 w-24 h-24 bg-orange-200/25 rounded-full blur-xl"></div>
             
             <div className="relative z-10 space-y-3.5 flex-1 flex flex-col justify-between">
               <div>
-                <div className="border-b border-indigo-850 pb-2.5">
-                  <h3 className="text-xs font-black text-amber-400 uppercase tracking-widest flex items-center gap-1.5 animate-pulse">
+                <div className="border-b border-amber-500/25 pb-2.5">
+                  <h3 className="text-xs font-black text-amber-600 uppercase tracking-widest flex items-center gap-1.5 animate-pulse">
                     <span>⭐</span> TOP 5 SAO TOÀN TRƯỜNG
                   </h3>
-                  <p className="text-[10px] text-indigo-350 font-medium">Bảng vàng vinh danh điểm tích lũy thi đua học đường</p>
+                  <p className="text-[10px] text-slate-500 font-medium">Bảng vàng vinh danh điểm tích lũy thi đua học đường</p>
                 </div>
 
                 <div className="space-y-2 mt-3">
@@ -1541,38 +1541,38 @@ export default function DashboardTab({
                         key={st.id} 
                         className={`flex items-center justify-between p-2 rounded-xl transition-colors duration-200 border ${
                           isPl 
-                            ? "bg-indigo-950/20 border-indigo-950/35 opacity-40" 
-                            : "bg-indigo-950/50 hover:bg-indigo-900/45 border-indigo-900/50"
+                            ? "bg-slate-50/50 border-slate-200/40 opacity-40" 
+                            : "bg-white hover:bg-amber-50/30 border-slate-250/60 shadow-4xs"
                         }`}
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
                           <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black ${
-                            index === 0 ? 'bg-amber-400/20 text-yellow-300' :
-                            index === 1 ? 'bg-slate-300/20 text-slate-200' :
-                            index === 2 ? 'bg-amber-600/20 text-amber-450' : 'text-slate-400'
+                            index === 0 ? 'bg-amber-400/20 text-amber-700' :
+                            index === 1 ? 'bg-slate-200 text-slate-700' :
+                            index === 2 ? 'bg-amber-600/15 text-amber-800' : 'text-slate-500 bg-slate-100'
                           }`}>
                             {rankMedal}
                           </div>
                           <div className="min-w-0">
-                            <p className="text-[12px] font-bold text-slate-100 truncate flex items-center gap-1.5">
+                            <p className="text-[12px] font-bold text-slate-800 truncate flex items-center gap-1.5">
                               {st.name}
                               {!isPl && (
-                                <span className="text-[9px] font-black bg-indigo-500/20 text-indigo-300 px-1.5 py-0.2 rounded border border-indigo-700/20">
+                                <span className="text-[9px] font-black bg-indigo-50 text-indigo-700 px-1.5 py-0.2 rounded border border-indigo-200/40">
                                   {st.className}
                                 </span>
                               )}
                             </p>
-                            <p className="text-[8px] text-slate-450 font-extrabold uppercase tracking-wide">
+                            <p className="text-[8px] text-slate-500 font-extrabold uppercase tracking-wide">
                               {isPl ? "Chưa đạt hạng xếp học đường" : title}
                             </p>
                           </div>
                         </div>
                         <div className="text-right shrink-0">
-                          <span className="text-xs text-amber-400 font-black flex items-center justify-end gap-0.5">
-                            {st.currentStars} <span className="text-[10px] text-yellow-450">⭐</span>
+                          <span className="text-xs text-amber-600 font-black flex items-center justify-end gap-0.5">
+                            {st.currentStars} <span className="text-[10px] text-amber-500">⭐</span>
                           </span>
                           {!isPl && (
-                            <span className="text-[8.5px] text-indigo-300 font-semibold block mt-0.5">
+                            <span className="text-[8.5px] text-slate-500 font-semibold block mt-0.5">
                               {st.exchangedStickers > 0 ? `Đã đổi ${st.exchangedStickers} 🎁 / tích luỹ ${st.cumulativeStars} ⭐` : `Tích luỹ: ${st.cumulativeStars} ⭐`}
                             </span>
                           )}
@@ -1583,7 +1583,7 @@ export default function DashboardTab({
                 </div>
               </div>
 
-              <div className="text-[9px] text-indigo-400 font-semibold mt-3 pt-2.5 border-t border-indigo-850 flex justify-between items-center">
+              <div className="text-[9px] text-slate-400 font-semibold mt-3 pt-2.5 border-t border-slate-100 flex justify-between items-center">
                 <span>Vận hành tự động</span>
                 <span>Cập nhật liên tục</span>
               </div>
