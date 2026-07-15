@@ -1683,6 +1683,8 @@ export default function App() {
             classes={classes}
             grades={grades}
             systemDateText={systemDateText}
+            evaluationData={evaluationData}
+            selectedDate={selectedDate}
           />
         )}
 

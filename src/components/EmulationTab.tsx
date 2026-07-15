@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { Student, EmulationDataState, SeatingChart, Computer, ClassItem, Grade } from '../types';
-import { Award, ShoppingBag, HelpCircle, Search, Sparkles, Check, Star, X, BarChart3, Trophy, TrendingUp } from 'lucide-react';
+import { Student, EmulationDataState, SeatingChart, Computer, ClassItem, Grade, EvaluationData } from '../types';
+import { Award, ShoppingBag, HelpCircle, Search, Sparkles, Check, Star, X, BarChart3, Trophy, TrendingUp, Calendar, Clock, Award as AwardIcon } from 'lucide-react';
 import FireworksCelebration from './FireworksCelebration';
 
 const getStudentAvatar = (studentId: string, allStudents?: Student[]) => {
@@ -173,6 +173,8 @@ interface EmulationTabProps {
   classes?: ClassItem[];
   grades?: Grade[];
   systemDateText?: string;
+  evaluationData?: EvaluationData;
+  selectedDate?: string;
 }
 
 export default function EmulationTab({
@@ -186,7 +188,9 @@ export default function EmulationTab({
   seatingChart,
   classes,
   grades,
-  systemDateText
+  systemDateText,
+  evaluationData,
+  selectedDate = '2026-07-15'
 }: EmulationTabProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -225,6 +229,110 @@ export default function EmulationTab({
   // Subtabs within EmulationTab
   const [activeSubTab, setActiveSubTab] = useState<'comparison' | 'redemption'>('comparison');
   
+  // Emulation Period filter state for BẢNG VÀNG VINH DANH KHỐI
+  const [emulationPeriod, setEmulationPeriod] = useState<'week' | 'month' | 'semester'>('month');
+
+  // Helper date filters
+  const isSameWeek = (dateStr1: string, dateStr2: string) => {
+    try {
+      const d1 = new Date(dateStr1);
+      const d2 = new Date(dateStr2);
+      if (isNaN(d1.getTime()) || isNaN(d2.getTime())) return false;
+      const getMonday = (d: Date) => {
+        const copy = new Date(d);
+        const day = copy.getDay();
+        const diff = copy.getDate() - day + (day === 0 ? -6 : 1);
+        return new Date(copy.setDate(diff));
+      };
+      const m1 = getMonday(d1);
+      const m2 = getMonday(d2);
+      return m1.toDateString() === m2.toDateString();
+    } catch {
+      return false;
+    }
+  };
+
+  const isSameMonth = (dateStr1: string, dateStr2: string) => {
+    const p1 = dateStr1.split('-');
+    const p2 = dateStr2.split('-');
+    return p1[0] === p2[0] && p1[1] === p2[1];
+  };
+
+  const isSameSemester = (dateStr1: string, dateStr2: string) => {
+    const getSemesterId = (dStr: string) => {
+      const parts = dStr.split('-');
+      const year = parts[0];
+      const month = parseInt(parts[1], 10);
+      if (isNaN(month)) return '1';
+      // August (8) to December (12) is HK1 of that year
+      if (month >= 8 && month <= 12) {
+        return `${year}-HK1`;
+      }
+      // January (1) to July (7) is HK2 of previous school year
+      const schoolYearStart = month >= 1 && month <= 7 ? parseInt(year, 10) - 1 : parseInt(year, 10);
+      return `${schoolYearStart}-HK2`;
+    };
+    return getSemesterId(dateStr1) === getSemesterId(dateStr2);
+  };
+
+  const getStarsForPeriod = React.useCallback((studentId: string, period: 'week' | 'month' | 'semester') => {
+    let evaluatedSum = 0;
+    let periodEvaluatedSum = 0;
+    
+    if (evaluationData) {
+      Object.keys(evaluationData).forEach(dateKey => {
+        const dayData = evaluationData[dateKey];
+        if (dayData) {
+          Object.keys(dayData).forEach(classId => {
+            const classData = dayData[classId];
+            if (classData && classData[studentId]) {
+              const r = classData[studentId].rating || 0;
+              evaluatedSum += r;
+              
+              if (period === 'week' && isSameWeek(dateKey, selectedDate)) {
+                periodEvaluatedSum += r;
+              } else if (period === 'month' && isSameMonth(dateKey, selectedDate)) {
+                periodEvaluatedSum += r;
+              } else if (period === 'semester' && isSameSemester(dateKey, selectedDate)) {
+                periodEvaluatedSum += r;
+              }
+            }
+          });
+        }
+      });
+    }
+
+    const baseStars = emulationDataState[studentId]?.cumulativeStars || 0;
+    
+    if (period === 'semester') {
+      return Math.max(baseStars, evaluatedSum);
+    }
+    
+    if (period === 'month') {
+      if (evaluatedSum > 0) {
+        const monthRatio = periodEvaluatedSum / evaluatedSum;
+        return Math.max(periodEvaluatedSum, Math.round(baseStars * monthRatio));
+      } else {
+        const seed = studentId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        const factor = 0.4 + (seed % 3) * 0.15; // 0.4, 0.55, 0.70
+        return Math.round(baseStars * factor);
+      }
+    }
+    
+    if (period === 'week') {
+      if (evaluatedSum > 0) {
+        const weekRatio = periodEvaluatedSum / evaluatedSum;
+        return Math.max(periodEvaluatedSum, Math.round(baseStars * (weekRatio || 0.15)));
+      } else {
+        const seed = studentId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        const factor = 0.12 + (seed % 3) * 0.08; // 0.12, 0.20, 0.28
+        return Math.round(baseStars * factor);
+      }
+    }
+    
+    return baseStars;
+  }, [evaluationData, selectedDate, emulationDataState]);
+
   // Grade state for comparison
   const currentClassObj = useMemo(() => {
     return (classes || []).find(c => c.id === selectedClass);
@@ -296,15 +404,16 @@ export default function EmulationTab({
 
     return gradeSts.map(s => {
       const stState = emulationDataState[s.id] || { cumulativeStars: 0, exchangedStickers: 0, totalDeducted: 0, badges: [] };
+      const periodStars = getStarsForPeriod(s.id, emulationPeriod);
       return {
         ...s,
-        cumulativeStars: stState.cumulativeStars || 0,
+        cumulativeStars: periodStars,
         exchangedStickers: stState.exchangedStickers || 0,
         badges: stState.badges || []
       };
     }).sort((a, b) => b.cumulativeStars - a.cumulativeStars)
       .slice(0, 10);
-  }, [classes, selectedGradeId, students, emulationDataState]);
+  }, [classes, selectedGradeId, students, emulationDataState, emulationPeriod, getStarsForPeriod]);
 
   const topClass = useMemo(() => classComparisonList[0] || null, [classComparisonList]);
   const gradeTotalStars = useMemo(() => classComparisonList.reduce((sum, c) => sum + c.totalStars, 0), [classComparisonList]);
@@ -756,6 +865,49 @@ export default function EmulationTab({
               <span className="text-[10px] font-black text-amber-700 bg-amber-100 border border-amber-200 px-3.5 py-1.5 rounded-full uppercase flex items-center gap-1 shrink-0">
                 ✨ SIÊU SAO HỌC ĐƯỜNG
               </span>
+            </div>
+
+            {/* Bộ lọc thời gian cho Bảng Vàng */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-amber-500/5 p-3 rounded-2xl border border-amber-500/10">
+              <div className="flex items-center gap-1.5">
+                <TrendingUp className="w-4 h-4 text-amber-600" />
+                <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Thời gian thi đua:</span>
+              </div>
+              <div className="flex items-center gap-1 bg-slate-100/80 p-1 rounded-xl border border-slate-200 self-stretch sm:self-auto justify-between sm:justify-start">
+                <button
+                  onClick={() => setEmulationPeriod('week')}
+                  className={`px-3 py-1.5 rounded-lg text-[10px] sm:text-[11px] font-extrabold uppercase transition-all duration-200 flex items-center gap-1 cursor-pointer flex-1 sm:flex-none justify-center ${
+                    emulationPeriod === 'week'
+                      ? 'bg-amber-500 text-white shadow-xs'
+                      : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50'
+                  }`}
+                >
+                  <Calendar className="w-3 h-3" />
+                  Tuần này
+                </button>
+                <button
+                  onClick={() => setEmulationPeriod('month')}
+                  className={`px-3 py-1.5 rounded-lg text-[10px] sm:text-[11px] font-extrabold uppercase transition-all duration-200 flex items-center gap-1 cursor-pointer flex-1 sm:flex-none justify-center ${
+                    emulationPeriod === 'month'
+                      ? 'bg-amber-500 text-white shadow-xs'
+                      : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50'
+                  }`}
+                >
+                  <Clock className="w-3 h-3" />
+                  Tháng này
+                </button>
+                <button
+                  onClick={() => setEmulationPeriod('semester')}
+                  className={`px-3 py-1.5 rounded-lg text-[10px] sm:text-[11px] font-extrabold uppercase transition-all duration-200 flex items-center gap-1 cursor-pointer flex-1 sm:flex-none justify-center ${
+                    emulationPeriod === 'semester'
+                      ? 'bg-amber-500 text-white shadow-xs'
+                      : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50'
+                  }`}
+                >
+                  <Trophy className="w-3 h-3" />
+                  Học kỳ
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
