@@ -29,6 +29,7 @@ import AdminTab from './components/AdminTab';
 import TimetableTab from './components/TimetableTab';
 import { InteractiveGamesTab } from './components/InteractiveGamesTab';
 import { PersonalQuestionsTab } from './components/PersonalQuestionsTab';
+import ComputerReportTab from './components/ComputerReportTab';
 
 // Supabase services
 import { loadAllSupabaseStates, saveSupabaseState, setSupabaseOnline } from './supabaseClient';
@@ -320,7 +321,7 @@ export default function App() {
       } else {
         setIsGameMenuOpen(false);
       }
-    } else if (activeTab === 'admin') {
+    } else if (['admin', 'computer-report'].includes(activeTab)) {
       setIsSystemGroupOpen(true);
       setIsTeachingGroupOpen(false);
       setIsLearningGroupOpen(false);
@@ -359,7 +360,7 @@ export default function App() {
 
   const isTeachingGroupActive = isTeachingGroupOpen || ['students', 'classes-management', 'attendance', 'evaluation', 'seating', 'timetable'].includes(activeTab);
   const isLearningGroupActive = isLearningGroupOpen || ['interactive-games', 'personal-questions', 'emulation', 'resources', 'avatar-gallery'].includes(activeTab);
-  const isSystemGroupActive = isSystemGroupOpen || ['admin'].includes(activeTab);
+  const isSystemGroupActive = isSystemGroupOpen || ['admin', 'computer-report'].includes(activeTab);
   const isDashboardActive = activeTab === 'dashboard' && !isTeachingGroupActive && !isLearningGroupActive && !isSystemGroupActive;
   const isGameMenuActive = isGameMenuOpen || ['interactive-games', 'personal-questions'].includes(activeTab);
 
@@ -1041,6 +1042,29 @@ export default function App() {
           <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Quản trị</span>
         </button>
       )}
+
+      {currentUser && (
+        <button
+          onClick={() => {
+            setActiveTab('computer-report');
+            setIsMobileMenuOpen(false);
+          }}
+          title={isSidebarCollapsed ? "Báo cáo phòng máy" : ""}
+          className={`flex items-center gap-2.5 w-full px-3 py-1.5 rounded-lg text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 ${
+            isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
+          } ${
+            activeTab === 'computer-report'
+              ? isSidebarCollapsed
+                ? 'text-amber-300 shadow-inner font-black bg-white/10'
+                : 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black bg-white/10'
+              : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
+          }`}
+          style={getTabStyle('computer-report')}
+        >
+          {isSidebarCollapsed && <Monitor className="w-4 h-4 shrink-0" />}
+          <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Báo cáo phòng máy</span>
+        </button>
+      )}
     </>
   );
 
@@ -1266,7 +1290,7 @@ export default function App() {
           )}
 
           {/* GROUP 3: HỆ THỐNG */}
-          {currentUser && currentUser.role.includes('Admin') && (
+          {currentUser && (
             <>
               {isSidebarCollapsed ? (
                 <div 
@@ -1753,6 +1777,10 @@ export default function App() {
             quotes={quotes}
             setQuotes={setQuotes}
           />
+        )}
+
+        {activeTab === 'computer-report' && currentUser && (
+          <ComputerReportTab currentUser={currentUser} />
         )}
 
         {activeTab === 'interactive-games' && hasAdminOrTeacherAccess && (
