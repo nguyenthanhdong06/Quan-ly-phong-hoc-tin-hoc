@@ -36,6 +36,7 @@ interface AssetRow {
   hoatDongTot: string;
   huHong: string;
   ghiChu: string;
+  isCustom?: boolean;
 }
 
 interface BrokenDetailRow {
@@ -81,6 +82,7 @@ const DEVICE_OPTIONS = [
   'Loa',
   'Dây mạng',
   'Ổ điện, dây điện',
+  'Ổ cắm điện',
   'Quạt',
   'Điều hòa (nếu có)'
 ];
@@ -224,7 +226,8 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
       tongSo: '0',
       hoatDongTot: '0',
       huHong: '0',
-      ghiChu: ''
+      ghiChu: '',
+      isCustom: true
     };
     setAssets([...assets, newRow]);
   };
@@ -1038,7 +1041,7 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
                           <tr key={asset.stt} className="hover:bg-slate-50/50 transition">
                             <td className="p-3 text-center font-bold text-slate-400">{asset.stt}</td>
                             <td className="p-2">
-                              <div className="space-y-1">
+                              <div className="relative">
                                 <select 
                                   value={DEVICE_OPTIONS.includes(asset.hangMuc) ? asset.hangMuc : (asset.hangMuc ? 'custom' : '')}
                                   onChange={(e) => {
@@ -1049,26 +1052,25 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
                                       handleAssetChange(idx, 'hangMuc', val);
                                     }
                                   }}
-                                  className="w-full bg-white text-xs font-extrabold text-slate-800 border border-slate-200 rounded-xl px-3 py-1.5 outline-none focus:border-[#113f43] cursor-pointer"
+                                  className="w-full bg-white text-xs font-black text-[#103e42] border border-slate-200 rounded-full pl-4 pr-8 py-1.5 outline-none focus:border-[#113f43] cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M7%209l3%203%203-3%22%20stroke%3D%22%23103e42%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat shadow-3xs transition-all duration-200"
                                 >
-                                  <option value="" disabled>-- Chọn hạng mục --</option>
+                                  <option value="" disabled>-- Chọn thiết bị --</option>
                                   {DEVICE_OPTIONS.map(opt => (
                                     <option key={opt} value={opt}>{opt}</option>
                                   ))}
-                                  <option value="custom">✍️ Nhập hạng mục khác...</option>
+                                  <option value="custom">✍️ Nhập thiết bị khác...</option>
                                 </select>
-                                
-                                {(!DEVICE_OPTIONS.includes(asset.hangMuc) || asset.hangMuc === '') && (
-                                  <input 
-                                    type="text" 
-                                    value={asset.hangMuc}
-                                    onChange={(e) => handleAssetChange(idx, 'hangMuc', e.target.value)}
-                                    placeholder="Nhập hạng mục mới..."
-                                    className="w-full bg-white text-xs font-extrabold text-slate-800 border border-slate-200 rounded-xl px-3 py-1.5 outline-none focus:border-[#113f43] mt-1"
-                                    autoFocus
-                                  />
-                                )}
                               </div>
+                              
+                              {!DEVICE_OPTIONS.includes(asset.hangMuc) && (
+                                <input 
+                                  type="text" 
+                                  value={asset.hangMuc}
+                                  onChange={(e) => handleAssetChange(idx, 'hangMuc', e.target.value)}
+                                  placeholder="Nhập thiết bị mới..."
+                                  className="w-full bg-white text-xs font-bold text-slate-800 border border-slate-200 rounded-full px-4 py-1.5 outline-none focus:border-[#113f43] mt-1 shadow-3xs"
+                                />
+                              )}
                             </td>
                             
                             {/* TỔNG SỐ */}
@@ -1262,7 +1264,6 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
                                     onChange={(e) => handleBrokenChange(row.id, 'thietBi', e.target.value)}
                                     placeholder="Nhập tên thiết bị..."
                                     className="w-full bg-white text-xs font-bold text-slate-800 border border-slate-200 rounded-xl px-3 py-1.5 outline-none focus:border-[#113f43] mt-1"
-                                    autoFocus
                                   />
                                 )}
                               </div>
@@ -1297,7 +1298,6 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
                                     onChange={(e) => handleBrokenChange(row.id, 'viTri', e.target.value)}
                                     placeholder="Ví dụ: Máy số 05..."
                                     className="w-full bg-white text-xs font-medium text-slate-700 border border-slate-200 rounded-xl px-3 py-1.5 outline-none focus:border-[#113f43] mt-1"
-                                    autoFocus
                                   />
                                 )}
                               </div>
@@ -1412,7 +1412,6 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
                                     onChange={(e) => handleAdditionChange(row.id, 'thietBi', e.target.value)}
                                     placeholder="Nhập thiết bị mới..."
                                     className="w-full bg-white text-xs font-bold text-slate-800 border border-slate-200 rounded-xl px-3 py-1.5 outline-none focus:border-[#113f43] mt-1"
-                                    autoFocus
                                   />
                                 )}
                               </div>
