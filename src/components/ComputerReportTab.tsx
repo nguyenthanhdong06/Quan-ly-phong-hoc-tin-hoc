@@ -12,7 +12,9 @@ import {
   Check, 
   PlusCircle, 
   ArrowLeft,
-  BookOpen
+  BookOpen,
+  X,
+  AlertTriangle
 } from 'lucide-react';
 
 interface ComputerReportTabProps {
@@ -67,19 +69,43 @@ interface SavedReport {
   namKy: string;
 }
 
+const DEVICE_OPTIONS = [
+  'Máy tính',
+  'Màn hình',
+  'Bàn phím',
+  'Chuột',
+  'Miếng lót chuột',
+  'Tai nghe',
+  'Bộ phát Wifi',
+  'Máy chiếu/Tivi',
+  'Loa',
+  'Dây mạng',
+  'Ổ điện, dây điện',
+  'Quạt',
+  'Điều hòa (nếu có)'
+];
+
+const LOCATION_OPTIONS = [
+  'Máy Giáo viên',
+  ...Array.from({ length: 35 }, (_, i) => `Máy số ${(i + 1).toString().padStart(2, '0')}`),
+  'Bàn giáo viên',
+  'Tủ thiết bị',
+];
+
 const DEFAULT_ASSETS: AssetRow[] = [
   { stt: 1, hangMuc: 'Máy tính', tongSo: '24', hoatDongTot: '22', huHong: '2', ghiChu: '2 máy lỗi nguồn' },
   { stt: 2, hangMuc: 'Màn hình', tongSo: '24', hoatDongTot: '23', huHong: '1', ghiChu: '1 màn hình nhấp nháy' },
   { stt: 3, hangMuc: 'Bàn phím', tongSo: '24', hoatDongTot: '23', huHong: '1', ghiChu: 'Liệt phím Space' },
   { stt: 4, hangMuc: 'Chuột', tongSo: '24', hoatDongTot: '23', huHong: '1', ghiChu: 'Hỏng con lăn' },
-  { stt: 5, hangMuc: 'Tai nghe', tongSo: '24', hoatDongTot: '20', huHong: '4', ghiChu: 'Mất âm thanh 1 bên' },
-  { stt: 6, hangMuc: 'Bộ phát Wifi', tongSo: '2', hoatDongTot: '2', huHong: '0', ghiChu: 'Hoạt động ổn định' },
-  { stt: 7, hangMuc: 'Máy chiếu/Tivi', tongSo: '1', hoatDongTot: '1', huHong: '0', ghiChu: 'Rõ nét' },
-  { stt: 8, hangMuc: 'Loa', tongSo: '1', hoatDongTot: '1', huHong: '0', ghiChu: 'Tốt' },
-  { stt: 9, hangMuc: 'Dây mạng', tongSo: '24', hoatDongTot: '24', huHong: '0', ghiChu: 'Ổn định' },
-  { stt: 10, hangMuc: 'Ổ điện, dây điện', tongSo: '12', hoatDongTot: '11', huHong: '1', ghiChu: 'Cần gia cố 1 ổ cắm' },
-  { stt: 11, hangMuc: 'Quạt', tongSo: '4', hoatDongTot: '4', huHong: '0', ghiChu: 'Mát' },
-  { stt: 12, hangMuc: 'Điều hòa (nếu có)', tongSo: '2', hoatDongTot: '2', huHong: '0', ghiChu: 'Tốt' },
+  { stt: 5, hangMuc: 'Miếng lót chuột', tongSo: '24', hoatDongTot: '24', huHong: '0', ghiChu: 'Tốt' },
+  { stt: 6, hangMuc: 'Tai nghe', tongSo: '24', hoatDongTot: '20', huHong: '4', ghiChu: 'Mất âm thanh 1 bên' },
+  { stt: 7, hangMuc: 'Bộ phát Wifi', tongSo: '2', hoatDongTot: '2', huHong: '0', ghiChu: 'Hoạt động ổn định' },
+  { stt: 8, hangMuc: 'Máy chiếu/Tivi', tongSo: '1', hoatDongTot: '1', huHong: '0', ghiChu: 'Rõ nét' },
+  { stt: 9, hangMuc: 'Loa', tongSo: '1', hoatDongTot: '1', huHong: '0', ghiChu: 'Tốt' },
+  { stt: 10, hangMuc: 'Dây mạng', tongSo: '24', hoatDongTot: '24', huHong: '0', ghiChu: 'Ổn định' },
+  { stt: 11, hangMuc: 'Ổ điện, dây điện', tongSo: '12', hoatDongTot: '11', huHong: '1', ghiChu: 'Cần gia cố 1 ổ cắm' },
+  { stt: 12, hangMuc: 'Quạt', tongSo: '4', hoatDongTot: '4', huHong: '0', ghiChu: 'Mát' },
+  { stt: 13, hangMuc: 'Điều hòa (nếu có)', tongSo: '2', hoatDongTot: '2', huHong: '0', ghiChu: 'Tốt' },
 ];
 
 const DEFAULT_BROKEN: BrokenDetailRow[] = [
@@ -121,6 +147,7 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
   // Report List for local history persistence
   const [savedReports, setSavedReports] = useState<SavedReport[]>([]);
   const [activeReportId, setActiveReportId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   
   // Tab UI modes
   const [viewMode, setViewMode] = useState<'edit' | 'preview'>('edit');
@@ -187,6 +214,28 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
     const updated = [...assets];
     updated[idx] = { ...updated[idx], [key]: val };
     setAssets(updated);
+  };
+
+  const addAssetRow = () => {
+    const nextStt = assets.length + 1;
+    const newRow: AssetRow = {
+      stt: nextStt,
+      hangMuc: '',
+      tongSo: '0',
+      hoatDongTot: '0',
+      huHong: '0',
+      ghiChu: ''
+    };
+    setAssets([...assets, newRow]);
+  };
+
+  const removeAssetRow = (index: number) => {
+    const filtered = assets.filter((_, idx) => idx !== index);
+    const reset = filtered.map((row, idx) => ({
+      ...row,
+      stt: idx + 1
+    }));
+    setAssets(reset);
   };
 
   // Section III Add / Remove Rows
@@ -304,17 +353,15 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
   };
 
   // Delete a report from history
-  const handleDeleteReport = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (window.confirm('Bạn có chắc chắn muốn xóa báo cáo này khỏi lịch sử?')) {
-      const filtered = savedReports.filter(r => r.id !== id);
-      setSavedReports(filtered);
-      localStorage.setItem('school_computer_reports', JSON.stringify(filtered));
-      if (activeReportId === id) {
-        setActiveReportId(null);
-      }
-      showToast('Đã xóa báo cáo!');
+  const handleDeleteReport = (id: string) => {
+    const filtered = savedReports.filter(r => r.id !== id);
+    setSavedReports(filtered);
+    localStorage.setItem('school_computer_reports', JSON.stringify(filtered));
+    if (activeReportId === id) {
+      setActiveReportId(null);
     }
+    setDeleteConfirmId(null);
+    showToast('Đã xóa báo cáo!');
   };
 
   // Helper to construct the HTML representation for both direct print & Word doc conversion
@@ -782,11 +829,14 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
                         </span>
                       </div>
                       <button
-                        onClick={(e) => handleDeleteReport(rep.id, e)}
-                        className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteConfirmId(rep.id);
+                        }}
+                        className="p-2 rounded-xl text-rose-500 bg-rose-50 hover:bg-rose-100 hover:text-rose-600 transition-all cursor-pointer shadow-3xs flex items-center justify-center self-center shrink-0"
                         title="Xóa báo cáo"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   );
@@ -812,42 +862,48 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
         <div className="lg:col-span-3 space-y-6">
           
           {/* CONTROL BAR */}
-          <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3 text-left">
+          <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-3xs flex flex-wrap items-center justify-between gap-3 text-left">
             <div className="flex items-center gap-2">
-              <span className={`w-2.5 h-2.5 rounded-full ${activeReportId ? 'bg-emerald-500' : 'bg-amber-400 animate-pulse'}`} />
-              <span className="text-xs font-black text-slate-700 uppercase tracking-widest">
-                {activeReportId ? 'ĐANG SỬA BÁO CÁO ĐÃ LƯU' : 'BẢN PHÁC THẢO MỚI'}
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${
+                activeReportId 
+                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-100' 
+                  : 'bg-amber-50 text-amber-800 border border-amber-100'
+              }`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${activeReportId ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`} />
+                {activeReportId ? 'Báo cáo đã lưu' : 'Phác thảo mới'}
               </span>
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
               <button
                 onClick={() => setViewMode(viewMode === 'edit' ? 'preview' : 'edit')}
-                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer shadow-xs active:scale-95 border ${
+                className={`px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shadow-3xs active:scale-95 border ${
                   viewMode === 'preview'
-                    ? 'bg-amber-400 hover:bg-amber-500 text-slate-900 border-amber-300 shadow-md font-bold'
-                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                    ? 'bg-sky-500 hover:bg-sky-600 text-white border-sky-400 shadow-xs font-bold'
+                    : 'bg-amber-500 hover:bg-amber-600 text-white border-amber-400 shadow-xs font-bold'
                 }`}
                 title="Bật/Tắt bản xem trước A4 chuẩn"
               >
-                <Eye className="w-4 h-4" />
-                {viewMode === 'preview' ? 'Chế độ chỉnh sửa' : 'Bản xem trước A4'}
+                <Eye className="w-3.5 h-3.5 text-white" />
+                {viewMode === 'preview' ? 'Chỉnh sửa' : 'Xem trước A4'}
               </button>
 
               <button
                 onClick={handleSaveReport}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-2 cursor-pointer shadow-xs active:scale-95 transition-all"
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shadow-3xs active:scale-95 transition-all font-bold"
+                title="Lưu lại báo cáo vào danh sách đã lưu"
               >
-                <Save className="w-4 h-4" />
-                Lưu báo cáo
+                <Save className="w-3.5 h-3.5" />
+                Lưu nháp
               </button>
 
               <button
                 onClick={handlePrint}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-2 cursor-pointer shadow-xs active:scale-95 transition-all"
+                className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shadow-3xs active:scale-95 transition-all font-bold"
+                title="Mở hộp thoại in mặc định của trình duyệt"
               >
-                <Printer className="w-4 h-4" />
-                In trực tiếp
+                <Printer className="w-3.5 h-3.5" />
+                In nhanh
               </button>
 
               <button
@@ -855,19 +911,20 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
                   setViewMode('preview');
                   setIsPrintMode(true);
                 }}
-                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-2 cursor-pointer shadow-xs active:scale-95 transition-all font-bold"
+                className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shadow-3xs active:scale-95 transition-all font-bold"
                 title="Bật chế độ xem toàn màn hình ẩn toàn bộ điều hướng để in"
               >
-                <Printer className="w-4 h-4 animate-pulse" />
-                Chế độ In (Print Mode)
+                <Printer className="w-3.5 h-3.5 animate-pulse" />
+                Chế độ In
               </button>
 
               <button
                 onClick={handleExportWord}
-                className="px-4 py-2 bg-[#1e62a3] hover:bg-[#154a7d] text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-2 cursor-pointer shadow-xs active:scale-95 transition-all"
+                className="px-3 py-1.5 bg-[#1e62a3] hover:bg-[#154a7d] text-white rounded-xl text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shadow-3xs active:scale-95 transition-all font-bold"
+                title="Tải xuống tệp Microsoft Word .doc"
               >
-                <Download className="w-4 h-4" />
-                Tải file Word (.doc)
+                <Download className="w-3.5 h-3.5" />
+                Xuất Word
               </button>
             </div>
           </div>
@@ -946,11 +1003,20 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
 
               {/* SECTION II: HIỆN TRẠNG PHÒNG MÁY */}
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                   <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest border-l-4 border-[#113f43] pl-2.5">
                     II. Hiện trạng phòng máy
                   </h3>
-                  <span className="text-[10px] font-bold text-slate-400 italic">Nhập số lượng & ghi chú hiện trạng chi tiết</span>
+                  <div className="flex items-center gap-3">
+                    <span className="hidden sm:inline text-[10px] font-bold text-slate-400 italic">Nhập số lượng & ghi chú hiện trạng chi tiết</span>
+                    <button
+                      onClick={addAssetRow}
+                      className="px-3.5 py-1.5 bg-[#113f43] hover:bg-[#1a5b61] text-white rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shadow-3xs"
+                    >
+                      <PlusCircle className="w-3.5 h-3.5" />
+                      Thêm hạng mục
+                    </button>
+                  </div>
                 </div>
 
                 <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-3xs">
@@ -958,11 +1024,12 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
                     <thead>
                       <tr className="bg-slate-100 text-slate-700 font-extrabold border-b border-slate-200 uppercase tracking-wider text-[10px]">
                         <th className="p-3 text-center w-12">STT</th>
-                        <th className="p-3 w-40">Hạng mục</th>
+                        <th className="p-3 w-56">Hạng mục</th>
                         <th className="p-3 text-center w-28">Tổng số</th>
                         <th className="p-3 text-center w-28">Hoạt động tốt</th>
                         <th className="p-3 text-center w-28">Hư hỏng</th>
                         <th className="p-3">Ghi chú hiện trạng</th>
+                        <th className="p-3 text-center w-12"></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-150">
@@ -970,7 +1037,39 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
                         return (
                           <tr key={asset.stt} className="hover:bg-slate-50/50 transition">
                             <td className="p-3 text-center font-bold text-slate-400">{asset.stt}</td>
-                            <td className="p-3 font-extrabold text-slate-800">{asset.hangMuc}</td>
+                            <td className="p-2">
+                              <div className="space-y-1">
+                                <select 
+                                  value={DEVICE_OPTIONS.includes(asset.hangMuc) ? asset.hangMuc : (asset.hangMuc ? 'custom' : '')}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (val === 'custom') {
+                                      handleAssetChange(idx, 'hangMuc', '');
+                                    } else {
+                                      handleAssetChange(idx, 'hangMuc', val);
+                                    }
+                                  }}
+                                  className="w-full bg-white text-xs font-extrabold text-slate-800 border border-slate-200 rounded-xl px-3 py-1.5 outline-none focus:border-[#113f43] cursor-pointer"
+                                >
+                                  <option value="" disabled>-- Chọn hạng mục --</option>
+                                  {DEVICE_OPTIONS.map(opt => (
+                                    <option key={opt} value={opt}>{opt}</option>
+                                  ))}
+                                  <option value="custom">✍️ Nhập hạng mục khác...</option>
+                                </select>
+                                
+                                {(!DEVICE_OPTIONS.includes(asset.hangMuc) || asset.hangMuc === '') && (
+                                  <input 
+                                    type="text" 
+                                    value={asset.hangMuc}
+                                    onChange={(e) => handleAssetChange(idx, 'hangMuc', e.target.value)}
+                                    placeholder="Nhập hạng mục mới..."
+                                    className="w-full bg-white text-xs font-extrabold text-slate-800 border border-slate-200 rounded-xl px-3 py-1.5 outline-none focus:border-[#113f43] mt-1"
+                                    autoFocus
+                                  />
+                                )}
+                              </div>
+                            </td>
                             
                             {/* TỔNG SỐ */}
                             <td className="p-2 text-center">
@@ -1076,6 +1175,17 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
                                 className="w-full bg-slate-50 hover:bg-slate-100/50 focus:bg-white text-xs font-medium text-slate-700 border border-slate-200 rounded-xl px-3 py-1.5 outline-none focus:border-[#113f43] transition"
                               />
                             </td>
+
+                            {/* XÓA DÒNG */}
+                            <td className="p-2 text-center">
+                              <button
+                                onClick={() => removeAssetRow(idx)}
+                                className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-xl transition active:scale-95 cursor-pointer shadow-3xs"
+                                title="Xóa hạng mục này"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
                           </tr>
                         );
                       })}
@@ -1125,24 +1235,72 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
                             
                             {/* THIẾT BỊ */}
                             <td className="p-2">
-                              <input 
-                                type="text" 
-                                value={row.thietBi}
-                                onChange={(e) => handleBrokenChange(row.id, 'thietBi', e.target.value)}
-                                placeholder="Bàn phím, chuột, máy tính..."
-                                className="w-full bg-white text-xs font-bold text-slate-800 border border-slate-200 rounded-xl px-3 py-1.5 outline-none focus:border-[#113f43]"
-                              />
+                              <div className="space-y-1">
+                                <select 
+                                  value={DEVICE_OPTIONS.includes(row.thietBi) ? row.thietBi : (row.thietBi ? 'custom' : '')}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (val === 'custom') {
+                                      handleBrokenChange(row.id, 'thietBi', '');
+                                    } else {
+                                      handleBrokenChange(row.id, 'thietBi', val);
+                                    }
+                                  }}
+                                  className="w-full bg-white text-xs font-bold text-slate-800 border border-slate-200 rounded-xl px-3 py-1.5 outline-none focus:border-[#113f43] cursor-pointer"
+                                >
+                                  <option value="" disabled>-- Chọn thiết bị --</option>
+                                  {DEVICE_OPTIONS.map(opt => (
+                                    <option key={opt} value={opt}>{opt}</option>
+                                  ))}
+                                  <option value="custom">✍️ Nhập thiết bị khác...</option>
+                                </select>
+                                
+                                {(!DEVICE_OPTIONS.includes(row.thietBi) || row.thietBi === '') && (
+                                  <input 
+                                    type="text" 
+                                    value={row.thietBi}
+                                    onChange={(e) => handleBrokenChange(row.id, 'thietBi', e.target.value)}
+                                    placeholder="Nhập tên thiết bị..."
+                                    className="w-full bg-white text-xs font-bold text-slate-800 border border-slate-200 rounded-xl px-3 py-1.5 outline-none focus:border-[#113f43] mt-1"
+                                    autoFocus
+                                  />
+                                )}
+                              </div>
                             </td>
 
                             {/* VỊ TRÍ */}
                             <td className="p-2">
-                              <input 
-                                type="text" 
-                                value={row.viTri}
-                                onChange={(e) => handleBrokenChange(row.id, 'viTri', e.target.value)}
-                                placeholder="Ví dụ: Máy số 05..."
-                                className="w-full bg-white text-xs font-medium text-slate-700 border border-slate-200 rounded-xl px-3 py-1.5 outline-none focus:border-[#113f43]"
-                              />
+                              <div className="space-y-1">
+                                <select 
+                                  value={LOCATION_OPTIONS.includes(row.viTri) ? row.viTri : (row.viTri ? 'custom' : '')}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (val === 'custom') {
+                                      handleBrokenChange(row.id, 'viTri', '');
+                                    } else {
+                                      handleBrokenChange(row.id, 'viTri', val);
+                                    }
+                                  }}
+                                  className="w-full bg-white text-xs font-semibold text-slate-800 border border-slate-200 rounded-xl px-3 py-1.5 outline-none focus:border-[#113f43] cursor-pointer"
+                                >
+                                  <option value="" disabled>-- Chọn vị trí --</option>
+                                  {LOCATION_OPTIONS.map(opt => (
+                                    <option key={opt} value={opt}>{opt}</option>
+                                  ))}
+                                  <option value="custom">✍️ Nhập vị trí khác...</option>
+                                </select>
+                                
+                                {(!LOCATION_OPTIONS.includes(row.viTri) || row.viTri === '') && (
+                                  <input 
+                                    type="text" 
+                                    value={row.viTri}
+                                    onChange={(e) => handleBrokenChange(row.id, 'viTri', e.target.value)}
+                                    placeholder="Ví dụ: Máy số 05..."
+                                    className="w-full bg-white text-xs font-medium text-slate-700 border border-slate-200 rounded-xl px-3 py-1.5 outline-none focus:border-[#113f43] mt-1"
+                                    autoFocus
+                                  />
+                                )}
+                              </div>
                             </td>
 
                             {/* HIỆN TRẠNG */}
@@ -1207,7 +1365,7 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
                     <thead>
                       <tr className="bg-slate-100 text-slate-700 font-extrabold border-b border-slate-200 uppercase tracking-wider text-[10px]">
                         <th className="p-3 text-center w-12">STT</th>
-                        <th className="p-3 w-52">Thiết bị đề xuất</th>
+                        <th className="p-3 w-56">Thiết bị đề xuất</th>
                         <th className="p-3 text-center w-36">Số lượng đề xuất</th>
                         <th className="p-3">Lý do đề xuất chi tiết</th>
                         <th className="p-3 text-center w-12"></th>
@@ -1227,13 +1385,37 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
                             
                             {/* THIẾT BỊ */}
                             <td className="p-2">
-                              <input 
-                                type="text" 
-                                value={row.thietBi}
-                                onChange={(e) => handleAdditionChange(row.id, 'thietBi', e.target.value)}
-                                placeholder="Tên thiết bị..."
-                                className="w-full bg-white text-xs font-bold text-slate-800 border border-slate-200 rounded-xl px-3 py-1.5 outline-none focus:border-[#113f43]"
-                              />
+                              <div className="space-y-1">
+                                <select 
+                                  value={DEVICE_OPTIONS.includes(row.thietBi) ? row.thietBi : (row.thietBi ? 'custom' : '')}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (val === 'custom') {
+                                      handleAdditionChange(row.id, 'thietBi', '');
+                                    } else {
+                                      handleAdditionChange(row.id, 'thietBi', val);
+                                    }
+                                  }}
+                                  className="w-full bg-white text-xs font-bold text-slate-800 border border-slate-200 rounded-xl px-3 py-1.5 outline-none focus:border-[#113f43] cursor-pointer"
+                                >
+                                  <option value="" disabled>-- Chọn thiết bị --</option>
+                                  {DEVICE_OPTIONS.map(opt => (
+                                    <option key={opt} value={opt}>{opt}</option>
+                                  ))}
+                                  <option value="custom">✍️ Nhập thiết bị khác...</option>
+                                </select>
+                                
+                                {(!DEVICE_OPTIONS.includes(row.thietBi) || row.thietBi === '') && (
+                                  <input 
+                                    type="text" 
+                                    value={row.thietBi}
+                                    onChange={(e) => handleAdditionChange(row.id, 'thietBi', e.target.value)}
+                                    placeholder="Nhập thiết bị mới..."
+                                    className="w-full bg-white text-xs font-bold text-slate-800 border border-slate-200 rounded-xl px-3 py-1.5 outline-none focus:border-[#113f43] mt-1"
+                                    autoFocus
+                                  />
+                                )}
+                              </div>
                             </td>
 
                             {/* SỐ LƯỢNG */}
@@ -1334,6 +1516,72 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
         </div>
 
       </div>
+
+      {/* DELETE CONFIRMATION MODAL POPUP */}
+      {deleteConfirmId && (() => {
+        const targetRep = savedReports.find(r => r.id === deleteConfirmId);
+        if (!targetRep) return null;
+        return (
+          <div 
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[9999] p-4 transition-all duration-300"
+            onClick={() => setDeleteConfirmId(null)}
+          >
+            <div 
+              className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-100 flex flex-col items-center text-center gap-4 relative transform scale-100 transition-transform duration-300"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button 
+                onClick={() => setDeleteConfirmId(null)}
+                className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="w-14 h-14 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-500 shadow-3xs">
+                <AlertTriangle className="w-7 h-7 animate-pulse" />
+              </div>
+
+              <div className="space-y-1.5 w-full">
+                <h3 className="text-base font-extrabold text-slate-900 uppercase tracking-wide">
+                  Xác nhận xóa báo cáo?
+                </h3>
+                <p className="text-xs text-slate-500 leading-relaxed font-medium">
+                  Hành động này sẽ xóa vĩnh viễn báo cáo đã lưu của đơn vị:
+                </p>
+                <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-left space-y-1 my-2">
+                  <div className="text-xs font-black text-slate-800 truncate">
+                    🏢 {targetRep.generalInfo.donVi}
+                  </div>
+                  <div className="text-[11px] font-bold text-slate-500 flex flex-wrap gap-2">
+                    <span>📅 {targetRep.generalInfo.thoiGianBaoCao}</span>
+                    <span>👤 {targetRep.creator}</span>
+                  </div>
+                </div>
+                <p className="text-[11px] text-rose-500 font-bold">
+                  ⚠️ Lưu ý: Bạn sẽ không thể khôi phục lại dữ liệu này!
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5 w-full mt-2">
+                <button
+                  type="button"
+                  onClick={() => setDeleteConfirmId(null)}
+                  className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer border border-slate-200 active:scale-95"
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteReport(deleteConfirmId)}
+                  className="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer shadow-md shadow-rose-600/10 active:scale-95"
+                >
+                  Xác nhận xóa
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
     </div>
   );
