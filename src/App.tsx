@@ -1109,7 +1109,7 @@ export default function App() {
         >
           <div className={`flex items-center gap-2.5 text-left ${isSidebarCollapsed ? 'md:flex-col md:text-center' : ''}`}>
             <div 
-              className="bg-gradient-to-br from-amber-400 to-amber-500 p-1.5 w-10 h-10 rounded-xl shadow-md border border-amber-300 flex items-center justify-center shrink-0 hover:rotate-6 transition-all duration-300"
+              className="bg-gradient-to-br from-amber-400 to-amber-500 p-1.5 w-10 h-10 rounded-xl shadow-md flex items-center justify-center shrink-0 hover:rotate-6 transition-all duration-300"
               style={{ color: currentTheme.dark }}
             >
               <CuteMiniRobot className="w-8 h-8" />
@@ -1547,7 +1547,7 @@ export default function App() {
           
           <div className="flex items-center gap-3 text-left">
             <div 
-              className="bg-gradient-to-br from-amber-400 to-amber-500 p-1 w-14 h-14 rounded-2xl shadow-md border border-amber-300 flex items-center justify-center shrink-0 hover:scale-105 hover:rotate-3 transition-all duration-300"
+              className="bg-gradient-to-br from-amber-400 to-amber-500 p-1 w-14 h-14 rounded-2xl shadow-md flex items-center justify-center shrink-0 hover:scale-105 hover:rotate-3 transition-all duration-300"
               style={{ color: currentTheme.dark }}
             >
               <CuteMiniRobot className="w-12 h-12" />
