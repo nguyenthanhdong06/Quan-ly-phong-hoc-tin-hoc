@@ -1,7 +1,7 @@
 import React from 'react';
 import { Student, Computer, SeatingChart } from '../types';
 import { Monitor, X, Wrench, AlertTriangle, PenTool, Clipboard, Search, Check, ChevronDown, Maximize, Minimize, Tv, ZoomIn, ZoomOut, Sun, Moon } from 'lucide-react';
-import { googleDriveAvatars, categorizedAvatars, avatarCategories } from './AvatarGalleryTab';
+import { googleDriveAvatars, categorizedAvatars, avatarCategories, getMergedAvatars } from './AvatarGalleryTab';
 
 // Format name: If name has more than 2 words, display only the middle name and first name (last 2 words)
 const formatStudentName = (name: string): string => {
@@ -1077,8 +1077,8 @@ export default function SeatingTab({
             {/* Grid of Avatars */}
             <div className="grid grid-cols-4 gap-3 max-h-[220px] overflow-y-auto p-1">
               {(modalAvatarCategory === 'all' 
-                ? categorizedAvatars 
-                : categorizedAvatars.filter(item => item.category === modalAvatarCategory)
+                ? getMergedAvatars() 
+                : getMergedAvatars().filter(item => item.category === modalAvatarCategory)
               ).map((item, idx) => {
                 const isSelected = avatarChangeStudent.avatarUrl === item.url;
                 return (
@@ -1122,8 +1122,8 @@ export default function SeatingTab({
             </div>
 
             {(modalAvatarCategory === 'all' 
-              ? categorizedAvatars 
-              : categorizedAvatars.filter(item => item.category === modalAvatarCategory)
+              ? getMergedAvatars() 
+              : getMergedAvatars().filter(item => item.category === modalAvatarCategory)
             ).length === 0 && (
               <div className="text-center py-8 text-slate-400 text-xs font-semibold">
                 Không tìm thấy avatar nào trong danh mục này.

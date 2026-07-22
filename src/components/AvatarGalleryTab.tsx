@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Student, ClassItem } from '../types';
-import { Image, User, Check, RotateCcw, Sparkles } from 'lucide-react';
+import { Image, User, Check, RotateCcw, Sparkles, UploadCloud, Link as LinkIcon, X, Plus, Trash2, FolderPlus } from 'lucide-react';
 
 interface AvatarGalleryTabProps {
   students: Student[];
@@ -15,6 +15,7 @@ export interface AvatarItem {
   url: string;
   category: 'con_nguoi' | 'dong_vat' | 'sieu_anh_hung' | 'hoa';
   name: string;
+  isCustom?: boolean;
 }
 
 export const avatarCategories = [
@@ -24,6 +25,68 @@ export const avatarCategories = [
   { id: 'sieu_anh_hung', name: 'Siêu anh hùng', icon: '🦸' },
   { id: 'hoa', name: 'Hoa', icon: '🌸' }
 ] as const;
+
+// Helper to convert any Google Drive view/share URL to a direct thumbnail image URL
+export function convertDriveUrlToThumbnail(rawInput: string): string {
+  const trimmed = rawInput.trim();
+  if (!trimmed) return '';
+
+  // Check file/d/ID pattern (e.g. https://drive.google.com/file/d/FILE_ID/view?usp=sharing)
+  const fileDMatch = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (fileDMatch && fileDMatch[1]) {
+    return `https://drive.google.com/thumbnail?id=${fileDMatch[1]}&sz=w512`;
+  }
+
+  // Check id=ID query parameter pattern (e.g. https://drive.google.com/open?id=FILE_ID or uc?id=FILE_ID)
+  const idMatch = trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (idMatch && idMatch[1]) {
+    return `https://drive.google.com/thumbnail?id=${idMatch[1]}&sz=w512`;
+  }
+
+  // Check googleusercontent /d/ID pattern
+  const userContentMatch = trimmed.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (userContentMatch && userContentMatch[1]) {
+    return `https://drive.google.com/thumbnail?id=${userContentMatch[1]}&sz=w512`;
+  }
+
+  // If already a full URL or base64 data URL
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:image/')) {
+    return trimmed;
+  }
+
+  // Raw ID pattern (length >= 20)
+  if (/^[a-zA-Z0-9_-]{20,}$/.test(trimmed)) {
+    return `https://drive.google.com/thumbnail?id=${trimmed}&sz=w512`;
+  }
+
+  return trimmed;
+}
+
+// LocalStorage persistence helpers for custom uploaded/pasted avatars
+export const loadCustomAvatars = (): AvatarItem[] => {
+  try {
+    const saved = localStorage.getItem('custom_avatars_list');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (e) {
+    console.error('Lỗi khi tải danh sách avatar tùy chỉnh:', e);
+  }
+  return [];
+};
+
+export const saveCustomAvatars = (items: AvatarItem[]) => {
+  try {
+    localStorage.setItem('custom_avatars_list', JSON.stringify(items));
+  } catch (e) {
+    console.error('Lỗi khi lưu danh sách avatar tùy chỉnh:', e);
+  }
+};
+
+export const getMergedAvatars = (): AvatarItem[] => {
+  return [...loadCustomAvatars(), ...categorizedAvatars];
+};
 
 export const categorizedAvatars: AvatarItem[] = [
   // 12 Google Drive Cute Student Avatars categorized under 'con_nguoi'
@@ -117,13 +180,126 @@ export const AvatarGalleryTab: React.FC<AvatarGalleryTabProps> = ({
 }) => {
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [customAvatars, setCustomAvatars] = useState<AvatarItem[]>(loadCustomAvatars);
+
+  // Modal & File upload state
+  const [isDriveModalOpen, setIsDriveModalOpen] = useState<boolean>(false);
+  const [driveInputText, setDriveInputText] = useState<string>('');
+  const [driveCategory, setDriveCategory] = useState<'con_nguoi' | 'dong_vat' | 'sieu_anh_hung' | 'hoa'>('con_nguoi');
+  const [driveNamePrefix, setDriveNamePrefix] = useState<string>('Avatar Google Drive');
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const classStudents = students.filter(s => s.classId === selectedClass);
   const selectedStudentObj = students.find(s => s.id === selectedStudentId);
 
+  // Combine custom avatars with default categorized avatars
+  const allAvatars = [...customAvatars, ...categorizedAvatars];
+
   const filteredAvatars = activeCategory === 'all'
-    ? categorizedAvatars
-    : categorizedAvatars.filter(item => item.category === activeCategory);
+    ? allAvatars
+    : allAvatars.filter(item => item.category === activeCategory);
+
+  // File upload handler from computer
+  const handleFileUploadFromComputer = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const fileList: File[] = Array.from(files);
+    const newItems: AvatarItem[] = [];
+
+    // Determine category based on currently active tab
+    const targetCategory: 'con_nguoi' | 'dong_vat' | 'sieu_anh_hung' | 'hoa' =
+      activeCategory !== 'all' ? (activeCategory as any) : 'con_nguoi';
+
+    let readCount = 0;
+    fileList.forEach((file: File) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          newItems.push({
+            url: event.target.result as string,
+            category: targetCategory,
+            name: file.name.replace(/\.[^/.]+$/, "") || 'Avatar từ máy tính',
+            isCustom: true,
+          });
+        }
+        readCount++;
+        if (readCount === fileList.length) {
+          setCustomAvatars(prev => {
+            const updated = [...newItems, ...prev];
+            saveCustomAvatars(updated);
+            return updated;
+          });
+          const catName = avatarCategories.find(c => c.id === targetCategory)?.name || targetCategory;
+          showToast(`Đã tải lên ${newItems.length} avatar vào mục "${catName}"!`, 'success');
+          if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleOpenDriveModal = () => {
+    if (activeCategory !== 'all') {
+      setDriveCategory(activeCategory as any);
+    } else {
+      setDriveCategory('con_nguoi');
+    }
+    setIsDriveModalOpen(true);
+  };
+
+  // Google Drive URL submit handler
+  const handleAddFromGoogleDrive = () => {
+    if (!driveInputText.trim()) {
+      showToast('Vui lòng nhập ít nhất một đường liên kết Google Drive!', 'error');
+      return;
+    }
+
+    // Split input by newlines, commas, or spaces to support multiple links at once
+    const rawLinks = driveInputText
+      .split(/[\n,\s]+/)
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+
+    if (rawLinks.length === 0) {
+      showToast('Không tìm thấy đường liên kết hợp lệ!', 'error');
+      return;
+    }
+
+    const newItems: AvatarItem[] = rawLinks.map((link, idx) => {
+      const convertedUrl = convertDriveUrlToThumbnail(link);
+      const baseName = driveNamePrefix.trim() || 'Avatar Google Drive';
+      const name = rawLinks.length > 1 ? `${baseName} ${idx + 1}` : baseName;
+      return {
+        url: convertedUrl,
+        category: driveCategory,
+        name,
+        isCustom: true,
+      };
+    });
+
+    setCustomAvatars(prev => {
+      const updated = [...newItems, ...prev];
+      saveCustomAvatars(updated);
+      return updated;
+    });
+
+    showToast(`Đã thêm thành công ${newItems.length} avatar từ Google Drive!`, 'success');
+    setDriveInputText('');
+    setIsDriveModalOpen(false);
+  };
+
+  // Delete custom avatar handler
+  const handleDeleteCustomAvatar = (urlToDelete: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCustomAvatars(prev => {
+      const updated = prev.filter(item => item.url !== urlToDelete);
+      saveCustomAvatars(updated);
+      return updated;
+    });
+    showToast('Đã xóa avatar khỏi bộ sưu tập!', 'success');
+  };
 
   const handleSelectAvatar = (url: string) => {
     if (!selectedStudentId) {
@@ -160,8 +336,24 @@ export const AvatarGalleryTab: React.FC<AvatarGalleryTabProps> = ({
     showToast(`Đã khôi phục avatar mặc định cho ${studentName}!`, 'success');
   };
 
+  // Count detected links in drive modal
+  const detectedLinksCount = driveInputText
+    .split(/[\n,\s]+/)
+    .map(s => s.trim())
+    .filter(s => s.length > 0).length;
+
   return (
     <div className="space-y-6 text-left">
+      {/* Hidden file input for computer uploads */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileUploadFromComputer}
+        accept="image/*"
+        multiple
+        className="hidden"
+      />
+
       {/* Header Info Banner */}
       <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -172,7 +364,7 @@ export const AvatarGalleryTab: React.FC<AvatarGalleryTabProps> = ({
             <h2 className="text-xl font-black text-slate-800 tracking-tight">KHO AVATAR HỌC SINH</h2>
           </div>
           <p className="text-xs text-slate-400 font-medium">
-            Quản trị viên hoặc Giáo viên có thể lựa chọn avatar độc đáo từ Google Drive cho từng học sinh.
+            Quản trị viên hoặc Giáo viên có thể lựa chọn avatar độc đáo từ Google Drive hoặc tải từ máy tính cho từng học sinh.
           </p>
         </div>
 
@@ -198,7 +390,7 @@ export const AvatarGalleryTab: React.FC<AvatarGalleryTabProps> = ({
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left column: List of Students */}
-        <div className="lg:col-span-4 bg-white p-5 rounded-3xl border border-slate-100 shadow-xs flex flex-col max-h-[600px]">
+        <div className="lg:col-span-4 bg-white p-5 rounded-3xl border border-slate-100 shadow-xs flex flex-col max-h-[620px]">
           <h3 className="text-sm font-extrabold text-slate-800 mb-4 flex items-center gap-2 uppercase tracking-wider">
             <User className="w-4 h-4 text-slate-500" />
             Danh sách học sinh ({classStudents.length})
@@ -249,7 +441,7 @@ export const AvatarGalleryTab: React.FC<AvatarGalleryTabProps> = ({
           </div>
         </div>
 
-        {/* Right column: Avatar Editor & Gallery */}
+        {/* Right column: Avatar Editor, Add New Avatar & Gallery */}
         <div className="lg:col-span-8 space-y-6">
           {/* Active selection showcase */}
           <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-xs">
@@ -306,12 +498,64 @@ export const AvatarGalleryTab: React.FC<AvatarGalleryTabProps> = ({
             )}
           </div>
 
+          {/* Section: Thêm mới Avatar (Compact design) */}
+          <div className="bg-white p-3.5 rounded-2xl border border-slate-100 shadow-xs space-y-2">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5 tracking-wider uppercase">
+                <UploadCloud className="w-3.5 h-3.5 text-amber-500" />
+                Thêm mới Avatar
+              </h3>
+              <span className="text-[10px] text-slate-400 font-medium">Tải từ máy tính hoặc link Google Drive</span>
+            </div>
+
+            {/* Dashed Upload Card - Single Line Layout */}
+            <div className="border border-dashed border-sky-200 hover:border-amber-400 rounded-xl bg-sky-50/20 hover:bg-amber-50/10 px-4 py-2.5 flex items-center justify-center gap-3 text-center transition-all duration-200 group">
+              {/* Cloud Icon */}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="p-1.5 rounded-lg bg-white shadow-2xs border border-slate-100 text-slate-800 group-hover:scale-105 transition-transform cursor-pointer shrink-0"
+                title="Bấm để chọn file từ máy tính"
+              >
+                <svg className="w-5 h-5 text-slate-800" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" />
+                  <path d="M12 12v9" />
+                  <path d="m16 16-4-4-4 4" />
+                </svg>
+              </button>
+
+              {/* Single row actions */}
+              <div className="flex items-center gap-3 flex-wrap justify-center">
+                {/* Action 1: Chọn file từ máy tính (Orange text button) */}
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="text-amber-600 hover:text-amber-700 font-black text-xs transition-colors cursor-pointer active:scale-95"
+                >
+                  Chọn file từ máy tính
+                </button>
+
+                {/* HOẶC */}
+                <span className="text-[10px] font-black text-slate-400 tracking-widest uppercase">HOẶC</span>
+
+                {/* Action 2: Thêm liên kết Google Drive (Green text button) */}
+                <button
+                  type="button"
+                  onClick={handleOpenDriveModal}
+                  className="text-emerald-600 hover:text-emerald-700 font-black text-xs transition-colors cursor-pointer active:scale-95 flex items-center gap-1"
+                >
+                  Thêm liên kết Google Drive
+                </button>
+              </div>
+            </div>
+          </div>
+
           {/* Avatar Gallery Selector Grid */}
           <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-xs space-y-5">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-3">
               <h3 className="text-xs font-extrabold text-slate-800 flex items-center gap-2 tracking-wider">
                 <Sparkles className="w-4 h-4 text-amber-500" />
-                Bộ sưu tập Avatar Cute
+                Bộ sưu tập Avatar Cute ({allAvatars.length})
               </h3>
               
               {/* Category selector */}
@@ -337,39 +581,51 @@ export const AvatarGalleryTab: React.FC<AvatarGalleryTabProps> = ({
               {filteredAvatars.map((item, idx) => {
                 const isAssigned = selectedStudentObj?.avatarUrl === item.url;
                 return (
-                  <button
-                    key={idx}
-                    disabled={!selectedStudentId}
-                    onClick={() => handleSelectAvatar(item.url)}
-                    className={`relative aspect-square rounded-2xl border-2 overflow-hidden flex items-center justify-center transition-all bg-slate-50 group ${
-                      !selectedStudentId
-                        ? 'opacity-60 cursor-not-allowed'
-                        : isAssigned
-                        ? 'border-amber-400 ring-2 ring-amber-400/20 shadow-sm scale-95'
-                        : 'border-slate-150 hover:border-amber-400 hover:scale-105 hover:shadow-sm cursor-pointer'
-                    }`}
-                    title={`${item.name} (${avatarCategories.find(c => c.id === item.category)?.name})`}
-                  >
-                    <img
-                      src={item.url}
-                      alt={item.name}
-                      className="w-full h-full object-cover"
-                      referrerPolicy="no-referrer"
-                    />
+                  <div key={idx} className="relative group">
+                    <button
+                      disabled={!selectedStudentId}
+                      onClick={() => handleSelectAvatar(item.url)}
+                      className={`w-full relative aspect-square rounded-2xl border-2 overflow-hidden flex items-center justify-center transition-all bg-slate-50 ${
+                        !selectedStudentId
+                          ? 'opacity-60 cursor-not-allowed'
+                          : isAssigned
+                          ? 'border-amber-400 ring-2 ring-amber-400/20 shadow-sm scale-95'
+                          : 'border-slate-150 hover:border-amber-400 hover:scale-105 hover:shadow-sm cursor-pointer'
+                      }`}
+                      title={`${item.name} (${avatarCategories.find(c => c.id === item.category)?.name})`}
+                    >
+                      <img
+                        src={item.url}
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                      />
 
-                    {/* Badge for avatar label */}
-                    <div className="absolute bottom-0 inset-x-0 bg-black/60 py-0.5 px-1 text-[8.5px] font-bold text-white text-center opacity-0 group-hover:opacity-100 transition-opacity truncate">
-                      {item.name}
-                    </div>
-
-                    {isAssigned && (
-                      <div className="absolute inset-0 bg-amber-500/20 flex items-center justify-center">
-                        <span className="bg-amber-500 text-white p-1 rounded-full shadow-xs">
-                          <Check className="w-3.5 h-3.5 stroke-[3px]" />
-                        </span>
+                      {/* Badge for avatar label */}
+                      <div className="absolute bottom-0 inset-x-0 bg-black/60 py-0.5 px-1 text-[8.5px] font-bold text-white text-center opacity-0 group-hover:opacity-100 transition-opacity truncate">
+                        {item.name}
                       </div>
+
+                      {isAssigned && (
+                        <div className="absolute inset-0 bg-amber-500/20 flex items-center justify-center">
+                          <span className="bg-amber-500 text-white p-1 rounded-full shadow-xs">
+                            <Check className="w-3.5 h-3.5 stroke-[3px]" />
+                          </span>
+                        </div>
+                      )}
+                    </button>
+
+                    {/* Delete button for user-added custom avatars */}
+                    {item.isCustom && (
+                      <button
+                        onClick={(e) => handleDeleteCustomAvatar(item.url, e)}
+                        className="absolute -top-1.5 -right-1.5 bg-rose-500 hover:bg-rose-600 text-white p-1 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer z-10"
+                        title="Xóa avatar này khỏi bộ sưu tập"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
                     )}
-                  </button>
+                  </div>
                 );
               })}
             </div>
@@ -382,6 +638,107 @@ export const AvatarGalleryTab: React.FC<AvatarGalleryTabProps> = ({
           </div>
         </div>
       </div>
+
+      {/* POP-UP MODAL: Thêm avatar từ Google Drive */}
+      {isDriveModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-6 space-y-5 border border-slate-100 animate-in zoom-in-95 duration-150 text-left">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="bg-emerald-100 p-2.5 rounded-2xl text-emerald-600 shrink-0">
+                  <LinkIcon className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-800 tracking-tight">Thêm avatar từ Google Drive</h3>
+                  <p className="text-xs text-slate-400 font-medium">Hỗ trợ dán 1 hoặc nhiều link chia sẻ cùng lúc</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsDriveModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="space-y-4">
+              {/* Textarea for links */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-extrabold text-slate-700">
+                    Đường liên kết Google Drive (hoặc nhiều link):
+                  </label>
+                  {detectedLinksCount > 0 && (
+                    <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
+                      Đã nhận diện: {detectedLinksCount} link
+                    </span>
+                  )}
+                </div>
+                <textarea
+                  rows={5}
+                  value={driveInputText}
+                  onChange={(e) => setDriveInputText(e.target.value)}
+                  placeholder={`Dán các đường liên kết Google Drive tại đây...\nVí dụ:\nhttps://drive.google.com/file/d/1mjpI3dUOzHY8L5l-y7CkL_s9jw9XriSI/view?usp=sharing\nhttps://drive.google.com/file/d/1piSQIYDZsEvxdJgb45Kq1Vykiu32rrE4/view?usp=sharing`}
+                  className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs font-medium rounded-2xl p-3.5 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-mono leading-relaxed resize-none"
+                />
+                <p className="text-[11px] text-slate-400 font-medium mt-1">
+                  💡 <strong>Mẹo:</strong> Mỗi đường link nằm trên một dòng hoặc phân cách bởi dấu phẩy. Hệ thống tự động chuyển hóa liên kết sang định dạng hiển thị ảnh mượt mà.
+                </p>
+              </div>
+
+              {/* Options: Category & Name prefix */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div>
+                  <label className="block text-xs font-extrabold text-slate-700 mb-1.5">Danh mục Avatar:</label>
+                  <select
+                    value={driveCategory}
+                    onChange={(e) => setDriveCategory(e.target.value as any)}
+                    className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 cursor-pointer"
+                  >
+                    <option value="con_nguoi">🧑‍🤝‍🧑 Con người</option>
+                    <option value="dong_vat">🐼 Động vật</option>
+                    <option value="sieu_anh_hung">🦸 Siêu anh hùng</option>
+                    <option value="hoa">🌸 Hoa</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-extrabold text-slate-700 mb-1.5">Tên hiển thị (Tùy chọn):</label>
+                  <input
+                    type="text"
+                    value={driveNamePrefix}
+                    onChange={(e) => setDriveNamePrefix(e.target.value)}
+                    placeholder="VD: Avatar Google Drive"
+                    className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs font-bold rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
+              <button
+                type="button"
+                onClick={() => setIsDriveModalOpen(false)}
+                className="px-4 py-2.5 rounded-xl text-xs font-extrabold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={handleAddFromGoogleDrive}
+                className="px-5 py-2.5 rounded-xl text-xs font-black text-white bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20 flex items-center gap-2 transition-all cursor-pointer active:scale-95"
+              >
+                <Plus className="w-4 h-4 stroke-[3px]" />
+                Thêm {detectedLinksCount > 1 ? `${detectedLinksCount} ` : ''}Avatar Vào Kho
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
