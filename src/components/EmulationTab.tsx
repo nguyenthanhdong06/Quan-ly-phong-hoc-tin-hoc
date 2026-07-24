@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Student, EmulationDataState, SeatingChart, Computer, ClassItem, Grade, EvaluationData } from '../types';
 import { Award, ShoppingBag, HelpCircle, Search, Sparkles, Check, Star, X, BarChart3, Trophy, TrendingUp, Calendar, Clock, Award as AwardIcon } from 'lucide-react';
 import FireworksCelebration from './FireworksCelebration';
+import { HoneyBeeCardFrameDecoration } from './HoneyBeeCardFrameDecoration';
 
 const getStudentAvatar = (studentId: string, allStudents?: Student[]) => {
   const avatars = [
@@ -66,58 +67,37 @@ const getStudentAvatar = (studentId: string, allStudents?: Student[]) => {
   return avatars[hash % avatars.length];
 };
 
-const StickerAvatar = ({ emoji, studentId, size = 'w-16 h-16', className = '', avatarUrl }: { emoji: string; studentId: string; size?: string; className?: string; avatarUrl?: string }) => {
-  let hash = 0;
-  for (let i = 0; i < studentId.length; i++) {
-    hash = studentId.charCodeAt(i) + ((hash << 5) - hash);
+const StickerAvatar = ({ emoji, studentId, size = 'w-16 h-16', className = '', avatarUrl, bg }: { emoji: string; studentId?: string; size?: string; className?: string; avatarUrl?: string; bg?: string }) => {
+  let backgroundClass = bg;
+  if (!backgroundClass && studentId) {
+    let hash = 0;
+    for (let i = 0; i < studentId.length; i++) {
+      hash = studentId.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const bgList = [
+      "bg-indigo-50 border-indigo-100",
+      "bg-emerald-50 border-emerald-100",
+      "bg-amber-50 border-amber-100",
+      "bg-orange-50 border-orange-100",
+      "bg-yellow-50 border-yellow-100",
+      "bg-rose-50 border-rose-100",
+      "bg-purple-50 border-purple-100",
+      "bg-blue-50 border-blue-100"
+    ];
+    backgroundClass = bgList[Math.abs(hash) % bgList.length];
   }
-  hash = Math.abs(hash);
-
-  const gradientBgs = [
-    'from-[#5cd6ff] via-[#38bcf2] to-[#1294d9]', // Soft Sky Blue
-    'from-[#6be4a0] via-[#4fd087] to-[#2cb46a]', // Fresh Emerald Mint
-    'from-[#ff8cb8] via-[#f7629b] to-[#dc3a74]', // Candy Strawberry Pink
-    'from-[#ffb443] via-[#f8951d] to-[#d67200]', // Warm Honey Orange
-    'from-[#ab8fff] via-[#8565f4] to-[#6039e1]', // Cosmic Violet Indigo
-    'from-[#ffd93d] via-[#fbc118] to-[#e0a000]', // Golden Sunny Yellow
-    'from-[#4ade80] via-[#22c55e] to-[#15803d]', // Bright Garden Green
-    'from-[#f472b6] via-[#ec4899] to-[#be185d]', // Flamingo Pink
-    'from-[#fb7185] via-[#f43f5e] to-[#be123c]', // Coral Rose Red
-    'from-[#38bdf8] via-[#0ea5e9] to-[#0369a1]', // Oceanic Deep Blue
-    'from-[#fecaca] via-[#f87171] to-[#dc2626]', // Cherry Red
-    'from-[#fda4af] via-[#fb7185] to-[#e11d48]', // Rose Red
-    'from-[#f9a8d4] via-[#ec4899] to-[#be185d]', // Bubble Pink
-    'from-[#fbcfe8] via-[#f472b6] to-[#db2777]', // Candy Pink
-    'from-[#ccfbf1] via-[#5eead4] to-[#14b8a6]', // Fresh Teal
-    'from-[#99f6e4] via-[#2dd4bf] to-[#0f766e]', // Aqua Teal
-    'from-[#d1fae5] via-[#34d399] to-[#059669]', // Spring Green
-    'from-[#f0fdf4] via-[#86efac] to-[#22c55e]', // Light Spring
-    'from-[#fef9c3] via-[#fde047] to-[#f59e0b]', // Honey Yellow
-    'from-[#f5d0fe] via-[#d946ef] to-[#a21caf]', // Orchid Pink
-    'from-[#a5f3fc] via-[#22d3ee] to-[#0891b2]', // Aqua Cyan
-    'from-[#6ee7f9] via-[#06b6d4] to-[#0e7490]', // Tropical Cyan
-  ];
-
-  const currentGradient = gradientBgs[hash % gradientBgs.length];
 
   return (
-    <div className={`relative rounded-full aspect-square flex items-center justify-center border-2 border-white shadow-sm bg-gradient-to-tr ${currentGradient} select-none transition-all duration-300 overflow-hidden ${size} ${className}`}>
+    <div className={`rounded-full flex items-center justify-center border-2 shadow-inner select-none shrink-0 ${backgroundClass || 'bg-amber-50 border-amber-100'} ${size} ${className} avatar-sparkle-hover relative overflow-hidden`}>
       {avatarUrl ? (
         <img 
           src={avatarUrl} 
           alt="Avatar" 
-          className="w-[85%] h-[85%] object-cover rounded-full relative z-10"
+          className="w-full h-full object-cover rounded-full"
           referrerPolicy="no-referrer"
         />
       ) : (
-        <span 
-          className="text-[1.85em] relative z-10 leading-none saturate-120 contrast-105 select-none pointer-events-none transform group-hover:scale-110 duration-200"
-          style={{
-            imageRendering: 'pixelated',
-          }}
-        >
-          {emoji}
-        </span>
+        <span className="leading-none drop-shadow-xs text-[1.85em]">{emoji}</span>
       )}
     </div>
   );
@@ -1104,25 +1084,29 @@ export default function EmulationTab({
                   <div 
                     key={s.id} 
                     onClick={() => setSelectedStudentForReward(s)}
-                    className="bg-white p-4 rounded-3xl shadow-xs border border-slate-100 hover:border-amber-400 hover:shadow-md transition-all flex flex-col items-center justify-center relative text-center select-none cursor-pointer group active:scale-95 duration-150 min-h-[180px] h-[180px]"
+                    className="bg-white p-4 rounded-3xl border border-amber-300/80 shadow-[0_6px_0_0_#f59e0b,0_10px_20px_rgba(245,158,11,0.2)] hover:shadow-[0_9px_0_0_#d97706,0_15px_25px_rgba(245,158,11,0.3)] hover:-translate-y-1 active:translate-y-0.5 active:shadow-[0_2px_0_0_#b45309] transition-all flex flex-col items-center justify-center relative text-center select-none cursor-pointer group duration-150 min-h-[180px] h-[180px] overflow-hidden"
                   >
+                    {/* Honey Beehive Frame Decoration */}
+                    <HoneyBeeCardFrameDecoration />
+
                     {/* Star count badge at Top-Right */}
-                    <div className="absolute top-2.5 right-2.5 bg-amber-50 text-amber-700 px-2 py-0.5 rounded-lg text-[10px] font-black border border-amber-200/60 flex items-center gap-0.5 shadow-3xs group-hover:bg-amber-100/50 transition-colors">
+                    <div className="absolute top-2.5 right-2.5 z-10 bg-amber-50/90 backdrop-blur-2xs text-amber-700 px-2 py-0.5 rounded-lg text-[10px] font-black border border-amber-200/80 flex items-center gap-0.5 shadow-3xs group-hover:bg-amber-100 transition-colors">
                       <Star className="w-3 h-3 fill-amber-500 text-amber-500 shrink-0" />
                       <span>{stars}</span>
                     </div>
 
                     {/* Circular Avatar with Achievement Badge Frame */}
-                    <div className="relative my-1 shrink-0">
+                    <div className="relative my-1 shrink-0 z-10">
                       <StickerAvatar 
                         emoji={avatar.emoji} 
                         studentId={s.id} 
+                        bg={avatar.bg}
                         size="w-18 h-18" 
                         className={`${badge ? badge.ringClass : ''}`}
                         avatarUrl={s.avatarUrl}
                       />
                       {badge && (
-                        <span className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-full text-[7.5px] font-black border uppercase tracking-wider whitespace-nowrap shadow-xs flex items-center gap-0.5 scale-90 group-hover:scale-95 transition-all ${badge.badgeClass}`}>
+                        <span className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 z-10 px-1.5 py-0.5 rounded-full text-[7.5px] font-black border uppercase tracking-wider whitespace-nowrap shadow-md flex items-center gap-0.5 scale-90 group-hover:scale-95 transition-all ${badge.badgeClass}`}>
                           <span>{badge.emoji}</span>
                           <span>{badge.label}</span>
                         </span>
@@ -1130,14 +1114,14 @@ export default function EmulationTab({
                     </div>
 
                     {/* Full Name & Code */}
-                    <div className="flex flex-col items-center justify-center mt-2 max-w-full">
+                    <div className="flex flex-col items-center justify-center mt-2 max-w-full z-10">
                       <strong className="text-xs font-extrabold text-slate-800 leading-tight truncate w-full" title={s.name}>
                         {formatDisplayName(s.name)}
                       </strong>
                     </div>
 
                     {/* Machine Pill Badge instead of Level */}
-                    <span className="inline-block bg-indigo-50 text-indigo-600 border border-indigo-100/40 px-3 py-0.5 rounded-full text-[10px] font-black mt-1.5">
+                    <span className="inline-block bg-indigo-50/90 text-indigo-600 border border-indigo-100/60 px-3 py-0.5 rounded-full text-[10px] font-black mt-1.5 z-10">
                       {seatObj ? `💻 ${seatObj.name}` : 'Chưa xếp máy'}
                     </span>
                   </div>
@@ -1305,12 +1289,13 @@ export default function EmulationTab({
                     <StickerAvatar 
                       emoji={avatar.emoji} 
                       studentId={s.id} 
+                      bg={avatar.bg}
                       size="w-16 h-16" 
                       className={`${badge ? badge.ringClass : ''} shadow-md`}
                       avatarUrl={s.avatarUrl}
                     />
                     {badge && (
-                      <span className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-full text-[7.5px] font-black border uppercase tracking-wider whitespace-nowrap shadow-xs flex items-center gap-0.5 ${badge.badgeClass}`}>
+                      <span className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 z-10 px-1.5 py-0.5 rounded-full text-[7.5px] font-black border uppercase tracking-wider whitespace-nowrap shadow-md flex items-center gap-0.5 ${badge.badgeClass}`}>
                         <span>{badge.emoji}</span>
                         <span>{badge.label}</span>
                       </span>

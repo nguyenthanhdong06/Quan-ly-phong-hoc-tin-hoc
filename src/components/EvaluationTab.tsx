@@ -1,6 +1,7 @@
 import React from 'react';
 import { Student, EvaluationData, SeatingChart, Computer, EmulationDataState, AttendanceData } from '../types';
 import { Star, Calendar, Search, X, Award, MessageSquare, Tag } from 'lucide-react';
+import { HoneyBeeCardFrameDecoration } from './HoneyBeeCardFrameDecoration';
 
 interface EvaluationTabProps {
   selectedClass: string;
@@ -18,7 +19,6 @@ interface EvaluationTabProps {
   attendanceData: AttendanceData;
 }
 
-// Deterministic helper to get a cute avatar based on student's ID/name to match the exact design in screenshots
 const getStudentAvatar = (studentId: string, allStudents?: Student[]) => {
   const avatars = [
     { emoji: "🐼", bg: "bg-indigo-50 border-indigo-100" },
@@ -393,16 +393,19 @@ export default function EvaluationTab({
               <div 
                 key={s.id} 
                 onClick={() => setSelectedStudent(s)}
-                className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 hover:border-amber-400 hover:shadow-md transition-all flex flex-col items-center justify-center relative text-center select-none cursor-pointer group active:scale-95 duration-150"
+                className="bg-white p-5 rounded-3xl border border-amber-300/80 shadow-[0_6px_0_0_#f59e0b,0_10px_20px_rgba(245,158,11,0.2)] hover:shadow-[0_9px_0_0_#d97706,0_15px_25px_rgba(245,158,11,0.3)] hover:-translate-y-1 active:translate-y-0.5 active:shadow-[0_2px_0_0_#b45309] transition-all flex flex-col items-center justify-center relative text-center select-none cursor-pointer group duration-150 overflow-hidden"
               >
+                {/* Honey Beehive Frame Decoration */}
+                <HoneyBeeCardFrameDecoration />
+
                 {/* Star count badge at Top-Right */}
-                <div className="absolute top-2.5 right-2.5 bg-amber-50 text-amber-700 px-2 py-0.5 rounded-lg text-[10px] font-black border border-amber-200/60 flex items-center gap-0.5 shadow-3xs group-hover:bg-amber-100/50 transition-colors">
+                <div className="absolute top-2.5 right-2.5 z-10 bg-amber-50/90 backdrop-blur-2xs text-amber-700 px-2 py-0.5 rounded-lg text-[10px] font-black border border-amber-200/80 flex items-center gap-0.5 shadow-3xs group-hover:bg-amber-100 transition-colors">
                   <Star className="w-3 h-3 fill-amber-500 text-amber-500 shrink-0" />
                   <span>{currentStars}</span>
                 </div>
 
                 {/* Circular Avatar with Achievement Badge Frame */}
-                <div className="relative my-2 shrink-0">
+                <div className="relative my-2 shrink-0 z-10">
                   <SimpleAvatar 
                     emoji={avatar.emoji} 
                     bg={avatar.bg}
@@ -411,7 +414,7 @@ export default function EvaluationTab({
                     avatarUrl={s.avatarUrl}
                   />
                   {badge && (
-                    <span className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-full text-[7.5px] font-black border uppercase tracking-wider whitespace-nowrap shadow-xs flex items-center gap-0.5 scale-90 group-hover:scale-95 transition-all ${badge.badgeClass}`}>
+                    <span className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 z-10 px-1.5 py-0.5 rounded-full text-[7.5px] font-black border uppercase tracking-wider whitespace-nowrap shadow-md flex items-center gap-0.5 scale-90 group-hover:scale-95 transition-all ${badge.badgeClass}`}>
                       <span>{badge.emoji}</span>
                       <span>{badge.label}</span>
                     </span>
@@ -419,7 +422,7 @@ export default function EvaluationTab({
                 </div>
 
                 {/* Full Name & Absence Warning */}
-                <div className="flex items-center justify-center gap-1.5 mt-3 max-w-full">
+                <div className="flex items-center justify-center gap-1.5 mt-3 max-w-full z-10">
                   <strong className="text-sm font-extrabold text-slate-800 leading-tight truncate" title={s.name}>
                     {formatDisplayName(s.name)}
                   </strong>
@@ -434,7 +437,7 @@ export default function EvaluationTab({
                 </div>
 
                 {/* Machine Pill Badge instead of Level */}
-                <span className="inline-block bg-indigo-50 text-indigo-600 border border-indigo-100/40 px-3 py-0.5 rounded-full text-[10px] font-black mt-2">
+                <span className="inline-block bg-indigo-50/90 text-indigo-600 border border-indigo-100/60 px-3 py-0.5 rounded-full text-[10px] font-black mt-2 z-10">
                   {seatObj ? `💻 ${seatObj.name}` : 'Chưa xếp máy'}
                 </span>
               </div>
@@ -498,7 +501,7 @@ export default function EvaluationTab({
                     avatarUrl={s.avatarUrl}
                   />
                   {badge && (
-                    <span className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-full text-[7.5px] font-black border uppercase tracking-wider whitespace-nowrap shadow-xs flex items-center gap-0.5 ${badge.badgeClass}`}>
+                    <span className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 z-10 px-1.5 py-0.5 rounded-full text-[7.5px] font-black border uppercase tracking-wider whitespace-nowrap shadow-md flex items-center gap-0.5 ${badge.badgeClass}`}>
                       <span>{badge.emoji}</span>
                       <span>{badge.label}</span>
                     </span>
