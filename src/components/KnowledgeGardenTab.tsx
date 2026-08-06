@@ -432,18 +432,11 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
       {/* 🌟 1. DESKOS IMAC WARM BEIGE CARD HEADER STRIP */}
       <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs">
         <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-          <div className="flex items-center gap-3 text-left">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-green-500 flex items-center justify-center text-xl shadow-sm text-white font-bold">
-              🌱
-            </div>
-            <div>
-              <h2 className="font-black text-sm sm:text-base text-[#3d2b17] tracking-wider uppercase flex items-center gap-2">
-                KHU VƯỜN TRI THỨC • RÈN LUYỆN TÂM HỒN & THI ĐUA NẾP SỐNG
-              </h2>
-              <p className="text-[11px] font-bold text-[#5c4327]">
-                Nuôi dưỡng mầm xanh học tập qua 7 cấp độ tăng trưởng • Đang chọn: <span className="font-black text-emerald-800">{gradeFilter === 'ALL' ? `Lớp ${selectedClass}` : `Toàn Khối ${gradeFilter}`}</span>
-              </p>
-            </div>
+          <div className="flex items-center gap-2 text-left">
+            <span className="font-bold text-xs text-[#5c4327]">Đang chọn:</span>
+            <span className="font-black text-xs text-emerald-800 bg-white/80 px-2.5 py-1 rounded-lg border border-[#cbb89d]">
+              {gradeFilter === 'ALL' ? `Lớp ${selectedClass}` : `Toàn Khối ${gradeFilter}`}
+            </span>
           </div>
 
           {/* Navigation Tab Buttons */}

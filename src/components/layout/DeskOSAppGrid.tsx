@@ -162,8 +162,8 @@ export const DeskOSAppGrid: React.FC<DeskOSAppGridProps> = ({
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto py-2 select-none animate-fadeIn">
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 sm:gap-4 justify-items-center">
+    <div className="w-full max-w-5xl mx-auto py-1 select-none animate-fadeIn">
+      <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2.5 sm:gap-3.5 justify-items-center">
         {apps.map((app, index) => {
           const Icon = app.icon;
           const isActive = activeTab === app.id;
@@ -177,7 +177,7 @@ export const DeskOSAppGrid: React.FC<DeskOSAppGridProps> = ({
               onDragOver={(e) => handleDragOver(e, index)}
               onDragEnd={handleDragEnd}
               onClick={() => handleAppClick(app.id)}
-              className={`group flex flex-col items-center gap-1.5 p-1 rounded-2xl transition-all duration-200 cursor-grab active:cursor-grabbing relative ${
+              className={`group flex flex-col items-center gap-1 p-0.5 rounded-2xl transition-all duration-200 cursor-grab active:cursor-grabbing relative ${
                 isDragging ? 'opacity-40 scale-95' : 'hover:scale-105 active:scale-95'
               }`}
               title="Kéo thả để sắp xếp lại vị trí ứng dụng"
@@ -189,15 +189,15 @@ export const DeskOSAppGrid: React.FC<DeskOSAppGridProps> = ({
 
               {/* Pastel App Icon Container */}
               <div 
-                className={`w-13 h-13 sm:w-15 sm:h-15 rounded-2xl flex items-center justify-center shadow-[0_6px_15px_rgba(0,0,0,0.07)] border border-white/60 transition-transform duration-200 group-hover:shadow-[0_10px_20px_rgba(0,0,0,0.1)] ${
+                className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center shadow-[0_6px_15px_rgba(0,0,0,0.07)] border border-white/60 transition-transform duration-200 group-hover:shadow-[0_10px_20px_rgba(0,0,0,0.1)] ${
                   app.bg || 'bg-slate-200'
                 } ${isActive ? 'ring-4 ring-amber-400 ring-offset-2' : ''}`}
               >
-                <Icon className={`w-6.5 h-6.5 sm:w-7.5 sm:h-7.5 ${app.text}`} />
+                <Icon className={`w-6 h-6 sm:w-7 sm:h-7 ${app.text}`} />
               </div>
 
               {/* App Label with Adaptive Text Color & Multi-line Wrapping */}
-              <span className={`font-extrabold text-[11px] sm:text-xs tracking-tight text-center max-w-[105px] whitespace-normal line-clamp-2 leading-tight break-words min-h-[2.2rem] flex items-center justify-center transition-colors ${
+              <span className={`font-extrabold text-[10px] sm:text-[11px] tracking-tight text-center max-w-[90px] sm:max-w-[100px] whitespace-normal line-clamp-2 leading-tight break-words min-h-[2rem] flex items-center justify-center transition-colors ${
                 activeWallpaper?.appLabelTextColor || 'text-[#4a351e]'
               }`}>
                 {app.label}
