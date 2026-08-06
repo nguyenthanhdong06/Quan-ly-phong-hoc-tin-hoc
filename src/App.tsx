@@ -90,11 +90,11 @@ import {
 export default function App() {
   // --- COLOR THEME STATE ---
   const [currentThemeId, setCurrentThemeId] = useState<string>(() => {
-    return localStorage.getItem('app_theme_id') || 'original';
+    return localStorage.getItem('app_theme_id') || THEMES[0].id;
   });
 
   const currentTheme = useMemo(() => {
-    return THEMES.find(t => t.id === currentThemeId) || THEMES[5];
+    return THEMES.find(t => t.id === currentThemeId) || THEMES[0];
   }, [currentThemeId]);
 
   const handleThemeChange = (id: string) => {
@@ -232,7 +232,7 @@ export default function App() {
   });
 
   const getTabStyle = (tabName: string) => {
-    return activeTab === tabName ? { backgroundColor: currentTheme.medium } : {};
+    return activeTab === tabName ? { backgroundColor: currentTheme?.medium || '#457073' } : {};
   };
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -886,7 +886,7 @@ export default function App() {
                 : 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black bg-white/10'
               : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
           }`}
-          style={isGameMenuActive ? { backgroundColor: currentTheme.medium } : {}}
+          style={isGameMenuActive ? { backgroundColor: currentTheme?.medium || '#457073' } : {}}
         >
           {isSidebarCollapsed && <Gamepad2 className="w-4 h-4 shrink-0" />}
           <span className={isSidebarCollapsed ? 'md:hidden' : 'flex-1 text-left'}>Trò chơi</span>
@@ -1026,7 +1026,7 @@ export default function App() {
                 {pendingCount > 0 && (
                   <span 
                     className="absolute -top-1.5 -right-1.5 w-2 h-2 rounded-full animate-pulse border"
-                    style={{ backgroundColor: '#ef4444', borderColor: currentTheme.dark }}
+                    style={{ backgroundColor: '#ef4444', borderColor: currentTheme?.dark || '#3d6264' }}
                   />
                 )}
               </div>
