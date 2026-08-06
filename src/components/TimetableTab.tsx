@@ -914,14 +914,14 @@ export default function TimetableTab({
               <table className="w-full border-collapse border border-slate-300 text-center text-xs min-w-[700px] print:text-[10px]">
                 
                 <thead>
-                  <tr className="bg-slate-200 border-b-2 border-slate-300 text-slate-800 font-extrabold uppercase text-[10px] sm:text-[11px] print:bg-slate-100">
-                    <th className="border border-slate-300 py-2 px-1.5 w-[110px]">THỜI GIAN</th>
-                    <th className="border border-slate-300 py-2 px-1.5 w-[80px]">TIẾT</th>
-                    <th className="border border-slate-300 py-2 px-2">THỨ HAI</th>
-                    <th className="border border-slate-300 py-2 px-2">THỨ BA</th>
-                    <th className="border border-slate-300 py-2 px-2">THỨ TƯ</th>
-                    <th className="border border-slate-300 py-2 px-2">THỨ NĂM</th>
-                    <th className="border border-slate-300 py-2 px-2">THỨ SÁU</th>
+                  <tr className="bg-slate-100/90 border-b border-slate-200 text-slate-700 font-extrabold uppercase text-[10px] sm:text-[11px] tracking-wider whitespace-nowrap print:bg-slate-100">
+                    <th className="border border-slate-300 py-2 px-1.5 w-[110px] whitespace-nowrap">THỜI GIAN</th>
+                    <th className="border border-slate-300 py-2 px-1.5 w-[80px] whitespace-nowrap">TIẾT</th>
+                    <th className="border border-slate-300 py-2 px-2 whitespace-nowrap">THỨ HAI</th>
+                    <th className="border border-slate-300 py-2 px-2 whitespace-nowrap">THỨ BA</th>
+                    <th className="border border-slate-300 py-2 px-2 whitespace-nowrap">THỨ TƯ</th>
+                    <th className="border border-slate-300 py-2 px-2 whitespace-nowrap">THỨ NĂM</th>
+                    <th className="border border-slate-300 py-2 px-2 whitespace-nowrap">THỨ SÁU</th>
                   </tr>
                 </thead>
 

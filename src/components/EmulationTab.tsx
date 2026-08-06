@@ -824,15 +824,15 @@ export default function EmulationTab({
             <div className="overflow-x-auto rounded-2xl border border-slate-200">
               <table className="w-full text-xs text-left border-collapse">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
-                    <th className="p-3 pl-4 text-center w-14">Hạng</th>
-                    <th className="p-3">Lớp</th>
-                    <th className="p-3 text-center">Sĩ Số</th>
-                    <th className="p-3 text-right">Tổng Sao Vàng</th>
-                    <th className="p-3 text-right">Sao Trung Bình / HS</th>
-                    <th className="p-3 text-center">Sticker Đã Đổi</th>
-                    <th className="p-3 pl-6">Học Sinh Đứng Đầu Lớp</th>
-                    <th className="p-3 text-center pr-4">Hành Động</th>
+                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[10px] whitespace-nowrap">
+                    <th className="p-3 pl-4 text-center w-14 whitespace-nowrap">Hạng</th>
+                    <th className="p-3 whitespace-nowrap">Lớp</th>
+                    <th className="p-3 text-center whitespace-nowrap">Sĩ Số</th>
+                    <th className="p-3 text-right whitespace-nowrap">Tổng Sao Vàng</th>
+                    <th className="p-3 text-right whitespace-nowrap">Sao Trung Bình / HS</th>
+                    <th className="p-3 text-center whitespace-nowrap">Sticker Đã Đổi</th>
+                    <th className="p-3 pl-6 whitespace-nowrap">Học Sinh Đứng Đầu Lớp</th>
+                    <th className="p-3 text-center pr-4 whitespace-nowrap">Hành Động</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-150 font-semibold text-slate-700">

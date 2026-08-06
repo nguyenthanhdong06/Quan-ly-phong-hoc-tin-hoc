@@ -989,14 +989,14 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
               <div className="overflow-x-auto rounded-2xl border border-[#cbb89d] bg-white">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="bg-[#e8d7c0] border-b border-[#cbb89d] text-[#3d2b17] font-black uppercase text-[10px] tracking-wider">
-                      <th className="p-3.5">Học Sinh</th>
-                      <th className="p-3.5">Mã MSHS</th>
-                      <th className="p-3.5">Loại Cây</th>
-                      <th className="p-3.5">Cấp Độ</th>
-                      <th className="p-3.5">Giọt Nước</th>
-                      <th className="p-3.5">Huy Hiệu</th>
-                      <th className="p-3.5 text-center">Hành Động Khen Thưởng</th>
+                    <tr className="bg-[#e8d7c0] border-b border-[#cbb89d] text-[#3d2b17] font-black uppercase text-[10px] tracking-wider whitespace-nowrap">
+                      <th className="p-3.5 whitespace-nowrap">Học Sinh</th>
+                      <th className="p-3.5 whitespace-nowrap">Mã MSHS</th>
+                      <th className="p-3.5 whitespace-nowrap">Loại Cây</th>
+                      <th className="p-3.5 whitespace-nowrap">Cấp Độ</th>
+                      <th className="p-3.5 whitespace-nowrap">Giọt Nước</th>
+                      <th className="p-3.5 whitespace-nowrap">Huy Hiệu</th>
+                      <th className="p-3.5 text-center whitespace-nowrap">Hành Động Khen Thưởng</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 font-bold">

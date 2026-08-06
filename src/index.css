@@ -338,3 +338,23 @@ button[class*="bg-zinc"]:not(.btn-raw):not(.btn-plain):hover {
 .animate-water-drop-fall {
   animation: waterDropFall 0.9s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
+
+/* ==========================================================================
+   GLOBAL STANDARD TABLE HEADER DESIGN & NON-WRAPPING RULE
+   ========================================================================== */
+thead tr {
+  background-color: rgba(241, 245, 249, 0.95) !important;
+  color: #334155 !important;
+  font-weight: 800 !important;
+  font-size: 11px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  border-bottom: 1.5px solid #cbd5e1 !important;
+  white-space: nowrap !important;
+}
+
+th {
+  white-space: nowrap !important;
+  padding-top: 0.75rem !important;
+  padding-bottom: 0.75rem !important;
+}

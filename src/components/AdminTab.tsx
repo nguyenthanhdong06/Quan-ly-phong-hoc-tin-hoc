@@ -546,14 +546,14 @@ export default function AdminTab({
           <table className="w-full border-collapse border border-slate-300 text-center text-xs min-w-[700px]">
             
             <thead>
-              <tr className="bg-slate-200 border-b-2 border-slate-300 text-slate-800 font-extrabold uppercase text-[11px]">
-                <th className="border border-slate-300 py-3 px-2 w-[130px]">THỜI GIAN</th>
-                <th className="border border-slate-300 py-3 px-2 w-[90px]">TIẾT</th>
-                <th className="border border-slate-300 py-3 px-3">THỨ HAI</th>
-                <th className="border border-slate-300 py-3 px-3">THỨ BA</th>
-                <th className="border border-slate-300 py-3 px-3">THỨ TƯ</th>
-                <th className="border border-slate-300 py-3 px-3">THỨ NĂM</th>
-                <th className="border border-slate-300 py-3 px-3">THỨ SÁU</th>
+              <tr className="bg-slate-100/90 border-b border-slate-200 text-slate-700 font-extrabold uppercase text-[11px] tracking-wider whitespace-nowrap">
+                <th className="border border-slate-300 py-3 px-2 w-[130px] whitespace-nowrap">THỜI GIAN</th>
+                <th className="border border-slate-300 py-3 px-2 w-[90px] whitespace-nowrap">TIẾT</th>
+                <th className="border border-slate-300 py-3 px-3 whitespace-nowrap">THỨ HAI</th>
+                <th className="border border-slate-300 py-3 px-3 whitespace-nowrap">THỨ BA</th>
+                <th className="border border-slate-300 py-3 px-3 whitespace-nowrap">THỨ TƯ</th>
+                <th className="border border-slate-300 py-3 px-3 whitespace-nowrap">THỨ NĂM</th>
+                <th className="border border-slate-300 py-3 px-3 whitespace-nowrap">THỨ SÁU</th>
               </tr>
             </thead>
 
@@ -895,28 +895,28 @@ export default function AdminTab({
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase">
-                    <th className="py-3 px-4">Thông tin giáo viên</th>
-                    <th className="py-3 px-4">Địa chỉ Email / phone</th>
-                    <th className="py-3 px-4">Phân Quyền</th>
-                    <th className="py-3 px-4 text-center">Quản lý mật khẩu</th>
-                    <th className="py-3 px-4 text-center">Thao tác</th>
+                  <tr className="bg-slate-100/90 border-b border-slate-200 text-slate-700 font-extrabold text-[11px] uppercase tracking-wider whitespace-nowrap">
+                    <th className="py-3 px-4 whitespace-nowrap">THÔNG TIN GIÁO VIÊN</th>
+                    <th className="py-3 px-4 whitespace-nowrap">ĐỊA CHỈ EMAIL / PHONE</th>
+                    <th className="py-3 px-4 whitespace-nowrap">PHÂN QUYỀN</th>
+                    <th className="py-3 px-4 text-center whitespace-nowrap">QUẢN LÝ MẬT KHẨU</th>
+                    <th className="py-3 px-4 text-center whitespace-nowrap">THAO TÁC</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {members.map(member => (
                     <tr key={member.id} className="hover:bg-slate-50/50">
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-4 whitespace-nowrap">
                         <p className="font-extrabold text-slate-800">{member.name}</p>
-                        <p className="text-[10px] text-slate-400">Username: <strong className="text-slate-600">{member.username}</strong></p>
+                        <p className="text-[10px] text-slate-400">Username: <strong className="text-slate-600 font-mono">{member.username}</strong></p>
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-4 whitespace-nowrap">
                         <p className="font-semibold text-slate-700">{member.email}</p>
                         <p className="text-[10px] text-slate-400">{member.phone}</p>
                       </td>
-                      <td className="py-3 px-4">
-                        <span className={`px-2.5 py-0.5 rounded-full font-black text-[10px] ${
-                          member.role.includes('Admin') ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600 border'
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        <span className={`px-3 py-1 rounded-full font-bold text-[11px] whitespace-nowrap inline-flex items-center gap-1 shadow-2xs ${
+                          member.role.includes('Admin') ? 'bg-amber-100 text-amber-900 border border-amber-200' : 'bg-slate-100 text-slate-700 border border-slate-200'
                         }`}>
                           {member.role}
                         </span>

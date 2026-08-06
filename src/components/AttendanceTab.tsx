@@ -367,12 +367,12 @@ export default function AttendanceTab({
         <div className="p-4 sm:p-5 bg-[#fffbf0] overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-[#e8d7c0] border-b border-[#cbb89d] text-[#3d2b17] font-black uppercase text-[11px] tracking-wider">
-                <th className="py-3.5 px-4 w-16">STT</th>
-                <th className="py-3.5 px-4 w-24 font-mono">ID MSHS</th>
-                <th className="py-3.5 px-4">Họ và Tên Học sinh</th>
-                <th className="py-3.5 px-4 w-28">Giới tính</th>
-                <th className="py-3.5 px-4 text-center w-96">Trạng thái điểm danh (Vui lòng chọn)</th>
+              <tr className="bg-[#e8d7c0] border-b border-[#cbb89d] text-[#3d2b17] font-black uppercase text-[11px] tracking-wider whitespace-nowrap">
+                <th className="py-3.5 px-4 w-16 whitespace-nowrap">STT</th>
+                <th className="py-3.5 px-4 w-24 font-mono whitespace-nowrap">ID MSHS</th>
+                <th className="py-3.5 px-4 whitespace-nowrap">Họ và Tên Học sinh</th>
+                <th className="py-3.5 px-4 w-28 whitespace-nowrap">Giới tính</th>
+                <th className="py-3.5 px-4 text-center w-96 whitespace-nowrap">Trạng thái điểm danh (Vui lòng chọn)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
