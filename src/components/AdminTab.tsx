@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Member, Computer, Student, ClassItem, MotivationalQuote } from '../types';
-import { UserCheck, Trash2, ShieldAlert, Heart, HardDrive, Cpu, Cloud, Check, Wifi, AlertTriangle, RefreshCw, Database, FileCode, CheckCircle2, X, Calendar, Plus, Clock, User, Sparkles, Settings, FileText, Printer, Save } from 'lucide-react';
-import { SQL_INITIALIZATION_QUERY } from '../supabaseClient';
+import { UserCheck, Trash2, ShieldAlert, Heart, HardDrive, Cpu, Cloud, Check, Wifi, AlertTriangle, RefreshCw, Database, FileCode, CheckCircle2, X, Calendar, Plus, Clock, User, Sparkles, Settings, FileText, Printer, Save, Key, Lock, Eye, EyeOff, RotateCcw } from 'lucide-react';
+import { safeSetLocalStorage } from '../utils/safeStorage';
+import { saveSupabaseState, SQL_INITIALIZATION_QUERY } from '../supabaseClient';
 
 interface AdminTabProps {
   members: Member[];
@@ -52,6 +53,54 @@ export default function AdminTab({
   const [newPhone, setNewPhone] = useState('');
   const [copiedSql, setCopiedSql] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+
+  // Change Password Modal States
+  const [changePasswordUser, setChangePasswordUser] = useState<Member | null>(null);
+  const [newPasswordInput, setNewPasswordInput] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+
+  const handleOpenChangePassword = (member: Member) => {
+    setChangePasswordUser(member);
+    setNewPasswordInput('');
+    setShowNewPassword(false);
+  };
+
+  const handleSavePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!changePasswordUser) return;
+    const cleanPass = newPasswordInput.trim();
+    if (!cleanPass || cleanPass.length < 4) {
+      showToast('Mật khẩu mới phải có từ 4 ký tự trở lên!', 'error');
+      return;
+    }
+
+    const updatedMembers = members.map(m =>
+      m.id === changePasswordUser.id ? { ...m, password: cleanPass } : m
+    );
+
+    setMembers(updatedMembers);
+    safeSetLocalStorage('school_members', updatedMembers);
+    await saveSupabaseState('school_members', updatedMembers);
+
+    showToast(`🔑 Đã đổi mật khẩu cho tài khoản "${changePasswordUser.name}" (${changePasswordUser.username}) thành công!`, 'success');
+    setChangePasswordUser(null);
+    setNewPasswordInput('');
+  };
+
+  const handleResetToDefaultPassword = async (member: Member) => {
+    if (window.confirm(`Xác nhận reset mật khẩu của tài khoản "${member.name}" (${member.username}) về mặc định (phongmay@123)?`)) {
+      const defaultPass = 'phongmay@123';
+      const updatedMembers = members.map(m =>
+        m.id === member.id ? { ...m, password: defaultPass } : m
+      );
+
+      setMembers(updatedMembers);
+      safeSetLocalStorage('school_members', updatedMembers);
+      await saveSupabaseState('school_members', updatedMembers);
+
+      showToast(`🔄 Đã reset mật khẩu tài khoản "${member.name}" về mặc định: phongmay@123!`, 'success');
+    }
+  };
 
   // Quotes management states & handlers
   const [quoteText, setQuoteText] = useState('');
@@ -241,7 +290,8 @@ export default function AdminTab({
       role: newRole,
       email: newEmail.trim(),
       phone: newPhone.trim() || 'Chưa cung cấp',
-      username: usernameClean
+      username: usernameClean,
+      password: 'phongmay@123'
     };
 
     setMembers(prev => [...prev, item]);
@@ -849,7 +899,8 @@ export default function AdminTab({
                     <th className="py-3 px-4">Thông tin giáo viên</th>
                     <th className="py-3 px-4">Địa chỉ Email / phone</th>
                     <th className="py-3 px-4">Phân Quyền</th>
-                    <th className="py-3 px-4 text-center">Xóa quyền</th>
+                    <th className="py-3 px-4 text-center">Quản lý mật khẩu</th>
+                    <th className="py-3 px-4 text-center">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -857,7 +908,7 @@ export default function AdminTab({
                     <tr key={member.id} className="hover:bg-slate-50/50">
                       <td className="py-3 px-4">
                         <p className="font-extrabold text-slate-800">{member.name}</p>
-                        <p className="text-[10px] text-slate-400">Username: <strong>{member.username}</strong> (Pass mặc định: 123456)</p>
+                        <p className="text-[10px] text-slate-400">Username: <strong className="text-slate-600">{member.username}</strong></p>
                       </td>
                       <td className="py-3 px-4">
                         <p className="font-semibold text-slate-700">{member.email}</p>
@@ -869,6 +920,28 @@ export default function AdminTab({
                         }`}>
                           {member.role}
                         </span>
+                      </td>
+
+                      {/* Quản lý Mật Khẩu: Đổi Mật Khẩu & Reset về mặc định (phongmay@123) */}
+                      <td className="py-3 px-4 text-center">
+                        <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                          <button
+                            onClick={() => handleOpenChangePassword(member)}
+                            className="inline-flex items-center gap-1 bg-amber-50 hover:bg-amber-100 text-amber-800 text-[11px] font-bold px-2.5 py-1 rounded-lg border border-amber-200 transition cursor-pointer active:scale-95 shadow-2xs"
+                            title="Đổi mật khẩu tài khoản này"
+                          >
+                            <Key className="w-3.5 h-3.5 text-amber-600" />
+                            Đổi MK
+                          </button>
+                          <button
+                            onClick={() => handleResetToDefaultPassword(member)}
+                            className="inline-flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold px-2.5 py-1 rounded-lg border border-slate-300 transition cursor-pointer active:scale-95 shadow-2xs"
+                            title="Reset mật khẩu về mặc định (phongmay@123)"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+                            Reset MK
+                          </button>
+                        </div>
                       </td>
 
                       <td className="py-3 px-4 text-center">
@@ -894,6 +967,82 @@ export default function AdminTab({
         </div>
 
       </div>
+      )}
+
+      {/* MODAL ĐỔI MẬT KHẨU TÀI KHOẢN CHO ADMIN */}
+      {changePasswordUser && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-100 p-6 space-y-5 text-left relative animate-in zoom-in-95 duration-150">
+            <button
+              onClick={() => setChangePasswordUser(null)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 border-b pb-3">
+              <div className="bg-amber-50 p-2.5 rounded-xl text-amber-600">
+                <Key className="w-6 h-6 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="font-black text-slate-800 text-base">Đổi Mật Khẩu Tài Khoản</h3>
+                <p className="text-xs text-slate-500 font-medium">Giáo viên: <strong className="text-slate-800">{changePasswordUser.name}</strong></p>
+              </div>
+            </div>
+
+            <form onSubmit={handleSavePasswordChange} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Tên đăng nhập (Username)</label>
+                <input
+                  type="text"
+                  disabled
+                  value={changePasswordUser.username}
+                  className="w-full bg-slate-100 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-600 font-mono font-bold cursor-not-allowed"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Mật khẩu mới *</label>
+                <div className="relative">
+                  <input
+                    type={showNewPassword ? 'text' : 'password'}
+                    value={newPasswordInput}
+                    onChange={(e) => setNewPasswordInput(e.target.value)}
+                    placeholder="Nhập mật khẩu mới (ví dụ: phongmay@123)..."
+                    className="w-full border border-slate-300 rounded-lg p-2.5 pr-10 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none font-semibold text-slate-800"
+                    required
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                  >
+                    {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1">Mật khẩu phải chứa từ 4 ký tự trở lên.</p>
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2 border-t">
+                <button
+                  type="button"
+                  onClick={() => setChangePasswordUser(null)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-xs transition cursor-pointer"
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg text-xs shadow-md shadow-amber-600/20 transition flex items-center gap-1.5 cursor-pointer active:scale-95"
+                >
+                  <Save className="w-4 h-4" />
+                  Lưu Mật Khẩu Mới
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {/* QUẢN LÝ CÂU NÓI TẠO ĐỘNG LỰC CHO HỌC SINH */}

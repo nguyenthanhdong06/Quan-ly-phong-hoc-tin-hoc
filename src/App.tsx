@@ -552,7 +552,7 @@ export default function App() {
     );
 
     if (foundUser) {
-      const isValid = await verifyPassword(inputPassword, foundUser.password || '123456');
+      const isValid = await verifyPassword(inputPassword, foundUser.password || 'phongmay@123');
       if (isValid) {
         // Tạo Session ID ngẫu nhiên cho phiên làm việc mới
         const newSessionId = createSessionId();

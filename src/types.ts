@@ -49,6 +49,7 @@ export interface Member {
   email: string;
   phone: string;
   username: string;
+  password?: string;
   activeSessionId?: string;
 }
 
