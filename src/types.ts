@@ -219,6 +219,42 @@ export interface GardenDataState {
   [studentId: string]: GardenStudentData;
 }
 
+// Cấu trúc dữ liệu Đăng Ký và Quản Lý Phòng Máy (Lab Booking System)
+export interface LabInfo {
+  id: string;
+  name: string;
+  code: string;
+  totalPCs: number;
+  status: 'Active' | 'Maintenance';
+  location: string;
+}
+
+export interface LabBooking {
+  id: string;
+  labId: string;
+  dayIndex: number; // 1: Thứ 2, ..., 6: Thứ 7
+  slotId: string;   // 's1', 's2', 's3', 's4', 'c5', 'c6', 'c7'
+  teacherName: string;
+  className: string;
+  studentCount: number;
+  subject: string;
+  date: string;
+  status: 'Approved' | 'Rejected' | 'Pending';
+  notes?: string;
+}
+
+export interface LabIncident {
+  id: string;
+  labId: string;
+  pcNumber: number;
+  reporter: string;
+  type: 'Hardware' | 'Software' | 'Network' | 'Other';
+  issue: string;
+  priority: 'Low' | 'Medium' | 'High';
+  date: string;
+  status: 'Pending' | 'In Progress' | 'Resolved';
+}
+
 
 
 

@@ -18,7 +18,8 @@ import {
   FileText,
   Volume2,
   VolumeX,
-  Sprout
+  Sprout,
+  CalendarCheck
 } from 'lucide-react';
 import { playButtonClickSound, isAudioMuted, toggleAudioMute } from '../../utils/audioEffects';
 import { WallpaperOption } from './DeskOSWallpaperSelector';
@@ -45,6 +46,7 @@ const APP_ICONS: Record<string, { label: string; icon: React.ElementType }> = {
   'knowledge-garden': { label: 'Vườn tri thức', icon: Sprout },
   seating: { label: 'Sơ đồ máy', icon: Monitor },
   timetable: { label: 'Thời khóa biểu', icon: Calendar },
+  'lab-booking': { label: 'Đăng ký phòng máy', icon: CalendarCheck },
   resources: { label: 'Kho tài nguyên', icon: FolderOpen },
   'personal-questions': { label: 'Kho câu hỏi', icon: HelpCircle },
   'avatar-gallery': { label: 'Kho avatar', icon: ImageIcon },

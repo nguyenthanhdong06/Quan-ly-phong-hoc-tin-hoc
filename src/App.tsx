@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Grade, ClassItem, Student, Computer, DocumentItem, Member, AttendanceData, EvaluationData, EmulationDataState, SeatingChart, TimetableData, MotivationalQuote, THEMES } from './types';
+import { Grade, ClassItem, Student, Computer, DocumentItem, Member, AttendanceData, EvaluationData, EmulationDataState, SeatingChart, TimetableData, MotivationalQuote, THEMES, LabBooking, LabIncident } from './types';
 import {
   defaultGrades,
   defaultClasses,
@@ -27,12 +27,14 @@ import ResourcesTab from './components/ResourcesTab';
 import { AvatarGalleryTab, loadCustomAvatars } from './components/AvatarGalleryTab';
 import AdminTab from './components/AdminTab';
 import TimetableTab from './components/TimetableTab';
+import LabBookingTab from './components/LabBookingTab';
 import { InteractiveGamesTab } from './components/InteractiveGamesTab';
 import { PersonalQuestionsTab } from './components/PersonalQuestionsTab';
 import ComputerReportTab from './components/ComputerReportTab';
 import { KnowledgeGardenTab } from './components/KnowledgeGardenTab';
 import CuteMiniRobot from './components/CuteMiniRobot';
 import { SciFi3DPopupFrame } from './components/SciFi3DPopupFrame';
+import { CalendarCheck } from 'lucide-react';
 
 // Supabase services
 import { loadAllSupabaseStates, saveSupabaseState, setSupabaseOnline } from './supabaseClient';
@@ -140,6 +142,8 @@ export default function App() {
   const [members, setMembers] = useState<Member[]>(() => safeParse('school_members', defaultMembers));
   const [timetableData, setTimetableData] = useState<TimetableData>(() => safeParse('school_timetable_data', defaultTimetable));
   const [quotes, setQuotes] = useState<MotivationalQuote[]>(() => safeParse('school_quotes', defaultQuotes));
+  const [labBookings, setLabBookings] = useState<LabBooking[]>(() => safeParse('school_lab_bookings', []));
+  const [labIncidents, setLabIncidents] = useState<LabIncident[]>(() => safeParse('school_lab_incidents', []));
 
   // --- SUPABASE CLOUD STATUS STATES ---
   const [isLoaded, setIsLoaded] = useState(false);
@@ -293,6 +297,8 @@ export default function App() {
           if (dbStates['school_members']) setMembers(dbStates['school_members']);
           if (dbStates['school_timetable_data']) setTimetableData(dbStates['school_timetable_data']);
           if (dbStates['school_quotes']) setQuotes(dbStates['school_quotes']);
+          if (dbStates['school_lab_bookings']) setLabBookings(dbStates['school_lab_bookings']);
+          if (dbStates['school_lab_incidents']) setLabIncidents(dbStates['school_lab_incidents']);
           if (dbStates['custom_avatars_list'] && Array.isArray(dbStates['custom_avatars_list'])) {
             safeSetLocalStorage('custom_avatars_list', dbStates['custom_avatars_list']);
             window.dispatchEvent(new CustomEvent('custom_avatars_updated', { detail: dbStates['custom_avatars_list'] }));
@@ -1265,6 +1271,20 @@ export default function App() {
                 members={members}
                 currentUser={currentUser}
                 showToast={showToast}
+              />
+            )}
+
+            {activeTab === 'lab-booking' && (
+              <LabBookingTab
+                members={members}
+                classes={classes}
+                computers={computers}
+                currentUser={currentUser}
+                showToast={showToast}
+                bookings={labBookings}
+                setBookings={setLabBookings}
+                incidents={labIncidents}
+                setIncidents={setLabIncidents}
               />
             )}
 

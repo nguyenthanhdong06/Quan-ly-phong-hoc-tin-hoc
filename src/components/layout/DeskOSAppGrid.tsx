@@ -15,7 +15,8 @@ import {
   GripVertical,
   Image as ImageIcon,
   FileText,
-  Sprout
+  Sprout,
+  CalendarCheck
 } from 'lucide-react';
 import { Member } from '../../types';
 import { playAppLaunchSound } from '../../utils/audioEffects';
@@ -50,6 +51,7 @@ const ALL_POSSIBLE_APPS: AppItem[] = [
   { id: 'knowledge-garden', label: 'Vườn tri thức', icon: Sprout, bg: 'bg-[#dcfce7]', text: 'text-[#15803d]' },
   { id: 'seating', label: 'Sơ đồ máy', icon: Monitor, bg: 'bg-[#ccfbf1]', text: 'text-[#0f766e]', requiresTeacherRole: true },
   { id: 'timetable', label: 'Thời khóa biểu', icon: Calendar, bg: 'bg-[#bfdbfe]', text: 'text-[#1d4ed8]', requiresTeacherRole: true },
+  { id: 'lab-booking', label: 'Đăng ký phòng máy', icon: CalendarCheck, bg: 'bg-[#c7d2fe]', text: 'text-[#3730a3]', requiresTeacherRole: true },
   { id: 'resources', label: 'Kho tài nguyên', icon: FolderOpen, bg: 'bg-[#fed7aa]', text: 'text-[#c2410c]' },
   { id: 'personal-questions', label: 'Kho câu hỏi', icon: HelpCircle, bg: 'bg-[#a7f3d0]', text: 'text-[#047857]', requiresTeacherRole: true },
   { id: 'avatar-gallery', label: 'Kho avatar', icon: ImageIcon, bg: 'bg-[#fbcfe8]', text: 'text-[#be185d]', requiresTeacherRole: true },

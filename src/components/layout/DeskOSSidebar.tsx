@@ -18,7 +18,8 @@ import {
   Image as ImageIcon,
   FileText,
   SlidersHorizontal,
-  Sprout
+  Sprout,
+  CalendarCheck
 } from 'lucide-react';
 import { Member } from '../../types';
 import { playButtonClickSound } from '../../utils/audioEffects';
@@ -99,6 +100,7 @@ export const DeskOSSidebar: React.FC<DeskOSSidebarProps> = ({
     { id: 'knowledge-garden', label: 'Khu Vườn Tri Thức', icon: Sprout, color: 'bg-[#dcfce7] text-[#15803d] border-[#86efac]' },
     { id: 'seating', label: 'Sơ đồ Máy tính', icon: Monitor, color: 'bg-[#ccfbf1] text-[#0f766e] border-[#99f6e4]' },
     { id: 'timetable', label: 'Thời khóa biểu', icon: Calendar, color: 'bg-[#bfdbfe] text-[#1d4ed8] border-[#93c5fd]' },
+    { id: 'lab-booking', label: 'Đăng ký Phòng máy', icon: CalendarCheck, color: 'bg-[#c7d2fe] text-[#3730a3] border-[#a5b4fc]' },
     { id: 'resources', label: 'Kho tài nguyên Giáo án', icon: FolderOpen, color: 'bg-[#fed7aa] text-[#c2410c] border-[#fdba74]' },
     { id: 'personal-questions', label: 'Kho câu hỏi', icon: HelpCircle, color: 'bg-[#a7f3d0] text-[#047857] border-[#6ee7b7]' },
     { id: 'avatar-gallery', label: 'Kho avatar', icon: ImageIcon, color: 'bg-[#fbcfe8] text-[#be185d] border-[#f472b6]' },

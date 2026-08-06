@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Minus, Square, X, Home, Users, School, ClipboardCheck, Star, Trophy, Monitor, Calendar, FolderOpen, Gamepad2, Settings, HelpCircle, Image as ImageIcon, FileText, Sprout } from 'lucide-react';
+import { Minus, Square, X, Home, Users, School, ClipboardCheck, Star, Trophy, Monitor, Calendar, FolderOpen, Gamepad2, Settings, HelpCircle, Image as ImageIcon, FileText, Sprout, CalendarCheck } from 'lucide-react';
 import { Grade, ClassItem } from '../../types';
 import { playButtonClickSound } from '../../utils/audioEffects';
 
@@ -27,6 +27,7 @@ const TAB_METADATA: Record<string, { label: string; icon: React.ElementType }> =
   'knowledge-garden': { label: 'Khu Vườn Tri Thức', icon: Sprout },
   seating: { label: 'Sơ đồ Máy tính', icon: Monitor },
   timetable: { label: 'Thời khóa biểu', icon: Calendar },
+  'lab-booking': { label: 'Đăng ký & Quản lý Phòng máy', icon: CalendarCheck },
   resources: { label: 'Kho tài nguyên Giáo án', icon: FolderOpen },
   'personal-questions': { label: 'Kho câu hỏi AI', icon: HelpCircle },
   'avatar-gallery': { label: 'Kho avatar', icon: ImageIcon },
