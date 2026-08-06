@@ -196,8 +196,8 @@ export const DeskOSAppGrid: React.FC<DeskOSAppGridProps> = ({
                 <Icon className={`w-6.5 h-6.5 sm:w-7.5 sm:h-7.5 ${app.text}`} />
               </div>
 
-              {/* App Label with Adaptive Text Color */}
-              <span className={`font-extrabold text-[11px] sm:text-xs tracking-tight text-center max-w-[95px] truncate leading-none transition-colors ${
+              {/* App Label with Adaptive Text Color & Multi-line Wrapping */}
+              <span className={`font-extrabold text-[11px] sm:text-xs tracking-tight text-center max-w-[105px] whitespace-normal line-clamp-2 leading-tight break-words min-h-[2.2rem] flex items-center justify-center transition-colors ${
                 activeWallpaper?.appLabelTextColor || 'text-[#4a351e]'
               }`}>
                 {app.label}

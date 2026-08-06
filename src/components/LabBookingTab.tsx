@@ -1,9 +1,9 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { LabInfo, LabBooking, LabIncident, Member, ClassItem, Computer } from '../types';
 import { 
   CalendarDays, FilePenLine, AlertTriangle, Sliders, Plus, Trash2, CheckCircle2, 
-  XCircle, Clock, Monitor, Cpu, Database, Filter, Search, User, Users, Check, X, 
-  ChevronRight, RefreshCw, Cloud, Layers, CheckCircle, ShieldAlert, Sparkles, Building
+  Monitor, Cpu, Search, User, Check, X, 
+  Building, RefreshCw, AlertOctagon, Info
 } from 'lucide-react';
 import { safeSetLocalStorage } from '../utils/safeStorage';
 import { saveSupabaseState } from '../supabaseClient';
@@ -13,7 +13,7 @@ interface LabBookingTabProps {
   classes: ClassItem[];
   computers: Computer[];
   currentUser: any;
-  showToast: (message: string, type?: 'success' | 'error') => void;
+  showToast: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
   bookings: LabBooking[];
   setBookings: React.Dispatch<React.SetStateAction<LabBooking[]>>;
   incidents: LabIncident[];
@@ -63,9 +63,6 @@ export default function LabBookingTab({
   const [activeSubTab, setActiveSubTab] = useState<'calendar' | 'booking' | 'incident' | 'admin'>('calendar');
   const [selectedLab, setSelectedLab] = useState<string>('lab1');
 
-  // Preset states for smooth click-to-book transition
-  const [bookingPreset, setBookingPreset] = useState<{ labId?: string; dayIndex?: number; slotId?: string } | null>(null);
-
   // Form states for Module 2: Booking Form
   const [teacherNameInput, setTeacherNameInput] = useState<string>(currentUser?.name || (members[0] ? members[0].name : ''));
   const [classNameInput, setClassNameInput] = useState<string>(classes[0] ? classes[0].name : 'Ba 1');
@@ -74,6 +71,9 @@ export default function LabBookingTab({
   const [formLabId, setFormLabId] = useState<string>('lab1');
   const [formDayIndex, setFormDayIndex] = useState<number>(1);
   const [formSlotId, setFormSlotId] = useState<string>('s1');
+
+  // Popup Modal for Conflict Warning
+  const [isConflictModalOpen, setIsConflictModalOpen] = useState<boolean>(false);
 
   // Form states for Module 3: Incident Report
   const [selectedSeatNumber, setSelectedSeatNumber] = useState<number | null>(null);
@@ -85,16 +85,15 @@ export default function LabBookingTab({
   // Admin filter search term
   const [adminSearchTerm, setAdminSearchTerm] = useState<string>('');
 
-  // Sync changes to preset when clicking on calendar matrix
+  // Transition from Calendar Cell click to Booking Form
   const handleCellClickToBook = (dayIndex: number, slotId: string) => {
     setFormLabId(selectedLab);
     setFormDayIndex(dayIndex);
     setFormSlotId(slotId);
-    setBookingPreset({ labId: selectedLab, dayIndex, slotId });
     setActiveSubTab('booking');
   };
 
-  // Conflict Detection for Booking Form
+  // Real-time Conflict Detection
   const conflictBooking = useMemo(() => {
     return bookings.find(b => 
       b.labId === formLabId &&
@@ -107,8 +106,10 @@ export default function LabBookingTab({
   // Submit Handler for Booking
   const handleAddBooking = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Trigger Popup Modal if there is a conflict!
     if (conflictBooking) {
-      showToast(`Khung giờ này đã bị trùng với tiết của GV ${conflictBooking.teacherName} (Lớp ${conflictBooking.className})!`, 'error');
+      setIsConflictModalOpen(true);
       return;
     }
 
@@ -232,33 +233,26 @@ export default function LabBookingTab({
   const currentLabObj = SYSTEM_LABS.find(l => l.id === selectedLab) || SYSTEM_LABS[0];
 
   return (
-    <div className="space-y-6 text-left animate-fadeIn">
-      {/* Top Banner Navigation Header */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 text-white shadow-lg border border-slate-800 relative overflow-hidden">
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="bg-indigo-500/30 text-indigo-200 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider border border-indigo-400/30 inline-flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-indigo-300" />
-                HỆ THỐNG QUẢN LÝ PHÒNG MÁY TẬP TRUNG
-              </span>
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-wide">
-              Đăng Ký & Quản Lý Phòng Máy Tin Học
-            </h2>
-            <p className="text-indigo-200/90 text-xs sm:text-sm mt-1 max-w-2xl">
-              Tra cứu lịch sử dụng phòng máy, đăng ký mượn tiết dạy trực tiếp và báo cáo máy hỏng hóc đồng bộ cơ sở dữ liệu trường học.
-            </p>
+    <div className="space-y-4 sm:space-y-6 text-slate-800 pb-10 animate-fadeIn">
+      
+      {/* 🌟 1. DESKOS IMAC WARM BEIGE CARD HEADER STRIP (LOẠI BỎ TẤT CẢ CHỮ, CHỈ GIỮ LẠI "Đang xem:") */}
+      <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs">
+        <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-2.5 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+          <div className="flex items-center gap-2 text-left">
+            <span className="font-bold text-xs text-[#5c4327]">Đang xem:</span>
+            <span className="font-black text-xs text-indigo-900 bg-white/80 px-2.5 py-1 rounded-lg border border-[#cbb89d]">
+              {currentLabObj.name} ({currentLabObj.code})
+            </span>
           </div>
 
-          {/* Module Step Navigation Buttons */}
-          <nav className="flex items-center gap-1 bg-slate-800/80 p-1.5 rounded-2xl border border-slate-700/60 shadow-inner">
+          {/* Navigation Subtab Buttons Group (FE Vườn Tri Thức) */}
+          <nav className="flex items-center gap-1 bg-[#e4d3ba] p-1 rounded-xl border border-[#cbb89d] overflow-x-auto max-w-full">
             <button
               onClick={() => setActiveSubTab('calendar')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-lg font-black text-xs transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                 activeSubTab === 'calendar'
-                  ? 'bg-indigo-600 text-white shadow-md'
-                  : 'text-slate-300 hover:text-white hover:bg-white/10'
+                  ? 'bg-indigo-700 text-white shadow-xs'
+                  : 'text-[#3d2b17] hover:bg-[#d5c3aa]'
               }`}
             >
               <CalendarDays className="w-4 h-4" />
@@ -267,10 +261,10 @@ export default function LabBookingTab({
 
             <button
               onClick={() => setActiveSubTab('booking')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-lg font-black text-xs transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                 activeSubTab === 'booking'
-                  ? 'bg-indigo-600 text-white shadow-md'
-                  : 'text-slate-300 hover:text-white hover:bg-white/10'
+                  ? 'bg-indigo-700 text-white shadow-xs'
+                  : 'text-[#3d2b17] hover:bg-[#d5c3aa]'
               }`}
             >
               <FilePenLine className="w-4 h-4" />
@@ -279,22 +273,22 @@ export default function LabBookingTab({
 
             <button
               onClick={() => setActiveSubTab('incident')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-lg font-black text-xs transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                 activeSubTab === 'incident'
-                  ? 'bg-indigo-600 text-white shadow-md'
-                  : 'text-slate-300 hover:text-white hover:bg-white/10'
+                  ? 'bg-indigo-700 text-white shadow-xs'
+                  : 'text-[#3d2b17] hover:bg-[#d5c3aa]'
               }`}
             >
-              <AlertTriangle className="w-4 h-4" />
+              <AlertTriangle className="w-4 h-4 text-amber-300" />
               <span>3. Báo Sự Cố</span>
             </button>
 
             <button
               onClick={() => setActiveSubTab('admin')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-lg font-black text-xs transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                 activeSubTab === 'admin'
-                  ? 'bg-amber-500 text-slate-950 shadow-md font-extrabold'
-                  : 'text-amber-400 hover:text-amber-300 hover:bg-white/10'
+                  ? 'bg-amber-600 text-white shadow-xs'
+                  : 'text-[#3d2b17] hover:bg-[#d5c3aa]'
               }`}
             >
               <Sliders className="w-4 h-4" />
@@ -309,14 +303,14 @@ export default function LabBookingTab({
           ==================================================================== */}
       {activeSubTab === 'calendar' && (
         <div className="space-y-6 animate-fadeIn">
-          {/* LAB SELECTOR ROW */}
-          <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+          {/* LAB SELECTOR CARDS */}
+          <div className="bg-white p-5 rounded-2xl shadow-xs border border-[#cbb89d] space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-extrabold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                <Building className="w-4 h-4 text-indigo-600" />
+              <h3 className="text-xs font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                <Building className="w-4 h-4 text-indigo-700" />
                 <span>Danh Sách Phòng Máy Tin Học Nhà Trường</span>
               </h3>
-              <span className="text-xs font-bold text-slate-400">Chọn phòng máy để xem lịch:</span>
+              <span className="text-xs font-bold text-slate-500">Bấm chọn phòng để xem lịch:</span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -329,17 +323,17 @@ export default function LabBookingTab({
                     onClick={() => setSelectedLab(lab.id)}
                     className={`cursor-pointer p-4 rounded-2xl border-2 transition-all flex items-center justify-between ${
                       isSelected
-                        ? 'border-indigo-600 bg-indigo-50/60 shadow-md ring-2 ring-indigo-500/20'
+                        ? 'border-indigo-700 bg-indigo-50/70 shadow-md ring-2 ring-indigo-500/30'
                         : 'border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50/50'
                     }`}
                   >
                     <div className="flex items-center space-x-3">
                       <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-lg ${
-                        isSelected ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 text-slate-600'
+                        isSelected ? 'bg-indigo-700 text-white shadow-md' : 'bg-slate-100 text-slate-600'
                       }`}>
                         <Monitor className="w-5 h-5" />
                       </div>
-                      <div>
+                      <div className="text-left">
                         <div className="font-extrabold text-slate-800 flex items-center gap-2">
                           <span>{lab.name}</span>
                           <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
@@ -360,7 +354,7 @@ export default function LabBookingTab({
                     ) : (
                       <span className="bg-emerald-100 text-emerald-800 border border-emerald-300 text-[11px] font-black px-2.5 py-1 rounded-full flex items-center gap-1">
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                        Hoạt động tốt
+                        Tốt
                       </span>
                     )}
                   </div>
@@ -369,19 +363,16 @@ export default function LabBookingTab({
             </div>
           </div>
 
-          {/* CALENDAR MATRIX TABLE */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            <div className="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
-              <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
-                <CalendarDays className="w-5 h-5 text-indigo-600" />
+          {/* CALENDAR MATRIX TABLE (THAY NÚT BẰNG THẺ DIV NGUYÊN BẢN SẠCH THẺ BUTTON KÍCH THƯỚC CHUẨN Ô) */}
+          <div className="bg-white rounded-2xl shadow-xs border border-[#cbb89d] overflow-hidden">
+            <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-[#dfccb0]/30">
+              <h3 className="text-sm font-extrabold text-[#3d2b17] flex items-center gap-2">
+                <CalendarDays className="w-5 h-5 text-indigo-700" />
                 <span>Thời Khóa Biểu Sử Dụng - {currentLabObj.name} ({currentLabObj.code})</span>
               </h3>
               <button
-                onClick={() => {
-                  setBookingPreset({ labId: selectedLab });
-                  setActiveSubTab('booking');
-                }}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs px-4 py-2 rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer"
+                onClick={() => setActiveSubTab('booking')}
+                className="bg-indigo-700 hover:bg-indigo-800 text-white font-extrabold text-xs px-4 py-2 rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>Tạo Phiếu Đăng Ký Mượn</span>
@@ -408,7 +399,7 @@ export default function LabBookingTab({
                           <td className="p-3 bg-indigo-100/60 text-indigo-900 border-r border-indigo-200 font-mono text-[11px]">
                             {slot.time}
                           </td>
-                          <td colSpan={DAYS_OF_WEEK.length} className="p-3 text-indigo-900 uppercase text-[11px] tracking-wider">
+                          <td colSpan={DAYS_OF_WEEK.length} className="p-3 text-indigo-950 uppercase text-[11px] tracking-wider">
                             {slot.label}
                           </td>
                         </tr>
@@ -428,7 +419,13 @@ export default function LabBookingTab({
                           );
 
                           return (
-                            <td key={day.id} className="p-2 border-r border-slate-200 align-top h-24 min-w-[130px]">
+                            <td 
+                              key={day.id} 
+                              onClick={() => !matchBooking && handleCellClickToBook(day.id, slot.id)}
+                              className={`p-2 border-r border-slate-200 align-top h-24 min-w-[130px] transition ${
+                                !matchBooking ? 'hover:bg-indigo-50/50 cursor-pointer group' : ''
+                              }`}
+                            >
                               {matchBooking ? (
                                 <div className="h-full bg-emerald-50 border border-emerald-300 rounded-xl p-2.5 flex flex-col justify-between shadow-xs">
                                   <div>
@@ -455,15 +452,13 @@ export default function LabBookingTab({
                                   </div>
                                 </div>
                               ) : (
-                                <button
-                                  onClick={() => handleCellClickToBook(day.id, slot.id)}
-                                  className="w-full h-full border-2 border-dashed border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/50 rounded-xl flex flex-col items-center justify-center text-slate-400 hover:text-indigo-700 transition group cursor-pointer p-2"
-                                >
-                                  <span className="text-xs font-semibold italic text-slate-300 group-hover:text-indigo-400">Trống</span>
+                                /* NGUYÊN NHÂN & GIẢI PHÁP: LOẠI BỎ THẺ <button> BÊN TRONG Ô BẢNG, CHỈ DÙNG KHUNG NATIVE TD */
+                                <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 group-hover:text-indigo-700 transition">
+                                  <span className="text-xs font-semibold italic text-slate-300 group-hover:text-indigo-500">Trống</span>
                                   <span className="text-[10px] hidden group-hover:inline-flex items-center gap-1 text-indigo-700 font-extrabold mt-1">
                                     <Plus className="w-3 h-3" /> Đăng ký
                                   </span>
-                                </button>
+                                </div>
                               )}
                             </td>
                           );
@@ -479,31 +474,41 @@ export default function LabBookingTab({
       )}
 
       {/* ====================================================================
-          MODULE 2: PHIẾU ĐĂNG KÝ MƯỢN (BOOKING FORM)
+          MODULE 2: PHIẾU ĐĂNG KÝ MƯỢN (BOOKING FORM & PHỤC HỒI KHUNG CẢNH BÁO BAN ĐẦU)
           ==================================================================== */}
       {activeSubTab === 'booking' && (
         <div className="max-w-4xl mx-auto space-y-6 animate-fadeIn">
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 space-y-8 shadow-sm">
+          <div className="bg-white rounded-2xl border border-[#cbb89d] p-6 sm:p-8 space-y-6 shadow-xs text-left">
             <div className="border-b border-slate-200 pb-4 flex items-center justify-between">
               <div>
-                <span className="bg-indigo-100 text-indigo-800 text-[10px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider">
+                <span className="bg-indigo-100 text-indigo-900 text-[10px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider">
                   MODULE 2: PHIẾU ĐĂNG KÝ MƯỢN
                 </span>
                 <h3 className="text-xl font-black text-slate-800 mt-1">Tạo Phiếu Đăng Ký Mượn Phòng Máy</h3>
               </div>
               <button
                 onClick={() => setActiveSubTab('calendar')}
-                className="text-xs text-slate-500 hover:text-slate-800 font-bold px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 transition cursor-pointer"
+                className="text-xs text-slate-600 hover:text-slate-900 font-bold px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 transition cursor-pointer"
               >
                 ← Quay lại lịch mượn
               </button>
             </div>
 
+            {/* 🔴 PHỤC HỒI KHUNG CẢNH BÁO TRÙNG LỊCH NHƯ BAN ĐẦU (CLEAN AMBER BANNER) */}
+            {conflictBooking && (
+              <div className="mt-4 p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold flex items-center space-x-2">
+                <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
+                <span>
+                  Trùng lịch: Khung giờ đã được đăng ký bởi GV <strong>{conflictBooking.teacherName}</strong> (Lớp {conflictBooking.className})
+                </span>
+              </div>
+            )}
+
             <form onSubmit={handleAddBooking} className="space-y-6 text-xs">
               {/* PHẦN 1: THÔNG TIN GIÁO VIÊN VÀ TIẾT DẠY */}
               <div className="space-y-4">
                 <h4 className="font-extrabold text-slate-800 text-sm border-b pb-2 flex items-center gap-2">
-                  <User className="w-4 h-4 text-indigo-600" />
+                  <User className="w-4 h-4 text-indigo-700" />
                   Thông Tin Giáo Viên & Tiết Dạy
                 </h4>
 
@@ -566,7 +571,7 @@ export default function LabBookingTab({
               {/* PHẦN 2: CHỌN PHÒNG VÀ KHUNG TIẾT MƯỢN */}
               <div className="space-y-4 pt-2">
                 <h4 className="font-extrabold text-slate-800 text-sm border-b pb-2 flex items-center gap-2">
-                  <Monitor className="w-4 h-4 text-indigo-600" />
+                  <Monitor className="w-4 h-4 text-indigo-700" />
                   Chọn Phòng & Khung Thời Gian Mượn
                 </h4>
 
@@ -610,16 +615,6 @@ export default function LabBookingTab({
                     </select>
                   </div>
                 </div>
-
-                {/* Conflict warning banner */}
-                {conflictBooking && (
-                  <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold flex items-center gap-2">
-                    <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
-                    <span>
-                      <strong>CẢNH BÁO TRÙNG LỊCH:</strong> Khung giờ này đã được đăng ký bởi GV <strong>{conflictBooking.teacherName}</strong> (Lớp {conflictBooking.className}).
-                    </span>
-                  </div>
-                )}
               </div>
 
               {/* ACTION BUTTONS */}
@@ -633,16 +628,73 @@ export default function LabBookingTab({
                 </button>
                 <button
                   type="submit"
-                  disabled={!!conflictBooking}
                   className={`px-6 py-2.5 rounded-xl font-extrabold text-xs text-white shadow-md transition flex items-center gap-1.5 cursor-pointer ${
-                    conflictBooking ? 'bg-slate-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/20'
+                    conflictBooking ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/20' : 'bg-indigo-700 hover:bg-indigo-800 shadow-indigo-700/20'
                   }`}
                 >
                   <Check className="w-4 h-4" />
-                  Gửi Phiếu Đăng Ký Mượn
+                  <span>Gửi Phiếu Đăng Ký Mượn</span>
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* 🔴 POP-UP MODAL CẢNH BÁO TRÙNG LỊCH (BẬT KHI NHẤP GỬI PHIẾU NẾU TRÙNG LỊCH) */}
+      {isConflictModalOpen && conflictBooking && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/75 backdrop-blur-md p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border-4 border-red-500 space-y-5 relative text-left">
+            <div className="flex items-center gap-3 border-b border-red-200 pb-3">
+              <div className="w-12 h-12 rounded-2xl bg-red-100 border border-red-300 flex items-center justify-center text-red-600 shrink-0">
+                <AlertOctagon className="w-7 h-7 animate-bounce" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-red-700 uppercase tracking-wide">
+                  🚨 CẢNH BÁO TRÙNG LỊCH ĐĂNG KÝ!
+                </h3>
+                <p className="text-xs font-bold text-slate-600">
+                  Không thể gửi phiếu đăng ký do khung giờ đã có lớp khác.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div className="p-3 bg-red-50 rounded-2xl border border-red-200 text-slate-800 space-y-1.5 font-semibold">
+                <div>
+                  📍 <span className="font-bold">Phòng máy chọn:</span> <strong className="text-indigo-900">{SYSTEM_LABS.find(l => l.id === formLabId)?.name}</strong>
+                </div>
+                <div>
+                  🕒 <span className="font-bold">Thời gian:</span> <strong className="text-red-700">{DAYS_OF_WEEK.find(d => d.id === formDayIndex)?.name} - {TIME_SLOTS.find(s => s.id === formSlotId)?.name} ({TIME_SLOTS.find(s => s.id === formSlotId)?.time})</strong>
+                </div>
+              </div>
+
+              <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 space-y-2 text-amber-950 font-bold">
+                <div className="text-xs uppercase text-amber-800 font-black flex items-center gap-1">
+                  <Info className="w-4 h-4 text-amber-600" />
+                  Thông tin giáo viên đang mượn khung giờ này:
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>👨‍🏫 Giáo viên: <strong className="text-slate-900">{conflictBooking.teacherName}</strong></div>
+                  <div>🏫 Lớp mượn: <strong className="text-slate-900">{conflictBooking.className}</strong></div>
+                  <div className="col-span-2">📖 Bài dạy: <strong className="text-slate-900">{conflictBooking.subject}</strong></div>
+                </div>
+              </div>
+
+              <p className="text-slate-600 text-xs font-medium italic">
+                Vui lòng đổi sang tiết học khác hoặc chọn phòng máy khác để hoàn tất việc đăng ký phòng máy.
+              </p>
+            </div>
+
+            <div className="pt-3 border-t border-slate-200 flex justify-end gap-3">
+              <button
+                onClick={() => setIsConflictModalOpen(false)}
+                className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-xs shadow-md transition cursor-pointer flex items-center gap-1.5"
+              >
+                <RefreshCw className="w-4 h-4" />
+                <span>Chọn Khung Giờ Khác</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -654,10 +706,10 @@ export default function LabBookingTab({
         <div className="space-y-6 animate-fadeIn">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* SEAT GRID MAP SELECTOR */}
-            <div className="lg:col-span-7 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <div className="lg:col-span-7 bg-white p-6 rounded-2xl border border-[#cbb89d] shadow-xs space-y-4 text-left">
               <div className="flex items-center justify-between border-b pb-3">
                 <h3 className="text-sm font-extrabold text-slate-800 flex items-center gap-2">
-                  <Monitor className="w-4 h-4 text-indigo-600" />
+                  <Monitor className="w-4 h-4 text-indigo-700" />
                   <span>Sơ Đồ Máy {currentLabObj.name}</span>
                 </h3>
                 <select
@@ -669,7 +721,7 @@ export default function LabBookingTab({
                 </select>
               </div>
 
-              <div className="w-full bg-slate-100 text-slate-600 text-center py-2 rounded-xl text-xs font-extrabold uppercase mb-4 border border-slate-200">
+              <div className="w-full bg-[#dfccb0]/40 text-[#3d2b17] text-center py-2 rounded-xl text-xs font-extrabold uppercase mb-4 border border-[#cbb89d]">
                 📌 BẢNG / BÀN GIÁO VIÊN BỘ MÔN
               </div>
 
@@ -684,22 +736,21 @@ export default function LabBookingTab({
                   if (isSelected) bgColor = 'bg-amber-100 border-amber-500 text-amber-950 font-black ring-2 ring-amber-400/50';
 
                   return (
-                    <button
+                    <div
                       key={pcNum}
-                      type="button"
                       onClick={() => setSelectedSeatNumber(pcNum)}
                       className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center transition cursor-pointer ${bgColor}`}
                     >
                       <Cpu className={`w-4 h-4 mb-1 ${isBroken ? 'text-rose-600' : 'text-slate-500'}`} />
                       <span className="text-xs font-extrabold">Máy {pcNum < 10 ? `0${pcNum}` : pcNum}</span>
-                    </button>
+                    </div>
                   );
                 })}
               </div>
             </div>
 
             {/* INCIDENT REPORT FORM */}
-            <div className="lg:col-span-5 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <div className="lg:col-span-5 bg-white p-6 rounded-2xl border border-[#cbb89d] shadow-xs space-y-4 text-left">
               <h3 className="text-sm font-extrabold text-slate-800 border-b pb-3 flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-amber-500" />
                 <span>Chi Tiết Sự Cố Máy Tính</span>
@@ -709,7 +760,7 @@ export default function LabBookingTab({
                 <div className="p-3 bg-slate-50 rounded-xl flex justify-between items-center text-xs font-bold border border-slate-200">
                   <span>Số máy đã chọn:</span>
                   {selectedSeatNumber ? (
-                    <span className="bg-indigo-600 text-white px-3 py-1 rounded-lg font-mono font-black">
+                    <span className="bg-indigo-700 text-white px-3 py-1 rounded-lg font-mono font-black">
                       Máy #{selectedSeatNumber}
                     </span>
                   ) : (
@@ -791,9 +842,9 @@ export default function LabBookingTab({
       {activeSubTab === 'admin' && (
         <div className="space-y-6 animate-fadeIn">
           {/* SEARCH & FILTER BAR */}
-          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
-            <h3 className="text-base font-black text-slate-800 flex items-center gap-2">
-              <Sliders className="w-5 h-5 text-amber-500" />
+          <div className="bg-white p-4 rounded-2xl border border-[#cbb89d] shadow-xs flex flex-col md:flex-row justify-between items-center gap-4 text-left">
+            <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
+              <Sliders className="w-5 h-5 text-amber-600" />
               <span>Bảng Quản Lý Duyệt Phiếu & Sửa Chữa Sự Cố</span>
             </h3>
 
@@ -810,7 +861,7 @@ export default function LabBookingTab({
           </div>
 
           {/* TABLE 1: BOOKINGS LIST */}
-          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+          <div className="bg-white rounded-2xl border border-[#cbb89d] overflow-hidden shadow-xs">
             <div className="p-4 border-b font-extrabold text-slate-800 text-sm flex justify-between items-center bg-slate-50">
               <span>Danh Sách Phiếu Đăng Ký Mượn Phòng ({filteredBookings.length})</span>
             </div>
@@ -853,26 +904,27 @@ export default function LabBookingTab({
                           </span>
                         </td>
                         <td className="py-3 px-4 text-center whitespace-nowrap">
-                          <div className="flex items-center justify-center gap-1.5">
-                            <button
+                          <div className="flex items-center justify-center gap-2 font-bold text-xs">
+                            <span
                               onClick={() => handleUpdateBookingStatus(b.id, 'Approved')}
-                              className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-[11px] px-2.5 py-1 rounded-lg border border-emerald-200 transition cursor-pointer"
+                              className="text-emerald-700 hover:text-emerald-900 hover:underline cursor-pointer"
                             >
                               Duyệt
-                            </button>
-                            <button
+                            </span>
+                            <span className="text-slate-300">|</span>
+                            <span
                               onClick={() => handleUpdateBookingStatus(b.id, 'Rejected')}
-                              className="bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-[11px] px-2.5 py-1 rounded-lg border border-amber-200 transition cursor-pointer"
+                              className="text-amber-700 hover:text-amber-900 hover:underline cursor-pointer"
                             >
                               Từ chối
-                            </button>
-                            <button
+                            </span>
+                            <span className="text-slate-300">|</span>
+                            <span
                               onClick={() => handleDeleteBooking(b.id)}
-                              className="text-slate-400 hover:text-rose-600 p-1.5 hover:bg-rose-50 rounded-lg transition cursor-pointer"
-                              title="Xóa phiếu"
+                              className="text-rose-600 hover:text-rose-800 hover:underline cursor-pointer"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                              Xóa
+                            </span>
                           </div>
                         </td>
                       </tr>
@@ -884,7 +936,7 @@ export default function LabBookingTab({
           </div>
 
           {/* TABLE 2: INCIDENTS LIST */}
-          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+          <div className="bg-white rounded-2xl border border-[#cbb89d] overflow-hidden shadow-xs">
             <div className="p-4 border-b font-extrabold text-slate-800 text-sm flex justify-between items-center bg-slate-50">
               <span>Danh Sách Báo Cáo Sự Cố Máy Tính ({filteredIncidents.length})</span>
             </div>
@@ -924,26 +976,27 @@ export default function LabBookingTab({
                           </span>
                         </td>
                         <td className="py-3 px-4 text-center whitespace-nowrap">
-                          <div className="flex items-center justify-center gap-1.5">
-                            <button
+                          <div className="flex items-center justify-center gap-2 font-bold text-xs">
+                            <span
                               onClick={() => handleUpdateIncidentStatus(i.id, 'In Progress')}
-                              className="bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-[11px] px-2 py-1 rounded-lg border border-amber-200 transition cursor-pointer"
+                              className="text-amber-700 hover:text-amber-900 hover:underline cursor-pointer"
                             >
                               Đang sửa
-                            </button>
-                            <button
+                            </span>
+                            <span className="text-slate-300">|</span>
+                            <span
                               onClick={() => handleUpdateIncidentStatus(i.id, 'Resolved')}
-                              className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-[11px] px-2 py-1 rounded-lg border border-emerald-200 transition cursor-pointer"
+                              className="text-emerald-700 hover:text-emerald-900 hover:underline cursor-pointer"
                             >
                               Đã xong
-                            </button>
-                            <button
+                            </span>
+                            <span className="text-slate-300">|</span>
+                            <span
                               onClick={() => handleDeleteIncident(i.id)}
-                              className="text-slate-400 hover:text-rose-600 p-1.5 hover:bg-rose-50 rounded-lg transition cursor-pointer"
-                              title="Xóa sự cố"
+                              className="text-rose-600 hover:text-rose-800 hover:underline cursor-pointer"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                              Xóa
+                            </span>
                           </div>
                         </td>
                       </tr>

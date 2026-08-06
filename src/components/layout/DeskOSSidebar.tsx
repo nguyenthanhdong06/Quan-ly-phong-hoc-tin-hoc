@@ -196,13 +196,13 @@ export const DeskOSSidebar: React.FC<DeskOSSidebarProps> = ({
                 }`}
               >
                 {/* Left-aligned Icon & Text */}
-                <div className="flex items-center gap-2.5 truncate">
+                <div className="flex items-center gap-2.5 flex-1 min-w-0">
                   <div className={`w-5.5 h-5.5 rounded-lg flex items-center justify-center border shrink-0 ${
                     isActive ? 'bg-white/20 text-white border-transparent' : item.color
                   }`}>
                     <Icon className="w-3 h-3" />
                   </div>
-                  <span className="truncate text-left font-extrabold text-[11px] sm:text-xs tracking-tight">
+                  <span className="whitespace-normal line-clamp-2 leading-tight text-left font-extrabold text-[11px] sm:text-xs tracking-tight">
                     {item.label}
                   </span>
                 </div>
