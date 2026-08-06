@@ -1,0 +1,6 @@
+{
+  "name": "Quản lý Phòng học Tin học",
+  "description": "Hệ thống toàn diện quản lý phòng máy, sơ đồ chỗ ngồi, điểm danh, thi đua khen thưởng và học liệu môn Tin học tiểu học",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

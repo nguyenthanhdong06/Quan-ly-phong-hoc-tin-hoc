@@ -1,0 +1,340 @@
+@import url('https://fonts.googleapis.com/css2?family=Charm:wght@400;700&family=Dancing+Script:wght@400..700&display=swap');
+@import "tailwindcss";
+
+/* Strict zero browser scrollbar rule */
+html, body {
+  overflow: hidden !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Hide scrollbar utility class */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE/Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+/* Smooth accordion transition using grid-template-rows */
+.submenu-transition {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 300ms cubic-bezier(0.4, 0, 0.2, 1), opacity 300ms ease, margin 300ms ease;
+  opacity: 0;
+}
+.submenu-transition.open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+/* Lock scroll on body/html when any fixed backdrop/popup is active */
+body:has(.fixed.inset-0),
+html:has(.fixed.inset-0) {
+  overflow: hidden !important;
+}
+
+/* Sparkling hover styles for avatars without blurry or dazzling effects */
+.avatar-sparkle-hover {
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.group:hover .avatar-sparkle-hover,
+.avatar-sparkle-hover:hover {
+  transform: scale(1.08) rotate(3deg);
+  border-color: #f59e0b !important;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+}
+
+/* 3D Podium Student Hopping / Climbing Keyframe Animations */
+@keyframes podiumHop1 {
+  0% {
+    transform: translateY(140px) scale(0.2) rotate(-15deg);
+    opacity: 0;
+  }
+  40% {
+    transform: translateY(-35px) scale(1.25) rotate(10deg);
+    opacity: 1;
+  }
+  65% {
+    transform: translateY(10px) scale(0.9) rotate(-5deg);
+  }
+  85% {
+    transform: translateY(-12px) scale(1.08) rotate(3deg);
+  }
+  100% {
+    transform: translateY(-12px) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes podiumHop2 {
+  0% {
+    transform: translateY(110px) scale(0.2) rotate(-10deg);
+    opacity: 0;
+  }
+  45% {
+    transform: translateY(-25px) scale(1.18) rotate(8deg);
+    opacity: 1;
+  }
+  70% {
+    transform: translateY(8px) scale(0.92);
+  }
+  88% {
+    transform: translateY(-6px) scale(1.04);
+  }
+  100% {
+    transform: translateY(0px) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes podiumHop3 {
+  0% {
+    transform: translateY(90px) scale(0.2) rotate(10deg);
+    opacity: 0;
+  }
+  45% {
+    transform: translateY(-20px) scale(1.15) rotate(-6deg);
+    opacity: 1;
+  }
+  70% {
+    transform: translateY(6px) scale(0.94);
+  }
+  88% {
+    transform: translateY(-5px) scale(1.03);
+  }
+  100% {
+    transform: translateY(0px) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+.animate-podium-hop-1 {
+  animation: podiumHop1 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.5s both;
+}
+
+.animate-podium-hop-2 {
+  animation: podiumHop2 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) 0.25s both;
+}
+
+.animate-podium-hop-3 {
+  animation: podiumHop3 0.85s cubic-bezier(0.34, 1.56, 0.64, 1) 0.05s both;
+}
+
+/* Print optimization for A4 Landscape timetable */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 2cm 2cm 2cm 3cm;
+  }
+  html, body {
+    background: white !important;
+    color: black !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-family: "Times New Roman", Times, serif !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  body * {
+    visibility: hidden !important;
+  }
+  #printable-timetable, #printable-timetable * {
+    visibility: visible !important;
+  }
+  #printable-timetable {
+    display: block !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
+
+/* Raw/Plain button reset class for transparent icons, overlays, search clear buttons, and modal close X icons */
+.btn-raw,
+.btn-plain,
+button.btn-raw,
+button.btn-plain,
+button:has(svg.lucide-x),
+button:has(svg[class*="lucide-x"]) {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  border-radius: 9999px !important;
+  transform: none !important;
+  filter: none !important;
+}
+
+/* ==========================================================================
+   REFINED 3D GLOSSY PILL BUTTON STYLING (Light & Thin 3D Shadow Effect)
+   ========================================================================== */
+
+button:not(.btn-raw):not(.btn-plain) {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  font-weight: 800 !important;
+  border-radius: 9999px !important;
+  border-width: 1.5px !important;
+  border-style: solid !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  white-space: nowrap;
+  transition: all 160ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+  text-shadow: 0 1px 1.5px rgba(0, 0, 0, 0.4) !important;
+  letter-spacing: 0.02em !important;
+  line-height: 1.2 !important;
+  
+  /* Default Refined Teal Glossy Gradient */
+  background: linear-gradient(180deg, #74c7b8 0%, #469689 50%, #2e6e64 100%);
+  border-color: #1e524a !important;
+  box-shadow: 0 2px 0 #b88a5e, inset 0 1px 1px rgba(255, 255, 255, 0.4) !important;
+  color: #ffffff !important;
+}
+
+button:not(.btn-raw):not(.btn-plain):hover {
+  transform: translateY(-1px) !important;
+  filter: brightness(1.08) !important;
+  box-shadow: 0 3.5px 0 #b88a5e, inset 0 1px 1px rgba(255, 255, 255, 0.55), 0 4px 10px rgba(0, 0, 0, 0.12) !important;
+}
+
+button:not(.btn-raw):not(.btn-plain):active {
+  transform: translateY(1px) !important;
+  box-shadow: 0 0.5px 0 #b88a5e, inset 0 1px 1.5px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* --- AUTOMATIC REFINED COLOR VARIANTS BASED ON TAILWIND BACKGROUND CLASSES --- */
+
+/* 1. BLUE / INDIGO / SKY BUTTONS */
+button[class*="bg-blue"]:not(.btn-raw):not(.btn-plain),
+button[class*="bg-indigo"]:not(.btn-raw):not(.btn-plain),
+button[class*="bg-sky"]:not(.btn-raw):not(.btn-plain) {
+  background: linear-gradient(180deg, #60a5fa 0%, #2563eb 50%, #1d4ed8 100%) !important;
+  border-color: #1e3a8a !important;
+  box-shadow: 0 2px 0 #1d4ed8, inset 0 1px 1px rgba(255, 255, 255, 0.4) !important;
+  color: #ffffff !important;
+}
+button[class*="bg-blue"]:not(.btn-raw):not(.btn-plain):hover,
+button[class*="bg-indigo"]:not(.btn-raw):not(.btn-plain):hover,
+button[class*="bg-sky"]:not(.btn-raw):not(.btn-plain):hover {
+  box-shadow: 0 3.5px 0 #1d4ed8, inset 0 1px 1px rgba(255, 255, 255, 0.55), 0 4px 10px rgba(37, 99, 235, 0.25) !important;
+}
+
+/* 2. EMERALD / GREEN / LIME BUTTONS */
+button[class*="bg-emerald"]:not(.btn-raw):not(.btn-plain),
+button[class*="bg-green"]:not(.btn-raw):not(.btn-plain),
+button[class*="bg-lime"]:not(.btn-raw):not(.btn-plain),
+button[class*="bg-[#10b981]"]:not(.btn-raw):not(.btn-plain) {
+  background: linear-gradient(180deg, #34d399 0%, #10b981 50%, #047857 100%) !important;
+  border-color: #064e3b !important;
+  box-shadow: 0 2px 0 #047857, inset 0 1px 1px rgba(255, 255, 255, 0.4) !important;
+  color: #ffffff !important;
+}
+button[class*="bg-emerald"]:not(.btn-raw):not(.btn-plain):hover,
+button[class*="bg-green"]:not(.btn-raw):not(.btn-plain):hover,
+button[class*="bg-lime"]:not(.btn-raw):not(.btn-plain):hover {
+  box-shadow: 0 3.5px 0 #047857, inset 0 1px 1px rgba(255, 255, 255, 0.55), 0 4px 10px rgba(16, 185, 129, 0.25) !important;
+}
+
+/* 3. AMBER / ORANGE / YELLOW BUTTONS */
+button[class*="bg-amber"]:not(.btn-raw):not(.btn-plain),
+button[class*="bg-orange"]:not(.btn-raw):not(.btn-plain),
+button[class*="bg-yellow"]:not(.btn-raw):not(.btn-plain) {
+  background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%) !important;
+  border-color: #78350f !important;
+  box-shadow: 0 2px 0 #b45309, inset 0 1px 1px rgba(255, 255, 255, 0.5) !important;
+  color: #ffffff !important;
+}
+button[class*="bg-amber"]:not(.btn-raw):not(.btn-plain):hover,
+button[class*="bg-orange"]:not(.btn-raw):not(.btn-plain):hover,
+button[class*="bg-yellow"]:not(.btn-raw):not(.btn-plain):hover {
+  box-shadow: 0 3.5px 0 #b45309, inset 0 1px 1px rgba(255, 255, 255, 0.65), 0 4px 10px rgba(245, 158, 11, 0.25) !important;
+}
+
+/* 4. ROSE / RED BUTTONS */
+button[class*="bg-rose"]:not(.btn-raw):not(.btn-plain),
+button[class*="bg-red"]:not(.btn-raw):not(.btn-plain) {
+  background: linear-gradient(180deg, #f87171 0%, #ef4444 50%, #b91c1c 100%) !important;
+  border-color: #7f1d1d !important;
+  box-shadow: 0 2px 0 #b91c1c, inset 0 1px 1px rgba(255, 255, 255, 0.4) !important;
+  color: #ffffff !important;
+}
+button[class*="bg-rose"]:not(.btn-raw):not(.btn-plain):hover,
+button[class*="bg-red"]:not(.btn-raw):not(.btn-plain):hover {
+  box-shadow: 0 3.5px 0 #b91c1c, inset 0 1px 1px rgba(255, 255, 255, 0.55), 0 4px 10px rgba(239, 68, 68, 0.25) !important;
+}
+
+/* 5. PURPLE / VIOLET BUTTONS */
+button[class*="bg-purple"]:not(.btn-raw):not(.btn-plain),
+button[class*="bg-violet"]:not(.btn-raw):not(.btn-plain) {
+  background: linear-gradient(180deg, #c084fc 0%, #9333ea 50%, #6b21a8 100%) !important;
+  border-color: #4c1d95 !important;
+  box-shadow: 0 2px 0 #6b21a8, inset 0 1px 1px rgba(255, 255, 255, 0.4) !important;
+  color: #ffffff !important;
+}
+button[class*="bg-purple"]:not(.btn-raw):not(.btn-plain):hover,
+button[class*="bg-violet"]:not(.btn-raw):not(.btn-plain):hover {
+  box-shadow: 0 3.5px 0 #6b21a8, inset 0 1px 1px rgba(255, 255, 255, 0.55), 0 4px 10px rgba(147, 51, 234, 0.25) !important;
+}
+
+/* 6. TEAL / CYAN BUTTONS */
+button[class*="bg-teal"]:not(.btn-raw):not(.btn-plain),
+button[class*="bg-cyan"]:not(.btn-raw):not(.btn-plain) {
+  background: linear-gradient(180deg, #74c7b8 0%, #469689 50%, #2e6e64 100%) !important;
+  border-color: #1e524a !important;
+  box-shadow: 0 2px 0 #b88a5e, inset 0 1px 1px rgba(255, 255, 255, 0.4) !important;
+  color: #ffffff !important;
+}
+button[class*="bg-teal"]:not(.btn-raw):not(.btn-plain):hover,
+button[class*="bg-cyan"]:not(.btn-raw):not(.btn-plain):hover {
+  box-shadow: 0 3.5px 0 #b88a5e, inset 0 1px 1px rgba(255, 255, 255, 0.55), 0 4px 10px rgba(70, 150, 137, 0.25) !important;
+}
+
+/* 7. SLATE / DARK NEUTRAL BUTTONS */
+button[class*="bg-slate"]:not(.btn-raw):not(.btn-plain),
+button[class*="bg-gray"]:not(.btn-raw):not(.btn-plain),
+button[class*="bg-zinc"]:not(.btn-raw):not(.btn-plain) {
+  background: linear-gradient(180deg, #94a3b8 0%, #475569 50%, #334155 100%) !important;
+  border-color: #0f172a !important;
+  box-shadow: 0 2px 0 #1e293b, inset 0 1px 1px rgba(255, 255, 255, 0.4) !important;
+  color: #ffffff !important;
+}
+button[class*="bg-slate"]:not(.btn-raw):not(.btn-plain):hover,
+button[class*="bg-gray"]:not(.btn-raw):not(.btn-plain):hover,
+button[class*="bg-zinc"]:not(.btn-raw):not(.btn-plain):hover {
+  box-shadow: 0 3.5px 0 #1e293b, inset 0 1px 1px rgba(255, 255, 255, 0.55), 0 4px 10px rgba(71, 85, 105, 0.25) !important;
+}
+
+/* Water Drop Falling Animation from canopy down to tree soil */
+@keyframes waterDropFall {
+  0% {
+    transform: translateY(0) scale(0.6);
+    opacity: 1;
+  }
+  75% {
+    transform: translateY(200px) scale(1);
+    opacity: 0.95;
+  }
+  90% {
+    transform: translateY(230px) scale(1.4, 0.6);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(240px) scale(2, 0.2);
+    opacity: 0;
+  }
+}
+
+.animate-water-drop-fall {
+  animation: waterDropFall 0.9s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
