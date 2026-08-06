@@ -1142,11 +1142,11 @@ export default function App() {
       <main className="flex-1 w-full mx-auto animate-fadeIn overflow-hidden flex flex-col pb-12">
         
         {activeTab === 'dashboard' && (
-          <div className="space-y-3 sm:space-y-4 animate-fadeIn h-full overflow-hidden flex flex-col justify-center p-1 sm:p-3">
+          <div className="space-y-4 sm:space-y-6 animate-fadeIn h-full overflow-y-auto custom-scrollbar p-2 sm:p-4 pb-16">
             {/* Mac-style Welcome Window Widget */}
             <DeskOSMacWidget currentUser={currentUser} />
 
-            {/* 6-8 Column App Launcher Grid (No Scrollbar) */}
+            {/* App Launcher Grid */}
             <DeskOSAppGrid
               activeTab={activeTab}
               setActiveTab={handleOpenApp}

@@ -112,26 +112,26 @@ export const ComputerCard3D: React.FC<ComputerCard3DProps> = ({
   let computerNameColor = 'text-blue-950';
   let statusBadgeBg = 'bg-blue-600 text-white border-blue-400';
   let dividerColor = 'border-blue-200/60';
-  let studentBadgeStyle = 'bg-blue-600 text-white border-blue-500 shadow-[0_2px_0_#1d4ed8]';
+  let studentBadgeStyle = 'bg-indigo-800 text-white font-extrabold border-none shadow-none';
   let emptyStyle = 'bg-blue-50 border-blue-200/50 text-blue-800/80';
-  let dropShadowFilter = 'drop-shadow(0 4px 8px rgba(14,165,233,0.25))';
+  let dropShadowFilter = 'drop-shadow(0 3px 6px rgba(14,165,233,0.15))';
 
   if (isFaulty) {
     screenBg = 'from-rose-50/95 to-red-100/95';
     computerNameColor = 'text-rose-950';
     statusBadgeBg = 'bg-rose-600 text-white border-rose-400';
     dividerColor = 'border-rose-200/60';
-    studentBadgeStyle = 'bg-rose-600 text-white border-rose-500 shadow-[0_2px_0_#b91c1c]';
+    studentBadgeStyle = 'bg-rose-800 text-white font-extrabold border-none shadow-none';
     emptyStyle = 'bg-rose-50 border-rose-200/50 text-rose-800/80';
-    dropShadowFilter = 'drop-shadow(0 4px 10px rgba(244,63,94,0.35))';
+    dropShadowFilter = 'drop-shadow(0 3px 6px rgba(244,63,94,0.2))';
   } else if (isMaintenance) {
     screenBg = 'from-purple-50/95 to-violet-100/95';
     computerNameColor = 'text-purple-950';
     statusBadgeBg = 'bg-purple-600 text-white border-purple-400';
     dividerColor = 'border-purple-200/60';
-    studentBadgeStyle = 'bg-purple-600 text-white border-purple-500 shadow-[0_2px_0_#6d28d9]';
+    studentBadgeStyle = 'bg-purple-800 text-white font-extrabold border-none shadow-none';
     emptyStyle = 'bg-purple-50 border-purple-200/50 text-purple-800/80';
-    dropShadowFilter = 'drop-shadow(0 4px 10px rgba(168,85,247,0.3))';
+    dropShadowFilter = 'drop-shadow(0 3px 6px rgba(168,85,247,0.2))';
   }
 
   return (
