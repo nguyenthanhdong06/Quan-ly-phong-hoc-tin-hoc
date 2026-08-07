@@ -4,7 +4,7 @@ import {
   CalendarDays, FilePenLine, AlertTriangle, Sliders, Plus, Trash2, CheckCircle2, 
   Monitor, Cpu, Search, User, Check, X, 
   Building, RefreshCw, AlertOctagon, Info, BookMarked, Wrench, RotateCw, Microchip, HardDrive, Tag,
-  Edit, Grid, Database, Copy, CheckCheck, Rows, Columns, Hash
+  Edit, Grid, Database, Copy, CheckCheck, Rows, Columns, Hash, Move, MousePointer, Pencil
 } from 'lucide-react';
 import { safeSetLocalStorage } from '../utils/safeStorage';
 import { saveSupabaseState } from '../supabaseClient';
@@ -53,27 +53,21 @@ export const getTodayDDMMYYYY = (): string => {
   return `${dd}-${mm}-${yyyy}`;
 };
 
-// Hàm khởi tạo ma trận sơ đồ phòng lab mặc định (Rows x Cols) với đánh số máy liên tục & lối đi ở giữa
-export const generateDefaultLabLayout = (rows: number = 5, cols: number = 8) => {
+// Hàm khởi tạo ma trận sơ đồ phòng lab mặc định (Rows x Cols) với nhãn M.01, M.02...
+export const generateDefaultLabLayout = (rows: number = 6, cols: number = 6) => {
   const layout: Record<string, { type: 'pc' | 'aisle' | 'desk'; label?: string; pcNumber?: number }> = {};
   let pcCounter = 1;
-  const middleCol = Math.floor(cols / 2);
 
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const key = `${r}_${c}`;
-      // Tạo lối đi giữa nếu phòng từ 6 cột trở lên
-      if (cols >= 6 && c === middleCol) {
-        layout[key] = { type: 'aisle' };
-      } else {
-        const pcNumStr = pcCounter < 10 ? `0${pcCounter}` : `${pcCounter}`;
-        layout[key] = { 
-          type: 'pc', 
-          pcNumber: pcCounter, 
-          label: `Máy ${pcNumStr}` 
-        };
-        pcCounter++;
-      }
+      const pcNumStr = pcCounter < 10 ? `0${pcCounter}` : `${pcCounter}`;
+      layout[key] = { 
+        type: 'pc', 
+        pcNumber: pcCounter, 
+        label: `M.${pcNumStr}` 
+      };
+      pcCounter++;
     }
   }
   return layout;
@@ -156,17 +150,18 @@ export default function LabBookingTab({
   // Admin filter search term
   const [adminSearchTerm, setAdminSearchTerm] = useState<string>('');
 
-  // States for LAB EDITOR MODAL & LAB MATRIX CUSTOMIZER (TRÌNH THIẾT KẾ SƠ ĐỒ PHÒNG LAB)
+  // States for LAB EDITOR MODAL & LAB MATRIX CUSTOMIZER (TRÌNH THIẾT KẾ SƠ ĐỒ PHÒNG LAB MẪU)
   const [isLabEditorModalOpen, setIsLabEditorModalOpen] = useState<boolean>(false);
   const [editingLab, setEditingLab] = useState<LabInfo | null>(null);
   const [labFormName, setLabFormName] = useState<string>('');
   const [labFormCode, setLabFormCode] = useState<string>('');
   const [labFormLocation, setLabFormLocation] = useState<string>('');
+  const [labFormStatus, setLabFormStatus] = useState<'Active' | 'Maintenance'>('Active');
   const [labFormTotalPCs, setLabFormTotalPCs] = useState<number>(36);
-  const [labFormRows, setLabFormRows] = useState<number>(5);
-  const [labFormCols, setLabFormCols] = useState<number>(8);
+  const [labFormRows, setLabFormRows] = useState<number>(6);
+  const [labFormCols, setLabFormCols] = useState<number>(6);
   const [labFormLayout, setLabFormLayout] = useState<Record<string, { type: 'pc' | 'aisle' | 'desk'; label?: string; pcNumber?: number }>>({});
-  const [activeEditorTool, setActiveEditorTool] = useState<'pc' | 'aisle' | 'desk'>('pc');
+  const [activeEditorTool, setActiveEditorTool] = useState<'aisle' | 'drag' | 'desk' | 'rename'>('aisle');
 
   // Supabase SQL Config Modal
   const [isSqlModalOpen, setIsSqlModalOpen] = useState<boolean>(false);
@@ -345,8 +340,8 @@ export default function LabBookingTab({
 
   // LAB EDITOR MODAL HANDLERS (+ THÊM PHÒNG MỚI & SỬA SƠ ĐỒ PHÒNG LAB MA TRẬN)
   const handleOpenAddLabModal = () => {
-    const defaultRows = 5;
-    const defaultCols = 8;
+    const defaultRows = 6;
+    const defaultCols = 6;
     const initialLayout = generateDefaultLabLayout(defaultRows, defaultCols);
 
     let pcCount = 0;
@@ -356,16 +351,18 @@ export default function LabBookingTab({
     setLabFormName(`Phòng Lab 0${labs.length + 1}`);
     setLabFormCode(`P.${200 + labs.length + 1}`);
     setLabFormLocation('Tầng 2 - Nhà A');
+    setLabFormStatus('Active');
     setLabFormRows(defaultRows);
     setLabFormCols(defaultCols);
     setLabFormTotalPCs(pcCount);
     setLabFormLayout(initialLayout);
+    setActiveEditorTool('aisle');
     setIsLabEditorModalOpen(true);
   };
 
   const handleOpenEditLabModal = (lab: LabInfo) => {
-    const rows = lab.gridRows || 5;
-    const cols = lab.gridCols || 8;
+    const rows = lab.gridRows || 6;
+    const cols = lab.gridCols || 6;
     const layout = (lab.customLayout && Object.keys(lab.customLayout).length > 0)
       ? lab.customLayout
       : generateDefaultLabLayout(rows, cols);
@@ -374,10 +371,12 @@ export default function LabBookingTab({
     setLabFormName(lab.name);
     setLabFormCode(lab.code);
     setLabFormLocation(lab.location);
+    setLabFormStatus(lab.status || 'Active');
     setLabFormRows(rows);
     setLabFormCols(cols);
     setLabFormTotalPCs(lab.totalPCs);
     setLabFormLayout(layout);
+    setActiveEditorTool('aisle');
     setIsLabEditorModalOpen(true);
   };
 
@@ -391,39 +390,158 @@ export default function LabBookingTab({
     }
   };
 
-  const handleRecalculatePcNumbers = () => {
+  // Đánh lại số thứ tự và nhãn máy liên tục (M.01, M.02...)
+  const recalculatePcLabels = (rows: number, cols: number, layoutObj: Record<string, any>) => {
     let counter = 1;
     const newLayout: Record<string, any> = {};
 
-    for (let r = 0; r < labFormRows; r++) {
-      for (let c = 0; c < labFormCols; c++) {
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
         const key = `${r}_${c}`;
-        const existing = labFormLayout[key] || { type: 'pc' };
-        if (existing.type === 'pc') {
+        const tile = layoutObj[key] || { type: 'pc' };
+        if (tile.type === 'pc') {
           const pcNumStr = counter < 10 ? `0${counter}` : `${counter}`;
           newLayout[key] = {
-            ...existing,
+            ...tile,
             pcNumber: counter,
-            label: `Máy ${pcNumStr}`
+            label: tile.label && tile.label.startsWith('M.') ? tile.label : `M.${pcNumStr}`
           };
           counter++;
         } else {
-          newLayout[key] = existing;
+          newLayout[key] = tile;
         }
       }
     }
     setLabFormLayout(newLayout);
     setLabFormTotalPCs(counter - 1);
-    showToast(`Đã tự động đánh số thứ tự liên tục cho ${counter - 1} máy tính!`, 'success');
   };
 
-  const handleResetMatrixLayout = () => {
-    const newLayout = generateDefaultLabLayout(labFormRows, labFormCols);
+  // Khôi phục đủ 36 máy (hoặc rows x cols máy)
+  const handleRestoreFullPcs = () => {
+    const layout = generateDefaultLabLayout(labFormRows, labFormCols);
     let pcCount = 0;
-    Object.values(newLayout).forEach((t: any) => { if (t && t.type === 'pc') pcCount++; });
-    setLabFormLayout(newLayout);
+    Object.values(layout).forEach((t: any) => { if (t && t.type === 'pc') pcCount++; });
+    setLabFormLayout(layout);
     setLabFormTotalPCs(pcCount);
-    showToast(`Đã khởi tạo lại sơ đồ ma trận (${labFormRows}x${labFormCols}) chuẩn!`, 'info');
+    showToast(`Đã khôi phục lại đủ ${pcCount} máy tính cho phòng lab!`, 'success');
+  };
+
+  // CHÈN / XÓA CỘT & HÀNG TRỰC TIẾP TẠI BẤT KỲ VỊ TRÍ NÀO TRÊN MA TRẬN
+  const handleInsertColumnAt = (colIdx: number) => {
+    const newCols = labFormCols + 1;
+    const newLayout: Record<string, any> = {};
+
+    for (let r = 0; r < labFormRows; r++) {
+      for (let c = 0; c < newCols; c++) {
+        const newKey = `${r}_${c}`;
+        if (c < colIdx) {
+          newLayout[newKey] = labFormLayout[`${r}_${c}`] || { type: 'pc' };
+        } else if (c === colIdx) {
+          newLayout[newKey] = { type: 'pc' };
+        } else {
+          newLayout[newKey] = labFormLayout[`${r}_${c - 1}`] || { type: 'pc' };
+        }
+      }
+    }
+
+    setLabFormCols(newCols);
+    recalculatePcLabels(labFormRows, newCols, newLayout);
+    showToast(`Đã chèn thêm 1 Cột tại vị trí Cột ${colIdx + 1}!`, 'success');
+  };
+
+  const handleDeleteColumnAt = (colIdx: number) => {
+    if (labFormCols <= 1) {
+      showToast('Phòng máy phải có ít nhất 1 Cột!', 'warning');
+      return;
+    }
+    const newCols = labFormCols - 1;
+    const newLayout: Record<string, any> = {};
+
+    for (let r = 0; r < labFormRows; r++) {
+      let destC = 0;
+      for (let c = 0; c < labFormCols; c++) {
+        if (c !== colIdx) {
+          const newKey = `${r}_${destC}`;
+          newLayout[newKey] = labFormLayout[`${r}_${c}`] || { type: 'pc' };
+          destC++;
+        }
+      }
+    }
+
+    setLabFormCols(newCols);
+    recalculatePcLabels(labFormRows, newCols, newLayout);
+    showToast(`Đã xóa Cột ${colIdx + 1}!`, 'info');
+  };
+
+  const handleInsertRowAt = (rowIdx: number) => {
+    const newRows = labFormRows + 1;
+    const newLayout: Record<string, any> = {};
+
+    for (let r = 0; r < newRows; r++) {
+      for (let c = 0; c < labFormCols; c++) {
+        const newKey = `${r}_${c}`;
+        if (r < rowIdx) {
+          newLayout[newKey] = labFormLayout[`${r}_${c}`] || { type: 'pc' };
+        } else if (r === rowIdx) {
+          newLayout[newKey] = { type: 'pc' };
+        } else {
+          newLayout[newKey] = labFormLayout[`${r - 1}_${c}`] || { type: 'pc' };
+        }
+      }
+    }
+
+    setLabFormRows(newRows);
+    recalculatePcLabels(newRows, labFormCols, newLayout);
+    showToast(`Đã chèn 1 Hàng tại vị trí Hàng ${rowIdx + 1}!`, 'success');
+  };
+
+  const handleDeleteRowAt = (rowIdx: number) => {
+    if (labFormRows <= 1) {
+      showToast('Phòng máy phải có ít nhất 1 Hàng!', 'warning');
+      return;
+    }
+    const newRows = labFormRows - 1;
+    const newLayout: Record<string, any> = {};
+
+    let destR = 0;
+    for (let r = 0; r < labFormRows; r++) {
+      if (r !== rowIdx) {
+        for (let c = 0; c < labFormCols; c++) {
+          const newKey = `${destR}_${c}`;
+          newLayout[newKey] = labFormLayout[`${r}_${c}`] || { type: 'pc' };
+        }
+        destR++;
+      }
+    }
+
+    setLabFormRows(newRows);
+    recalculatePcLabels(newRows, labFormCols, newLayout);
+    showToast(`Đã xóa Hàng ${rowIdx + 1}!`, 'info');
+  };
+
+  // Thay đổi số hàng/cột từ dropdown select
+  const handleSelectRowsChange = (newRows: number) => {
+    setLabFormRows(newRows);
+    const newLayout: Record<string, any> = {};
+    for (let r = 0; r < newRows; r++) {
+      for (let c = 0; c < labFormCols; c++) {
+        const key = `${r}_${c}`;
+        newLayout[key] = labFormLayout[key] || { type: 'pc' };
+      }
+    }
+    recalculatePcLabels(newRows, labFormCols, newLayout);
+  };
+
+  const handleSelectColsChange = (newCols: number) => {
+    setLabFormCols(newCols);
+    const newLayout: Record<string, any> = {};
+    for (let r = 0; r < labFormRows; r++) {
+      for (let c = 0; c < newCols; c++) {
+        const key = `${r}_${c}`;
+        newLayout[key] = labFormLayout[key] || { type: 'pc' };
+      }
+    }
+    recalculatePcLabels(labFormRows, newCols, newLayout);
   };
 
   const handleSaveLabLayout = async (e: React.FormEvent) => {
@@ -445,6 +563,7 @@ export default function LabBookingTab({
         name: labFormName.trim(),
         code: labFormCode.trim(),
         location: labFormLocation.trim(),
+        status: labFormStatus,
         totalPCs: calculatedTotalPCs,
         gridRows: labFormRows,
         gridCols: labFormCols,
@@ -460,8 +579,8 @@ export default function LabBookingTab({
         name: labFormName.trim(),
         code: labFormCode.trim(),
         location: labFormLocation.trim(),
+        status: labFormStatus,
         totalPCs: calculatedTotalPCs,
-        status: 'Active',
         gridRows: labFormRows,
         gridCols: labFormCols,
         customLayout: labFormLayout
@@ -480,29 +599,42 @@ export default function LabBookingTab({
     const key = `${r}_${c}`;
     const currentTile = labFormLayout[key] || { type: 'pc' };
 
-    if (activeEditorTool === 'pc') {
-      // Nếu đã là máy tính, bấm lần 2 cho phép đổi nhãn tên tùy chỉnh
-      if (currentTile.type === 'pc') {
-        const newLabel = window.prompt('Đổi tên nhãn máy tính tùy chỉnh (ví dụ: M.01, M.02, PC-VIP...):', currentTile.label || '');
-        if (newLabel !== null) {
-          setLabFormLayout(prev => ({
-            ...prev,
-            [key]: { ...currentTile, label: newLabel.trim() || currentTile.label }
-          }));
-          return;
-        }
+    if (activeEditorTool === 'rename') {
+      const newLabel = window.prompt('Nhập nhãn tên máy mới (ví dụ: M.01, M.02, PC-VIP...):', currentTile.label || '');
+      if (newLabel !== null) {
+        setLabFormLayout(prev => ({
+          ...prev,
+          [key]: { ...currentTile, type: 'pc', label: newLabel.trim() || currentTile.label }
+        }));
+        showToast('Đã đổi tên nhãn máy tính!', 'success');
       }
+      return;
     }
 
-    let nextType: 'pc' | 'aisle' | 'desk' = activeEditorTool;
-    if (currentTile.type === activeEditorTool) {
-      nextType = 'aisle';
+    if (activeEditorTool === 'desk') {
+      setLabFormLayout(prev => ({
+        ...prev,
+        [key]: currentTile.type === 'desk' ? { type: 'pc' } : { type: 'desk', label: 'Bàn GV' }
+      }));
+      return;
     }
 
-    setLabFormLayout(prev => ({
+    if (activeEditorTool === 'aisle') {
+      const nextType = currentTile.type === 'aisle' ? 'pc' : 'aisle';
+      const updated = {
+        ...prevLayout(labFormLayout, key, nextType)
+      };
+      setLabFormLayout(updated);
+      recalculatePcLabels(labFormRows, labFormCols, updated);
+      return;
+    }
+  };
+
+  const prevLayout = (prev: Record<string, any>, key: string, nextType: string) => {
+    return {
       ...prev,
-      [key]: { type: nextType, label: nextType === 'desk' ? 'Bàn GV' : undefined }
-    }));
+      [key]: { ...prev[key], type: nextType }
+    };
   };
 
   // Filtered Lists
@@ -1780,229 +1912,339 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
       )}
 
       {/* ====================================================================
-          LAB EDITOR MODAL: TRÌNH THIẾT KẾ SƠ ĐỒ MA TRẬN PHÒNG LAB ĐỘNG (HOÀN THIỆN LỖI HIỂN THỊ)
+          LAB EDITOR MODAL: TRÌNH THIẾT KẾ SƠ ĐỒ MA TRẬN PHÒNG LAB ĐỘNG (CHUẨN 100% GIAO DIỆN MẪU)
           ==================================================================== */}
       {isLabEditorModalOpen && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4 animate-fadeIn overflow-y-auto">
-          <div className="bg-white rounded-3xl max-w-4xl w-full p-6 shadow-2xl border-2 border-[#cbb89d] space-y-6 text-left my-8">
-            <div className="flex justify-between items-center border-b border-slate-200 pb-4">
-              <div>
-                <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-                  <Grid className="w-5 h-5 text-indigo-600" />
-                  <span>{editingLab ? `Chỉnh Sửa Sơ Đồ ${editingLab.name}` : 'Thêm Phòng Lab Mới & Thiết Kế Sơ Đồ'}</span>
+          <div className="bg-white rounded-3xl max-w-5xl w-full p-6 sm:p-8 shadow-2xl border border-slate-300 space-y-6 text-left my-6 relative">
+            
+            {/* HEADER MODAL */}
+            <div className="flex justify-between items-start border-b border-slate-200 pb-4">
+              <div className="space-y-1">
+                <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
+                  <Grid className="w-6 h-6 text-indigo-600" />
+                  <span>Thiết Kế Sơ Đồ – {labFormName || 'Phòng Lab'}</span>
                 </h3>
-                <p className="text-xs text-slate-500 font-medium mt-0.5">Bấm vào ô trên ma trận để vẽ vị trí máy tính, lối đi hoặc bàn giáo viên.</p>
+                <p className="text-xs text-slate-500 font-medium">
+                  Mặc định tạo đủ máy theo Hàng x Cột. Chọn "Kẻ Lối Đi" và rê chuột hoặc bấm nút ở đầu Cột/Hàng.
+                </p>
               </div>
-              <button onClick={() => setIsLabEditorModalOpen(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer">
+              <button 
+                onClick={() => setIsLabEditorModalOpen(false)} 
+                className="text-slate-400 hover:text-slate-700 transition p-1 rounded-lg hover:bg-slate-100 cursor-pointer"
+              >
                 <X className="w-6 h-6" />
               </button>
             </div>
 
             <form onSubmit={handleSaveLabLayout} className="space-y-6 text-xs">
-              {/* THÔNG TIN CƠ BẢN PHÒNG LAB */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              
+              {/* PHẦN 1: THÔNG TIN CƠ BẢN (4 Ô INPUT CÙNG HÀNG) */}
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                 <div>
-                  <label className="block font-bold text-slate-700 uppercase mb-1">Tên Phòng *</label>
+                  <label className="block font-extrabold text-slate-700 uppercase mb-1">TÊN PHÒNG *</label>
                   <input
                     type="text"
                     required
                     value={labFormName}
                     onChange={e => setLabFormName(e.target.value)}
-                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 font-semibold"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none"
+                    placeholder="Phòng Lab 01"
                   />
                 </div>
+
                 <div>
-                  <label className="block font-bold text-slate-700 uppercase mb-1">Mã Phòng *</label>
+                  <label className="block font-extrabold text-slate-700 uppercase mb-1">MÃ PHÒNG *</label>
                   <input
                     type="text"
                     required
                     value={labFormCode}
                     onChange={e => setLabFormCode(e.target.value)}
-                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 font-semibold"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none"
+                    placeholder="P.201"
                   />
                 </div>
+
                 <div>
-                  <label className="block font-bold text-slate-700 uppercase mb-1">Vị Trí Dãy Nhà</label>
+                  <label className="block font-extrabold text-slate-700 uppercase mb-1">VỊ TRÍ</label>
                   <input
                     type="text"
                     value={labFormLocation}
                     onChange={e => setLabFormLocation(e.target.value)}
-                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 font-semibold"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none"
+                    placeholder="Tầng 2 - Nhà A"
                   />
+                </div>
+
+                <div>
+                  <label className="block font-extrabold text-slate-700 uppercase mb-1">TRẠNG THÁI</label>
+                  <select
+                    value={labFormStatus}
+                    onChange={e => setLabFormStatus(e.target.value as any)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold text-slate-800 bg-white focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer"
+                  >
+                    <option value="Active">Đang hoạt động</option>
+                    <option value="Maintenance">Đang bảo trì</option>
+                  </select>
                 </div>
               </div>
 
-              {/* ĐIỀU CHỈNH KÍCH THƯỚC MA TRẬN & CÔNG CỤ VẼ */}
-              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+              {/* PHẦN 2: THANH ĐIỀU KHIỂN SỐ HÀNG/CỘT, KHÔI PHỤC MÁY & BỘ CÔNG CỤ TOOLBAR */}
+              <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200 space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-4">
+                  
+                  {/* DROPDOWN CHỌN SỐ HÀNG VÀ CỘT */}
+                  <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2">
-                      <Rows className="w-4 h-4 text-indigo-600" />
                       <span className="font-extrabold text-slate-700">Số Hàng:</span>
-                      <button
-                        type="button"
-                        onClick={() => setLabFormRows(r => Math.max(2, r - 1))}
-                        className="w-7 h-7 rounded-lg bg-white border border-slate-300 font-bold hover:bg-slate-100 cursor-pointer"
+                      <select
+                        value={labFormRows}
+                        onChange={e => handleSelectRowsChange(Number(e.target.value))}
+                        className="px-3 py-1.5 rounded-xl border border-slate-300 font-bold bg-white outline-none cursor-pointer"
                       >
-                        -
-                      </button>
-                      <span className="font-black text-sm px-2 text-indigo-900">{labFormRows}</span>
-                      <button
-                        type="button"
-                        onClick={() => setLabFormRows(r => Math.min(12, r + 1))}
-                        className="w-7 h-7 rounded-lg bg-white border border-slate-300 font-bold hover:bg-slate-100 cursor-pointer"
-                      >
-                        +
-                      </button>
+                        {Array.from({ length: 12 }).map((_, i) => (
+                          <option key={i + 1} value={i + 1}>{i + 1} Hàng</option>
+                        ))}
+                      </select>
                     </div>
+
+                    <span className="text-slate-400 font-black text-sm">✕</span>
 
                     <div className="flex items-center gap-2">
-                      <Columns className="w-4 h-4 text-indigo-600" />
                       <span className="font-extrabold text-slate-700">Số Cột:</span>
-                      <button
-                        type="button"
-                        onClick={() => setLabFormCols(c => Math.max(2, c - 1))}
-                        className="w-7 h-7 rounded-lg bg-white border border-slate-300 font-bold hover:bg-slate-100 cursor-pointer"
+                      <select
+                        value={labFormCols}
+                        onChange={e => handleSelectColsChange(Number(e.target.value))}
+                        className="px-3 py-1.5 rounded-xl border border-slate-300 font-bold bg-white outline-none cursor-pointer"
                       >
-                        -
-                      </button>
-                      <span className="font-black text-sm px-2 text-indigo-900">{labFormCols}</span>
-                      <button
-                        type="button"
-                        onClick={() => setLabFormCols(c => Math.min(14, c + 1))}
-                        className="w-7 h-7 rounded-lg bg-white border border-slate-300 font-bold hover:bg-slate-100 cursor-pointer"
-                      >
-                        +
-                      </button>
+                        {Array.from({ length: 14 }).map((_, i) => (
+                          <option key={i + 1} value={i + 1}>{i + 1} Cột</option>
+                        ))}
+                      </select>
                     </div>
+
+                    {/* NÚT KHÔI PHỤC ĐỦ MÁY */}
+                    <button
+                      type="button"
+                      onClick={handleRestoreFullPcs}
+                      className="px-3.5 py-1.5 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 font-black text-xs hover:bg-indigo-100 transition cursor-pointer flex items-center gap-1.5 active:scale-95"
+                    >
+                      <RotateCw className="w-3.5 h-3.5 text-indigo-600" />
+                      <span>Khôi phục đủ {labFormRows * labFormCols} máy</span>
+                    </button>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={handleRecalculatePcNumbers}
-                      className="px-3 py-1.5 rounded-xl bg-slate-800 text-white font-extrabold text-xs shadow-xs hover:bg-slate-900 transition flex items-center gap-1 cursor-pointer"
-                      title="Đánh lại số thứ tự Máy 01, 02... liên tục"
-                    >
-                      <Hash className="w-3.5 h-3.5" />
-                      <span>Đánh Số Máy Liên Tục</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleResetMatrixLayout}
-                      className="px-3 py-1.5 rounded-xl bg-amber-100 border border-amber-300 text-amber-900 font-extrabold text-xs hover:bg-amber-200 transition flex items-center gap-1 cursor-pointer"
-                    >
-                      <RefreshCw className="w-3.5 h-3.5" />
-                      <span>Tạo Ma Trận Chuẩn</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* BỘ CÔNG CỤ CHỌN CHẾ ĐỘ CLICK MA TRẬN */}
-                <div className="flex items-center justify-between pt-2 border-t border-slate-200">
-                  <span className="font-bold text-slate-600">Chọn chế độ nhấp chuột:</span>
-                  <div className="flex items-center gap-2 bg-white p-1 rounded-xl border border-slate-300">
-                    <button
-                      type="button"
-                      onClick={() => setActiveEditorTool('pc')}
-                      className={`px-3 py-1.5 rounded-lg font-extrabold text-xs transition cursor-pointer flex items-center gap-1.5 ${
-                        activeEditorTool === 'pc' ? 'bg-indigo-700 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
-                      }`}
-                    >
-                      <Cpu className="w-3.5 h-3.5" />
-                      <span>💻 Máy Tính (Click 2 Lần Đổi Tên)</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveEditorTool('desk')}
-                      className={`px-3 py-1.5 rounded-lg font-extrabold text-xs transition cursor-pointer flex items-center gap-1.5 ${
-                        activeEditorTool === 'desk' ? 'bg-amber-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
-                      }`}
-                    >
-                      <Monitor className="w-3.5 h-3.5" />
-                      <span>👨‍🏫 Bàn GV</span>
-                    </button>
+                  {/* BỘ CÔNG CỤ TOOL MODES PILL BAR */}
+                  <div className="flex items-center gap-1.5 bg-slate-200/70 p-1 rounded-xl border border-slate-300">
                     <button
                       type="button"
                       onClick={() => setActiveEditorTool('aisle')}
-                      className={`px-3 py-1.5 rounded-lg font-extrabold text-xs transition cursor-pointer flex items-center gap-1.5 ${
-                        activeEditorTool === 'aisle' ? 'bg-slate-800 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
+                      className={`px-3 py-1.5 rounded-lg font-black text-xs transition cursor-pointer flex items-center gap-1.5 ${
+                        activeEditorTool === 'aisle'
+                          ? 'bg-amber-600 text-white shadow-md'
+                          : 'text-slate-700 hover:bg-slate-300/60'
                       }`}
                     >
-                      <span>🚶 Lối Đi</span>
+                      <span>🪛 Kẻ Lối Đi (Rê Chuột)</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setActiveEditorTool('drag')}
+                      className={`px-3 py-1.5 rounded-lg font-black text-xs transition cursor-pointer flex items-center gap-1.5 ${
+                        activeEditorTool === 'drag'
+                          ? 'bg-indigo-700 text-white shadow-md'
+                          : 'text-slate-700 hover:bg-slate-300/60'
+                      }`}
+                    >
+                      <Move className="w-3.5 h-3.5" />
+                      <span>Kéo Thả Ô</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setActiveEditorTool('desk')}
+                      className={`px-3 py-1.5 rounded-lg font-black text-xs transition cursor-pointer flex items-center gap-1.5 ${
+                        activeEditorTool === 'desk'
+                          ? 'bg-indigo-700 text-white shadow-md'
+                          : 'text-slate-700 hover:bg-slate-300/60'
+                      }`}
+                    >
+                      <User className="w-3.5 h-3.5" />
+                      <span>Đặt Bàn GV</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setActiveEditorTool('rename')}
+                      className={`px-3 py-1.5 rounded-lg font-black text-xs transition cursor-pointer flex items-center gap-1.5 ${
+                        activeEditorTool === 'rename'
+                          ? 'bg-indigo-700 text-white shadow-md'
+                          : 'text-slate-700 hover:bg-slate-300/60'
+                      }`}
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                      <span>Sửa Tên Máy</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-1">
+                  <span className="bg-indigo-50 border border-indigo-200 text-indigo-800 text-xs font-black px-3 py-1 rounded-xl">
+                    Máy thực tế: {Object.values(labFormLayout).filter((t: any) => t && t.type === 'pc').length} Máy
+                  </span>
+                </div>
+              </div>
+
+              {/* PHẦN 3: MATRIX CANVAS CONTAINER (DARK NAVY THEME BG-[#0F172A] VỚI NÚT + CHÈN HÀNG/CỘT ĐẦY ĐỦ CHUẨN MẪU) */}
+              <div className="bg-[#0f172a] p-5 rounded-2xl border border-slate-800 overflow-x-auto shadow-2xl space-y-4">
+                
+                <div className="inline-block min-w-full text-left">
+                  {/* HÀNG HÀNH ĐỘNG CỘT (TOP ACTION ROW) */}
+                  <div className="flex items-center gap-2 mb-2 font-mono">
+                    {/* Ô HÀNH ĐỘNG GÓC TRÁI (TOP-LEFT CORNER CELL) */}
+                    <div className="w-24 shrink-0 text-center font-bold text-[11px] text-slate-400">
+                      Thao Tác
+                    </div>
+
+                    {/* CÁC NÚT + CỘT VÀ XÓA CỘT TRÊN TỪNG CỘT */}
+                    {Array.from({ length: labFormCols }).map((_, cIdx) => (
+                      <div key={cIdx} className="w-24 shrink-0 flex flex-col items-center gap-1">
+                        <div className="flex items-center justify-center gap-1 w-full">
+                          <button
+                            type="button"
+                            onClick={() => handleInsertColumnAt(cIdx)}
+                            className="bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-600 text-emerald-400 font-extrabold text-[10px] px-1.5 py-0.5 rounded transition cursor-pointer flex items-center gap-0.5"
+                            title={`Chèn thêm cột mới tại vị trí Cột ${cIdx + 1}`}
+                          >
+                            + Cột
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteColumnAt(cIdx)}
+                            className="bg-rose-950/80 hover:bg-rose-900 border border-rose-600 text-rose-400 p-0.5 rounded transition cursor-pointer"
+                            title={`Xóa Cột ${cIdx + 1}`}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                        <span className="text-[10px] font-extrabold text-slate-400">↓ Cột {cIdx + 1}</span>
+                      </div>
+                    ))}
+
+                    {/* NÚT THÊM CỘT VÀO CUỐI */}
+                    <button
+                      type="button"
+                      onClick={() => handleInsertColumnAt(labFormCols)}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-[11px] px-3 py-1.5 rounded-xl shadow-md transition cursor-pointer whitespace-nowrap ml-2 active:scale-95"
+                    >
+                      + Thêm Cột
+                    </button>
+                  </div>
+
+                  {/* CÁC HÀNG MA TRẬN VÀ CÁC THẺ MÁY TÍNH (ROW MATRIX CANVAS) */}
+                  <div className="space-y-2">
+                    {Array.from({ length: labFormRows }).map((_, rIdx) => (
+                      <div key={rIdx} className="flex items-center gap-2">
+                        
+                        {/* CỘT THAO TÁC HÀNG TRÊN TỪNG HÀNG (LEFT ACTION COLUMN) */}
+                        <div className="w-24 shrink-0 flex items-center justify-between bg-slate-900/90 border border-slate-800 p-1.5 rounded-xl">
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleInsertRowAt(rIdx)}
+                              className="bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-600 text-emerald-400 font-extrabold text-[10px] px-1 py-0.5 rounded transition cursor-pointer"
+                              title={`Chèn 1 hàng mới tại vị trí Hàng ${rIdx + 1}`}
+                            >
+                              + Hàng
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteRowAt(rIdx)}
+                              className="bg-rose-950/80 hover:bg-rose-900 border border-rose-600 text-rose-400 p-0.5 rounded transition cursor-pointer"
+                              title={`Xóa Hàng ${rIdx + 1}`}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                          <span className="text-[10px] font-extrabold text-slate-400 font-mono">→ H{rIdx + 1}</span>
+                        </div>
+
+                        {/* CÁC THẺ MÁY TÍNH TRONG HÀNG */}
+                        {Array.from({ length: labFormCols }).map((_, cIdx) => {
+                          const key = `${rIdx}_${cIdx}`;
+                          const tile = labFormLayout[key] || { type: 'pc' };
+
+                          let cardBg = 'bg-[#4338ca] hover:bg-[#4f46e5] text-white border-indigo-400/40 shadow-md';
+                          if (tile.type === 'desk') cardBg = 'bg-amber-600 hover:bg-amber-700 text-white border-amber-400/40 shadow-md';
+                          if (tile.type === 'aisle') cardBg = 'bg-slate-900/70 border-dashed border-slate-700 text-slate-600 hover:bg-slate-900';
+
+                          return (
+                            <div
+                              key={key}
+                              onClick={() => handleGridCellClick(rIdx, cIdx)}
+                              className={`w-24 h-16 shrink-0 rounded-2xl border-2 flex flex-col items-center justify-center p-1.5 cursor-pointer transition-all active:scale-95 ${cardBg}`}
+                            >
+                              {tile.type === 'pc' && (
+                                <>
+                                  <Monitor className="w-4 h-4 text-white mb-0.5" />
+                                  <span className="text-xs font-extrabold tracking-wider truncate max-w-full">
+                                    {tile.label || `M.${rIdx * labFormCols + cIdx + 1}`}
+                                  </span>
+                                </>
+                              )}
+
+                              {tile.type === 'desk' && (
+                                <>
+                                  <User className="w-4 h-4 text-white mb-0.5" />
+                                  <span className="text-xs font-black tracking-wider">Bàn GV</span>
+                                </>
+                              )}
+
+                              {tile.type === 'aisle' && (
+                                <span className="text-[10px] font-bold italic text-slate-500">Lối đi</span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* NÚT THÊM HÀNG VÀO CUỐI SƠ ĐỒ */}
+                  <div className="mt-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => handleInsertRowAt(labFormRows)}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-[11px] px-4 py-2 rounded-xl shadow-md transition cursor-pointer active:scale-95"
+                    >
+                      + Thêm Hàng Vào Cuối Sơ Đồ
                     </button>
                   </div>
                 </div>
               </div>
 
-              {/* GRID CANVAS MA TRẬN THIẾT KẾ (SỬA HOÀN TOÀN LỖI HIỂN THỊ CỘT / HÀNG CỦA TAILWIND) */}
-              <div className="border border-slate-300 p-4 rounded-2xl bg-slate-100/70 overflow-x-auto text-center space-y-3">
-                <div className="bg-[#dfccb0] text-[#3d2b17] py-2 rounded-xl text-xs font-black uppercase border border-[#cbb89d] max-w-md mx-auto">
-                  📌 BẢNG / BÀN GIÁO VIÊN BỘ MÔN
+              {/* FOOTER MODAL & TIPS */}
+              <div className="pt-2 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div className="text-xs font-medium text-slate-600 italic flex items-center gap-1.5">
+                  <span>💡 Mẹo: Bấm nút [+ Cột] hoặc [+ Hàng] ở bất kỳ vị trí nào để chèn thêm hàng/cột ngay tại đó.</span>
                 </div>
 
-                <div className="overflow-x-auto p-2">
-                  <div 
-                    className="inline-grid gap-2 justify-center min-w-max mx-auto p-3 bg-white rounded-2xl border border-slate-300 shadow-inner"
-                    style={{
-                      gridTemplateColumns: `repeat(${labFormCols}, minmax(64px, 1fr))`
-                    }}
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsLabEditorModalOpen(false)}
+                    className="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold hover:bg-slate-50 transition cursor-pointer"
                   >
-                    {Array.from({ length: labFormRows }).map((_, rIdx) => 
-                      Array.from({ length: labFormCols }).map((_, cIdx) => {
-                        const key = `${rIdx}_${cIdx}`;
-                        const tile = labFormLayout[key] || { type: 'pc' };
-
-                        let tileStyle = 'bg-white border-slate-200 text-slate-700 hover:border-indigo-400';
-                        if (tile.type === 'pc') tileStyle = 'bg-indigo-50 border-indigo-400 text-indigo-950 font-black shadow-2xs hover:bg-indigo-100';
-                        if (tile.type === 'desk') tileStyle = 'bg-amber-100 border-amber-400 text-amber-950 font-black shadow-2xs hover:bg-amber-200';
-                        if (tile.type === 'aisle') tileStyle = 'bg-slate-200/60 border-dashed border-slate-300 text-slate-400 hover:bg-slate-200';
-
-                        return (
-                          <div
-                            key={key}
-                            onClick={() => handleGridCellClick(rIdx, cIdx)}
-                            className={`w-16 h-14 rounded-xl border-2 flex flex-col items-center justify-center p-1 cursor-pointer transition-all active:scale-95 ${tileStyle}`}
-                          >
-                            {tile.type === 'pc' && (
-                              <>
-                                <Cpu className="w-4 h-4 text-indigo-700 mb-0.5" />
-                                <span className="text-[10px] font-black truncate max-w-full px-0.5">
-                                  {tile.label || (tile.pcNumber ? `Máy ${tile.pcNumber < 10 ? `0${tile.pcNumber}` : tile.pcNumber}` : `M.${rIdx * labFormCols + cIdx + 1}`)}
-                                </span>
-                              </>
-                            )}
-                            {tile.type === 'desk' && (
-                              <>
-                                <Monitor className="w-4 h-4 text-amber-700 mb-0.5" />
-                                <span className="text-[9px] font-black">Bàn GV</span>
-                              </>
-                            )}
-                            {tile.type === 'aisle' && (
-                              <span className="text-[9px] font-bold italic text-slate-400">Lối đi</span>
-                            )}
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
+                    Hủy Bỏ
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs shadow-lg transition cursor-pointer active:scale-95"
+                  >
+                    Lưu Sơ Đồ & Thông Tin
+                  </button>
                 </div>
-              </div>
-
-              <div className="pt-3 border-t border-slate-200 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsLabEditorModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 font-bold hover:bg-slate-50 cursor-pointer"
-                >
-                  Hủy Bỏ
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-2 rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white font-extrabold shadow-md cursor-pointer active:scale-95"
-                >
-                  Lưu Sơ Đồ Phòng LAB
-                </button>
               </div>
             </form>
           </div>
