@@ -162,6 +162,9 @@ export default function LabBookingTab({
   const [labFormCols, setLabFormCols] = useState<number>(6);
   const [labFormLayout, setLabFormLayout] = useState<Record<string, { type: 'pc' | 'aisle' | 'desk'; label?: string; pcNumber?: number }>>({});
   const [activeEditorTool, setActiveEditorTool] = useState<'aisle' | 'drag' | 'desk' | 'rename'>('aisle');
+  const [isMouseDown, setIsMouseDown] = useState<boolean>(false);
+  const [paintTargetType, setPaintTargetType] = useState<'pc' | 'aisle' | null>(null);
+  const [selectedSwapKey, setSelectedSwapKey] = useState<string | null>(null);
 
   // Supabase SQL Config Modal
   const [isSqlModalOpen, setIsSqlModalOpen] = useState<boolean>(false);
@@ -595,6 +598,83 @@ export default function LabBookingTab({
     setIsLabEditorModalOpen(false);
   };
 
+  // Xử lý Rê Chuột (Drag Mouse) vẽ lối đi & Kéo Thả Ô Hoán Đổi Vị Trí
+  const handleTileMouseDown = (r: number, c: number) => {
+    setIsMouseDown(true);
+    const key = `${r}_${c}`;
+    const currentTile = labFormLayout[key] || { type: 'pc' };
+
+    if (activeEditorTool === 'aisle') {
+      const nextType = currentTile.type === 'aisle' ? 'pc' : 'aisle';
+      setPaintTargetType(nextType);
+      toggleAisleTile(r, c, nextType);
+      return;
+    }
+
+    if (activeEditorTool === 'drag') {
+      if (!selectedSwapKey) {
+        setSelectedSwapKey(key);
+        showToast(`Đã chọn ${currentTile.label || 'Ô 1'}. Hãy nhấp tiếp vào ô thứ 2 để hoán đổi!`, 'info');
+      } else if (selectedSwapKey === key) {
+        setSelectedSwapKey(null);
+      } else {
+        swapTwoTiles(selectedSwapKey, key);
+        setSelectedSwapKey(null);
+      }
+      return;
+    }
+
+    handleGridCellClick(r, c);
+  };
+
+  const handleTileMouseEnter = (r: number, c: number) => {
+    if (isMouseDown && activeEditorTool === 'aisle' && paintTargetType) {
+      toggleAisleTile(r, c, paintTargetType);
+    }
+  };
+
+  const toggleAisleTile = (r: number, c: number, targetType: 'pc' | 'aisle') => {
+    const key = `${r}_${c}`;
+    const currentTile = labFormLayout[key] || { type: 'pc' };
+    if (currentTile.type === targetType) return;
+
+    const newLayout = {
+      ...labFormLayout,
+      [key]: { ...currentTile, type: targetType }
+    };
+    setLabFormLayout(newLayout);
+    recalculatePcLabels(labFormRows, labFormCols, newLayout);
+  };
+
+  const swapTwoTiles = (key1: string, key2: string) => {
+    if (!key1 || !key2 || key1 === key2) return;
+    const tile1 = labFormLayout[key1] || { type: 'pc' };
+    const tile2 = labFormLayout[key2] || { type: 'pc' };
+
+    const newLayout = {
+      ...labFormLayout,
+      [key1]: tile2,
+      [key2]: tile1
+    };
+    setLabFormLayout(newLayout);
+    recalculatePcLabels(labFormRows, labFormCols, newLayout);
+    showToast(`Đã hoán đổi vị trí (${tile1.label || 'Ô 1'}) ⇄ (${tile2.label || 'Ô 2'})!`, 'success');
+  };
+
+  const handleTileDragStart = (e: React.DragEvent, key: string) => {
+    e.dataTransfer.setData('text/plain', key);
+    setSelectedSwapKey(key);
+  };
+
+  const handleTileDrop = (e: React.DragEvent, targetKey: string) => {
+    e.preventDefault();
+    const sourceKey = e.dataTransfer.getData('text/plain') || selectedSwapKey;
+    if (sourceKey && sourceKey !== targetKey) {
+      swapTwoTiles(sourceKey, targetKey);
+    }
+    setSelectedSwapKey(null);
+  };
+
   const handleGridCellClick = (r: number, c: number) => {
     const key = `${r}_${c}`;
     const currentTile = labFormLayout[key] || { type: 'pc' };
@@ -621,20 +701,9 @@ export default function LabBookingTab({
 
     if (activeEditorTool === 'aisle') {
       const nextType = currentTile.type === 'aisle' ? 'pc' : 'aisle';
-      const updated = {
-        ...prevLayout(labFormLayout, key, nextType)
-      };
-      setLabFormLayout(updated);
-      recalculatePcLabels(labFormRows, labFormCols, updated);
+      toggleAisleTile(r, c, nextType);
       return;
     }
-  };
-
-  const prevLayout = (prev: Record<string, any>, key: string, nextType: string) => {
-    return {
-      ...prev,
-      [key]: { ...prev[key], type: nextType }
-    };
   };
 
   // Filtered Lists
@@ -2092,8 +2161,12 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
                   </div>
                 </div>
 
-                {/* PHẦN 3: MATRIX CANVAS CONTAINER (DARK NAVY THEME BG-[#0F172A] VỚI NÚT + CHÈN HÀNG/CỘT ĐẦY ĐỦ CHUẨN MẪU) */}
-                <div className="bg-[#0f172a] p-5 rounded-2xl border border-slate-800 overflow-x-auto shadow-2xl space-y-4">
+                {/* PHẦN 3: MATRIX CANVAS CONTAINER (DARK NAVY THEME BG-[#0F172A] VỚI VẼ LỐI ĐI RÊ CHUỘT & KÉO THẢ Ô) */}
+                <div 
+                  className="bg-[#0f172a] p-5 rounded-2xl border border-slate-800 overflow-x-auto shadow-2xl space-y-4 select-none"
+                  onMouseLeave={() => { setIsMouseDown(false); setPaintTargetType(null); }}
+                  onMouseUp={() => { setIsMouseDown(false); setPaintTargetType(null); }}
+                >
                   
                   <div className="inline-block min-w-full text-left">
                     {/* HÀNG HÀNH ĐỘNG CỘT (TOP ACTION ROW) */}
@@ -2170,16 +2243,26 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
                           {Array.from({ length: labFormCols }).map((_, cIdx) => {
                             const key = `${rIdx}_${cIdx}`;
                             const tile = labFormLayout[key] || { type: 'pc' };
+                            const isSelectedForSwap = selectedSwapKey === key;
 
                             let cardBg = 'bg-[#4338ca] hover:bg-[#4f46e5] text-white border-indigo-400/40 shadow-md';
                             if (tile.type === 'desk') cardBg = 'bg-amber-600 hover:bg-amber-700 text-white border-amber-400/40 shadow-md';
                             if (tile.type === 'aisle') cardBg = 'bg-slate-900/70 border-dashed border-slate-700 text-slate-600 hover:bg-slate-900';
 
+                            if (isSelectedForSwap) {
+                              cardBg += ' ring-4 ring-amber-400 ring-offset-2 ring-offset-slate-900 scale-105 z-20 animate-pulse';
+                            }
+
                             return (
                               <div
                                 key={key}
-                                onClick={() => handleGridCellClick(rIdx, cIdx)}
-                                className={`w-24 h-16 shrink-0 rounded-2xl border-2 flex flex-col items-center justify-center p-1.5 cursor-pointer transition-all active:scale-95 ${cardBg}`}
+                                draggable={activeEditorTool === 'drag'}
+                                onDragStart={(e) => handleTileDragStart(e, key)}
+                                onDragOver={(e) => e.preventDefault()}
+                                onDrop={(e) => handleTileDrop(e, key)}
+                                onMouseDown={() => handleTileMouseDown(rIdx, cIdx)}
+                                onMouseEnter={() => handleTileMouseEnter(rIdx, cIdx)}
+                                className={`w-24 h-16 shrink-0 rounded-2xl border-2 flex flex-col items-center justify-center p-1.5 cursor-pointer transition-all active:scale-95 select-none ${cardBg}`}
                               >
                                 {tile.type === 'pc' && (
                                   <>
