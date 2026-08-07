@@ -4,7 +4,7 @@ import {
   CalendarDays, FilePenLine, AlertTriangle, Sliders, Plus, Trash2, CheckCircle2, 
   Monitor, Cpu, Search, User, Check, X, 
   Building, RefreshCw, AlertOctagon, Info, BookMarked, Wrench, RotateCw, Microchip, HardDrive, Tag,
-  Edit, Grid, Database, Copy, CheckCheck, Rows, Columns, Hash, Move, MousePointer, Pencil
+  Edit, Grid, Database, Copy, CheckCheck, Rows, Columns, Hash, Move, MousePointer, Pencil, ShieldCheck, Sparkles
 } from 'lucide-react';
 import { safeSetLocalStorage } from '../utils/safeStorage';
 import { saveSupabaseState } from '../supabaseClient';
@@ -360,6 +360,7 @@ export default function LabBookingTab({
     setLabFormTotalPCs(pcCount);
     setLabFormLayout(initialLayout);
     setActiveEditorTool('aisle');
+    setSelectedSwapKey(null);
     setIsLabEditorModalOpen(true);
   };
 
@@ -380,6 +381,7 @@ export default function LabBookingTab({
     setLabFormTotalPCs(lab.totalPCs);
     setLabFormLayout(layout);
     setActiveEditorTool('aisle');
+    setSelectedSwapKey(null);
     setIsLabEditorModalOpen(true);
   };
 
@@ -757,104 +759,26 @@ export default function LabBookingTab({
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   };
 
-  const copySqlToClipboard = () => {
-    const sqlCode = `-- SQL SCHEMA KHỞI TẠO HỆ THỐNG QUẢN LÝ PHÒNG MÁY TIN HỌC (SMARTLAB HUB)
-
--- 1. Bảng phòng lab ma trận
-CREATE TABLE IF NOT EXISTS school_labs (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    code TEXT NOT NULL,
-    totalPCs INTEGER DEFAULT 35,
-    status TEXT DEFAULT 'Active',
-    location TEXT,
-    gridRows INTEGER DEFAULT 5,
-    gridCols INTEGER DEFAULT 8,
-    customLayout JSONB,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
--- 2. Bảng phiếu đăng ký mượn phòng máy
-CREATE TABLE IF NOT EXISTS school_lab_bookings (
-    id TEXT PRIMARY KEY,
-    labId TEXT NOT NULL,
-    dayIndex INTEGER NOT NULL,
-    slotId TEXT NOT NULL,
-    teacherName TEXT NOT NULL,
-    className TEXT NOT NULL,
-    studentCount INTEGER DEFAULT 35,
-    subject TEXT NOT NULL,
-    date TEXT NOT NULL,
-    status TEXT DEFAULT 'Approved',
-    notes TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
--- 3. Bảng báo cáo sự cố máy tính
-CREATE TABLE IF NOT EXISTS school_lab_incidents (
-    id TEXT PRIMARY KEY,
-    labId TEXT NOT NULL,
-    pcNumber INTEGER NOT NULL,
-    reporter TEXT NOT NULL,
-    type TEXT NOT NULL,
-    issue TEXT NOT NULL,
-    priority TEXT DEFAULT 'Medium',
-    date TEXT NOT NULL,
-    status TEXT DEFAULT 'Pending',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
--- 4. Bảng nhật ký bảo trì & sửa chữa thiết bị
-CREATE TABLE IF NOT EXISTS school_lab_maintenance_logs (
-    id TEXT PRIMARY KEY,
-    labId TEXT NOT NULL,
-    pcNumber INTEGER,
-    pcLabel TEXT,
-    type TEXT NOT NULL,
-    title TEXT NOT NULL,
-    description TEXT,
-    technician TEXT,
-    cost NUMERIC DEFAULT 0,
-    date TEXT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
--- Cấp quyền truy cập công khai RLS cho cả 4 bảng
-ALTER TABLE school_labs ENABLE ROW LEVEL SECURITY;
-ALTER TABLE school_lab_bookings ENABLE ROW LEVEL SECURITY;
-ALTER TABLE school_lab_incidents ENABLE ROW LEVEL SECURITY;
-ALTER TABLE school_lab_maintenance_logs ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Public full access school_labs" ON school_labs FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Public full access school_lab_bookings" ON school_lab_bookings FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Public full access school_lab_incidents" ON school_lab_incidents FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_maintenance_logs FOR ALL USING (true) WITH CHECK (true);`;
-
-    navigator.clipboard.writeText(sqlCode);
-    setCopiedSql(true);
-    setTimeout(() => setCopiedSql(false), 3000);
-  };
-
   return (
     <div className="space-y-4 sm:space-y-6 text-slate-800 pb-10 animate-fadeIn">
       
       {/* 🌟 1. DESKOS IMAC WARM BEIGE CARD HEADER STRIP */}
-      <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs">
-        <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-2.5 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-          <div className="flex items-center gap-2 text-left">
-            <span className="font-bold text-xs text-[#5c4327]">Đang xem:</span>
-            <span className="font-black text-xs text-indigo-900 bg-white/80 px-2.5 py-1 rounded-lg border border-[#cbb89d]">
-              {currentLabObj.name} ({currentLabObj.code})
+      <div className="border-2 border-[#cbb89d] rounded-3xl bg-[#fffbf0] overflow-hidden shadow-sm">
+        <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-5 py-3 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+          <div className="flex items-center gap-2.5 text-left">
+            <span className="font-extrabold text-xs text-[#5c4327]">Đang quản lý:</span>
+            <span className="font-black text-xs text-indigo-900 bg-white px-3 py-1 rounded-xl border border-[#cbb89d] shadow-2xs">
+              🏢 {currentLabObj.name} ({currentLabObj.code})
             </span>
           </div>
 
           {/* Navigation Subtab Buttons Group (FE Vườn Tri Thức) */}
-          <nav className="flex items-center gap-1 bg-[#e4d3ba] p-1 rounded-xl border border-[#cbb89d] overflow-x-auto max-w-full">
+          <nav className="flex items-center gap-1.5 bg-[#e4d3ba] p-1.5 rounded-2xl border border-[#cbb89d] overflow-x-auto max-w-full">
             <button
               onClick={() => setActiveSubTab('calendar')}
-              className={`px-3.5 py-1.5 rounded-lg font-black text-xs transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+              className={`px-4 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
                 activeSubTab === 'calendar'
-                  ? 'bg-indigo-700 text-white shadow-xs'
+                  ? 'bg-indigo-700 text-white shadow-md'
                   : 'text-[#3d2b17] hover:bg-[#d5c3aa]'
               }`}
             >
@@ -864,9 +788,9 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
 
             <button
               onClick={() => setActiveSubTab('booking')}
-              className={`px-3.5 py-1.5 rounded-lg font-black text-xs transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+              className={`px-4 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
                 activeSubTab === 'booking'
-                  ? 'bg-indigo-700 text-white shadow-xs'
+                  ? 'bg-indigo-700 text-white shadow-md'
                   : 'text-[#3d2b17] hover:bg-[#d5c3aa]'
               }`}
             >
@@ -876,9 +800,9 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
 
             <button
               onClick={() => setActiveSubTab('incident')}
-              className={`px-3.5 py-1.5 rounded-lg font-black text-xs transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+              className={`px-4 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
                 activeSubTab === 'incident'
-                  ? 'bg-indigo-700 text-white shadow-xs'
+                  ? 'bg-indigo-700 text-white shadow-md'
                   : 'text-[#3d2b17] hover:bg-[#d5c3aa]'
               }`}
             >
@@ -888,9 +812,9 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
 
             <button
               onClick={() => setActiveSubTab('log')}
-              className={`px-3.5 py-1.5 rounded-lg font-black text-xs transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+              className={`px-4 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
                 activeSubTab === 'log'
-                  ? 'bg-indigo-700 text-white shadow-xs'
+                  ? 'bg-indigo-700 text-white shadow-md'
                   : 'text-[#3d2b17] hover:bg-[#d5c3aa]'
               }`}
             >
@@ -900,9 +824,9 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
 
             <button
               onClick={() => setActiveSubTab('admin')}
-              className={`px-3.5 py-1.5 rounded-lg font-black text-xs transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+              className={`px-4 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
                 activeSubTab === 'admin'
-                  ? 'bg-amber-600 text-white shadow-xs'
+                  ? 'bg-amber-600 text-white shadow-md'
                   : 'text-[#3d2b17] hover:bg-[#d5c3aa]'
               }`}
             >
@@ -918,14 +842,14 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
           ==================================================================== */}
       {activeSubTab === 'calendar' && (
         <div className="space-y-6 animate-fadeIn">
-          {/* LAB SELECTOR CARDS */}
-          <div className="bg-white p-5 rounded-2xl shadow-xs border border-[#cbb89d] space-y-3">
+          {/* LAB SELECTOR CARDS - WARM BEIGE STYLE */}
+          <div className="bg-[#fffbf0] p-5 sm:p-6 rounded-3xl shadow-sm border border-[#cbb89d] space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+              <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
                 <Building className="w-4 h-4 text-indigo-700" />
                 <span>Danh Sách Phòng Máy Tin Học Nhà Trường</span>
               </h3>
-              <span className="text-xs font-bold text-slate-500">Bấm chọn phòng để xem lịch:</span>
+              <span className="text-xs font-bold text-slate-600">Bấm chọn phòng để xem lịch:</span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -936,38 +860,38 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
                   <div
                     key={lab.id}
                     onClick={() => setSelectedLab(lab.id)}
-                    className={`cursor-pointer p-4 rounded-2xl border-2 transition-all flex items-center justify-between ${
+                    className={`cursor-pointer p-4.5 rounded-2xl border-2 transition-all flex items-center justify-between ${
                       isSelected
-                        ? 'border-indigo-700 bg-indigo-50/70 shadow-md ring-2 ring-indigo-500/30'
-                        : 'border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50/50'
+                        ? 'border-indigo-700 bg-indigo-50/90 shadow-md ring-2 ring-indigo-500/30'
+                        : 'border-[#cbb89d]/70 hover:border-indigo-400 bg-white hover:bg-[#fffbf0] shadow-2xs'
                     }`}
                   >
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-lg ${
-                        isSelected ? 'bg-indigo-700 text-white shadow-md' : 'bg-slate-100 text-slate-600'
+                    <div className="flex items-center space-x-3.5">
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-lg ${
+                        isSelected ? 'bg-indigo-700 text-white shadow-md' : 'bg-slate-100 text-slate-700 border border-slate-200'
                       }`}>
-                        <Monitor className="w-5 h-5" />
+                        <Monitor className="w-6 h-6" />
                       </div>
                       <div className="text-left">
-                        <div className="font-extrabold text-slate-800 flex items-center gap-2">
+                        <div className="font-black text-slate-900 flex items-center gap-2">
                           <span>{lab.name}</span>
-                          <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
+                          <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 border border-slate-200">
                             {lab.code}
                           </span>
                         </div>
-                        <div className="text-xs text-slate-500 font-medium mt-0.5">
+                        <div className="text-xs text-slate-500 font-semibold mt-0.5">
                           {lab.totalPCs} máy • {lab.location}
                         </div>
                       </div>
                     </div>
 
                     {activeIssueCount > 0 ? (
-                      <span className="bg-amber-100 text-amber-900 border border-amber-300 text-[11px] font-black px-2.5 py-1 rounded-full flex items-center gap-1">
+                      <span className="bg-amber-100 text-amber-950 border border-amber-300 text-[11px] font-black px-3 py-1 rounded-full flex items-center gap-1.5 shadow-2xs">
                         <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
                         {activeIssueCount} lỗi
                       </span>
                     ) : (
-                      <span className="bg-emerald-100 text-emerald-800 border border-emerald-300 text-[11px] font-black px-2.5 py-1 rounded-full flex items-center gap-1">
+                      <span className="bg-emerald-100 text-emerald-950 border border-emerald-300 text-[11px] font-black px-3 py-1 rounded-full flex items-center gap-1.5 shadow-2xs">
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                         Tốt
                       </span>
@@ -978,16 +902,16 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
             </div>
           </div>
 
-          {/* CALENDAR MATRIX TABLE */}
-          <div className="bg-white rounded-2xl shadow-xs border border-[#cbb89d] overflow-hidden">
-            <div className="p-4 border-b border-[#cbb89d] flex justify-between items-center bg-[#dfccb0]/30">
-              <h3 className="text-sm font-extrabold text-[#3d2b17] flex items-center gap-2">
+          {/* CALENDAR MATRIX TABLE - WARM BEIGE HEADER */}
+          <div className="bg-white rounded-3xl shadow-sm border border-[#cbb89d] overflow-hidden">
+            <div className="p-4 sm:p-5 border-b border-[#cbb89d] flex justify-between items-center bg-[#dfccb0]/40">
+              <h3 className="text-sm font-black text-[#3d2b17] flex items-center gap-2">
                 <CalendarDays className="w-5 h-5 text-indigo-700" />
                 <span>Thời Khóa Biểu Sử Dụng - {currentLabObj.name} ({currentLabObj.code})</span>
               </h3>
               <button
                 onClick={() => setActiveSubTab('booking')}
-                className="bg-indigo-700 hover:bg-indigo-800 text-white font-extrabold text-xs px-4 py-2 rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer active:scale-95"
+                className="bg-indigo-700 hover:bg-indigo-800 text-white font-extrabold text-xs px-4 py-2.5 rounded-2xl shadow-md transition flex items-center gap-1.5 cursor-pointer active:scale-95"
               >
                 <Plus className="w-4 h-4" />
                 <span>Tạo Phiếu Đăng Ký Mượn</span>
@@ -995,12 +919,12 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
             </div>
 
             <div className="overflow-x-auto no-scrollbar">
-              <table className="w-full border-collapse text-left text-xs min-w-[800px]">
+              <table className="w-full border-collapse text-left text-xs min-w-[850px]">
                 <thead>
-                  <tr className="bg-[#dfccb0]/40 border-b border-[#cbb89d] text-[#3d2b17] font-black uppercase text-[11px] tracking-wider whitespace-nowrap">
-                    <th className="py-3.5 px-4 w-44 border-r border-[#cbb89d]/40 whitespace-nowrap">Tiết Học & Thời Gian</th>
+                  <tr className="bg-[#dfccb0] border-b border-[#cbb89d] text-[#3d2b17] font-black uppercase text-[11px] tracking-wider whitespace-nowrap">
+                    <th className="py-3.5 px-4 w-44 border-r border-[#cbb89d] whitespace-nowrap">Tiết Học & Thời Gian</th>
                     {DAYS_OF_WEEK.map(day => (
-                      <th key={day.id} className="py-3.5 px-4 text-center border-r border-[#cbb89d]/40 whitespace-nowrap">
+                      <th key={day.id} className="py-3.5 px-4 text-center border-r border-[#cbb89d] whitespace-nowrap">
                         <span className="block text-[#3d2b17] font-black">{day.name}</span>
                       </th>
                     ))}
@@ -1010,11 +934,11 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
                   {TIME_SLOTS.map(slot => {
                     if (slot.isBreak) {
                       return (
-                        <tr key={slot.id} className="bg-indigo-50/70 text-center font-extrabold text-xs border-y border-indigo-100">
-                          <td className="p-3 bg-indigo-100/60 text-indigo-900 border-r border-indigo-200 font-mono text-[11px]">
+                        <tr key={slot.id} className="bg-indigo-50/80 text-center font-extrabold text-xs border-y border-indigo-200">
+                          <td className="p-3 bg-indigo-100/70 text-indigo-950 border-r border-indigo-200 font-mono text-[11px]">
                             {slot.time}
                           </td>
-                          <td colSpan={DAYS_OF_WEEK.length} className="p-3 text-indigo-950 uppercase text-[11px] tracking-wider">
+                          <td colSpan={DAYS_OF_WEEK.length} className="p-3 text-indigo-950 uppercase text-[11px] tracking-wider font-black">
                             {slot.label}
                           </td>
                         </tr>
@@ -1022,7 +946,7 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
                     }
 
                     return (
-                      <tr key={slot.id} className="hover:bg-[#fffbf0]/80 transition border-b border-slate-200/60">
+                      <tr key={slot.id} className="hover:bg-[#fffbf0]/90 transition border-b border-slate-200">
                         <td className="p-3.5 border-r border-slate-200 bg-slate-50/80 font-medium">
                           <div className="font-black text-indigo-950 text-sm">{slot.name}</div>
                           <div className="text-[11px] text-slate-500 font-mono mt-0.5">{slot.time}</div>
@@ -1042,25 +966,25 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
                               }`}
                             >
                               {matchBooking ? (
-                                <div className="h-full bg-emerald-50 border border-emerald-300 rounded-xl p-2.5 flex flex-col justify-between shadow-xs">
+                                <div className="h-full bg-emerald-50/90 border border-emerald-300 rounded-2xl p-2.5 flex flex-col justify-between shadow-2xs">
                                   <div>
                                     <div className="flex items-center justify-between gap-1 mb-1">
                                       <span className="text-[9px] font-black bg-emerald-700 text-white px-1.5 py-0.5 rounded">TIN HỌC</span>
-                                      <span className="text-[10px] font-extrabold bg-emerald-200 text-emerald-950 px-2 py-0.5 rounded-full whitespace-nowrap">
+                                      <span className="text-[10px] font-black bg-emerald-200 text-emerald-950 px-2 py-0.5 rounded-full whitespace-nowrap">
                                         Lớp {matchBooking.className}
                                       </span>
                                     </div>
                                     <div className="text-xs font-extrabold text-emerald-950 truncate mt-1">
                                       {matchBooking.teacherName}
                                     </div>
-                                    <div className="text-[10px] text-emerald-700 truncate mt-0.5">
+                                    <div className="text-[10px] text-emerald-800 truncate mt-0.5 font-medium">
                                       {matchBooking.subject}
                                     </div>
                                   </div>
 
-                                  <div className="text-[10px] text-emerald-700 border-t border-emerald-200/80 pt-1 mt-1 flex justify-between items-center font-bold">
+                                  <div className="text-[10px] text-emerald-800 border-t border-emerald-200/80 pt-1 mt-1 flex justify-between items-center font-bold">
                                     <span>{matchBooking.studentCount} HS</span>
-                                    <span className="text-emerald-700 flex items-center gap-1">
+                                    <span className="text-emerald-800 flex items-center gap-1 font-extrabold">
                                       <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                                       {matchBooking.status === 'Approved' ? 'Đã duyệt' : 'Chờ duyệt'}
                                     </span>
@@ -1088,21 +1012,21 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
       )}
 
       {/* ====================================================================
-          MODULE 2: PHIẾU ĐĂNG KÝ MƯỢN
+          MODULE 2: PHIẾU ĐĂNG KÝ MƯỢN (BOOKING FORM)
           ==================================================================== */}
       {activeSubTab === 'booking' && (
         <div className="max-w-4xl mx-auto space-y-6 animate-fadeIn">
-          <div className="bg-white rounded-2xl border border-[#cbb89d] p-6 sm:p-8 space-y-6 shadow-xs text-left">
-            <div className="border-b border-slate-200 pb-4 flex items-center justify-between">
+          <div className="bg-[#fffbf0] rounded-3xl border border-[#cbb89d] p-6 sm:p-8 space-y-6 shadow-sm text-left">
+            <div className="border-b border-[#cbb89d]/70 pb-4 flex items-center justify-between">
               <div>
-                <span className="bg-indigo-100 text-indigo-900 text-[10px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider">
+                <span className="bg-indigo-100 text-indigo-900 border border-indigo-200 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
                   MODULE 2: PHIẾU ĐĂNG KÝ MƯỢN
                 </span>
-                <h3 className="text-xl font-black text-slate-800 mt-1">Tạo Phiếu Đăng Ký Mượn Phòng Máy</h3>
+                <h3 className="text-xl font-black text-slate-900 mt-2">Tạo Phiếu Đăng Ký Mượn Phòng Máy</h3>
               </div>
               <button
                 onClick={() => setActiveSubTab('calendar')}
-                className="text-xs text-slate-600 hover:text-slate-900 font-bold px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 transition cursor-pointer"
+                className="text-xs text-slate-700 hover:text-slate-900 font-bold px-4 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 transition cursor-pointer"
               >
                 ← Quay lại lịch mượn
               </button>
@@ -1110,7 +1034,7 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
 
             <form onSubmit={handleAddBooking} className="space-y-6 text-xs">
               <div className="space-y-4">
-                <h4 className="font-extrabold text-slate-800 text-sm border-b pb-2 flex items-center gap-2">
+                <h4 className="font-extrabold text-[#3d2b17] text-sm border-b border-[#cbb89d]/60 pb-2 flex items-center gap-2">
                   <User className="w-4 h-4 text-indigo-700" />
                   Thông Tin Giáo Viên & Tiết Dạy
                 </h4>
@@ -1121,7 +1045,7 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
                     <select
                       value={teacherNameInput}
                       onChange={e => setTeacherNameInput(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                      className="w-full px-4 py-2.5 rounded-2xl border border-slate-300 text-xs font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-indigo-500 outline-none shadow-2xs"
                       required
                     >
                       {members.map(m => (
@@ -1135,7 +1059,7 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
                     <select
                       value={classNameInput}
                       onChange={e => setClassNameInput(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                      className="w-full px-4 py-2.5 rounded-2xl border border-slate-300 text-xs font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-indigo-500 outline-none shadow-2xs"
                       required
                     >
                       {classes.map(c => (
@@ -1152,7 +1076,7 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
                       max="60"
                       value={studentCountInput}
                       onChange={e => setStudentCountInput(Number(e.target.value))}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none"
+                      className="w-full px-4 py-2.5 rounded-2xl border border-slate-300 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none shadow-2xs"
                       required
                     />
                   </div>
@@ -1164,7 +1088,7 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
                       placeholder="Ví dụ: Tin học 3 - Thực hành Scratch..."
                       value={subjectInput}
                       onChange={e => setSubjectInput(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none"
+                      className="w-full px-4 py-2.5 rounded-2xl border border-slate-300 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none shadow-2xs"
                       required
                     />
                   </div>
@@ -1172,7 +1096,7 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
               </div>
 
               <div className="space-y-4 pt-2">
-                <h4 className="font-extrabold text-slate-800 text-sm border-b pb-2 flex items-center gap-2">
+                <h4 className="font-extrabold text-[#3d2b17] text-sm border-b border-[#cbb89d]/60 pb-2 flex items-center gap-2">
                   <Monitor className="w-4 h-4 text-indigo-700" />
                   Chọn Phòng & Khung Thời Gian Mượn
                 </h4>
@@ -1183,7 +1107,7 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
                     <select
                       value={formLabId}
                       onChange={e => setFormLabId(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                      className="w-full px-4 py-2.5 rounded-2xl border border-slate-300 text-xs font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-indigo-500 outline-none shadow-2xs"
                     >
                       {labs.map(l => (
                         <option key={l.id} value={l.id}>{l.name} ({l.code})</option>
@@ -1196,7 +1120,7 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
                     <select
                       value={formDayIndex}
                       onChange={e => setFormDayIndex(Number(e.target.value))}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                      className="w-full px-4 py-2.5 rounded-2xl border border-slate-300 text-xs font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-indigo-500 outline-none shadow-2xs"
                     >
                       {DAYS_OF_WEEK.map(d => (
                         <option key={d.id} value={d.id}>{d.name}</option>
@@ -1209,7 +1133,7 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
                     <select
                       value={formSlotId}
                       onChange={e => setFormSlotId(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                      className="w-full px-4 py-2.5 rounded-2xl border border-slate-300 text-xs font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-indigo-500 outline-none shadow-2xs"
                     >
                       {TIME_SLOTS.filter(s => !s.isBreak).map(s => (
                         <option key={s.id} value={s.id}>{s.name} ({s.time})</option>
@@ -1219,7 +1143,7 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
                 </div>
 
                 {conflictBooking && (
-                  <div className="mt-4 p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold flex items-center space-x-2">
+                  <div className="mt-4 p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-950 text-xs font-semibold flex items-center space-x-2 shadow-2xs">
                     <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
                     <span>
                       Trùng lịch: Khung giờ đã được đăng ký bởi GV <strong>{conflictBooking.teacherName}</strong> (Lớp {conflictBooking.className})
@@ -1228,17 +1152,17 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
                 )}
               </div>
 
-              <div className="pt-4 border-t border-slate-200 flex justify-end gap-3">
+              <div className="pt-4 border-t border-[#cbb89d]/70 flex justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setActiveSubTab('calendar')}
-                  className="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-50 transition cursor-pointer active:scale-95"
+                  className="px-5 py-2.5 rounded-2xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 transition cursor-pointer active:scale-95"
                 >
                   Hủy Bỏ
                 </button>
                 <button
                   type="submit"
-                  className={`px-6 py-2.5 rounded-xl font-extrabold text-xs text-white shadow-md transition flex items-center gap-1.5 cursor-pointer active:scale-95 ${
+                  className={`px-6 py-2.5 rounded-2xl font-extrabold text-xs text-white shadow-md transition flex items-center gap-2 cursor-pointer active:scale-95 ${
                     conflictBooking ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/20' : 'bg-indigo-700 hover:bg-indigo-800 shadow-indigo-700/20'
                   }`}
                 >
@@ -1253,9 +1177,9 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
 
       {/* POP-UP MODAL CẢNH BÁO TRÙNG LỊCH */}
       {isConflictModalOpen && conflictBooking && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/75 backdrop-blur-md p-4 animate-fadeIn">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border-4 border-red-500 space-y-5 relative text-left">
-            <div className="flex items-center gap-3 border-b border-red-200 pb-3">
+        <div className="fixed inset-0 z-[500] flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border-4 border-red-500 space-y-5 relative text-left">
+            <div className="flex items-center gap-3.5 border-b border-red-200 pb-4">
               <div className="w-12 h-12 rounded-2xl bg-red-100 border border-red-300 flex items-center justify-center text-red-600 shrink-0">
                 <AlertOctagon className="w-7 h-7 animate-bounce" />
               </div>
@@ -1269,18 +1193,18 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
               </div>
             </div>
 
-            <div className="space-y-3 text-xs">
-              <div className="p-3 bg-red-50 rounded-2xl border border-red-200 text-slate-800 space-y-1.5 font-semibold">
+            <div className="space-y-3.5 text-xs">
+              <div className="p-3.5 bg-red-50 rounded-2xl border border-red-200 text-slate-800 space-y-1.5 font-semibold">
                 <div>
-                  📍 <span className="font-bold">Phòng máy chọn:</span> <strong className="text-indigo-900">{labs.find(l => l.id === formLabId)?.name}</strong>
+                  📍 <span className="font-bold">Phòng máy chọn:</span> <strong className="text-indigo-950">{labs.find(l => l.id === formLabId)?.name}</strong>
                 </div>
                 <div>
                   🕒 <span className="font-bold">Thời gian:</span> <strong className="text-red-700">{DAYS_OF_WEEK.find(d => d.id === formDayIndex)?.name} - {TIME_SLOTS.find(s => s.id === formSlotId)?.name} ({TIME_SLOTS.find(s => s.id === formSlotId)?.time})</strong>
                 </div>
               </div>
 
-              <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 space-y-2 text-amber-950 font-bold">
-                <div className="text-xs uppercase text-amber-800 font-black flex items-center gap-1">
+              <div className="p-4 bg-amber-50 rounded-2xl border border-amber-300 space-y-2 text-amber-950 font-bold">
+                <div className="text-xs uppercase text-amber-900 font-black flex items-center gap-1.5">
                   <Info className="w-4 h-4 text-amber-600" />
                   Thông tin giáo viên đang mượn khung giờ này:
                 </div>
@@ -1299,7 +1223,7 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
             <div className="pt-3 border-t border-slate-200 flex justify-end gap-3">
               <button
                 onClick={() => setIsConflictModalOpen(false)}
-                className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-xs shadow-md transition cursor-pointer flex items-center gap-1.5 active:scale-95"
+                className="px-5 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-xs shadow-md transition cursor-pointer flex items-center gap-2 active:scale-95"
               >
                 <RefreshCw className="w-4 h-4" />
                 <span>Chọn Khung Giờ Khác</span>
@@ -1310,27 +1234,29 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
       )}
 
       {/* ====================================================================
-          MODULE 3: BÁO CÁO SỰ CỐ MÁY TÍNH
+          MODULE 3: BÁO CÁO SỰ CỐ MÁY TÍNH (INCIDENT REPORT & SEAT MAP)
           ==================================================================== */}
       {activeSubTab === 'incident' && (
         <div className="space-y-6 animate-fadeIn">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div className="lg:col-span-7 bg-white p-6 rounded-2xl border border-[#cbb89d] shadow-xs space-y-4 text-left">
-              <div className="flex items-center justify-between border-b pb-3">
-                <h3 className="text-sm font-extrabold text-slate-800 flex items-center gap-2">
-                  <Monitor className="w-4 h-4 text-indigo-700" />
+            
+            {/* SƠ ĐỒ THẺ MÁY TÍNH IMAC 3D */}
+            <div className="lg:col-span-7 bg-[#fffbf0] p-6 rounded-3xl border border-[#cbb89d] shadow-sm space-y-4 text-left">
+              <div className="flex items-center justify-between border-b border-[#cbb89d]/70 pb-3">
+                <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                  <Monitor className="w-5 h-5 text-indigo-700" />
                   <span>Sơ Đồ Máy {currentLabObj.name}</span>
                 </h3>
                 <select
                   value={selectedLab}
                   onChange={e => { setSelectedLab(e.target.value); setSelectedSeatNumber(null); }}
-                  className="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-bold bg-white"
+                  className="px-3.5 py-1.5 rounded-xl border border-slate-300 text-xs font-bold bg-white outline-none cursor-pointer"
                 >
                   {labs.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
                 </select>
               </div>
 
-              <div className="w-full bg-[#dfccb0]/40 text-[#3d2b17] text-center py-2 rounded-xl text-xs font-extrabold uppercase mb-4 border border-[#cbb89d]">
+              <div className="w-full bg-[#dfccb0] text-[#3d2b17] text-center py-2.5 rounded-2xl text-xs font-black uppercase mb-4 border border-[#cbb89d] shadow-2xs">
                 📌 BẢNG / BÀN GIÁO VIÊN BỘ MÔN
               </div>
 
@@ -1340,39 +1266,40 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
                   const isBroken = incidents.some(i => i.labId === selectedLab && i.pcNumber === pcNum && i.status !== 'Resolved');
                   const isSelected = selectedSeatNumber === pcNum;
 
-                  let bgColor = 'bg-slate-50 border-slate-200 text-slate-700 hover:border-indigo-400 hover:bg-indigo-50/40';
-                  if (isBroken) bgColor = 'bg-rose-100 border-rose-300 text-rose-900 font-black';
-                  if (isSelected) bgColor = 'bg-amber-100 border-amber-500 text-amber-950 font-black ring-2 ring-amber-400/50';
+                  let cardStyle = 'bg-white border-slate-200 text-slate-800 hover:border-indigo-500 hover:bg-indigo-50/50 shadow-2xs';
+                  if (isBroken) cardStyle = 'bg-rose-100 border-rose-300 text-rose-950 font-black shadow-2xs';
+                  if (isSelected) cardStyle = 'bg-amber-100 border-amber-500 text-amber-950 font-black ring-4 ring-amber-400/50 scale-105 shadow-md';
 
                   return (
                     <div
                       key={pcNum}
                       onClick={() => setSelectedSeatNumber(pcNum)}
-                      className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center transition cursor-pointer ${bgColor}`}
+                      className={`p-3 rounded-2xl border-2 flex flex-col items-center justify-center transition cursor-pointer ${cardStyle}`}
                     >
-                      <Cpu className={`w-4 h-4 mb-1 ${isBroken ? 'text-rose-600' : 'text-slate-500'}`} />
-                      <span className="text-xs font-extrabold">Máy {pcNum < 10 ? `0${pcNum}` : pcNum}</span>
+                      <Cpu className={`w-5 h-5 mb-1 ${isBroken ? 'text-rose-600' : isSelected ? 'text-amber-600' : 'text-indigo-600'}`} />
+                      <span className="text-xs font-black">Máy {pcNum < 10 ? `0${pcNum}` : pcNum}</span>
                     </div>
                   );
                 })}
               </div>
             </div>
 
-            <div className="lg:col-span-5 bg-white p-6 rounded-2xl border border-[#cbb89d] shadow-xs space-y-4 text-left">
-              <h3 className="text-sm font-extrabold text-slate-800 border-b pb-3 flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-amber-500" />
-                <span>Chi Tiết Sự Cố Máy Tính</span>
+            {/* FORM BÁO SỰ CỐ MÁY TÍNH */}
+            <div className="lg:col-span-5 bg-[#fffbf0] p-6 rounded-3xl border border-[#cbb89d] shadow-sm space-y-4 text-left">
+              <h3 className="text-sm font-black text-slate-900 border-b border-[#cbb89d]/70 pb-3 flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-amber-500" />
+                <span>Chi Tiết Báo Cáo Sự Cố Máy Tính</span>
               </h3>
 
               <form onSubmit={handleAddIncident} className="space-y-4 text-xs">
-                <div className="p-3 bg-slate-50 rounded-xl flex justify-between items-center text-xs font-bold border border-slate-200">
-                  <span>Số máy đã chọn:</span>
+                <div className="p-3.5 bg-white rounded-2xl flex justify-between items-center text-xs font-bold border border-slate-300 shadow-2xs">
+                  <span className="text-slate-700">Số máy đã chọn:</span>
                   {selectedSeatNumber ? (
-                    <span className="bg-indigo-700 text-white px-3 py-1 rounded-lg font-mono font-black">
+                    <span className="bg-indigo-700 text-white px-3.5 py-1 rounded-xl font-mono font-black shadow-2xs">
                       Máy #{selectedSeatNumber}
                     </span>
                   ) : (
-                    <span className="text-rose-500 italic font-semibold">Chưa chọn máy trên sơ đồ</span>
+                    <span className="text-rose-600 italic font-bold">Chưa chọn máy trên sơ đồ</span>
                   )}
                 </div>
 
@@ -1383,7 +1310,7 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
                     placeholder="Tên Giáo viên / Học sinh báo cáo..."
                     value={incidentReporter}
                     onChange={e => setIncidentReporter(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-indigo-500 outline-none"
+                    className="w-full px-4 py-2.5 rounded-2xl border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-indigo-500 outline-none shadow-2xs"
                     required
                   />
                 </div>
@@ -1394,10 +1321,10 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
                     <select
                       value={incidentType}
                       onChange={e => setIncidentType(e.target.value as any)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold bg-white"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold bg-white cursor-pointer"
                     >
                       <option value="Hardware">Phần Cứng (Liệt phím/chuột)</option>
-                      <option value="Software">Phần Mềm (Lỗi Windows/WinRAR)</option>
+                      <option value="Software">Phần Mềm (Lỗi Win/WinRAR)</option>
                       <option value="Network">Mạng (Không có Internet)</option>
                       <option value="Other">Khác</option>
                     </select>
@@ -1408,7 +1335,7 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
                     <select
                       value={incidentPriority}
                       onChange={e => setIncidentPriority(e.target.value as any)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold bg-white"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold bg-white cursor-pointer"
                     >
                       <option value="Low">Thấp</option>
                       <option value="Medium">Trung Bình</option>
@@ -1425,14 +1352,14 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
                     placeholder="Mô tả lỗi (Chuột không di chuyển được, liệt phím Space, không nạp Windows...)"
                     value={incidentIssue}
                     onChange={e => setIncidentIssue(e.target.value)}
-                    className="w-full p-3 rounded-xl border border-slate-300 text-xs font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+                    className="w-full p-3.5 rounded-2xl border border-slate-300 text-xs font-medium focus:ring-2 focus:ring-indigo-500 outline-none shadow-2xs"
                   ></textarea>
                 </div>
 
                 <button
                   type="submit"
                   disabled={!selectedSeatNumber}
-                  className={`w-full py-3 rounded-xl font-extrabold text-xs text-white transition shadow-md cursor-pointer active:scale-95 ${
+                  className={`w-full py-3 rounded-2xl font-black text-xs text-white transition shadow-md cursor-pointer active:scale-95 ${
                     selectedSeatNumber ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-600/20' : 'bg-slate-300 cursor-not-allowed'
                   }`}
                 >
@@ -1445,38 +1372,38 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
       )}
 
       {/* ====================================================================
-          MODULE 4: NHẬT KÝ BẢO TRÌ & SỬA CHỮA THIẾT BỊ
+          MODULE 4: NHẬT KÝ BẢO TRÌ & SỬA CHỮA THIẾT BỊ (MAINTENANCE LOGS)
           ==================================================================== */}
       {activeSubTab === 'log' && (
         <div className="space-y-6 animate-fadeIn">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
-            <div className="bg-white p-5 rounded-2xl border border-[#cbb89d] shadow-xs flex items-center justify-between">
+            <div className="bg-[#fffbf0] p-5 rounded-3xl border border-[#cbb89d] shadow-xs flex items-center justify-between">
               <div>
                 <div className="text-xs font-black text-slate-500 uppercase tracking-wide">Số Lượt Ghi Vết Bảo Trì</div>
                 <div className="text-2xl font-black text-[#3d2b17] mt-1">{filteredLogs.length} Lượt</div>
               </div>
-              <div className="w-12 h-12 rounded-2xl bg-teal-50 text-teal-700 border border-teal-200 flex items-center justify-center text-xl font-bold">
+              <div className="w-12 h-12 rounded-2xl bg-teal-100 text-teal-800 border border-teal-300 flex items-center justify-center text-xl font-bold shadow-2xs">
                 <BookMarked className="w-6 h-6" />
               </div>
             </div>
 
-            <div className="bg-white p-5 rounded-2xl border border-[#cbb89d] shadow-xs flex items-center justify-between">
+            <div className="bg-[#fffbf0] p-5 rounded-3xl border border-[#cbb89d] shadow-xs flex items-center justify-between">
               <div>
                 <div className="text-xs font-black text-slate-500 uppercase tracking-wide">Tổng Chi Phí Sửa / Thay Linh Kiện</div>
-                <div className="text-2xl font-black text-emerald-700 mt-1">{formatVND(totalSpent)}</div>
+                <div className="text-2xl font-black text-emerald-800 mt-1">{formatVND(totalSpent)}</div>
               </div>
-              <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center text-xl font-bold">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center justify-center text-xl font-bold shadow-2xs">
                 <Tag className="w-6 h-6" />
               </div>
             </div>
 
-            <div className="bg-white p-5 rounded-2xl border border-[#cbb89d] shadow-xs flex items-center justify-between">
+            <div className="bg-[#fffbf0] p-5 rounded-3xl border border-[#cbb89d] shadow-xs flex items-center justify-between">
               <div>
                 <div className="text-xs font-black text-slate-500 uppercase tracking-wide">Phòng Đang Chọn Ghi Chép</div>
                 <select
                   value={selectedLab}
                   onChange={e => setSelectedLab(e.target.value)}
-                  className="mt-1 font-black text-indigo-900 text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 outline-none cursor-pointer"
+                  className="mt-1 font-black text-indigo-900 text-xs bg-white border border-slate-300 rounded-xl px-3 py-1.5 outline-none cursor-pointer"
                 >
                   {labs.map(l => (
                     <option key={l.id} value={l.id}>{l.name} ({l.code})</option>
@@ -1485,7 +1412,7 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
               </div>
               <button
                 onClick={() => setIsAddLogModalOpen(true)}
-                className="bg-indigo-700 hover:bg-indigo-800 text-white font-extrabold text-xs px-3.5 py-2.5 rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer active:scale-95"
+                className="bg-indigo-700 hover:bg-indigo-800 text-white font-extrabold text-xs px-4 py-2.5 rounded-2xl shadow-md transition flex items-center gap-1.5 cursor-pointer active:scale-95"
               >
                 <Plus className="w-4 h-4" />
                 <span>Ghi Nhật Ký</span>
@@ -1493,13 +1420,13 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-2xl border border-[#cbb89d] shadow-xs flex flex-col md:flex-row justify-between items-center gap-4 text-left">
+          <div className="bg-[#fffbf0] p-4.5 rounded-3xl border border-[#cbb89d] shadow-xs flex flex-col md:flex-row justify-between items-center gap-4 text-left">
             <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-              <span className="text-xs font-black text-slate-600 uppercase">Lọc Theo:</span>
+              <span className="text-xs font-black text-slate-700 uppercase">Lọc Theo:</span>
               <select
                 value={logFilterType}
                 onChange={e => setLogFilterType(e.target.value)}
-                className="px-3 py-1.5 rounded-xl border border-slate-300 text-xs font-extrabold bg-white cursor-pointer"
+                className="px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-black bg-white cursor-pointer"
               >
                 <option value="All">Tất cả loại nhật ký</option>
                 <option value="Repair">🛠️ Sửa chữa</option>
@@ -1512,7 +1439,7 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
               <select
                 value={logFilterPC}
                 onChange={e => setLogFilterPC(e.target.value)}
-                className="px-3 py-1.5 rounded-xl border border-slate-300 text-xs font-extrabold bg-white cursor-pointer"
+                className="px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-black bg-white cursor-pointer"
               >
                 <option value="All">Tất cả thiết bị</option>
                 <option value="lab">🏢 Toàn bộ phòng máy</option>
@@ -1523,18 +1450,18 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
             </div>
 
             <div className="w-full md:w-80 relative">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 placeholder="Tìm tiêu đề, người sửa, linh kiện..."
                 value={logSearchTerm}
                 onChange={e => setLogSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="w-full pl-9 pr-4 py-2 rounded-2xl border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-indigo-500 outline-none shadow-2xs"
               />
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl border border-[#cbb89d] overflow-hidden shadow-xs p-6 text-left">
+          <div className="bg-white rounded-3xl border border-[#cbb89d] overflow-hidden shadow-xs p-6 text-left">
             {filteredLogs.length === 0 ? (
               <div className="py-12 text-center text-slate-400 italic">
                 <BookMarked className="w-12 h-12 mx-auto mb-2 opacity-30 text-slate-500" />
@@ -1543,10 +1470,10 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
             ) : (
               <div className="space-y-4">
                 {filteredLogs.map(log => (
-                  <div key={log.id} className="p-4.5 rounded-2xl border border-slate-200 hover:border-[#cbb89d] bg-slate-50/50 hover:bg-[#fffbf0]/80 transition-all flex flex-col md:flex-row justify-between gap-4">
+                  <div key={log.id} className="p-4.5 rounded-2xl border border-slate-200/90 hover:border-[#cbb89d] bg-slate-50/50 hover:bg-[#fffbf0]/90 transition-all flex flex-col md:flex-row justify-between gap-4 shadow-2xs">
                     <div className="space-y-2 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="bg-indigo-100 text-indigo-900 border border-indigo-200 text-[10px] font-black px-2.5 py-0.5 rounded-full">
+                        <span className="bg-indigo-100 text-indigo-900 border border-indigo-200 text-[10px] font-black px-3 py-0.5 rounded-full">
                           {log.type === 'Repair' ? '🛠️ Sửa chữa' : log.type === 'Replacement' ? '🔄 Thay linh kiện' : log.type === 'Upgrade' ? '🚀 Nâng cấp' : log.type === 'Maintenance' ? '🧹 Bảo trì' : '💻 Phần mềm'}
                         </span>
                         <span className="bg-slate-800 text-white text-[10px] font-black px-2.5 py-0.5 rounded-md font-mono">
@@ -1568,7 +1495,7 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
                       <div className="flex flex-wrap items-center gap-4 text-xs text-slate-600 font-bold pt-1">
                         <span>👨‍🔧 Thực hiện: <strong className="text-indigo-900">{log.technician}</strong></span>
                         {log.cost > 0 && (
-                          <span className="text-emerald-800 font-black bg-emerald-100/80 px-2.5 py-0.5 rounded-md border border-emerald-300">
+                          <span className="text-emerald-900 font-black bg-emerald-100 px-2.5 py-0.5 rounded-md border border-emerald-300">
                             💵 Chi phí: {formatVND(log.cost)}
                           </span>
                         )}
@@ -1578,7 +1505,7 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
                     <div className="flex md:flex-col justify-end items-end shrink-0">
                       <button
                         onClick={() => handleDeleteLog(log.id)}
-                        className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-2 rounded-lg transition cursor-pointer"
+                        className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-2 rounded-xl transition cursor-pointer"
                         title="Xóa nhật ký"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -1594,10 +1521,10 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
 
       {/* MODAL GHI NHẬT KÝ BẢO TRÌ */}
       {isAddLogModalOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/70 backdrop-blur-md p-4 animate-fadeIn">
-          <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border-2 border-[#cbb89d] space-y-5 text-left">
+        <div className="fixed inset-0 z-[500] flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl border-2 border-[#cbb89d] space-y-5 text-left">
             <div className="flex justify-between items-center border-b border-slate-200 pb-3">
-              <h3 className="text-base font-black text-slate-800 flex items-center gap-2">
+              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                 <BookMarked className="w-5 h-5 text-teal-600" />
                 <span>Ghi Nhật Ký Bảo Trì & Sửa Chữa Mới</span>
               </h3>
@@ -1748,8 +1675,8 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
         <div className="space-y-6 animate-fadeIn text-left">
           
           {/* CARD TOP: QUẢN LÝ DANH SÁCH & SƠ ĐỒ PHÒNG LAB */}
-          <div className="bg-white p-6 rounded-2xl border border-[#cbb89d] shadow-xs space-y-4">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-200 pb-4">
+          <div className="bg-[#fffbf0] p-6 rounded-3xl border border-[#cbb89d] shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-[#cbb89d]/70 pb-4">
               <div>
                 <h3 className="text-lg font-black text-slate-900">Quản Lý Danh Sách & Sơ Đồ Phòng LAB</h3>
                 <p className="text-xs font-semibold text-slate-500 mt-0.5">
@@ -1760,7 +1687,7 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleOpenAddLabModal}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer active:scale-95"
+                  className="bg-indigo-700 hover:bg-indigo-800 text-white font-extrabold text-xs px-4 py-2.5 rounded-2xl shadow-md transition flex items-center gap-1.5 cursor-pointer active:scale-95"
                 >
                   <Plus className="w-4 h-4" />
                   <span>+ Thêm Phòng Mới</span>
@@ -1771,15 +1698,15 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
             {/* CARDS LIST PHÒNG LAB */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {labs.map(lab => (
-                <div key={lab.id} className="p-4 rounded-2xl border border-slate-200 hover:border-indigo-300 bg-slate-50/60 hover:bg-indigo-50/30 transition-all flex items-center justify-between">
+                <div key={lab.id} className="p-4.5 rounded-2xl border border-slate-200/90 hover:border-indigo-400 bg-white hover:bg-indigo-50/30 transition-all flex items-center justify-between shadow-2xs hover:shadow-md">
                   <div className="space-y-1">
                     <div className="font-black text-slate-900 text-sm flex items-center gap-2">
                       <span>{lab.name}</span>
-                      <span className="text-[10px] font-extrabold text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200">
+                      <span className="text-[10px] font-extrabold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
                         ({lab.code})
                       </span>
                     </div>
-                    <div className="text-xs font-medium text-slate-500">
+                    <div className="text-xs font-semibold text-slate-500">
                       {lab.totalPCs} Máy • {lab.location}
                     </div>
                   </div>
@@ -1787,7 +1714,7 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleOpenEditLabModal(lab)}
-                      className="flex items-center gap-1 text-indigo-700 bg-indigo-100/80 hover:bg-indigo-200 border border-indigo-200 px-2.5 py-1.5 rounded-xl font-bold text-xs cursor-pointer transition active:scale-95"
+                      className="flex items-center gap-1.5 text-indigo-800 bg-indigo-100/90 hover:bg-indigo-200 border border-indigo-300 px-3 py-1.5 rounded-xl font-extrabold text-xs cursor-pointer transition active:scale-95"
                       title="Thiết kế sơ đồ ma trận"
                     >
                       <Sliders className="w-3.5 h-3.5" />
@@ -1795,7 +1722,7 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
                     </button>
                     <button
                       onClick={() => handleDeleteLab(lab.id)}
-                      className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1.5 rounded-xl transition cursor-pointer"
+                      className="text-rose-600 hover:text-rose-800 hover:bg-rose-50 p-2 rounded-xl transition cursor-pointer"
                       title="Xóa phòng"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -1807,34 +1734,34 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
           </div>
 
           {/* SEARCH & FILTER BAR */}
-          <div className="bg-white p-4 rounded-2xl border border-[#cbb89d] shadow-xs flex flex-col md:flex-row justify-between items-center gap-4">
-            <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
+          <div className="bg-[#fffbf0] p-4.5 rounded-3xl border border-[#cbb89d] shadow-xs flex flex-col md:flex-row justify-between items-center gap-4">
+            <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
               <Sliders className="w-5 h-5 text-amber-600" />
               <span>Bảng Quản Lý Duyệt Phiếu & Sửa Chữa Sự Cố</span>
             </h3>
 
             <div className="w-full md:w-80 relative">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 placeholder="Tìm tên giáo viên, lớp, máy hỏng..."
                 value={adminSearchTerm}
                 onChange={e => setAdminSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="w-full pl-9 pr-4 py-2 rounded-2xl border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-indigo-500 outline-none shadow-2xs"
               />
             </div>
           </div>
 
           {/* TABLE 1: BOOKINGS LIST */}
-          <div className="bg-white rounded-2xl border border-[#cbb89d] overflow-hidden shadow-xs">
-            <div className="p-4 border-b border-[#cbb89d] font-extrabold text-[#3d2b17] text-sm flex justify-between items-center bg-[#dfccb0]/30">
+          <div className="bg-white rounded-3xl border border-[#cbb89d] overflow-hidden shadow-xs">
+            <div className="p-4 border-b border-[#cbb89d] font-black text-[#3d2b17] text-sm flex justify-between items-center bg-[#dfccb0]/40">
               <span>Danh Sách Phiếu Đăng Ký Mượn Phòng ({filteredBookings.length})</span>
             </div>
 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="bg-[#dfccb0]/40 border-b border-[#cbb89d] text-[#3d2b17] font-black uppercase text-[11px] tracking-wider whitespace-nowrap">
+                  <tr className="bg-[#dfccb0] border-b border-[#cbb89d] text-[#3d2b17] font-black uppercase text-[11px] tracking-wider whitespace-nowrap">
                     <th className="py-3.5 px-4 whitespace-nowrap">GIÁO VIÊN</th>
                     <th className="py-3.5 px-4 whitespace-nowrap">LỚP & SĨ SỐ</th>
                     <th className="py-3.5 px-4 whitespace-nowrap">PHÒNG MÁY</th>
@@ -1843,7 +1770,7 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
                     <th className="py-3.5 px-4 text-center whitespace-nowrap">THAO TÁC DUYỆT</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200/60">
+                <tbody className="divide-y divide-slate-200/80">
                   {filteredBookings.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="p-6 text-center text-slate-400 italic font-medium">
@@ -1852,39 +1779,39 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
                     </tr>
                   ) : (
                     filteredBookings.map(b => (
-                      <tr key={b.id} className="hover:bg-[#fffbf0]/80 transition border-b border-slate-200/60">
-                        <td className="py-3 px-4 font-extrabold text-slate-800 whitespace-nowrap">{b.teacherName}</td>
-                        <td className="py-3 px-4 font-semibold text-slate-700 whitespace-nowrap">{b.className} ({b.studentCount} HS)</td>
-                        <td className="py-3 px-4 whitespace-nowrap">
-                          <span className="bg-indigo-100 text-indigo-900 font-mono font-bold text-[10px] px-2 py-0.5 rounded border border-indigo-200">
+                      <tr key={b.id} className="hover:bg-[#fffbf0]/80 transition border-b border-slate-200">
+                        <td className="py-3.5 px-4 font-black text-slate-900 whitespace-nowrap">{b.teacherName}</td>
+                        <td className="py-3.5 px-4 font-extrabold text-slate-800 whitespace-nowrap">{b.className} ({b.studentCount} HS)</td>
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <span className="bg-indigo-100 text-indigo-900 font-mono font-black text-[10px] px-2.5 py-0.5 rounded-md border border-indigo-200">
                             {b.labId}
                           </span>
                         </td>
-                        <td className="py-3 px-4 text-slate-600 whitespace-nowrap">{b.subject}</td>
-                        <td className="py-3 px-4 whitespace-nowrap">
-                          <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full ${
-                            b.status === 'Approved' ? 'bg-emerald-100 text-emerald-900 border border-emerald-200' : 'bg-rose-100 text-rose-900 border border-rose-200'
+                        <td className="py-3.5 px-4 text-slate-700 whitespace-nowrap font-medium">{b.subject}</td>
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <span className={`text-[10px] font-black px-3 py-0.5 rounded-full ${
+                            b.status === 'Approved' ? 'bg-emerald-100 text-emerald-950 border border-emerald-300' : 'bg-rose-100 text-rose-950 border border-rose-300'
                           }`}>
                             {b.status === 'Approved' ? 'Đã duyệt' : 'Từ chối'}
                           </span>
                         </td>
-                        <td className="py-3 px-4 text-center whitespace-nowrap">
+                        <td className="py-3.5 px-4 text-center whitespace-nowrap">
                           <div className="flex items-center justify-center gap-1.5">
                             <button
                               onClick={() => handleUpdateBookingStatus(b.id, 'Approved')}
-                              className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-extrabold text-[11px] px-2.5 py-1 rounded-lg border border-emerald-200 shadow-2xs transition cursor-pointer active:scale-95"
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[11px] px-3 py-1 rounded-xl shadow-2xs transition cursor-pointer active:scale-95"
                             >
                               Duyệt
                             </button>
                             <button
                               onClick={() => handleUpdateBookingStatus(b.id, 'Rejected')}
-                              className="bg-amber-50 hover:bg-amber-100 text-amber-800 font-extrabold text-[11px] px-2.5 py-1 rounded-lg border border-amber-200 shadow-2xs transition cursor-pointer active:scale-95"
+                              className="bg-amber-600 hover:bg-amber-700 text-white font-black text-[11px] px-3 py-1 rounded-xl shadow-2xs transition cursor-pointer active:scale-95"
                             >
                               Từ chối
                             </button>
                             <button
                               onClick={() => handleDeleteBooking(b.id)}
-                              className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 p-1.5 rounded-lg border border-rose-200 transition cursor-pointer active:scale-95"
+                              className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 p-1.5 rounded-xl border border-rose-200 transition cursor-pointer active:scale-95"
                               title="Xóa phiếu"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -1900,23 +1827,23 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
           </div>
 
           {/* TABLE 2: INCIDENTS LIST */}
-          <div className="bg-white rounded-2xl border border-[#cbb89d] overflow-hidden shadow-xs">
-            <div className="p-4 border-b border-[#cbb89d] font-extrabold text-[#3d2b17] text-sm flex justify-between items-center bg-[#dfccb0]/30">
+          <div className="bg-white rounded-3xl border border-[#cbb89d] overflow-hidden shadow-xs">
+            <div className="p-4 border-b border-[#cbb89d] font-black text-[#3d2b17] text-sm flex justify-between items-center bg-[#dfccb0]/40">
               <span>Danh Sách Báo Cáo Sự Cố Máy Tính ({filteredIncidents.length})</span>
             </div>
 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="bg-[#dfccb0]/40 border-b border-[#cbb89d] text-[#3d2b17] font-black uppercase text-[11px] tracking-wider whitespace-nowrap">
+                  <tr className="bg-[#dfccb0] border-b border-[#cbb89d] text-[#3d2b17] font-black uppercase text-[11px] tracking-wider whitespace-nowrap">
                     <th className="py-3.5 px-4 whitespace-nowrap">VỊ TRÍ MÁY</th>
                     <th className="py-3.5 px-4 whitespace-nowrap">LOẠI LỖI</th>
                     <th className="py-3.5 px-4 whitespace-nowrap">MÔ TẢ SỰ CỐ</th>
                     <th className="py-3.5 px-4 whitespace-nowrap">TRẠNG THÁI</th>
-                    <th className="py-3.5 px-4 text-center whitespace-nowrap">THAO TÁC XỬ LÝ</th>
+                    <th className="py-3.5 px-4 text-center whitespace-nowrap">THAO TÁC X XỬ LÝ</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200/60">
+                <tbody className="divide-y divide-slate-200/80">
                   {filteredIncidents.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="p-6 text-center text-slate-400 italic font-medium">
@@ -1925,37 +1852,37 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
                     </tr>
                   ) : (
                     filteredIncidents.map(i => (
-                      <tr key={i.id} className="hover:bg-[#fffbf0]/80 transition border-b border-slate-200/60">
-                        <td className="py-3 px-4 font-black text-slate-800 whitespace-nowrap">
+                      <tr key={i.id} className="hover:bg-[#fffbf0]/80 transition border-b border-slate-200">
+                        <td className="py-3.5 px-4 font-black text-slate-900 whitespace-nowrap">
                           {i.labId} - Máy #{i.pcNumber}
                         </td>
-                        <td className="py-3 px-4 font-semibold text-slate-700 whitespace-nowrap">{i.type}</td>
-                        <td className="py-3 px-4 text-slate-600 whitespace-nowrap">{i.issue}</td>
-                        <td className="py-3 px-4 whitespace-nowrap">
-                          <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full ${
-                            i.status === 'Resolved' ? 'bg-emerald-100 text-emerald-900 border border-emerald-200' :
-                            i.status === 'In Progress' ? 'bg-amber-100 text-amber-900 border border-amber-200' : 'bg-rose-100 text-rose-900 border border-rose-200'
+                        <td className="py-3.5 px-4 font-extrabold text-slate-800 whitespace-nowrap">{i.type}</td>
+                        <td className="py-3.5 px-4 text-slate-700 whitespace-nowrap font-medium">{i.issue}</td>
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <span className={`text-[10px] font-black px-3 py-0.5 rounded-full ${
+                            i.status === 'Resolved' ? 'bg-emerald-100 text-emerald-950 border border-emerald-300' :
+                            i.status === 'In Progress' ? 'bg-amber-100 text-amber-950 border border-amber-300' : 'bg-rose-100 text-rose-950 border border-rose-300'
                           }`}>
                             {i.status === 'Resolved' ? 'Đã khắc phục' : i.status === 'In Progress' ? 'Đang sửa' : 'Chờ xử lý'}
                           </span>
                         </td>
-                        <td className="py-3 px-4 text-center whitespace-nowrap">
+                        <td className="py-3.5 px-4 text-center whitespace-nowrap">
                           <div className="flex items-center justify-center gap-1.5">
                             <button
                               onClick={() => handleUpdateIncidentStatus(i.id, 'In Progress')}
-                              className="bg-amber-50 hover:bg-amber-100 text-amber-800 font-extrabold text-[11px] px-2.5 py-1 rounded-lg border border-amber-200 shadow-2xs transition cursor-pointer active:scale-95"
+                              className="bg-amber-600 hover:bg-amber-700 text-white font-black text-[11px] px-3 py-1 rounded-xl shadow-2xs transition cursor-pointer active:scale-95"
                             >
                               Đang sửa
                             </button>
                             <button
                               onClick={() => handleUpdateIncidentStatus(i.id, 'Resolved')}
-                              className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-extrabold text-[11px] px-2.5 py-1 rounded-lg border border-emerald-200 shadow-2xs transition cursor-pointer active:scale-95"
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[11px] px-3 py-1 rounded-xl shadow-2xs transition cursor-pointer active:scale-95"
                             >
                               Đã xong
                             </button>
                             <button
                               onClick={() => handleDeleteIncident(i.id)}
-                              className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 p-1.5 rounded-lg border border-rose-200 transition cursor-pointer active:scale-95"
+                              className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 p-1.5 rounded-xl border border-rose-200 transition cursor-pointer active:scale-95"
                               title="Xóa báo cáo"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -1980,19 +1907,19 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
           <div className="bg-white rounded-3xl max-w-6xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-300 relative overflow-hidden text-left">
             
             {/* HEADER MODAL (STICKY TOP) */}
-            <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/90 flex justify-between items-center shrink-0">
+            <div className="px-6 py-4 border-b border-[#cbb89d] bg-[#dfccb0]/50 flex justify-between items-center shrink-0">
               <div className="space-y-0.5">
                 <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
-                  <Grid className="w-6 h-6 text-indigo-600" />
+                  <Grid className="w-6 h-6 text-indigo-700" />
                   <span>Thiết Kế Sơ Đồ – {labFormName || 'Phòng Lab'}</span>
                 </h3>
-                <p className="text-xs text-slate-500 font-medium">
+                <p className="text-xs text-slate-600 font-semibold">
                   Mặc định tạo đủ máy theo Hàng x Cột. Chọn "Kẻ Lối Đi" và rê chuột hoặc bấm nút ở đầu Cột/Hàng.
                 </p>
               </div>
               <button 
                 onClick={() => setIsLabEditorModalOpen(false)} 
-                className="text-slate-400 hover:text-slate-700 transition p-1.5 rounded-xl hover:bg-slate-200/60 cursor-pointer"
+                className="text-slate-500 hover:text-slate-800 transition p-1.5 rounded-xl hover:bg-slate-200/60 cursor-pointer"
                 title="Đóng cửa sổ"
               >
                 <X className="w-6 h-6" />
@@ -2305,8 +2232,8 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
               </div>
 
               {/* FOOTER MODAL (STICKY BOTTOM) */}
-              <div className="px-6 py-4 border-t border-slate-200 bg-slate-50/90 flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0">
-                <div className="text-xs font-medium text-slate-600 italic flex items-center gap-1.5">
+              <div className="px-6 py-4 border-t border-[#cbb89d] bg-[#dfccb0]/40 flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0">
+                <div className="text-xs font-medium text-slate-700 italic flex items-center gap-1.5">
                   <span>💡 Mẹo: Bấm nút [+ Cột] hoặc [+ Hàng] ở bất kỳ vị trí nào để chèn thêm hàng/cột ngay tại đó.</span>
                 </div>
 
@@ -2314,140 +2241,19 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
                   <button
                     type="button"
                     onClick={() => setIsLabEditorModalOpen(false)}
-                    className="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold hover:bg-slate-100 transition cursor-pointer"
+                    className="px-5 py-2.5 rounded-2xl border border-slate-300 bg-white text-slate-700 font-bold hover:bg-slate-100 transition cursor-pointer"
                   >
                     Hủy Bỏ
                   </button>
                   <button
                     type="submit"
-                    className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs shadow-lg transition cursor-pointer active:scale-95"
+                    className="px-6 py-2.5 rounded-2xl bg-indigo-700 hover:bg-indigo-800 text-white font-black text-xs shadow-lg transition cursor-pointer active:scale-95"
                   >
                     Lưu Sơ Đồ & Thông Tin
                   </button>
                 </div>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* SUPABASE SQL SCHEMA CONFIG MODAL */}
-      {isSqlModalOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4 animate-fadeIn">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border-2 border-[#cbb89d] space-y-4 text-left">
-            <div className="flex justify-between items-center border-b border-slate-200 pb-3">
-              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-                <Database className="w-5 h-5 text-emerald-600" />
-                <span>Mã Nguồn SQL Query Tạo Bảng Trên Supabase</span>
-              </h3>
-              <button onClick={() => setIsSqlModalOpen(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <p className="text-xs text-slate-600 font-medium">
-              Copy toàn bộ đoạn SQL query dưới đây và dán vào tab <strong>SQL Editor</strong> trên bảng điều khiển Supabase để tạo 4 bảng dữ liệu:
-            </p>
-
-            <div className="relative bg-slate-950 text-emerald-400 p-4 rounded-2xl font-mono text-[11px] max-h-80 overflow-y-auto leading-relaxed">
-              <button
-                onClick={copySqlToClipboard}
-                className="absolute top-3 right-3 bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs font-sans font-bold flex items-center gap-1.5 transition cursor-pointer"
-              >
-                {copiedSql ? (
-                  <>
-                    <CheckCheck className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Đã Copy!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-3.5 h-3.5" />
-                    <span>Copy SQL Query</span>
-                  </>
-                )}
-              </button>
-
-              <pre>{`-- SQL SCHEMA KHỞI TẠO HỆ THỐNG QUẢN LÝ PHÒNG MÁY TIN HỌC (SMARTLAB HUB)
-
--- 1. Bảng phòng lab ma trận
-CREATE TABLE IF NOT EXISTS school_labs (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    code TEXT NOT NULL,
-    totalPCs INTEGER DEFAULT 35,
-    status TEXT DEFAULT 'Active',
-    location TEXT,
-    gridRows INTEGER DEFAULT 5,
-    gridCols INTEGER DEFAULT 8,
-    customLayout JSONB,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
--- 2. Bảng phiếu đăng ký mượn phòng máy
-CREATE TABLE IF NOT EXISTS school_lab_bookings (
-    id TEXT PRIMARY KEY,
-    labId TEXT NOT NULL,
-    dayIndex INTEGER NOT NULL,
-    slotId TEXT NOT NULL,
-    teacherName TEXT NOT NULL,
-    className TEXT NOT NULL,
-    studentCount INTEGER DEFAULT 35,
-    subject TEXT NOT NULL,
-    date TEXT NOT NULL,
-    status TEXT DEFAULT 'Approved',
-    notes TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
--- 3. Bảng báo cáo sự cố máy tính
-CREATE TABLE IF NOT EXISTS school_lab_incidents (
-    id TEXT PRIMARY KEY,
-    labId TEXT NOT NULL,
-    pcNumber INTEGER NOT NULL,
-    reporter TEXT NOT NULL,
-    type TEXT NOT NULL,
-    issue TEXT NOT NULL,
-    priority TEXT DEFAULT 'Medium',
-    date TEXT NOT NULL,
-    status TEXT DEFAULT 'Pending',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
--- 4. Bảng nhật ký bảo trì & sửa chữa thiết bị
-CREATE TABLE IF NOT EXISTS school_lab_maintenance_logs (
-    id TEXT PRIMARY KEY,
-    labId TEXT NOT NULL,
-    pcNumber INTEGER,
-    pcLabel TEXT,
-    type TEXT NOT NULL,
-    title TEXT NOT NULL,
-    description TEXT,
-    technician TEXT,
-    cost NUMERIC DEFAULT 0,
-    date TEXT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
--- Cấp quyền truy cập công khai RLS cho cả 4 bảng
-ALTER TABLE school_labs ENABLE ROW LEVEL SECURITY;
-ALTER TABLE school_lab_bookings ENABLE ROW LEVEL SECURITY;
-ALTER TABLE school_lab_incidents ENABLE ROW LEVEL SECURITY;
-ALTER TABLE school_lab_maintenance_logs ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Public full access school_labs" ON school_labs FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Public full access school_lab_bookings" ON school_lab_bookings FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Public full access school_lab_incidents" ON school_lab_incidents FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_maintenance_logs FOR ALL USING (true) WITH CHECK (true);`}</pre>
-            </div>
-
-            <div className="pt-3 border-t border-slate-200 flex justify-end">
-              <button
-                onClick={() => setIsSqlModalOpen(false)}
-                className="px-5 py-2 rounded-xl bg-slate-800 text-white font-bold text-xs cursor-pointer"
-              >
-                Đóng
-              </button>
-            </div>
           </div>
         </div>
       )}
