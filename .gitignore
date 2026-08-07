@@ -15,10 +15,11 @@ build/
 .env.test.local
 .env.production.local
 
-# AI Agent system files (MUST BE EXCLUDED as requested)
+# AI Agent system files & custom Agent configs (LOẠI BỎ THEO YÊU CẦU)
 .agent/
 .Agent/
 .agents/
+.gemini/
 
 # Logs & temporary files
 npm-debug.log*
@@ -27,6 +28,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 *.log
+*.tmp
 
 # Editor & IDE directories
 .vscode/*
