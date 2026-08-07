@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { LabInfo, LabBooking, LabIncident, Member, ClassItem, Computer } from '../types';
+import { LabInfo, LabBooking, LabIncident, LabMaintenanceLog, Member, ClassItem, Computer } from '../types';
 import { 
   CalendarDays, FilePenLine, AlertTriangle, Sliders, Plus, Trash2, CheckCircle2, 
   Monitor, Cpu, Search, User, Check, X, 
-  Building, RefreshCw, AlertOctagon, Info
+  Building, RefreshCw, AlertOctagon, Info, BookMarked, Wrench, RotateCw, Microchip, HardDrive, Tag
 } from 'lucide-react';
 import { safeSetLocalStorage } from '../utils/safeStorage';
 import { saveSupabaseState } from '../supabaseClient';
@@ -18,7 +18,37 @@ interface LabBookingTabProps {
   setBookings: React.Dispatch<React.SetStateAction<LabBooking[]>>;
   incidents: LabIncident[];
   setIncidents: React.Dispatch<React.SetStateAction<LabIncident[]>>;
+  maintenanceLogs: LabMaintenanceLog[];
+  setMaintenanceLogs: React.Dispatch<React.SetStateAction<LabMaintenanceLog[]>>;
 }
+
+// Date formatting helper enforcing strict DD-MM-YYYY format
+export const formatDateDDMMYYYY = (dateStr: string): string => {
+  if (!dateStr) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    const [yyyy, mm, dd] = dateStr.split('-');
+    return `${dd}-${mm}-${yyyy}`;
+  }
+  if (/^\d{2}-\d{2}-\d{4}$/.test(dateStr)) {
+    return dateStr;
+  }
+  const d = new Date(dateStr);
+  if (!isNaN(d.getTime())) {
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${dd}-${mm}-${yyyy}`;
+  }
+  return dateStr;
+};
+
+export const getTodayDDMMYYYY = (): string => {
+  const today = new Date();
+  const dd = String(today.getDate()).padStart(2, '0');
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const yyyy = today.getFullYear();
+  return `${dd}-${mm}-${yyyy}`;
+};
 
 // Lưới khung tiết học tiểu học (35 phút/tiết, giải lao 20 phút sau tiết 2)
 export const TIME_SLOTS = [
@@ -42,10 +72,10 @@ export const DAYS_OF_WEEK = [
   { id: 6, name: 'Thứ Bảy', short: 'T7' },
 ];
 
-// Danh sách phòng máy thực tế trong trường
+// Danh sách phòng máy chính thực tế nhà trường
 export const SYSTEM_LABS: LabInfo[] = [
-  { id: 'lab1', name: 'Phòng Máy Số 1', code: 'PM-01', totalPCs: 35, status: 'Active', location: 'Tầng 2 - Khu Phòng Học Bắt Đầu' },
-  { id: 'lab2', name: 'Phòng Máy Số 2', code: 'PM-02', totalPCs: 40, status: 'Active', location: 'Tầng 2 - Khu Phòng Học Mới' },
+  { id: 'lab1', name: 'Phòng Máy Số 1', code: 'PM-01', totalPCs: 35, status: 'Active', location: 'Tầng 2 - Khu Phòng Học A' },
+  { id: 'lab2', name: 'Phòng Máy Số 2', code: 'PM-02', totalPCs: 40, status: 'Active', location: 'Tầng 2 - Khu Phòng Học B' },
   { id: 'lab3', name: 'Phòng Thực Hành STEM', code: 'PM-STEM', totalPCs: 30, status: 'Maintenance', location: 'Tầng 3 - Nhà Đa Năng' },
 ];
 
@@ -58,9 +88,11 @@ export default function LabBookingTab({
   bookings,
   setBookings,
   incidents,
-  setIncidents
+  setIncidents,
+  maintenanceLogs,
+  setMaintenanceLogs
 }: LabBookingTabProps) {
-  const [activeSubTab, setActiveSubTab] = useState<'calendar' | 'booking' | 'incident' | 'admin'>('calendar');
+  const [activeSubTab, setActiveSubTab] = useState<'calendar' | 'booking' | 'incident' | 'log' | 'admin'>('calendar');
   const [selectedLab, setSelectedLab] = useState<string>('lab1');
 
   // Form states for Module 2: Booking Form
@@ -81,6 +113,21 @@ export default function LabBookingTab({
   const [incidentType, setIncidentType] = useState<'Hardware' | 'Software' | 'Network' | 'Other'>('Hardware');
   const [incidentPriority, setIncidentPriority] = useState<'Low' | 'Medium' | 'High'>('Medium');
   const [incidentIssue, setIncidentIssue] = useState<string>('');
+
+  // Form states for Module 4: Maintenance Log
+  const [isAddLogModalOpen, setIsAddLogModalOpen] = useState<boolean>(false);
+  const [logFilterType, setLogFilterType] = useState<string>('All');
+  const [logFilterPC, setLogFilterPC] = useState<string>('All');
+  const [logSearchTerm, setLogSearchTerm] = useState<string>('');
+  
+  const [logTargetType, setLogTargetType] = useState<'pc' | 'lab'>('pc');
+  const [logPcNumber, setLogPcNumber] = useState<number>(1);
+  const [logType, setLogType] = useState<'Repair' | 'Replacement' | 'Upgrade' | 'Maintenance' | 'Software' | 'Other'>('Repair');
+  const [logTitle, setLogTitle] = useState<string>('');
+  const [logDescription, setLogDescription] = useState<string>('');
+  const [logTechnician, setLogTechnician] = useState<string>(currentUser?.name || 'Cán bộ tin học');
+  const [logCost, setLogCost] = useState<number>(0);
+  const [logDate, setLogDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
 
   // Admin filter search term
   const [adminSearchTerm, setAdminSearchTerm] = useState<string>('');
@@ -107,7 +154,6 @@ export default function LabBookingTab({
   const handleAddBooking = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Trigger Popup Modal if there is a conflict!
     if (conflictBooking) {
       setIsConflictModalOpen(true);
       return;
@@ -127,7 +173,7 @@ export default function LabBookingTab({
       className: classNameInput.trim(),
       studentCount: Number(studentCountInput) || 35,
       subject: subjectInput.trim(),
-      date: new Date().toISOString().split('T')[0],
+      date: getTodayDDMMYYYY(),
       status: 'Approved'
     };
 
@@ -179,7 +225,7 @@ export default function LabBookingTab({
       type: incidentType,
       issue: incidentIssue.trim(),
       priority: incidentPriority,
-      date: new Date().toISOString().split('T')[0],
+      date: getTodayDDMMYYYY(),
       status: 'Pending'
     };
 
@@ -211,7 +257,77 @@ export default function LabBookingTab({
     }
   };
 
-  // Filtered lists for Admin Dashboard
+  // Submit Handler for Maintenance Logs
+  const handleAddLog = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!logTitle.trim()) {
+      showToast('Vui lòng nhập tiêu đề hạng mục bảo trì/sửa chữa!', 'error');
+      return;
+    }
+
+    const pcNum = logTargetType === 'pc' ? Number(logPcNumber) : null;
+    const pcLbl = logTargetType === 'pc' ? `Máy #${pcNum}` : 'Toàn phòng';
+
+    const newLog: LabMaintenanceLog = {
+      id: `log_${Date.now()}`,
+      labId: selectedLab,
+      pcNumber: pcNum,
+      pcLabel: pcLbl,
+      type: logType,
+      title: logTitle.trim(),
+      description: logDescription.trim(),
+      technician: logTechnician.trim() || currentUser?.name || 'Cán bộ tin học',
+      cost: Number(logCost) || 0,
+      date: formatDateDDMMYYYY(logDate)
+    };
+
+    const updated = [newLog, ...maintenanceLogs];
+    setMaintenanceLogs(updated);
+    safeSetLocalStorage('school_lab_maintenance_logs', updated);
+    await saveSupabaseState('school_lab_maintenance_logs', updated);
+
+    showToast('Đã ghi thành công nhật ký bảo trì/thay thế linh kiện mới!', 'success');
+    setIsAddLogModalOpen(false);
+    setLogTitle('');
+    setLogDescription('');
+    setLogCost(0);
+  };
+
+  const handleDeleteLog = async (id: string) => {
+    if (window.confirm('Xác nhận xóa dòng nhật ký bảo trì thiết bị này?')) {
+      const updated = maintenanceLogs.filter(m => m.id !== id);
+      setMaintenanceLogs(updated);
+      safeSetLocalStorage('school_lab_maintenance_logs', updated);
+      await saveSupabaseState('school_lab_maintenance_logs', updated);
+      showToast('Đã xóa dòng nhật ký bảo trì thành công!', 'success');
+    }
+  };
+
+  // Filtered Lists
+  const filteredLogs = useMemo(() => {
+    return maintenanceLogs.filter(log => {
+      if (log.labId !== selectedLab) return false;
+      if (logFilterType !== 'All' && log.type !== logFilterType) return false;
+      if (logFilterPC === 'lab' && log.pcNumber !== null) return false;
+      if (logFilterPC !== 'All' && logFilterPC !== 'lab' && Number(log.pcNumber) !== Number(logFilterPC)) return false;
+
+      if (logSearchTerm.trim() !== '') {
+        const term = logSearchTerm.toLowerCase();
+        return (
+          log.title.toLowerCase().includes(term) ||
+          log.description.toLowerCase().includes(term) ||
+          log.technician.toLowerCase().includes(term) ||
+          (log.pcLabel && log.pcLabel.toLowerCase().includes(term))
+        );
+      }
+      return true;
+    });
+  }, [maintenanceLogs, selectedLab, logFilterType, logFilterPC, logSearchTerm]);
+
+  const totalSpent = useMemo(() => {
+    return filteredLogs.reduce((acc, curr) => acc + (Number(curr.cost) || 0), 0);
+  }, [filteredLogs]);
+
   const filteredBookings = useMemo(() => {
     return bookings.filter(b => 
       b.teacherName.toLowerCase().includes(adminSearchTerm.toLowerCase()) ||
@@ -231,6 +347,10 @@ export default function LabBookingTab({
   }, [incidents, adminSearchTerm]);
 
   const currentLabObj = SYSTEM_LABS.find(l => l.id === selectedLab) || SYSTEM_LABS[0];
+
+  const formatVND = (amount: number) => {
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+  };
 
   return (
     <div className="space-y-4 sm:space-y-6 text-slate-800 pb-10 animate-fadeIn">
@@ -281,6 +401,18 @@ export default function LabBookingTab({
             >
               <AlertTriangle className="w-4 h-4 text-amber-300" />
               <span>3. Báo Sự Cố</span>
+            </button>
+
+            <button
+              onClick={() => setActiveSubTab('log')}
+              className={`px-3.5 py-1.5 rounded-lg font-black text-xs transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                activeSubTab === 'log'
+                  ? 'bg-indigo-700 text-white shadow-xs'
+                  : 'text-[#3d2b17] hover:bg-[#d5c3aa]'
+              }`}
+            >
+              <BookMarked className="w-4 h-4 text-teal-300" />
+              <span>4. Nhật Ký Bảo Trì</span>
             </button>
 
             <button
@@ -836,7 +968,307 @@ export default function LabBookingTab({
       )}
 
       {/* ====================================================================
-          MODULE 4: QUẢN LÝ DUYỆT PHIẾU & BÁO CÁO SỬA CHỮA (CẤU TRÚC BẢNG CỦA VƯỜN TRI THỨC + PHỤC HỒI NÚT BẤM DUYỆT/TỪ CHỐI/XÓA)
+          MODULE 4: NHẬT KÝ BẢO TRÌ & SỬA CHỮA THIẾT BỊ (MAINTENANCE LOGS)
+          ==================================================================== */}
+      {activeSubTab === 'log' && (
+        <div className="space-y-6 animate-fadeIn">
+          {/* STATS HEADER */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
+            <div className="bg-white p-5 rounded-2xl border border-[#cbb89d] shadow-xs flex items-center justify-between">
+              <div>
+                <div className="text-xs font-black text-slate-500 uppercase tracking-wide">Số Lượt Ghi Vết Bảo Trì</div>
+                <div className="text-2xl font-black text-[#3d2b17] mt-1">{filteredLogs.length} Lượt</div>
+              </div>
+              <div className="w-12 h-12 rounded-2xl bg-teal-50 text-teal-700 border border-teal-200 flex items-center justify-center text-xl font-bold">
+                <BookMarked className="w-6 h-6" />
+              </div>
+            </div>
+
+            <div className="bg-white p-5 rounded-2xl border border-[#cbb89d] shadow-xs flex items-center justify-between">
+              <div>
+                <div className="text-xs font-black text-slate-500 uppercase tracking-wide">Tổng Chi Phí Sửa / Thay Linh Kiện</div>
+                <div className="text-2xl font-black text-emerald-700 mt-1">{formatVND(totalSpent)}</div>
+              </div>
+              <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center text-xl font-bold">
+                <Tag className="w-6 h-6" />
+              </div>
+            </div>
+
+            <div className="bg-white p-5 rounded-2xl border border-[#cbb89d] shadow-xs flex items-center justify-between">
+              <div>
+                <div className="text-xs font-black text-slate-500 uppercase tracking-wide">Phòng Đang Chọn Ghi Chép</div>
+                <select
+                  value={selectedLab}
+                  onChange={e => setSelectedLab(e.target.value)}
+                  className="mt-1 font-black text-indigo-900 text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 outline-none cursor-pointer"
+                >
+                  {SYSTEM_LABS.map(l => (
+                    <option key={l.id} value={l.id}>{l.name} ({l.code})</option>
+                  ))}
+                </select>
+              </div>
+              <button
+                onClick={() => setIsAddLogModalOpen(true)}
+                className="bg-indigo-700 hover:bg-indigo-800 text-white font-extrabold text-xs px-3.5 py-2.5 rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer active:scale-95"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Ghi Nhật Ký</span>
+              </button>
+            </div>
+          </div>
+
+          {/* FILTER BAR */}
+          <div className="bg-white p-4 rounded-2xl border border-[#cbb89d] shadow-xs flex flex-col md:flex-row justify-between items-center gap-4 text-left">
+            <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+              <span className="text-xs font-black text-slate-600 uppercase">Lọc Theo:</span>
+              <select
+                value={logFilterType}
+                onChange={e => setLogFilterType(e.target.value)}
+                className="px-3 py-1.5 rounded-xl border border-slate-300 text-xs font-extrabold bg-white cursor-pointer"
+              >
+                <option value="All">Tất cả loại nhật ký</option>
+                <option value="Repair">🛠️ Sửa chữa</option>
+                <option value="Replacement">🔄 Thay linh kiện</option>
+                <option value="Upgrade">🚀 Nâng cấp phần cứng</option>
+                <option value="Maintenance">🧹 Bảo trì định kỳ</option>
+                <option value="Software">💻 Phần mềm</option>
+              </select>
+
+              <select
+                value={logFilterPC}
+                onChange={e => setLogFilterPC(e.target.value)}
+                className="px-3 py-1.5 rounded-xl border border-slate-300 text-xs font-extrabold bg-white cursor-pointer"
+              >
+                <option value="All">Tất cả thiết bị</option>
+                <option value="lab">🏢 Toàn bộ phòng máy</option>
+                {Array.from({ length: currentLabObj.totalPCs }).map((_, i) => (
+                  <option key={i + 1} value={i + 1}>💻 Máy #{i + 1}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="w-full md:w-80 relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Tìm tiêu đề, người sửa, linh kiện..."
+                value={logSearchTerm}
+                onChange={e => setLogSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-indigo-500 outline-none"
+              />
+            </div>
+          </div>
+
+          {/* LOGS LIST */}
+          <div className="bg-white rounded-2xl border border-[#cbb89d] overflow-hidden shadow-xs p-6 text-left">
+            {filteredLogs.length === 0 ? (
+              <div className="py-12 text-center text-slate-400 italic">
+                <BookMarked className="w-12 h-12 mx-auto mb-2 opacity-30 text-slate-500" />
+                <p className="text-xs font-extrabold">Chưa có ghi chép nhật ký bảo trì nào cho phòng máy này.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filteredLogs.map(log => (
+                  <div key={log.id} className="p-4.5 rounded-2xl border border-slate-200 hover:border-[#cbb89d] bg-slate-50/50 hover:bg-[#fffbf0]/80 transition-all flex flex-col md:flex-row justify-between gap-4">
+                    <div className="space-y-2 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="bg-indigo-100 text-indigo-900 border border-indigo-200 text-[10px] font-black px-2.5 py-0.5 rounded-full">
+                          {log.type === 'Repair' ? '🛠️ Sửa chữa' : log.type === 'Replacement' ? '🔄 Thay linh kiện' : log.type === 'Upgrade' ? '🚀 Nâng cấp' : log.type === 'Maintenance' ? '🧹 Bảo trì' : '💻 Phần mềm'}
+                        </span>
+                        <span className="bg-slate-800 text-white text-[10px] font-black px-2.5 py-0.5 rounded-md font-mono">
+                          {log.pcLabel || (log.pcNumber ? `Máy #${log.pcNumber}` : 'Toàn phòng')}
+                        </span>
+                        <span className="text-[11px] font-bold text-slate-500">
+                          📅 {formatDateDDMMYYYY(log.date)}
+                        </span>
+                      </div>
+
+                      <h4 className="text-sm font-black text-slate-900">{log.title}</h4>
+
+                      {log.description && (
+                        <p className="text-xs text-slate-600 bg-white p-3 rounded-xl border border-slate-200 leading-relaxed font-medium">
+                          {log.description}
+                        </p>
+                      )}
+
+                      <div className="flex flex-wrap items-center gap-4 text-xs text-slate-600 font-bold pt-1">
+                        <span>👨‍🔧 Thực hiện: <strong className="text-indigo-900">{log.technician}</strong></span>
+                        {log.cost > 0 && (
+                          <span className="text-emerald-800 font-black bg-emerald-100/80 px-2.5 py-0.5 rounded-md border border-emerald-300">
+                            💵 Chi phí: {formatVND(log.cost)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex md:flex-col justify-end items-end shrink-0">
+                      <button
+                        onClick={() => handleDeleteLog(log.id)}
+                        className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-2 rounded-lg transition cursor-pointer"
+                        title="Xóa nhật ký"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL GHI NHẬT KÝ BẢO TRÌ MỚI */}
+      {isAddLogModalOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/70 backdrop-blur-md p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border-2 border-[#cbb89d] space-y-5 text-left">
+            <div className="flex justify-between items-center border-b border-slate-200 pb-3">
+              <h3 className="text-base font-black text-slate-800 flex items-center gap-2">
+                <BookMarked className="w-5 h-5 text-teal-600" />
+                <span>Ghi Nhật Ký Bảo Trì & Sửa Chữa Mới</span>
+              </h3>
+              <button onClick={() => setIsAddLogModalOpen(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddLog} className="space-y-4 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase mb-1">Phòng Máy</label>
+                  <select
+                    value={selectedLab}
+                    onChange={e => setSelectedLab(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold text-xs bg-white"
+                  >
+                    {SYSTEM_LABS.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase mb-1">Đối Tượng</label>
+                  <select
+                    value={logTargetType}
+                    onChange={e => setLogTargetType(e.target.value as any)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold text-xs bg-white"
+                  >
+                    <option value="pc">Từng máy cụ thể</option>
+                    <option value="lab">Toàn bộ phòng máy</option>
+                  </select>
+                </div>
+              </div>
+
+              {logTargetType === 'pc' && (
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase mb-1">Chọn Số Máy</label>
+                  <select
+                    value={logPcNumber}
+                    onChange={e => setLogPcNumber(Number(e.target.value))}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold text-xs bg-white"
+                  >
+                    {Array.from({ length: currentLabObj.totalPCs }).map((_, i) => (
+                      <option key={i + 1} value={i + 1}>Máy #{i + 1}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase mb-1">Loại Hoạt Động</label>
+                  <select
+                    value={logType}
+                    onChange={e => setLogType(e.target.value as any)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold text-xs bg-white"
+                  >
+                    <option value="Repair">🛠️ Sửa chữa</option>
+                    <option value="Replacement">🔄 Thay thế linh kiện</option>
+                    <option value="Upgrade">🚀 Nâng cấp phần cứng</option>
+                    <option value="Maintenance">🧹 Bảo trì định kỳ</option>
+                    <option value="Software">💻 Phần mềm</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase mb-1">Ngày Thực Hiện</label>
+                  <input
+                    type="date"
+                    required
+                    value={logDate}
+                    onChange={e => setLogDate(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold text-xs"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 uppercase mb-1">Tiêu Đề Hạng Mục *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ví dụ: Thay RAM 8GB Kingston DDR4..."
+                  value={logTitle}
+                  onChange={e => setLogTitle(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-semibold text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 uppercase mb-1">Mô Tả Chi Tiết / Thông Số Linh Kiện</label>
+                <textarea
+                  rows={3}
+                  placeholder="Ghi chú chi tiết thông số linh kiện, tình trạng cũ/mới, thời hạn bảo hành..."
+                  value={logDescription}
+                  onChange={e => setLogDescription(e.target.value)}
+                  className="w-full p-3 rounded-xl border border-slate-300 font-medium text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
+                ></textarea>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase mb-1">Người Sửa / Đơn Vị</label>
+                  <input
+                    type="text"
+                    placeholder="Tên Giáo viên / Kỹ thuật viên..."
+                    value={logTechnician}
+                    onChange={e => setLogTechnician(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase mb-1">Chi Phí Thay/Sửa (VNĐ)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="5000"
+                    placeholder="0"
+                    value={logCost}
+                    onChange={e => setLogCost(Number(e.target.value))}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-slate-200 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsAddLogModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-300 font-bold text-xs text-slate-700 hover:bg-slate-50 cursor-pointer"
+                >
+                  Hủy Bỏ
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-indigo-700 hover:bg-indigo-800 font-extrabold text-xs text-white shadow-md cursor-pointer"
+                >
+                  Lưu Nhật Ký
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ====================================================================
+          MODULE 5: QUẢN LÝ DUYỆT PHIẾU & BÁO CÁO SỬA CHỮA (ADMIN DASHBOARD)
           ==================================================================== */}
       {activeSubTab === 'admin' && (
         <div className="space-y-6 animate-fadeIn">
@@ -860,7 +1292,7 @@ export default function LabBookingTab({
           </div>
 
           {/* TABLE 1: BOOKINGS LIST (CẤU TRÚC BẢNG VƯỜN TRI THỨC + PHỤC HỒI NÚT BẤM STYLED BUTTON) */}
-          <div className="bg-white rounded-2xl border border-[#cbb89d] overflow-hidden shadow-xs">
+          <div className="bg-white rounded-2xl border border-[#cbb89d] overflow-hidden shadow-xs text-left">
             <div className="p-4 border-b border-[#cbb89d] font-extrabold text-[#3d2b17] text-sm flex justify-between items-center bg-[#dfccb0]/30">
               <span>Danh Sách Phiếu Đăng Ký Mượn Phòng ({filteredBookings.length})</span>
             </div>
@@ -934,7 +1366,7 @@ export default function LabBookingTab({
           </div>
 
           {/* TABLE 2: INCIDENTS LIST (CẤU TRÚC BẢNG VƯỜN TRI THỨC + PHỤC HỒI NÚT BẤM ĐANG SỬA/ĐÃ XONG/XÓA) */}
-          <div className="bg-white rounded-2xl border border-[#cbb89d] overflow-hidden shadow-xs">
+          <div className="bg-white rounded-2xl border border-[#cbb89d] overflow-hidden shadow-xs text-left">
             <div className="p-4 border-b border-[#cbb89d] font-extrabold text-[#3d2b17] text-sm flex justify-between items-center bg-[#dfccb0]/30">
               <span>Danh Sách Báo Cáo Sự Cố Máy Tính ({filteredIncidents.length})</span>
             </div>

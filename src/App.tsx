@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Grade, ClassItem, Student, Computer, DocumentItem, Member, AttendanceData, EvaluationData, EmulationDataState, SeatingChart, TimetableData, MotivationalQuote, THEMES, LabBooking, LabIncident } from './types';
+import { Grade, ClassItem, Student, Computer, DocumentItem, Member, AttendanceData, EvaluationData, EmulationDataState, SeatingChart, TimetableData, MotivationalQuote, THEMES, LabBooking, LabIncident, LabMaintenanceLog } from './types';
 import {
   defaultGrades,
   defaultClasses,
@@ -144,6 +144,7 @@ export default function App() {
   const [quotes, setQuotes] = useState<MotivationalQuote[]>(() => safeParse('school_quotes', defaultQuotes));
   const [labBookings, setLabBookings] = useState<LabBooking[]>(() => safeParse('school_lab_bookings', []));
   const [labIncidents, setLabIncidents] = useState<LabIncident[]>(() => safeParse('school_lab_incidents', []));
+  const [labMaintenanceLogs, setLabMaintenanceLogs] = useState<LabMaintenanceLog[]>(() => safeParse('school_lab_maintenance_logs', []));
 
   // --- SUPABASE CLOUD STATUS STATES ---
   const [isLoaded, setIsLoaded] = useState(false);
@@ -299,6 +300,8 @@ export default function App() {
           if (dbStates['school_quotes']) setQuotes(dbStates['school_quotes']);
           if (dbStates['school_lab_bookings']) setLabBookings(dbStates['school_lab_bookings']);
           if (dbStates['school_lab_incidents']) setLabIncidents(dbStates['school_lab_incidents']);
+          if (dbStates['school_lab_maintenance_logs']) setLabMaintenanceLogs(dbStates['school_lab_maintenance_logs']);
+
           if (dbStates['custom_avatars_list'] && Array.isArray(dbStates['custom_avatars_list'])) {
             safeSetLocalStorage('custom_avatars_list', dbStates['custom_avatars_list']);
             window.dispatchEvent(new CustomEvent('custom_avatars_updated', { detail: dbStates['custom_avatars_list'] }));
@@ -1285,6 +1288,8 @@ export default function App() {
                 setBookings={setLabBookings}
                 incidents={labIncidents}
                 setIncidents={setLabIncidents}
+                maintenanceLogs={labMaintenanceLogs}
+                setMaintenanceLogs={setLabMaintenanceLogs}
               />
             )}
 

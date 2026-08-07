@@ -255,6 +255,20 @@ export interface LabIncident {
   status: 'Pending' | 'In Progress' | 'Resolved';
 }
 
+export interface LabMaintenanceLog {
+  id: string;
+  labId: string;
+  pcNumber?: number | null;
+  pcLabel?: string;
+  type: 'Repair' | 'Replacement' | 'Upgrade' | 'Maintenance' | 'Software' | 'Other';
+  title: string;
+  description: string;
+  technician: string;
+  cost: number;
+  date: string;
+}
+
+
 
 
 
