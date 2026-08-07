@@ -1519,38 +1519,48 @@ export default function LabBookingTab({
         </div>
       )}
 
-      {/* MODAL GHI NHẬT KÝ BẢO TRÌ */}
+      {/* MODAL GHI NHẬT KÝ BẢO TRÌ (CHUẨN GIAO DIỆN DESKOS IMAC WARM BEIGE THEME) */}
       {isAddLogModalOpen && (
         <div className="fixed inset-0 z-[500] flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4 animate-fadeIn">
-          <div className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl border-2 border-[#cbb89d] space-y-5 text-left">
-            <div className="flex justify-between items-center border-b border-slate-200 pb-3">
-              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-                <BookMarked className="w-5 h-5 text-teal-600" />
-                <span>Ghi Nhật Ký Bảo Trì & Sửa Chữa Mới</span>
-              </h3>
-              <button onClick={() => setIsAddLogModalOpen(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer">
-                <X className="w-5 h-5" />
+          <div className="bg-[#fffbf0] rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl border-2 border-[#cbb89d] space-y-5 text-left relative overflow-hidden">
+            
+            {/* HEADER BAR WARM BEIGE */}
+            <div className="px-6 py-4 -mx-6 -mt-6 sm:-mx-8 sm:-mt-8 border-b border-[#cbb89d] bg-[#dfccb0] flex justify-between items-center mb-5 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-white border border-[#cbb89d] flex items-center justify-center text-[#3d2b17] shadow-2xs">
+                  <BookMarked className="w-5 h-5 text-indigo-700" />
+                </div>
+                <h3 className="text-base font-black text-[#3d2b17] tracking-tight">
+                  Ghi Nhật Ký Bảo Trì & Sửa Chữa Mới
+                </h3>
+              </div>
+              <button 
+                onClick={() => setIsAddLogModalOpen(false)} 
+                className="w-8 h-8 rounded-full border border-[#cbb89d] bg-white/80 hover:bg-white text-slate-600 hover:text-slate-900 flex items-center justify-center transition cursor-pointer shadow-2xs"
+                title="Đóng cửa sổ"
+              >
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             <form onSubmit={handleAddLog} className="space-y-4 text-xs">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-bold text-slate-700 uppercase mb-1">Phòng Máy</label>
+                  <label className="block font-black text-[#3d2b17] uppercase mb-1.5 text-[11px] tracking-wider">PHÒNG MÁY</label>
                   <select
                     value={selectedLab}
                     onChange={e => setSelectedLab(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold text-xs bg-white"
+                    className="w-full px-4 py-2.5 rounded-2xl border border-slate-300 font-semibold text-xs text-slate-800 bg-white focus:ring-2 focus:ring-indigo-600 outline-none shadow-2xs cursor-pointer"
                   >
                     {labs.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 uppercase mb-1">Đối Tượng</label>
+                  <label className="block font-black text-[#3d2b17] uppercase mb-1.5 text-[11px] tracking-wider">ĐỐI TƯỢNG</label>
                   <select
                     value={logTargetType}
                     onChange={e => setLogTargetType(e.target.value as any)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold text-xs bg-white"
+                    className="w-full px-4 py-2.5 rounded-2xl border border-slate-300 font-semibold text-xs text-slate-800 bg-white focus:ring-2 focus:ring-indigo-600 outline-none shadow-2xs cursor-pointer"
                   >
                     <option value="pc">Từng máy cụ thể</option>
                     <option value="lab">Toàn bộ phòng máy</option>
@@ -1560,11 +1570,11 @@ export default function LabBookingTab({
 
               {logTargetType === 'pc' && (
                 <div>
-                  <label className="block font-bold text-slate-700 uppercase mb-1">Chọn Số Máy</label>
+                  <label className="block font-black text-[#3d2b17] uppercase mb-1.5 text-[11px] tracking-wider">CHỌN SỐ MÁY</label>
                   <select
                     value={logPcNumber}
                     onChange={e => setLogPcNumber(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold text-xs bg-white"
+                    className="w-full px-4 py-2.5 rounded-2xl border border-slate-300 font-semibold text-xs text-slate-800 bg-white focus:ring-2 focus:ring-indigo-600 outline-none shadow-2xs cursor-pointer"
                   >
                     {Array.from({ length: currentLabObj.totalPCs }).map((_, i) => (
                       <option key={i + 1} value={i + 1}>Máy #{i + 1}</option>
@@ -1573,13 +1583,13 @@ export default function LabBookingTab({
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-bold text-slate-700 uppercase mb-1">Loại Hoạt Động</label>
+                  <label className="block font-black text-[#3d2b17] uppercase mb-1.5 text-[11px] tracking-wider">LOẠI HOẠT ĐỘNG</label>
                   <select
                     value={logType}
                     onChange={e => setLogType(e.target.value as any)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold text-xs bg-white"
+                    className="w-full px-4 py-2.5 rounded-2xl border border-slate-300 font-semibold text-xs text-slate-800 bg-white focus:ring-2 focus:ring-indigo-600 outline-none shadow-2xs cursor-pointer"
                   >
                     <option value="Repair">🛠️ Sửa chữa</option>
                     <option value="Replacement">🔄 Thay thế linh kiện</option>
@@ -1589,53 +1599,53 @@ export default function LabBookingTab({
                   </select>
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 uppercase mb-1">Ngày Thực Hiện</label>
+                  <label className="block font-black text-[#3d2b17] uppercase mb-1.5 text-[11px] tracking-wider">NGÀY THỰC HIỆN</label>
                   <input
                     type="date"
                     required
                     value={logDate}
                     onChange={e => setLogDate(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold text-xs"
+                    className="w-full px-4 py-2.5 rounded-2xl border border-slate-300 font-semibold text-xs text-slate-800 bg-white focus:ring-2 focus:ring-indigo-600 outline-none shadow-2xs"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 uppercase mb-1">Tiêu Đề Hạng Mục *</label>
+                <label className="block font-black text-[#3d2b17] uppercase mb-1.5 text-[11px] tracking-wider">TIÊU ĐỀ HẠNG MỤC *</label>
                 <input
                   type="text"
                   required
                   placeholder="Ví dụ: Thay RAM 8GB Kingston DDR4..."
                   value={logTitle}
                   onChange={e => setLogTitle(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-semibold text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full px-4 py-2.5 rounded-2xl border border-slate-300 font-semibold text-xs text-slate-800 bg-white focus:ring-2 focus:ring-indigo-600 outline-none shadow-2xs"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 uppercase mb-1">Mô Tả Chi Tiết / Thông Số Linh Kiện</label>
+                <label className="block font-black text-[#3d2b17] uppercase mb-1.5 text-[11px] tracking-wider">MÔ TẢ CHI TIẾT / THÔNG SỐ LINH KIỆN</label>
                 <textarea
                   rows={3}
                   placeholder="Ghi chú chi tiết thông số linh kiện, tình trạng cũ/mới, thời hạn bảo hành..."
                   value={logDescription}
                   onChange={e => setLogDescription(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-slate-300 font-medium text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full p-4 rounded-2xl border border-slate-300 font-medium text-xs text-slate-800 bg-white focus:ring-2 focus:ring-indigo-600 outline-none shadow-2xs"
                 ></textarea>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-bold text-slate-700 uppercase mb-1">Người Sửa / Đơn Vị</label>
+                  <label className="block font-black text-[#3d2b17] uppercase mb-1.5 text-[11px] tracking-wider">NGƯỜI SỬA / ĐƠN VỊ</label>
                   <input
                     type="text"
                     placeholder="Tên Giáo viên / Kỹ thuật viên..."
                     value={logTechnician}
                     onChange={e => setLogTechnician(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold text-xs"
+                    className="w-full px-4 py-2.5 rounded-2xl border border-slate-300 font-semibold text-xs text-slate-800 bg-white focus:ring-2 focus:ring-indigo-600 outline-none shadow-2xs"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 uppercase mb-1">Chi Phí Thay/Sửa (VNĐ)</label>
+                  <label className="block font-black text-[#3d2b17] uppercase mb-1.5 text-[11px] tracking-wider">CHI PHÍ THAY/SỬA (VNĐ)</label>
                   <input
                     type="number"
                     min="0"
@@ -1643,22 +1653,22 @@ export default function LabBookingTab({
                     placeholder="0"
                     value={logCost}
                     onChange={e => setLogCost(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold text-xs"
+                    className="w-full px-4 py-2.5 rounded-2xl border border-slate-300 font-semibold text-xs text-slate-800 bg-white focus:ring-2 focus:ring-indigo-600 outline-none shadow-2xs"
                   />
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-slate-200 flex justify-end gap-3">
+              <div className="pt-4 border-t border-[#cbb89d]/70 flex justify-end items-center gap-3">
                 <button
                   type="button"
                   onClick={() => setIsAddLogModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-300 font-bold text-xs text-slate-700 hover:bg-slate-50 cursor-pointer"
+                  className="px-5 py-2.5 rounded-2xl border border-slate-300 bg-white text-slate-700 font-bold hover:bg-slate-100 transition cursor-pointer active:scale-95"
                 >
                   Hủy Bỏ
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-indigo-700 hover:bg-indigo-800 font-extrabold text-xs text-white shadow-md cursor-pointer"
+                  className="px-6 py-2.5 rounded-2xl bg-indigo-700 hover:bg-indigo-800 text-white font-black text-xs shadow-lg transition cursor-pointer active:scale-95"
                 >
                   Lưu Nhật Ký
                 </button>
