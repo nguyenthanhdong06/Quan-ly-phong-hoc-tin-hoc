@@ -3,7 +3,8 @@ import { LabInfo, LabBooking, LabIncident, LabMaintenanceLog, Member, ClassItem,
 import { 
   CalendarDays, FilePenLine, AlertTriangle, Sliders, Plus, Trash2, CheckCircle2, 
   Monitor, Cpu, Search, User, Check, X, 
-  Building, RefreshCw, AlertOctagon, Info, BookMarked, Wrench, RotateCw, Microchip, HardDrive, Tag
+  Building, RefreshCw, AlertOctagon, Info, BookMarked, Wrench, RotateCw, Microchip, HardDrive, Tag,
+  Edit, Grid, Database, Copy, CheckCheck, Rows, Columns
 } from 'lucide-react';
 import { safeSetLocalStorage } from '../utils/safeStorage';
 import { saveSupabaseState } from '../supabaseClient';
@@ -20,6 +21,8 @@ interface LabBookingTabProps {
   setIncidents: React.Dispatch<React.SetStateAction<LabIncident[]>>;
   maintenanceLogs: LabMaintenanceLog[];
   setMaintenanceLogs: React.Dispatch<React.SetStateAction<LabMaintenanceLog[]>>;
+  labs: LabInfo[];
+  setLabs: React.Dispatch<React.SetStateAction<LabInfo[]>>;
 }
 
 // Date formatting helper enforcing strict DD-MM-YYYY format
@@ -72,13 +75,6 @@ export const DAYS_OF_WEEK = [
   { id: 6, name: 'Thứ Bảy', short: 'T7' },
 ];
 
-// Danh sách phòng máy chính thực tế nhà trường
-export const SYSTEM_LABS: LabInfo[] = [
-  { id: 'lab1', name: 'Phòng Máy Số 1', code: 'PM-01', totalPCs: 35, status: 'Active', location: 'Tầng 2 - Khu Phòng Học A' },
-  { id: 'lab2', name: 'Phòng Máy Số 2', code: 'PM-02', totalPCs: 40, status: 'Active', location: 'Tầng 2 - Khu Phòng Học B' },
-  { id: 'lab3', name: 'Phòng Thực Hành STEM', code: 'PM-STEM', totalPCs: 30, status: 'Maintenance', location: 'Tầng 3 - Nhà Đa Năng' },
-];
-
 export default function LabBookingTab({
   members,
   classes,
@@ -90,17 +86,19 @@ export default function LabBookingTab({
   incidents,
   setIncidents,
   maintenanceLogs,
-  setMaintenanceLogs
+  setMaintenanceLogs,
+  labs,
+  setLabs
 }: LabBookingTabProps) {
   const [activeSubTab, setActiveSubTab] = useState<'calendar' | 'booking' | 'incident' | 'log' | 'admin'>('calendar');
-  const [selectedLab, setSelectedLab] = useState<string>('lab1');
+  const [selectedLab, setSelectedLab] = useState<string>(labs[0] ? labs[0].id : 'lab1');
 
   // Form states for Module 2: Booking Form
   const [teacherNameInput, setTeacherNameInput] = useState<string>(currentUser?.name || (members[0] ? members[0].name : ''));
   const [classNameInput, setClassNameInput] = useState<string>(classes[0] ? classes[0].name : 'Ba 1');
   const [studentCountInput, setStudentCountInput] = useState<number>(35);
   const [subjectInput, setSubjectInput] = useState<string>('Tin học - Bài thực hành gõ phím & Scratch');
-  const [formLabId, setFormLabId] = useState<string>('lab1');
+  const [formLabId, setFormLabId] = useState<string>(labs[0] ? labs[0].id : 'lab1');
   const [formDayIndex, setFormDayIndex] = useState<number>(1);
   const [formSlotId, setFormSlotId] = useState<string>('s1');
 
@@ -131,6 +129,22 @@ export default function LabBookingTab({
 
   // Admin filter search term
   const [adminSearchTerm, setAdminSearchTerm] = useState<string>('');
+
+  // States for LAB EDITOR MODAL & LAB MATRIX CUSTOMIZER (TRÌNH THIẾT KẾ SƠ ĐỒ PHÒNG LAB)
+  const [isLabEditorModalOpen, setIsLabEditorModalOpen] = useState<boolean>(false);
+  const [editingLab, setEditingLab] = useState<LabInfo | null>(null);
+  const [labFormName, setLabFormName] = useState<string>('');
+  const [labFormCode, setLabFormCode] = useState<string>('');
+  const [labFormLocation, setLabFormLocation] = useState<string>('');
+  const [labFormTotalPCs, setLabFormTotalPCs] = useState<number>(36);
+  const [labFormRows, setLabFormRows] = useState<number>(5);
+  const [labFormCols, setLabFormCols] = useState<number>(8);
+  const [labFormLayout, setLabFormLayout] = useState<Record<string, { type: 'pc' | 'aisle' | 'desk'; label?: string; pcNumber?: number }>>({});
+  const [activeEditorTool, setActiveEditorTool] = useState<'pc' | 'aisle' | 'desk'>('pc');
+
+  // Supabase SQL Config Modal
+  const [isSqlModalOpen, setIsSqlModalOpen] = useState<boolean>(false);
+  const [copiedSql, setCopiedSql] = useState<boolean>(false);
 
   // Transition from Calendar Cell click to Booking Form
   const handleCellClickToBook = (dayIndex: number, slotId: string) => {
@@ -303,6 +317,107 @@ export default function LabBookingTab({
     }
   };
 
+  // LAB EDITOR MODAL HANDLERS (+ THÊM PHÒNG MỚI & SỬA SƠ ĐỒ PHÒNG LAB MA TRẬN)
+  const handleOpenAddLabModal = () => {
+    setEditingLab(null);
+    setLabFormName(`Phòng Lab 0${labs.length + 1}`);
+    setLabFormCode(`P.${200 + labs.length + 1}`);
+    setLabFormLocation('Tầng 2 - Nhà A');
+    setLabFormTotalPCs(36);
+    setLabFormRows(5);
+    setLabFormCols(8);
+    setLabFormLayout({});
+    setIsLabEditorModalOpen(true);
+  };
+
+  const handleOpenEditLabModal = (lab: LabInfo) => {
+    setEditingLab(lab);
+    setLabFormName(lab.name);
+    setLabFormCode(lab.code);
+    setLabFormLocation(lab.location);
+    setLabFormTotalPCs(lab.totalPCs);
+    setLabFormRows(lab.gridRows || 5);
+    setLabFormCols(lab.gridCols || 8);
+    setLabFormLayout(lab.customLayout || {});
+    setIsLabEditorModalOpen(true);
+  };
+
+  const handleDeleteLab = async (labId: string) => {
+    if (window.confirm('Thầy/Cô có chắc chắn muốn xóa phòng lab này không?')) {
+      const updated = labs.filter(l => l.id !== labId);
+      setLabs(updated);
+      safeSetLocalStorage('school_labs', updated);
+      await saveSupabaseState('school_labs', updated);
+      showToast('Đã xóa phòng lab!', 'success');
+    }
+  };
+
+  const handleSaveLabLayout = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!labFormName.trim() || !labFormCode.trim()) {
+      showToast('Vui lòng nhập đầy đủ tên phòng lab và mã phòng!', 'error');
+      return;
+    }
+
+    let pcCounter = 0;
+    Object.values(labFormLayout).forEach((tile: any) => {
+      if (tile && tile.type === 'pc') pcCounter++;
+    });
+    const calculatedTotalPCs = pcCounter > 0 ? pcCounter : Number(labFormTotalPCs);
+
+    if (editingLab) {
+      const updated = labs.map(l => l.id === editingLab.id ? {
+        ...l,
+        name: labFormName.trim(),
+        code: labFormCode.trim(),
+        location: labFormLocation.trim(),
+        totalPCs: calculatedTotalPCs,
+        gridRows: labFormRows,
+        gridCols: labFormCols,
+        customLayout: labFormLayout
+      } : l);
+      setLabs(updated);
+      safeSetLocalStorage('school_labs', updated);
+      await saveSupabaseState('school_labs', updated);
+      showToast(`Đã cập nhật sơ đồ ma trận phòng ${labFormName}!`, 'success');
+    } else {
+      const newLab: LabInfo = {
+        id: `lab_${Date.now()}`,
+        name: labFormName.trim(),
+        code: labFormCode.trim(),
+        location: labFormLocation.trim(),
+        totalPCs: calculatedTotalPCs,
+        status: 'Active',
+        gridRows: labFormRows,
+        gridCols: labFormCols,
+        customLayout: labFormLayout
+      };
+      const updated = [...labs, newLab];
+      setLabs(updated);
+      safeSetLocalStorage('school_labs', updated);
+      await saveSupabaseState('school_labs', updated);
+      showToast(`Đã thêm phòng lab mới: ${newLab.name}!`, 'success');
+    }
+
+    setIsLabEditorModalOpen(false);
+  };
+
+  const handleGridCellClick = (r: number, c: number) => {
+    const key = `${r}_${c}`;
+    const currentTile = labFormLayout[key];
+
+    let nextType: 'pc' | 'aisle' | 'desk' = activeEditorTool;
+    if (currentTile && currentTile.type === activeEditorTool) {
+      // Toggle back to empty aisle if clicked twice
+      nextType = 'aisle';
+    }
+
+    setLabFormLayout(prev => ({
+      ...prev,
+      [key]: { type: nextType }
+    }));
+  };
+
   // Filtered Lists
   const filteredLogs = useMemo(() => {
     return maintenanceLogs.filter(log => {
@@ -346,16 +461,96 @@ export default function LabBookingTab({
     );
   }, [incidents, adminSearchTerm]);
 
-  const currentLabObj = SYSTEM_LABS.find(l => l.id === selectedLab) || SYSTEM_LABS[0];
+  const currentLabObj = labs.find(l => l.id === selectedLab) || labs[0] || {
+    id: 'lab1', name: 'Phòng Lab 01', code: 'P.201', totalPCs: 36, status: 'Active', location: 'Tầng 2 - Nhà A'
+  };
 
   const formatVND = (amount: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   };
 
+  const copySqlToClipboard = () => {
+    const sqlCode = `-- SQL SCHEMA KHỞI TẠO HỆ THỐNG QUẢN LÝ PHÒNG MÁY TIN HỌC (SMARTLAB HUB)
+
+-- 1. Bảng phòng lab ma trận
+CREATE TABLE IF NOT EXISTS school_labs (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    code TEXT NOT NULL,
+    totalPCs INTEGER DEFAULT 35,
+    status TEXT DEFAULT 'Active',
+    location TEXT,
+    gridRows INTEGER DEFAULT 5,
+    gridCols INTEGER DEFAULT 8,
+    customLayout JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 2. Bảng phiếu đăng ký mượn phòng máy
+CREATE TABLE IF NOT EXISTS school_lab_bookings (
+    id TEXT PRIMARY KEY,
+    labId TEXT NOT NULL,
+    dayIndex INTEGER NOT NULL,
+    slotId TEXT NOT NULL,
+    teacherName TEXT NOT NULL,
+    className TEXT NOT NULL,
+    studentCount INTEGER DEFAULT 35,
+    subject TEXT NOT NULL,
+    date TEXT NOT NULL,
+    status TEXT DEFAULT 'Approved',
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 3. Bảng báo cáo sự cố máy tính
+CREATE TABLE IF NOT EXISTS school_lab_incidents (
+    id TEXT PRIMARY KEY,
+    labId TEXT NOT NULL,
+    pcNumber INTEGER NOT NULL,
+    reporter TEXT NOT NULL,
+    type TEXT NOT NULL,
+    issue TEXT NOT NULL,
+    priority TEXT DEFAULT 'Medium',
+    date TEXT NOT NULL,
+    status TEXT DEFAULT 'Pending',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 4. Bảng nhật ký bảo trì & sửa chữa thiết bị
+CREATE TABLE IF NOT EXISTS school_lab_maintenance_logs (
+    id TEXT PRIMARY KEY,
+    labId TEXT NOT NULL,
+    pcNumber INTEGER,
+    pcLabel TEXT,
+    type TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    technician TEXT,
+    cost NUMERIC DEFAULT 0,
+    date TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Cấp quyền truy cập công khai RLS cho cả 4 bảng
+ALTER TABLE school_labs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE school_lab_bookings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE school_lab_incidents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE school_lab_maintenance_logs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public full access school_labs" ON school_labs FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public full access school_lab_bookings" ON school_lab_bookings FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public full access school_lab_incidents" ON school_lab_incidents FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_maintenance_logs FOR ALL USING (true) WITH CHECK (true);`;
+
+    navigator.clipboard.writeText(sqlCode);
+    setCopiedSql(true);
+    setTimeout(() => setCopiedSql(false), 3000);
+  };
+
   return (
     <div className="space-y-4 sm:space-y-6 text-slate-800 pb-10 animate-fadeIn">
       
-      {/* 🌟 1. DESKOS IMAC WARM BEIGE CARD HEADER STRIP (LOẠI BỎ TẤT CẢ CHỮ, CHỈ GIỮ LẠI "Đang xem:") */}
+      {/* 🌟 1. DESKOS IMAC WARM BEIGE CARD HEADER STRIP (CHỈ GIỮ LẠI "Đang xem:") */}
       <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs">
         <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-2.5 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
           <div className="flex items-center gap-2 text-left">
@@ -446,7 +641,7 @@ export default function LabBookingTab({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {SYSTEM_LABS.map(lab => {
+              {labs.map(lab => {
                 const isSelected = selectedLab === lab.id;
                 const activeIssueCount = incidents.filter(i => i.labId === lab.id && i.status !== 'Resolved').length;
                 return (
@@ -495,7 +690,7 @@ export default function LabBookingTab({
             </div>
           </div>
 
-          {/* CALENDAR MATRIX TABLE (CẤU TRÚC BẢNG VƯỜN TRI THỨC SẠCH BẤT KỲ NÚT BẤM DƯ THỪA NÀO IN CELL) */}
+          {/* CALENDAR MATRIX TABLE */}
           <div className="bg-white rounded-2xl shadow-xs border border-[#cbb89d] overflow-hidden">
             <div className="p-4 border-b border-[#cbb89d] flex justify-between items-center bg-[#dfccb0]/30">
               <h3 className="text-sm font-extrabold text-[#3d2b17] flex items-center gap-2">
@@ -605,7 +800,7 @@ export default function LabBookingTab({
       )}
 
       {/* ====================================================================
-          MODULE 2: PHIẾU ĐĂNG KÝ MƯỢN (KHUNG CẢNH BÁO VỀ VỊ TRÍ BAN ĐẦU DƯỚI DROPDOWN KHUNG TIẾT)
+          MODULE 2: PHIẾU ĐĂNG KÝ MƯỢN
           ==================================================================== */}
       {activeSubTab === 'booking' && (
         <div className="max-w-4xl mx-auto space-y-6 animate-fadeIn">
@@ -626,7 +821,6 @@ export default function LabBookingTab({
             </div>
 
             <form onSubmit={handleAddBooking} className="space-y-6 text-xs">
-              {/* PHẦN 1: THÔNG TIN GIÁO VIÊN VÀ TIẾT DẠY */}
               <div className="space-y-4">
                 <h4 className="font-extrabold text-slate-800 text-sm border-b pb-2 flex items-center gap-2">
                   <User className="w-4 h-4 text-indigo-700" />
@@ -689,7 +883,6 @@ export default function LabBookingTab({
                 </div>
               </div>
 
-              {/* PHẦN 2: CHỌN PHÒNG VÀ KHUNG TIẾT MƯỢN */}
               <div className="space-y-4 pt-2">
                 <h4 className="font-extrabold text-slate-800 text-sm border-b pb-2 flex items-center gap-2">
                   <Monitor className="w-4 h-4 text-indigo-700" />
@@ -704,7 +897,7 @@ export default function LabBookingTab({
                       onChange={e => setFormLabId(e.target.value)}
                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
                     >
-                      {SYSTEM_LABS.map(l => (
+                      {labs.map(l => (
                         <option key={l.id} value={l.id}>{l.name} ({l.code})</option>
                       ))}
                     </select>
@@ -737,7 +930,6 @@ export default function LabBookingTab({
                   </div>
                 </div>
 
-                {/* 🔴 VỊ TRÍ BAN ĐẦU CỦA KHUNG CẢNH BÁO TRÙNG LỊCH (ĐẶT NGAY DƯỚI CÁC Ô CHỌN KHUNG TIẾT) */}
                 {conflictBooking && (
                   <div className="mt-4 p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold flex items-center space-x-2">
                     <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
@@ -748,7 +940,6 @@ export default function LabBookingTab({
                 )}
               </div>
 
-              {/* ACTION BUTTONS */}
               <div className="pt-4 border-t border-slate-200 flex justify-end gap-3">
                 <button
                   type="button"
@@ -772,7 +963,7 @@ export default function LabBookingTab({
         </div>
       )}
 
-      {/* 🔴 POP-UP MODAL CẢNH BÁO TRÙNG LỊCH (BẬT KHI NHẤP GỬI PHIẾU NẾU TRÙNG LỊCH) */}
+      {/* POP-UP MODAL CẢNH BÁO TRÙNG LỊCH */}
       {isConflictModalOpen && conflictBooking && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/75 backdrop-blur-md p-4 animate-fadeIn">
           <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border-4 border-red-500 space-y-5 relative text-left">
@@ -793,7 +984,7 @@ export default function LabBookingTab({
             <div className="space-y-3 text-xs">
               <div className="p-3 bg-red-50 rounded-2xl border border-red-200 text-slate-800 space-y-1.5 font-semibold">
                 <div>
-                  📍 <span className="font-bold">Phòng máy chọn:</span> <strong className="text-indigo-900">{SYSTEM_LABS.find(l => l.id === formLabId)?.name}</strong>
+                  📍 <span className="font-bold">Phòng máy chọn:</span> <strong className="text-indigo-900">{labs.find(l => l.id === formLabId)?.name}</strong>
                 </div>
                 <div>
                   🕒 <span className="font-bold">Thời gian:</span> <strong className="text-red-700">{DAYS_OF_WEEK.find(d => d.id === formDayIndex)?.name} - {TIME_SLOTS.find(s => s.id === formSlotId)?.name} ({TIME_SLOTS.find(s => s.id === formSlotId)?.time})</strong>
@@ -831,12 +1022,11 @@ export default function LabBookingTab({
       )}
 
       {/* ====================================================================
-          MODULE 3: BÁO CÁO SỰ CỐ MÁY TÍNH (INCIDENT REPORTING)
+          MODULE 3: BÁO CÁO SỰ CỐ MÁY TÍNH
           ==================================================================== */}
       {activeSubTab === 'incident' && (
         <div className="space-y-6 animate-fadeIn">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* SEAT GRID MAP SELECTOR */}
             <div className="lg:col-span-7 bg-white p-6 rounded-2xl border border-[#cbb89d] shadow-xs space-y-4 text-left">
               <div className="flex items-center justify-between border-b pb-3">
                 <h3 className="text-sm font-extrabold text-slate-800 flex items-center gap-2">
@@ -848,7 +1038,7 @@ export default function LabBookingTab({
                   onChange={e => { setSelectedLab(e.target.value); setSelectedSeatNumber(null); }}
                   className="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-bold bg-white"
                 >
-                  {SYSTEM_LABS.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                  {labs.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
                 </select>
               </div>
 
@@ -880,7 +1070,6 @@ export default function LabBookingTab({
               </div>
             </div>
 
-            {/* INCIDENT REPORT FORM */}
             <div className="lg:col-span-5 bg-white p-6 rounded-2xl border border-[#cbb89d] shadow-xs space-y-4 text-left">
               <h3 className="text-sm font-extrabold text-slate-800 border-b pb-3 flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-amber-500" />
@@ -968,11 +1157,10 @@ export default function LabBookingTab({
       )}
 
       {/* ====================================================================
-          MODULE 4: NHẬT KÝ BẢO TRÌ & SỬA CHỮA THIẾT BỊ (MAINTENANCE LOGS)
+          MODULE 4: NHẬT KÝ BẢO TRÌ & SỬA CHỮA THIẾT BỊ
           ==================================================================== */}
       {activeSubTab === 'log' && (
         <div className="space-y-6 animate-fadeIn">
-          {/* STATS HEADER */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
             <div className="bg-white p-5 rounded-2xl border border-[#cbb89d] shadow-xs flex items-center justify-between">
               <div>
@@ -1002,7 +1190,7 @@ export default function LabBookingTab({
                   onChange={e => setSelectedLab(e.target.value)}
                   className="mt-1 font-black text-indigo-900 text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 outline-none cursor-pointer"
                 >
-                  {SYSTEM_LABS.map(l => (
+                  {labs.map(l => (
                     <option key={l.id} value={l.id}>{l.name} ({l.code})</option>
                   ))}
                 </select>
@@ -1017,7 +1205,6 @@ export default function LabBookingTab({
             </div>
           </div>
 
-          {/* FILTER BAR */}
           <div className="bg-white p-4 rounded-2xl border border-[#cbb89d] shadow-xs flex flex-col md:flex-row justify-between items-center gap-4 text-left">
             <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
               <span className="text-xs font-black text-slate-600 uppercase">Lọc Theo:</span>
@@ -1059,7 +1246,6 @@ export default function LabBookingTab({
             </div>
           </div>
 
-          {/* LOGS LIST */}
           <div className="bg-white rounded-2xl border border-[#cbb89d] overflow-hidden shadow-xs p-6 text-left">
             {filteredLogs.length === 0 ? (
               <div className="py-12 text-center text-slate-400 italic">
@@ -1118,7 +1304,7 @@ export default function LabBookingTab({
         </div>
       )}
 
-      {/* MODAL GHI NHẬT KÝ BẢO TRÌ MỚI */}
+      {/* MODAL GHI NHẬT KÝ BẢO TRÌ */}
       {isAddLogModalOpen && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/70 backdrop-blur-md p-4 animate-fadeIn">
           <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border-2 border-[#cbb89d] space-y-5 text-left">
@@ -1141,7 +1327,7 @@ export default function LabBookingTab({
                     onChange={e => setSelectedLab(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold text-xs bg-white"
                   >
-                    {SYSTEM_LABS.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                    {labs.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
                   </select>
                 </div>
                 <div>
@@ -1268,12 +1454,80 @@ export default function LabBookingTab({
       )}
 
       {/* ====================================================================
-          MODULE 5: QUẢN LÝ DUYỆT PHIẾU & BÁO CÁO SỬA CHỮA (ADMIN DASHBOARD)
+          MODULE 5: QUẢN LÝ DUYỆT PHIẾU, SỰ CỐ & THIẾT KẾ SƠ ĐỒ PHÒNG LAB
           ==================================================================== */}
       {activeSubTab === 'admin' && (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-6 animate-fadeIn text-left">
+          
+          {/* 🔴 CARD TOP: QUẢN LÝ DANH SÁCH & SƠ ĐỒ PHÒNG LAB (TÍNH NĂNG MÃ NGUỒN MẪU BỔ SUNG KHÔI PHỤC) */}
+          <div className="bg-white p-6 rounded-2xl border border-[#cbb89d] shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-200 pb-4">
+              <div>
+                <h3 className="text-lg font-black text-slate-900">Quản Lý Danh Sách & Sơ Đồ Phòng LAB</h3>
+                <p className="text-xs font-semibold text-slate-500 mt-0.5">
+                  Thêm mới phòng máy, thiết kế sơ đồ ma trận hàng x cột và chỉnh sửa tên máy trực tiếp.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsSqlModalOpen(true)}
+                  className="bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-xs px-3.5 py-2.5 rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer active:scale-95"
+                >
+                  <Database className="w-4 h-4 text-emerald-400" />
+                  <span>SQL Schema Supabase</span>
+                </button>
+
+                <button
+                  onClick={handleOpenAddLabModal}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer active:scale-95"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>+ Thêm Phòng Mới</span>
+                </button>
+              </div>
+            </div>
+
+            {/* CARDS LIST PHÒNG LAB */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {labs.map(lab => (
+                <div key={lab.id} className="p-4 rounded-2xl border border-slate-200 hover:border-indigo-300 bg-slate-50/60 hover:bg-indigo-50/30 transition-all flex items-center justify-between">
+                  <div className="space-y-1">
+                    <div className="font-black text-slate-900 text-sm flex items-center gap-2">
+                      <span>{lab.name}</span>
+                      <span className="text-[10px] font-extrabold text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200">
+                        ({lab.code})
+                      </span>
+                    </div>
+                    <div className="text-xs font-medium text-slate-500">
+                      {lab.totalPCs} Máy • {lab.location}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleOpenEditLabModal(lab)}
+                      className="flex items-center gap-1 text-indigo-700 bg-indigo-100/80 hover:bg-indigo-200 border border-indigo-200 px-2.5 py-1.5 rounded-xl font-bold text-xs cursor-pointer transition active:scale-95"
+                      title="Thiết kế sơ đồ ma trận"
+                    >
+                      <Sliders className="w-3.5 h-3.5" />
+                      <span>Sửa</span>
+                    </button>
+                    <button
+                      onClick={() => handleDeleteLab(lab.id)}
+                      className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1.5 rounded-xl transition cursor-pointer"
+                      title="Xóa phòng"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* SEARCH & FILTER BAR */}
-          <div className="bg-white p-4 rounded-2xl border border-[#cbb89d] shadow-xs flex flex-col md:flex-row justify-between items-center gap-4 text-left">
+          <div className="bg-white p-4 rounded-2xl border border-[#cbb89d] shadow-xs flex flex-col md:flex-row justify-between items-center gap-4">
             <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
               <Sliders className="w-5 h-5 text-amber-600" />
               <span>Bảng Quản Lý Duyệt Phiếu & Sửa Chữa Sự Cố</span>
@@ -1291,8 +1545,8 @@ export default function LabBookingTab({
             </div>
           </div>
 
-          {/* TABLE 1: BOOKINGS LIST (CẤU TRÚC BẢNG VƯỜN TRI THỨC + PHỤC HỒI NÚT BẤM STYLED BUTTON) */}
-          <div className="bg-white rounded-2xl border border-[#cbb89d] overflow-hidden shadow-xs text-left">
+          {/* TABLE 1: BOOKINGS LIST */}
+          <div className="bg-white rounded-2xl border border-[#cbb89d] overflow-hidden shadow-xs">
             <div className="p-4 border-b border-[#cbb89d] font-extrabold text-[#3d2b17] text-sm flex justify-between items-center bg-[#dfccb0]/30">
               <span>Danh Sách Phiếu Đăng Ký Mượn Phòng ({filteredBookings.length})</span>
             </div>
@@ -1365,8 +1619,8 @@ export default function LabBookingTab({
             </div>
           </div>
 
-          {/* TABLE 2: INCIDENTS LIST (CẤU TRÚC BẢNG VƯỜN TRI THỨC + PHỤC HỒI NÚT BẤM ĐANG SỬA/ĐÃ XONG/XÓA) */}
-          <div className="bg-white rounded-2xl border border-[#cbb89d] overflow-hidden shadow-xs text-left">
+          {/* TABLE 2: INCIDENTS LIST */}
+          <div className="bg-white rounded-2xl border border-[#cbb89d] overflow-hidden shadow-xs">
             <div className="p-4 border-b border-[#cbb89d] font-extrabold text-[#3d2b17] text-sm flex justify-between items-center bg-[#dfccb0]/30">
               <span>Danh Sách Báo Cáo Sự Cố Máy Tính ({filteredIncidents.length})</span>
             </div>
@@ -1433,6 +1687,328 @@ export default function LabBookingTab({
                   )}
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ====================================================================
+          LAB EDITOR MODAL: TRÌNH THIẾT KẾ SƠ ĐỒ MA TRẬN PHÒNG LAB ĐỘNG
+          ==================================================================== */}
+      {isLabEditorModalOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4 animate-fadeIn overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-4xl w-full p-6 shadow-2xl border-2 border-[#cbb89d] space-y-6 text-left my-8">
+            <div className="flex justify-between items-center border-b border-slate-200 pb-4">
+              <div>
+                <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                  <Grid className="w-5 h-5 text-indigo-600" />
+                  <span>{editingLab ? `Chỉnh Sửa Sơ Đồ ${editingLab.name}` : 'Thêm Phòng Lab Mới & Thiết Kế Sơ Đồ'}</span>
+                </h3>
+                <p className="text-xs text-slate-500 font-medium">Bấm vào ô trên ma trận để vẽ vị trí máy tính, lối đi hoặc bàn giáo viên.</p>
+              </div>
+              <button onClick={() => setIsLabEditorModalOpen(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveLabLayout} className="space-y-6 text-xs">
+              {/* THÔNG TIN CƠ BẢN PHÒNG LAB */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase mb-1">Tên Phòng *</label>
+                  <input
+                    type="text"
+                    required
+                    value={labFormName}
+                    onChange={e => setLabFormName(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase mb-1">Mã Phòng *</label>
+                  <input
+                    type="text"
+                    required
+                    value={labFormCode}
+                    onChange={e => setLabFormCode(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase mb-1">Vị Trí Dãy Nhà</label>
+                  <input
+                    type="text"
+                    value={labFormLocation}
+                    onChange={e => setLabFormLocation(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold"
+                  />
+                </div>
+              </div>
+
+              {/* ĐIỀU CHỈNH KÍCH THƯỚC MA TRẬN (ROWS X COLS) */}
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <Rows className="w-4 h-4 text-indigo-600" />
+                    <span className="font-extrabold text-slate-700">Số Hàng:</span>
+                    <button
+                      type="button"
+                      onClick={() => setLabFormRows(r => Math.max(2, r - 1))}
+                      className="w-7 h-7 rounded-lg bg-white border border-slate-300 font-bold hover:bg-slate-100 cursor-pointer"
+                    >
+                      -
+                    </button>
+                    <span className="font-black text-sm px-2 text-indigo-900">{labFormRows}</span>
+                    <button
+                      type="button"
+                      onClick={() => setLabFormRows(r => Math.min(10, r + 1))}
+                      className="w-7 h-7 rounded-lg bg-white border border-slate-300 font-bold hover:bg-slate-100 cursor-pointer"
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Columns className="w-4 h-4 text-indigo-600" />
+                    <span className="font-extrabold text-slate-700">Số Cột:</span>
+                    <button
+                      type="button"
+                      onClick={() => setLabFormCols(c => Math.max(2, c - 1))}
+                      className="w-7 h-7 rounded-lg bg-white border border-slate-300 font-bold hover:bg-slate-100 cursor-pointer"
+                    >
+                      -
+                    </button>
+                    <span className="font-black text-sm px-2 text-indigo-900">{labFormCols}</span>
+                    <button
+                      type="button"
+                      onClick={() => setLabFormCols(c => Math.min(12, c + 1))}
+                      className="w-7 h-7 rounded-lg bg-white border border-slate-300 font-bold hover:bg-slate-100 cursor-pointer"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                {/* CÔNG CỤ VẼ MA TRẬN */}
+                <div className="flex items-center gap-2 bg-white p-1 rounded-xl border border-slate-300">
+                  <button
+                    type="button"
+                    onClick={() => setActiveEditorTool('pc')}
+                    className={`px-3 py-1.5 rounded-lg font-extrabold text-xs transition cursor-pointer flex items-center gap-1.5 ${
+                      activeEditorTool === 'pc' ? 'bg-indigo-700 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    <Cpu className="w-3.5 h-3.5" />
+                    <span>Đặt Máy Tính</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveEditorTool('desk')}
+                    className={`px-3 py-1.5 rounded-lg font-extrabold text-xs transition cursor-pointer flex items-center gap-1.5 ${
+                      activeEditorTool === 'desk' ? 'bg-amber-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    <Monitor className="w-3.5 h-3.5" />
+                    <span>Bàn GV</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveEditorTool('aisle')}
+                    className={`px-3 py-1.5 rounded-lg font-extrabold text-xs transition cursor-pointer flex items-center gap-1.5 ${
+                      activeEditorTool === 'aisle' ? 'bg-slate-800 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    <span>🚶 Lối Đi</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* GRID CANVAS MA TRẬN */}
+              <div className="border border-slate-300 p-4 rounded-2xl bg-slate-100/70 overflow-x-auto text-center space-y-3">
+                <div className="bg-[#dfccb0] text-[#3d2b17] py-2 rounded-xl text-xs font-black uppercase border border-[#cbb89d] max-w-md mx-auto">
+                  📌 BẢNG / BÀN GIÁO VIÊN BỘ MÔN
+                </div>
+
+                <div 
+                  className="grid gap-2 mx-auto inline-block p-2"
+                  style={{
+                    gridTemplateColumns: `repeat(${labFormCols}, minmax(0, 1fr))`
+                  }}
+                >
+                  {Array.from({ length: labFormRows }).map((_, rIdx) => 
+                    Array.from({ length: labFormCols }).map((_, cIdx) => {
+                      const key = `${rIdx}_${cIdx}`;
+                      const tile = labFormLayout[key] || { type: 'pc' };
+
+                      let tileStyle = 'bg-white border-slate-200 text-slate-700 hover:border-indigo-400';
+                      if (tile.type === 'pc') tileStyle = 'bg-indigo-50 border-indigo-300 text-indigo-950 font-black shadow-2xs';
+                      if (tile.type === 'desk') tileStyle = 'bg-amber-100 border-amber-400 text-amber-950 font-black shadow-2xs';
+                      if (tile.type === 'aisle') tileStyle = 'bg-slate-200/50 border-dashed border-slate-300 text-slate-400';
+
+                      return (
+                        <div
+                          key={key}
+                          onClick={() => handleGridCellClick(rIdx, cIdx)}
+                          className={`w-16 h-14 rounded-xl border-2 flex flex-col items-center justify-center p-1 cursor-pointer transition-all active:scale-95 ${tileStyle}`}
+                        >
+                          {tile.type === 'pc' && (
+                            <>
+                              <Cpu className="w-3.5 h-3.5 text-indigo-700 mb-0.5" />
+                              <span className="text-[10px] font-black">{rIdx * labFormCols + cIdx + 1}</span>
+                            </>
+                          )}
+                          {tile.type === 'desk' && (
+                            <>
+                              <Monitor className="w-3.5 h-3.5 text-amber-700 mb-0.5" />
+                              <span className="text-[9px] font-black">GV</span>
+                            </>
+                          )}
+                          {tile.type === 'aisle' && (
+                            <span className="text-[9px] font-bold italic">Lối đi</span>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-slate-200 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsLabEditorModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 font-bold hover:bg-slate-50 cursor-pointer"
+                >
+                  Hủy Bỏ
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2 rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white font-extrabold shadow-md cursor-pointer active:scale-95"
+                >
+                  Lưu Sơ Đồ Phòng LAB
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* SUPABASE SQL SCHEMA CONFIG MODAL */}
+      {isSqlModalOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border-2 border-[#cbb89d] space-y-4 text-left">
+            <div className="flex justify-between items-center border-b border-slate-200 pb-3">
+              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                <Database className="w-5 h-5 text-emerald-600" />
+                <span>Mã Nguồn SQL Query Tạo Bảng Trên Supabase</span>
+              </h3>
+              <button onClick={() => setIsSqlModalOpen(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-600 font-medium">
+              Copy toàn bộ đoạn SQL query dưới đây và dán vào tab <strong>SQL Editor</strong> trên bảng điều khiển Supabase để tạo 4 bảng dữ liệu:
+            </p>
+
+            <div className="relative bg-slate-950 text-emerald-400 p-4 rounded-2xl font-mono text-[11px] max-h-80 overflow-y-auto leading-relaxed">
+              <button
+                onClick={copySqlToClipboard}
+                className="absolute top-3 right-3 bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs font-sans font-bold flex items-center gap-1.5 transition cursor-pointer"
+              >
+                {copiedSql ? (
+                  <>
+                    <CheckCheck className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Đã Copy!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Copy SQL Query</span>
+                  </>
+                )}
+              </button>
+
+              <pre>{`-- SQL SCHEMA KHỞI TẠO HỆ THỐNG QUẢN LÝ PHÒNG MÁY TIN HỌC (SMARTLAB HUB)
+
+-- 1. Bảng phòng lab ma trận
+CREATE TABLE IF NOT EXISTS school_labs (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    code TEXT NOT NULL,
+    totalPCs INTEGER DEFAULT 35,
+    status TEXT DEFAULT 'Active',
+    location TEXT,
+    gridRows INTEGER DEFAULT 5,
+    gridCols INTEGER DEFAULT 8,
+    customLayout JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 2. Bảng phiếu đăng ký mượn phòng máy
+CREATE TABLE IF NOT EXISTS school_lab_bookings (
+    id TEXT PRIMARY KEY,
+    labId TEXT NOT NULL,
+    dayIndex INTEGER NOT NULL,
+    slotId TEXT NOT NULL,
+    teacherName TEXT NOT NULL,
+    className TEXT NOT NULL,
+    studentCount INTEGER DEFAULT 35,
+    subject TEXT NOT NULL,
+    date TEXT NOT NULL,
+    status TEXT DEFAULT 'Approved',
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 3. Bảng báo cáo sự cố máy tính
+CREATE TABLE IF NOT EXISTS school_lab_incidents (
+    id TEXT PRIMARY KEY,
+    labId TEXT NOT NULL,
+    pcNumber INTEGER NOT NULL,
+    reporter TEXT NOT NULL,
+    type TEXT NOT NULL,
+    issue TEXT NOT NULL,
+    priority TEXT DEFAULT 'Medium',
+    date TEXT NOT NULL,
+    status TEXT DEFAULT 'Pending',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 4. Bảng nhật ký bảo trì & sửa chữa thiết bị
+CREATE TABLE IF NOT EXISTS school_lab_maintenance_logs (
+    id TEXT PRIMARY KEY,
+    labId TEXT NOT NULL,
+    pcNumber INTEGER,
+    pcLabel TEXT,
+    type TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    technician TEXT,
+    cost NUMERIC DEFAULT 0,
+    date TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Cấp quyền truy cập công khai RLS cho cả 4 bảng
+ALTER TABLE school_labs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE school_lab_bookings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE school_lab_incidents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE school_lab_maintenance_logs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public full access school_labs" ON school_labs FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public full access school_lab_bookings" ON school_lab_bookings FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public full access school_lab_incidents" ON school_lab_incidents FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_maintenance_logs FOR ALL USING (true) WITH CHECK (true);`}</pre>
+            </div>
+
+            <div className="pt-3 border-t border-slate-200 flex justify-end">
+              <button
+                onClick={() => setIsSqlModalOpen(false)}
+                className="px-5 py-2 rounded-xl bg-slate-800 text-white font-bold text-xs cursor-pointer"
+              >
+                Đóng
+              </button>
             </div>
           </div>
         </div>

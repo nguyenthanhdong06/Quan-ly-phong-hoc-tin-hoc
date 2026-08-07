@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Grade, ClassItem, Student, Computer, DocumentItem, Member, AttendanceData, EvaluationData, EmulationDataState, SeatingChart, TimetableData, MotivationalQuote, THEMES, LabBooking, LabIncident, LabMaintenanceLog } from './types';
+import { Grade, ClassItem, Student, Computer, DocumentItem, Member, AttendanceData, EvaluationData, EmulationDataState, SeatingChart, TimetableData, MotivationalQuote, THEMES, LabBooking, LabIncident, LabMaintenanceLog, LabInfo } from './types';
 import {
   defaultGrades,
   defaultClasses,
@@ -145,6 +145,12 @@ export default function App() {
   const [labBookings, setLabBookings] = useState<LabBooking[]>(() => safeParse('school_lab_bookings', []));
   const [labIncidents, setLabIncidents] = useState<LabIncident[]>(() => safeParse('school_lab_incidents', []));
   const [labMaintenanceLogs, setLabMaintenanceLogs] = useState<LabMaintenanceLog[]>(() => safeParse('school_lab_maintenance_logs', []));
+  const [labs, setLabs] = useState<LabInfo[]>(() => safeParse('school_labs', [
+    { id: 'lab1', name: 'Phòng Lab 01', code: 'P.201', totalPCs: 36, status: 'Active', location: 'Tầng 2 - Nhà A', gridRows: 5, gridCols: 8 },
+    { id: 'lab2', name: 'Phòng Lab 02', code: 'P.202', totalPCs: 40, status: 'Active', location: 'Tầng 2 - Nhà A', gridRows: 5, gridCols: 8 },
+    { id: 'lab3', name: 'Phòng Lab 03', code: 'P.301', totalPCs: 32, status: 'Maintenance', location: 'Tầng 3 - Nhà B', gridRows: 4, gridCols: 8 },
+  ]));
+
 
   // --- SUPABASE CLOUD STATUS STATES ---
   const [isLoaded, setIsLoaded] = useState(false);
@@ -301,6 +307,8 @@ export default function App() {
           if (dbStates['school_lab_bookings']) setLabBookings(dbStates['school_lab_bookings']);
           if (dbStates['school_lab_incidents']) setLabIncidents(dbStates['school_lab_incidents']);
           if (dbStates['school_lab_maintenance_logs']) setLabMaintenanceLogs(dbStates['school_lab_maintenance_logs']);
+          if (dbStates['school_labs']) setLabs(dbStates['school_labs']);
+
 
           if (dbStates['custom_avatars_list'] && Array.isArray(dbStates['custom_avatars_list'])) {
             safeSetLocalStorage('custom_avatars_list', dbStates['custom_avatars_list']);
@@ -1290,6 +1298,8 @@ export default function App() {
                 setIncidents={setLabIncidents}
                 maintenanceLogs={labMaintenanceLogs}
                 setMaintenanceLogs={setLabMaintenanceLogs}
+                labs={labs}
+                setLabs={setLabs}
               />
             )}
 

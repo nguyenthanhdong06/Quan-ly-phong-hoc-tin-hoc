@@ -227,6 +227,9 @@ export interface LabInfo {
   totalPCs: number;
   status: 'Active' | 'Maintenance';
   location: string;
+  gridRows?: number;
+  gridCols?: number;
+  customLayout?: Record<string, { type: 'pc' | 'aisle' | 'desk'; label?: string; pcNumber?: number }>;
 }
 
 export interface LabBooking {
