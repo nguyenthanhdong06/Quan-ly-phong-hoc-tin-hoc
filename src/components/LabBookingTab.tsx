@@ -1690,14 +1690,6 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
 
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setIsSqlModalOpen(true)}
-                  className="bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-xs px-3.5 py-2.5 rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer active:scale-95"
-                >
-                  <Database className="w-4 h-4 text-emerald-400" />
-                  <span>SQL Schema Supabase</span>
-                </button>
-
-                <button
                   onClick={handleOpenAddLabModal}
                   className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer active:scale-95"
                 >
@@ -1912,15 +1904,15 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
       )}
 
       {/* ====================================================================
-          LAB EDITOR MODAL: TRÌNH THIẾT KẾ SƠ ĐỒ MA TRẬN PHÒNG LAB ĐỘNG (CHUẨN 100% GIAO DIỆN MẪU)
+          LAB EDITOR MODAL: TRÌNH THIẾT KẾ SƠ ĐỒ MA TRẬN PHÒNG LAB ĐỘNG (POPUP FULL CHUẨN MẪU 100%)
           ==================================================================== */}
       {isLabEditorModalOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4 animate-fadeIn overflow-y-auto">
-          <div className="bg-white rounded-3xl max-w-5xl w-full p-6 sm:p-8 shadow-2xl border border-slate-300 space-y-6 text-left my-6 relative">
+        <div className="fixed inset-0 z-[500] flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-3 sm:p-6 animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-6xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-300 relative overflow-hidden text-left">
             
-            {/* HEADER MODAL */}
-            <div className="flex justify-between items-start border-b border-slate-200 pb-4">
-              <div className="space-y-1">
+            {/* HEADER MODAL (STICKY TOP) */}
+            <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/90 flex justify-between items-center shrink-0">
+              <div className="space-y-0.5">
                 <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
                   <Grid className="w-6 h-6 text-indigo-600" />
                   <span>Thiết Kế Sơ Đồ – {labFormName || 'Phòng Lab'}</span>
@@ -1931,301 +1923,306 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
               </div>
               <button 
                 onClick={() => setIsLabEditorModalOpen(false)} 
-                className="text-slate-400 hover:text-slate-700 transition p-1 rounded-lg hover:bg-slate-100 cursor-pointer"
+                className="text-slate-400 hover:text-slate-700 transition p-1.5 rounded-xl hover:bg-slate-200/60 cursor-pointer"
+                title="Đóng cửa sổ"
               >
                 <X className="w-6 h-6" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveLabLayout} className="space-y-6 text-xs">
+            <form onSubmit={handleSaveLabLayout} className="flex flex-col flex-1 overflow-hidden">
               
-              {/* PHẦN 1: THÔNG TIN CƠ BẢN (4 Ô INPUT CÙNG HÀNG) */}
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                <div>
-                  <label className="block font-extrabold text-slate-700 uppercase mb-1">TÊN PHÒNG *</label>
-                  <input
-                    type="text"
-                    required
-                    value={labFormName}
-                    onChange={e => setLabFormName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none"
-                    placeholder="Phòng Lab 01"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-extrabold text-slate-700 uppercase mb-1">MÃ PHÒNG *</label>
-                  <input
-                    type="text"
-                    required
-                    value={labFormCode}
-                    onChange={e => setLabFormCode(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none"
-                    placeholder="P.201"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-extrabold text-slate-700 uppercase mb-1">VỊ TRÍ</label>
-                  <input
-                    type="text"
-                    value={labFormLocation}
-                    onChange={e => setLabFormLocation(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none"
-                    placeholder="Tầng 2 - Nhà A"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-extrabold text-slate-700 uppercase mb-1">TRẠNG THÁI</label>
-                  <select
-                    value={labFormStatus}
-                    onChange={e => setLabFormStatus(e.target.value as any)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold text-slate-800 bg-white focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer"
-                  >
-                    <option value="Active">Đang hoạt động</option>
-                    <option value="Maintenance">Đang bảo trì</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* PHẦN 2: THANH ĐIỀU KHIỂN SỐ HÀNG/CỘT, KHÔI PHỤC MÁY & BỘ CÔNG CỤ TOOLBAR */}
-              <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200 space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  
-                  {/* DROPDOWN CHỌN SỐ HÀNG VÀ CỘT */}
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2">
-                      <span className="font-extrabold text-slate-700">Số Hàng:</span>
-                      <select
-                        value={labFormRows}
-                        onChange={e => handleSelectRowsChange(Number(e.target.value))}
-                        className="px-3 py-1.5 rounded-xl border border-slate-300 font-bold bg-white outline-none cursor-pointer"
-                      >
-                        {Array.from({ length: 12 }).map((_, i) => (
-                          <option key={i + 1} value={i + 1}>{i + 1} Hàng</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <span className="text-slate-400 font-black text-sm">✕</span>
-
-                    <div className="flex items-center gap-2">
-                      <span className="font-extrabold text-slate-700">Số Cột:</span>
-                      <select
-                        value={labFormCols}
-                        onChange={e => handleSelectColsChange(Number(e.target.value))}
-                        className="px-3 py-1.5 rounded-xl border border-slate-300 font-bold bg-white outline-none cursor-pointer"
-                      >
-                        {Array.from({ length: 14 }).map((_, i) => (
-                          <option key={i + 1} value={i + 1}>{i + 1} Cột</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* NÚT KHÔI PHỤC ĐỦ MÁY */}
-                    <button
-                      type="button"
-                      onClick={handleRestoreFullPcs}
-                      className="px-3.5 py-1.5 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 font-black text-xs hover:bg-indigo-100 transition cursor-pointer flex items-center gap-1.5 active:scale-95"
-                    >
-                      <RotateCw className="w-3.5 h-3.5 text-indigo-600" />
-                      <span>Khôi phục đủ {labFormRows * labFormCols} máy</span>
-                    </button>
-                  </div>
-
-                  {/* BỘ CÔNG CỤ TOOL MODES PILL BAR */}
-                  <div className="flex items-center gap-1.5 bg-slate-200/70 p-1 rounded-xl border border-slate-300">
-                    <button
-                      type="button"
-                      onClick={() => setActiveEditorTool('aisle')}
-                      className={`px-3 py-1.5 rounded-lg font-black text-xs transition cursor-pointer flex items-center gap-1.5 ${
-                        activeEditorTool === 'aisle'
-                          ? 'bg-amber-600 text-white shadow-md'
-                          : 'text-slate-700 hover:bg-slate-300/60'
-                      }`}
-                    >
-                      <span>🪛 Kẻ Lối Đi (Rê Chuột)</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setActiveEditorTool('drag')}
-                      className={`px-3 py-1.5 rounded-lg font-black text-xs transition cursor-pointer flex items-center gap-1.5 ${
-                        activeEditorTool === 'drag'
-                          ? 'bg-indigo-700 text-white shadow-md'
-                          : 'text-slate-700 hover:bg-slate-300/60'
-                      }`}
-                    >
-                      <Move className="w-3.5 h-3.5" />
-                      <span>Kéo Thả Ô</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setActiveEditorTool('desk')}
-                      className={`px-3 py-1.5 rounded-lg font-black text-xs transition cursor-pointer flex items-center gap-1.5 ${
-                        activeEditorTool === 'desk'
-                          ? 'bg-indigo-700 text-white shadow-md'
-                          : 'text-slate-700 hover:bg-slate-300/60'
-                      }`}
-                    >
-                      <User className="w-3.5 h-3.5" />
-                      <span>Đặt Bàn GV</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setActiveEditorTool('rename')}
-                      className={`px-3 py-1.5 rounded-lg font-black text-xs transition cursor-pointer flex items-center gap-1.5 ${
-                        activeEditorTool === 'rename'
-                          ? 'bg-indigo-700 text-white shadow-md'
-                          : 'text-slate-700 hover:bg-slate-300/60'
-                      }`}
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                      <span>Sửa Tên Máy</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-1">
-                  <span className="bg-indigo-50 border border-indigo-200 text-indigo-800 text-xs font-black px-3 py-1 rounded-xl">
-                    Máy thực tế: {Object.values(labFormLayout).filter((t: any) => t && t.type === 'pc').length} Máy
-                  </span>
-                </div>
-              </div>
-
-              {/* PHẦN 3: MATRIX CANVAS CONTAINER (DARK NAVY THEME BG-[#0F172A] VỚI NÚT + CHÈN HÀNG/CỘT ĐẦY ĐỦ CHUẨN MẪU) */}
-              <div className="bg-[#0f172a] p-5 rounded-2xl border border-slate-800 overflow-x-auto shadow-2xl space-y-4">
+              {/* BODY CONTAINER (SCROLLABLE CONTENT) */}
+              <div className="p-6 overflow-y-auto space-y-6 flex-1 text-xs">
                 
-                <div className="inline-block min-w-full text-left">
-                  {/* HÀNG HÀNH ĐỘNG CỘT (TOP ACTION ROW) */}
-                  <div className="flex items-center gap-2 mb-2 font-mono">
-                    {/* Ô HÀNH ĐỘNG GÓC TRÁI (TOP-LEFT CORNER CELL) */}
-                    <div className="w-24 shrink-0 text-center font-bold text-[11px] text-slate-400">
-                      Thao Tác
-                    </div>
-
-                    {/* CÁC NÚT + CỘT VÀ XÓA CỘT TRÊN TỪNG CỘT */}
-                    {Array.from({ length: labFormCols }).map((_, cIdx) => (
-                      <div key={cIdx} className="w-24 shrink-0 flex flex-col items-center gap-1">
-                        <div className="flex items-center justify-center gap-1 w-full">
-                          <button
-                            type="button"
-                            onClick={() => handleInsertColumnAt(cIdx)}
-                            className="bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-600 text-emerald-400 font-extrabold text-[10px] px-1.5 py-0.5 rounded transition cursor-pointer flex items-center gap-0.5"
-                            title={`Chèn thêm cột mới tại vị trí Cột ${cIdx + 1}`}
-                          >
-                            + Cột
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteColumnAt(cIdx)}
-                            className="bg-rose-950/80 hover:bg-rose-900 border border-rose-600 text-rose-400 p-0.5 rounded transition cursor-pointer"
-                            title={`Xóa Cột ${cIdx + 1}`}
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </div>
-                        <span className="text-[10px] font-extrabold text-slate-400">↓ Cột {cIdx + 1}</span>
-                      </div>
-                    ))}
-
-                    {/* NÚT THÊM CỘT VÀO CUỐI */}
-                    <button
-                      type="button"
-                      onClick={() => handleInsertColumnAt(labFormCols)}
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-[11px] px-3 py-1.5 rounded-xl shadow-md transition cursor-pointer whitespace-nowrap ml-2 active:scale-95"
-                    >
-                      + Thêm Cột
-                    </button>
+                {/* PHẦN 1: THÔNG TIN CƠ BẢN (4 Ô INPUT CÙNG HÀNG) */}
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                  <div>
+                    <label className="block font-extrabold text-slate-700 uppercase mb-1">TÊN PHÒNG *</label>
+                    <input
+                      type="text"
+                      required
+                      value={labFormName}
+                      onChange={e => setLabFormName(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none"
+                      placeholder="Phòng Lab 01"
+                    />
                   </div>
 
-                  {/* CÁC HÀNG MA TRẬN VÀ CÁC THẺ MÁY TÍNH (ROW MATRIX CANVAS) */}
-                  <div className="space-y-2">
-                    {Array.from({ length: labFormRows }).map((_, rIdx) => (
-                      <div key={rIdx} className="flex items-center gap-2">
-                        
-                        {/* CỘT THAO TÁC HÀNG TRÊN TỪNG HÀNG (LEFT ACTION COLUMN) */}
-                        <div className="w-24 shrink-0 flex items-center justify-between bg-slate-900/90 border border-slate-800 p-1.5 rounded-xl">
-                          <div className="flex items-center gap-1">
+                  <div>
+                    <label className="block font-extrabold text-slate-700 uppercase mb-1">MÃ PHÒNG *</label>
+                    <input
+                      type="text"
+                      required
+                      value={labFormCode}
+                      onChange={e => setLabFormCode(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none"
+                      placeholder="P.201"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-extrabold text-slate-700 uppercase mb-1">VỊ TRÍ</label>
+                    <input
+                      type="text"
+                      value={labFormLocation}
+                      onChange={e => setLabFormLocation(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none"
+                      placeholder="Tầng 2 - Nhà A"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-extrabold text-slate-700 uppercase mb-1">TRẠNG THÁI</label>
+                    <select
+                      value={labFormStatus}
+                      onChange={e => setLabFormStatus(e.target.value as any)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold text-slate-800 bg-white focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer"
+                    >
+                      <option value="Active">Đang hoạt động</option>
+                      <option value="Maintenance">Đang bảo trì</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* PHẦN 2: THANH ĐIỀU KHIỂN SỐ HÀNG/CỘT, KHÔI PHỤC MÁY & BỘ CÔNG CỤ TOOLBAR */}
+                <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200 space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    
+                    {/* DROPDOWN CHỌN SỐ HÀNG VÀ CỘT */}
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        <span className="font-extrabold text-slate-700">Số Hàng:</span>
+                        <select
+                          value={labFormRows}
+                          onChange={e => handleSelectRowsChange(Number(e.target.value))}
+                          className="px-3 py-1.5 rounded-xl border border-slate-300 font-bold bg-white outline-none cursor-pointer"
+                        >
+                          {Array.from({ length: 12 }).map((_, i) => (
+                            <option key={i + 1} value={i + 1}>{i + 1} Hàng</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <span className="text-slate-400 font-black text-sm">✕</span>
+
+                      <div className="flex items-center gap-2">
+                        <span className="font-extrabold text-slate-700">Số Cột:</span>
+                        <select
+                          value={labFormCols}
+                          onChange={e => handleSelectColsChange(Number(e.target.value))}
+                          className="px-3 py-1.5 rounded-xl border border-slate-300 font-bold bg-white outline-none cursor-pointer"
+                        >
+                          {Array.from({ length: 14 }).map((_, i) => (
+                            <option key={i + 1} value={i + 1}>{i + 1} Cột</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* NÚT KHÔI PHỤC ĐỦ MÁY */}
+                      <button
+                        type="button"
+                        onClick={handleRestoreFullPcs}
+                        className="px-3.5 py-1.5 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 font-black text-xs hover:bg-indigo-100 transition cursor-pointer flex items-center gap-1.5 active:scale-95"
+                      >
+                        <RotateCw className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>Khôi phục đủ {labFormRows * labFormCols} máy</span>
+                      </button>
+                    </div>
+
+                    {/* BỘ CÔNG CỤ TOOL MODES PILL BAR */}
+                    <div className="flex items-center gap-1.5 bg-slate-200/70 p-1 rounded-xl border border-slate-300">
+                      <button
+                        type="button"
+                        onClick={() => setActiveEditorTool('aisle')}
+                        className={`px-3 py-1.5 rounded-lg font-black text-xs transition cursor-pointer flex items-center gap-1.5 ${
+                          activeEditorTool === 'aisle'
+                            ? 'bg-amber-600 text-white shadow-md'
+                            : 'text-slate-700 hover:bg-slate-300/60'
+                        }`}
+                      >
+                        <span>🪛 Kẻ Lối Đi (Rê Chuột)</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setActiveEditorTool('drag')}
+                        className={`px-3 py-1.5 rounded-lg font-black text-xs transition cursor-pointer flex items-center gap-1.5 ${
+                          activeEditorTool === 'drag'
+                            ? 'bg-indigo-700 text-white shadow-md'
+                            : 'text-slate-700 hover:bg-slate-300/60'
+                        }`}
+                      >
+                        <Move className="w-3.5 h-3.5" />
+                        <span>Kéo Thả Ô</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setActiveEditorTool('desk')}
+                        className={`px-3 py-1.5 rounded-lg font-black text-xs transition cursor-pointer flex items-center gap-1.5 ${
+                          activeEditorTool === 'desk'
+                            ? 'bg-indigo-700 text-white shadow-md'
+                            : 'text-slate-700 hover:bg-slate-300/60'
+                        }`}
+                      >
+                        <User className="w-3.5 h-3.5" />
+                        <span>Đặt Bàn GV</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setActiveEditorTool('rename')}
+                        className={`px-3 py-1.5 rounded-lg font-black text-xs transition cursor-pointer flex items-center gap-1.5 ${
+                          activeEditorTool === 'rename'
+                            ? 'bg-indigo-700 text-white shadow-md'
+                            : 'text-slate-700 hover:bg-slate-300/60'
+                        }`}
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                        <span>Sửa Tên Máy</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="bg-indigo-50 border border-indigo-200 text-indigo-800 text-xs font-black px-3 py-1 rounded-xl">
+                      Máy thực tế: {Object.values(labFormLayout).filter((t: any) => t && t.type === 'pc').length} Máy
+                    </span>
+                  </div>
+                </div>
+
+                {/* PHẦN 3: MATRIX CANVAS CONTAINER (DARK NAVY THEME BG-[#0F172A] VỚI NÚT + CHÈN HÀNG/CỘT ĐẦY ĐỦ CHUẨN MẪU) */}
+                <div className="bg-[#0f172a] p-5 rounded-2xl border border-slate-800 overflow-x-auto shadow-2xl space-y-4">
+                  
+                  <div className="inline-block min-w-full text-left">
+                    {/* HÀNG HÀNH ĐỘNG CỘT (TOP ACTION ROW) */}
+                    <div className="flex items-center gap-2 mb-2 font-mono">
+                      {/* Ô HÀNH ĐỘNG GÓC TRÁI (TOP-LEFT CORNER CELL) */}
+                      <div className="w-24 shrink-0 text-center font-bold text-[11px] text-slate-400">
+                        Thao Tác
+                      </div>
+
+                      {/* CÁC NÚT + CỘT VÀ XÓA CỘT TRÊN TỪNG CỘT */}
+                      {Array.from({ length: labFormCols }).map((_, cIdx) => (
+                        <div key={cIdx} className="w-24 shrink-0 flex flex-col items-center gap-1">
+                          <div className="flex items-center justify-center gap-1 w-full">
                             <button
                               type="button"
-                              onClick={() => handleInsertRowAt(rIdx)}
-                              className="bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-600 text-emerald-400 font-extrabold text-[10px] px-1 py-0.5 rounded transition cursor-pointer"
-                              title={`Chèn 1 hàng mới tại vị trí Hàng ${rIdx + 1}`}
+                              onClick={() => handleInsertColumnAt(cIdx)}
+                              className="bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-600 text-emerald-400 font-extrabold text-[10px] px-1.5 py-0.5 rounded transition cursor-pointer flex items-center gap-0.5"
+                              title={`Chèn thêm cột mới tại vị trí Cột ${cIdx + 1}`}
                             >
-                              + Hàng
+                              + Cột
                             </button>
                             <button
                               type="button"
-                              onClick={() => handleDeleteRowAt(rIdx)}
+                              onClick={() => handleDeleteColumnAt(cIdx)}
                               className="bg-rose-950/80 hover:bg-rose-900 border border-rose-600 text-rose-400 p-0.5 rounded transition cursor-pointer"
-                              title={`Xóa Hàng ${rIdx + 1}`}
+                              title={`Xóa Cột ${cIdx + 1}`}
                             >
                               <Trash2 className="w-3 h-3" />
                             </button>
                           </div>
-                          <span className="text-[10px] font-extrabold text-slate-400 font-mono">→ H{rIdx + 1}</span>
+                          <span className="text-[10px] font-extrabold text-slate-400">↓ Cột {cIdx + 1}</span>
                         </div>
+                      ))}
 
-                        {/* CÁC THẺ MÁY TÍNH TRONG HÀNG */}
-                        {Array.from({ length: labFormCols }).map((_, cIdx) => {
-                          const key = `${rIdx}_${cIdx}`;
-                          const tile = labFormLayout[key] || { type: 'pc' };
+                      {/* NÚT THÊM CỘT VÀO CUỐI */}
+                      <button
+                        type="button"
+                        onClick={() => handleInsertColumnAt(labFormCols)}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-[11px] px-3 py-1.5 rounded-xl shadow-md transition cursor-pointer whitespace-nowrap ml-2 active:scale-95"
+                      >
+                        + Thêm Cột
+                      </button>
+                    </div>
 
-                          let cardBg = 'bg-[#4338ca] hover:bg-[#4f46e5] text-white border-indigo-400/40 shadow-md';
-                          if (tile.type === 'desk') cardBg = 'bg-amber-600 hover:bg-amber-700 text-white border-amber-400/40 shadow-md';
-                          if (tile.type === 'aisle') cardBg = 'bg-slate-900/70 border-dashed border-slate-700 text-slate-600 hover:bg-slate-900';
-
-                          return (
-                            <div
-                              key={key}
-                              onClick={() => handleGridCellClick(rIdx, cIdx)}
-                              className={`w-24 h-16 shrink-0 rounded-2xl border-2 flex flex-col items-center justify-center p-1.5 cursor-pointer transition-all active:scale-95 ${cardBg}`}
-                            >
-                              {tile.type === 'pc' && (
-                                <>
-                                  <Monitor className="w-4 h-4 text-white mb-0.5" />
-                                  <span className="text-xs font-extrabold tracking-wider truncate max-w-full">
-                                    {tile.label || `M.${rIdx * labFormCols + cIdx + 1}`}
-                                  </span>
-                                </>
-                              )}
-
-                              {tile.type === 'desk' && (
-                                <>
-                                  <User className="w-4 h-4 text-white mb-0.5" />
-                                  <span className="text-xs font-black tracking-wider">Bàn GV</span>
-                                </>
-                              )}
-
-                              {tile.type === 'aisle' && (
-                                <span className="text-[10px] font-bold italic text-slate-500">Lối đi</span>
-                              )}
+                    {/* CÁC HÀNG MA TRẬN VÀ CÁC THẺ MÁY TÍNH (ROW MATRIX CANVAS) */}
+                    <div className="space-y-2">
+                      {Array.from({ length: labFormRows }).map((_, rIdx) => (
+                        <div key={rIdx} className="flex items-center gap-2">
+                          
+                          {/* CỘT THAO TÁC HÀNG TRÊN TỪNG HÀNG (LEFT ACTION COLUMN) */}
+                          <div className="w-24 shrink-0 flex items-center justify-between bg-slate-900/90 border border-slate-800 p-1.5 rounded-xl">
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => handleInsertRowAt(rIdx)}
+                                className="bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-600 text-emerald-400 font-extrabold text-[10px] px-1 py-0.5 rounded transition cursor-pointer"
+                                title={`Chèn 1 hàng mới tại vị trí Hàng ${rIdx + 1}`}
+                              >
+                                + Hàng
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteRowAt(rIdx)}
+                                className="bg-rose-950/80 hover:bg-rose-900 border border-rose-600 text-rose-400 p-0.5 rounded transition cursor-pointer"
+                                title={`Xóa Hàng ${rIdx + 1}`}
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
                             </div>
-                          );
-                        })}
-                      </div>
-                    ))}
-                  </div>
+                            <span className="text-[10px] font-extrabold text-slate-400 font-mono">→ H{rIdx + 1}</span>
+                          </div>
 
-                  {/* NÚT THÊM HÀNG VÀO CUỐI SƠ ĐỒ */}
-                  <div className="mt-3 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => handleInsertRowAt(labFormRows)}
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-[11px] px-4 py-2 rounded-xl shadow-md transition cursor-pointer active:scale-95"
-                    >
-                      + Thêm Hàng Vào Cuối Sơ Đồ
-                    </button>
+                          {/* CÁC THẺ MÁY TÍNH TRONG HÀNG */}
+                          {Array.from({ length: labFormCols }).map((_, cIdx) => {
+                            const key = `${rIdx}_${cIdx}`;
+                            const tile = labFormLayout[key] || { type: 'pc' };
+
+                            let cardBg = 'bg-[#4338ca] hover:bg-[#4f46e5] text-white border-indigo-400/40 shadow-md';
+                            if (tile.type === 'desk') cardBg = 'bg-amber-600 hover:bg-amber-700 text-white border-amber-400/40 shadow-md';
+                            if (tile.type === 'aisle') cardBg = 'bg-slate-900/70 border-dashed border-slate-700 text-slate-600 hover:bg-slate-900';
+
+                            return (
+                              <div
+                                key={key}
+                                onClick={() => handleGridCellClick(rIdx, cIdx)}
+                                className={`w-24 h-16 shrink-0 rounded-2xl border-2 flex flex-col items-center justify-center p-1.5 cursor-pointer transition-all active:scale-95 ${cardBg}`}
+                              >
+                                {tile.type === 'pc' && (
+                                  <>
+                                    <Monitor className="w-4 h-4 text-white mb-0.5" />
+                                    <span className="text-xs font-extrabold tracking-wider truncate max-w-full">
+                                      {tile.label || `M.${rIdx * labFormCols + cIdx + 1}`}
+                                    </span>
+                                  </>
+                                )}
+
+                                {tile.type === 'desk' && (
+                                  <>
+                                    <User className="w-4 h-4 text-white mb-0.5" />
+                                    <span className="text-xs font-black tracking-wider">Bàn GV</span>
+                                  </>
+                                )}
+
+                                {tile.type === 'aisle' && (
+                                  <span className="text-[10px] font-bold italic text-slate-500">Lối đi</span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* NÚT THÊM HÀNG VÀO CUỐI SƠ ĐỒ */}
+                    <div className="mt-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => handleInsertRowAt(labFormRows)}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-[11px] px-4 py-2 rounded-xl shadow-md transition cursor-pointer active:scale-95"
+                      >
+                        + Thêm Hàng Vào Cuối Sơ Đồ
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* FOOTER MODAL & TIPS */}
-              <div className="pt-2 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+              {/* FOOTER MODAL (STICKY BOTTOM) */}
+              <div className="px-6 py-4 border-t border-slate-200 bg-slate-50/90 flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0">
                 <div className="text-xs font-medium text-slate-600 italic flex items-center gap-1.5">
                   <span>💡 Mẹo: Bấm nút [+ Cột] hoặc [+ Hàng] ở bất kỳ vị trí nào để chèn thêm hàng/cột ngay tại đó.</span>
                 </div>
@@ -2234,7 +2231,7 @@ CREATE POLICY "Public full access school_lab_maintenance_logs" ON school_lab_mai
                   <button
                     type="button"
                     onClick={() => setIsLabEditorModalOpen(false)}
-                    className="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold hover:bg-slate-50 transition cursor-pointer"
+                    className="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold hover:bg-slate-100 transition cursor-pointer"
                   >
                     Hủy Bỏ
                   </button>
