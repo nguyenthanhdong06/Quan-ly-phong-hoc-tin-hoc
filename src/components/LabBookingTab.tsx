@@ -4,7 +4,7 @@ import {
   CalendarDays, FilePenLine, AlertTriangle, Sliders, Plus, Trash2, CheckCircle2, 
   Monitor, Cpu, Search, User, Check, X, 
   Building, RefreshCw, AlertOctagon, Info, BookMarked, Wrench, RotateCw, Microchip, HardDrive, Tag,
-  Edit, Grid, Database, Copy, CheckCheck, Rows, Columns, Hash, Move, MousePointer, Pencil, ShieldCheck, Sparkles, ArrowLeft
+  Edit, Grid, Database, Copy, CheckCheck, Rows, Columns, Hash, Move, MousePointer, Pencil, ShieldCheck, Sparkles, ArrowLeft, FileText, RotateCcw
 } from 'lucide-react';
 import { safeSetLocalStorage } from '../utils/safeStorage';
 import { saveSupabaseState } from '../supabaseClient';
@@ -117,7 +117,14 @@ export default function LabBookingTab({
   const [logSubViewMode, setLogSubViewMode] = useState<'list' | 'add'>('list');
   const [adminSubViewMode, setAdminSubViewMode] = useState<'list' | 'editor'>('list');
 
-  // Form states for Module 2: Booking Form
+  // Helper Cuộn Mượt (Smooth Scroll) lên đầu trang khi mở Form
+  const scrollToFormTop = () => {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  // Form states for Module 2: Booking Form (Hỗ trợ Lưu nháp Draft)
   const [teacherNameInput, setTeacherNameInput] = useState<string>(currentUser?.name || (members[0] ? members[0].name : ''));
   const [classNameInput, setClassNameInput] = useState<string>(classes[0] ? classes[0].name : 'Ba 1');
   const [studentCountInput, setStudentCountInput] = useState<number>(35);
@@ -136,7 +143,7 @@ export default function LabBookingTab({
   const [incidentPriority, setIncidentPriority] = useState<'Low' | 'Medium' | 'High'>('Medium');
   const [incidentIssue, setIncidentIssue] = useState<string>('');
 
-  // Form states for Module 4: Maintenance Log
+  // Form states for Module 4: Maintenance Log (Hỗ trợ Lưu nháp Draft)
   const [logFilterType, setLogFilterType] = useState<string>('All');
   const [logFilterPC, setLogFilterPC] = useState<string>('All');
   const [logSearchTerm, setLogSearchTerm] = useState<string>('');
@@ -153,7 +160,7 @@ export default function LabBookingTab({
   // Admin filter search term
   const [adminSearchTerm, setAdminSearchTerm] = useState<string>('');
 
-  // States for LAB EDITOR & LAB MATRIX CUSTOMIZER (TRÌNH THIẾT KẾ SƠ ĐỒ PHÒNG LAB MẪU INLINE)
+  // States for LAB EDITOR & LAB MATRIX CUSTOMIZER (Hỗ trợ Lưu nháp Draft)
   const [editingLab, setEditingLab] = useState<LabInfo | null>(null);
   const [labFormName, setLabFormName] = useState<string>('');
   const [labFormCode, setLabFormCode] = useState<string>('');
@@ -174,6 +181,7 @@ export default function LabBookingTab({
     setFormDayIndex(dayIndex);
     setFormSlotId(slotId);
     setActiveSubTab('booking');
+    scrollToFormTop();
   };
 
   // Real-time Conflict Detection
@@ -220,6 +228,7 @@ export default function LabBookingTab({
 
     showToast(`Đã tạo phiếu đăng ký phòng máy cho lớp ${newBooking.className} thành công!`, 'success');
     setActiveSubTab('calendar');
+    scrollToFormTop();
   };
 
   // Update & Delete Handlers for Bookings
@@ -293,6 +302,14 @@ export default function LabBookingTab({
     }
   };
 
+  // Clear Log Draft
+  const handleClearLogDraft = () => {
+    setLogTitle('');
+    setLogDescription('');
+    setLogCost(0);
+    showToast('Đã xóa bản nháp nhật ký bảo trì!', 'info');
+  };
+
   // Submit Handler for Maintenance Logs
   const handleAddLog = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -327,6 +344,7 @@ export default function LabBookingTab({
     setLogTitle('');
     setLogDescription('');
     setLogCost(0);
+    scrollToFormTop();
   };
 
   const handleDeleteLog = async (id: string) => {
@@ -349,9 +367,9 @@ export default function LabBookingTab({
     Object.values(initialLayout).forEach((t: any) => { if (t && t.type === 'pc') pcCount++; });
 
     setEditingLab(null);
-    setLabFormName(`Phòng Lab 0${labs.length + 1}`);
-    setLabFormCode(`P.${200 + labs.length + 1}`);
-    setLabFormLocation('Tầng 2 - Nhà A');
+    if (!labFormName) setLabFormName(`Phòng Lab 0${labs.length + 1}`);
+    if (!labFormCode) setLabFormCode(`P.${200 + labs.length + 1}`);
+    if (!labFormLocation) setLabFormLocation('Tầng 2 - Nhà A');
     setLabFormStatus('Active');
     setLabFormRows(defaultRows);
     setLabFormCols(defaultCols);
@@ -360,6 +378,7 @@ export default function LabBookingTab({
     setActiveEditorTool('aisle');
     setSelectedSwapKey(null);
     setAdminSubViewMode('editor');
+    scrollToFormTop();
   };
 
   const handleOpenEditLabForm = (lab: LabInfo) => {
@@ -381,6 +400,7 @@ export default function LabBookingTab({
     setActiveEditorTool('aisle');
     setSelectedSwapKey(null);
     setAdminSubViewMode('editor');
+    scrollToFormTop();
   };
 
   const handleDeleteLab = async (labId: string) => {
@@ -596,6 +616,7 @@ export default function LabBookingTab({
     }
 
     setAdminSubViewMode('list');
+    scrollToFormTop();
   };
 
   // Xử lý Rê Chuột (Drag Mouse) vẽ lối đi & Kéo Thả Ô Hoán Đổi Vị Trí
@@ -757,6 +778,8 @@ export default function LabBookingTab({
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   };
 
+  const isLogDraftPresent = Boolean(logTitle.trim() || logDescription.trim() || logCost > 0);
+
   return (
     <div className="space-y-4 sm:space-y-6 text-slate-800 pb-10 animate-fadeIn">
       
@@ -773,7 +796,7 @@ export default function LabBookingTab({
           {/* Navigation Subtab Buttons Group (FE Vườn Tri Thức) */}
           <nav className="flex items-center gap-1.5 bg-[#e4d3ba] p-1.5 rounded-2xl border border-[#cbb89d] overflow-x-auto max-w-full">
             <button
-              onClick={() => setActiveSubTab('calendar')}
+              onClick={() => { setActiveSubTab('calendar'); scrollToFormTop(); }}
               className={`px-4 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
                 activeSubTab === 'calendar'
                   ? 'bg-indigo-700 text-white shadow-md'
@@ -785,7 +808,7 @@ export default function LabBookingTab({
             </button>
 
             <button
-              onClick={() => setActiveSubTab('booking')}
+              onClick={() => { setActiveSubTab('booking'); scrollToFormTop(); }}
               className={`px-4 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
                 activeSubTab === 'booking'
                   ? 'bg-indigo-700 text-white shadow-md'
@@ -797,7 +820,7 @@ export default function LabBookingTab({
             </button>
 
             <button
-              onClick={() => setActiveSubTab('incident')}
+              onClick={() => { setActiveSubTab('incident'); scrollToFormTop(); }}
               className={`px-4 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
                 activeSubTab === 'incident'
                   ? 'bg-indigo-700 text-white shadow-md'
@@ -809,7 +832,7 @@ export default function LabBookingTab({
             </button>
 
             <button
-              onClick={() => { setActiveSubTab('log'); setLogSubViewMode('list'); }}
+              onClick={() => { setActiveSubTab('log'); setLogSubViewMode('list'); scrollToFormTop(); }}
               className={`px-4 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
                 activeSubTab === 'log'
                   ? 'bg-indigo-700 text-white shadow-md'
@@ -818,10 +841,13 @@ export default function LabBookingTab({
             >
               <BookMarked className="w-4 h-4 text-teal-300" />
               <span>4. Nhật Ký Bảo Trì</span>
+              {isLogDraftPresent && (
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+              )}
             </button>
 
             <button
-              onClick={() => { setActiveSubTab('admin'); setAdminSubViewMode('list'); }}
+              onClick={() => { setActiveSubTab('admin'); setAdminSubViewMode('list'); scrollToFormTop(); }}
               className={`px-4 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
                 activeSubTab === 'admin'
                   ? 'bg-amber-600 text-white shadow-md'
@@ -908,7 +934,7 @@ export default function LabBookingTab({
                 <span>Thời Khóa Biểu Sử Dụng - {currentLabObj.name} ({currentLabObj.code})</span>
               </h3>
               <button
-                onClick={() => setActiveSubTab('booking')}
+                onClick={() => { setActiveSubTab('booking'); scrollToFormTop(); }}
                 className="bg-indigo-700 hover:bg-indigo-800 text-white font-extrabold text-xs px-4 py-2.5 rounded-2xl shadow-md transition flex items-center gap-1.5 cursor-pointer active:scale-95"
               >
                 <Plus className="w-4 h-4" />
@@ -1024,7 +1050,7 @@ export default function LabBookingTab({
               </div>
               <button
                 type="button"
-                onClick={() => setActiveSubTab('calendar')}
+                onClick={() => { setActiveSubTab('calendar'); scrollToFormTop(); }}
                 className="text-xs text-slate-700 hover:text-slate-900 font-bold px-4 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 transition cursor-pointer flex items-center gap-1.5 active:scale-95"
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -1155,7 +1181,7 @@ export default function LabBookingTab({
               <div className="pt-4 border-t border-[#cbb89d]/70 flex justify-end gap-3">
                 <button
                   type="button"
-                  onClick={() => setActiveSubTab('calendar')}
+                  onClick={() => { setActiveSubTab('calendar'); scrollToFormTop(); }}
                   className="px-5 py-2.5 rounded-2xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 transition cursor-pointer active:scale-95"
                 >
                   Hủy Bỏ
@@ -1377,7 +1403,7 @@ export default function LabBookingTab({
       {activeSubTab === 'log' && (
         <div className="space-y-6 animate-fadeIn">
           {logSubViewMode === 'add' ? (
-            /* INLINE FORM GHI NHẬT KÝ BẢO TRÌ MỚI */
+            /* INLINE FORM GHI NHẬT KÝ BẢO TRÌ MỚI (CÓ LƯU NHÁP DRAFT & SMOOTH SCROLL) */
             <div className="max-w-4xl mx-auto space-y-6 animate-fadeIn">
               <div className="bg-[#fffbf0] rounded-3xl border border-[#cbb89d] p-6 sm:p-8 space-y-6 shadow-sm text-left">
                 <div className="border-b border-[#cbb89d]/70 pb-4 flex items-center justify-between">
@@ -1389,13 +1415,30 @@ export default function LabBookingTab({
                   </div>
                   <button
                     type="button"
-                    onClick={() => setLogSubViewMode('list')}
+                    onClick={() => { setLogSubViewMode('list'); scrollToFormTop(); }}
                     className="text-xs text-slate-700 hover:text-slate-900 font-bold px-4 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 transition cursor-pointer flex items-center gap-1.5 active:scale-95"
                   >
                     <ArrowLeft className="w-4 h-4" />
                     <span>Quay lại nhật ký bảo trì</span>
                   </button>
                 </div>
+
+                {/* THÔNG BÁO ĐANG KHÔI PHỤC BẢN NHÁP (DRAFT BADGE) */}
+                {isLogDraftPresent && (
+                  <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-300 text-amber-950 text-xs font-semibold flex items-center justify-between shadow-2xs">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-amber-600 shrink-0" />
+                      <span>📝 <strong>Đang giữ bản nháp chưa gửi:</strong> Dữ liệu Thầy/Cô đã nhập dở được tự động bảo toàn!</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleClearLogDraft}
+                      className="text-[11px] font-extrabold text-amber-900 hover:text-rose-700 underline cursor-pointer"
+                    >
+                      Xóa nháp
+                    </button>
+                  </div>
+                )}
 
                 <form onSubmit={handleAddLog} className="space-y-4 text-xs">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1515,10 +1558,10 @@ export default function LabBookingTab({
                   <div className="pt-4 border-t border-[#cbb89d]/70 flex justify-end items-center gap-3">
                     <button
                       type="button"
-                      onClick={() => setLogSubViewMode('list')}
+                      onClick={() => { setLogSubViewMode('list'); scrollToFormTop(); }}
                       className="px-5 py-2.5 rounded-2xl border border-slate-300 bg-white text-slate-700 font-bold hover:bg-slate-100 transition cursor-pointer active:scale-95"
                     >
-                      Hủy Bỏ
+                      Quay Lại (Giữ Nháp)
                     </button>
                     <button
                       type="submit"
@@ -1568,11 +1611,14 @@ export default function LabBookingTab({
                     </select>
                   </div>
                   <button
-                    onClick={() => setLogSubViewMode('add')}
-                    className="bg-indigo-700 hover:bg-indigo-800 text-white font-extrabold text-xs px-4 py-2.5 rounded-2xl shadow-md transition flex items-center gap-1.5 cursor-pointer active:scale-95"
+                    onClick={() => { setLogSubViewMode('add'); scrollToFormTop(); }}
+                    className="bg-indigo-700 hover:bg-indigo-800 text-white font-extrabold text-xs px-4 py-2.5 rounded-2xl shadow-md transition flex items-center gap-1.5 cursor-pointer active:scale-95 relative"
                   >
                     <Plus className="w-4 h-4" />
                     <span>Ghi Nhật Ký</span>
+                    {isLogDraftPresent && (
+                      <span className="w-2.5 h-2.5 rounded-full bg-amber-400 border border-white absolute -top-1 -right-1 animate-ping"></span>
+                    )}
                   </button>
                 </div>
               </div>
@@ -1699,7 +1745,7 @@ export default function LabBookingTab({
                   </div>
                   <button
                     type="button"
-                    onClick={() => setAdminSubViewMode('list')}
+                    onClick={() => { setAdminSubViewMode('list'); scrollToFormTop(); }}
                     className="text-xs text-slate-700 hover:text-slate-900 font-bold px-4 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 transition cursor-pointer flex items-center gap-1.5 active:scale-95"
                   >
                     <ArrowLeft className="w-4 h-4" />
@@ -2017,10 +2063,10 @@ export default function LabBookingTab({
                     <div className="flex items-center gap-3">
                       <button
                         type="button"
-                        onClick={() => setAdminSubViewMode('list')}
+                        onClick={() => { setAdminSubViewMode('list'); scrollToFormTop(); }}
                         className="px-5 py-2.5 rounded-2xl border border-slate-300 bg-white text-slate-700 font-bold hover:bg-slate-100 transition cursor-pointer active:scale-95"
                       >
-                        Hủy Bỏ
+                        Quay Lại (Giữ Nháp)
                       </button>
                       <button
                         type="submit"
