@@ -4,7 +4,7 @@ import {
   CalendarDays, FilePenLine, AlertTriangle, Sliders, Plus, Trash2, CheckCircle2, 
   Monitor, Cpu, Search, User, Check, X, 
   Building, RefreshCw, AlertOctagon, Info, BookMarked, Wrench, RotateCw, Microchip, HardDrive, Tag,
-  Edit, Grid, Database, Copy, CheckCheck, Rows, Columns, Hash, Move, MousePointer, Pencil, ShieldCheck, Sparkles
+  Edit, Grid, Database, Copy, CheckCheck, Rows, Columns, Hash, Move, MousePointer, Pencil, ShieldCheck, Sparkles, ArrowLeft
 } from 'lucide-react';
 import { safeSetLocalStorage } from '../utils/safeStorage';
 import { saveSupabaseState } from '../supabaseClient';
@@ -113,6 +113,10 @@ export default function LabBookingTab({
   const [activeSubTab, setActiveSubTab] = useState<'calendar' | 'booking' | 'incident' | 'log' | 'admin'>('calendar');
   const [selectedLab, setSelectedLab] = useState<string>(labs[0] ? labs[0].id : 'lab1');
 
+  // Inline Sub-View Modes cho 2 nút "Ghi nhật ký" và "Thêm phòng mới"
+  const [logSubViewMode, setLogSubViewMode] = useState<'list' | 'add'>('list');
+  const [adminSubViewMode, setAdminSubViewMode] = useState<'list' | 'editor'>('list');
+
   // Form states for Module 2: Booking Form
   const [teacherNameInput, setTeacherNameInput] = useState<string>(currentUser?.name || (members[0] ? members[0].name : ''));
   const [classNameInput, setClassNameInput] = useState<string>(classes[0] ? classes[0].name : 'Ba 1');
@@ -133,7 +137,6 @@ export default function LabBookingTab({
   const [incidentIssue, setIncidentIssue] = useState<string>('');
 
   // Form states for Module 4: Maintenance Log
-  const [isAddLogModalOpen, setIsAddLogModalOpen] = useState<boolean>(false);
   const [logFilterType, setLogFilterType] = useState<string>('All');
   const [logFilterPC, setLogFilterPC] = useState<string>('All');
   const [logSearchTerm, setLogSearchTerm] = useState<string>('');
@@ -150,8 +153,7 @@ export default function LabBookingTab({
   // Admin filter search term
   const [adminSearchTerm, setAdminSearchTerm] = useState<string>('');
 
-  // States for LAB EDITOR MODAL & LAB MATRIX CUSTOMIZER (TRÌNH THIẾT KẾ SƠ ĐỒ PHÒNG LAB MẪU)
-  const [isLabEditorModalOpen, setIsLabEditorModalOpen] = useState<boolean>(false);
+  // States for LAB EDITOR & LAB MATRIX CUSTOMIZER (TRÌNH THIẾT KẾ SƠ ĐỒ PHÒNG LAB MẪU INLINE)
   const [editingLab, setEditingLab] = useState<LabInfo | null>(null);
   const [labFormName, setLabFormName] = useState<string>('');
   const [labFormCode, setLabFormCode] = useState<string>('');
@@ -165,10 +167,6 @@ export default function LabBookingTab({
   const [isMouseDown, setIsMouseDown] = useState<boolean>(false);
   const [paintTargetType, setPaintTargetType] = useState<'pc' | 'aisle' | null>(null);
   const [selectedSwapKey, setSelectedSwapKey] = useState<string | null>(null);
-
-  // Supabase SQL Config Modal
-  const [isSqlModalOpen, setIsSqlModalOpen] = useState<boolean>(false);
-  const [copiedSql, setCopiedSql] = useState<boolean>(false);
 
   // Transition from Calendar Cell click to Booking Form
   const handleCellClickToBook = (dayIndex: number, slotId: string) => {
@@ -325,7 +323,7 @@ export default function LabBookingTab({
     await saveSupabaseState('school_lab_maintenance_logs', updated);
 
     showToast('Đã ghi thành công nhật ký bảo trì/thay thế linh kiện mới!', 'success');
-    setIsAddLogModalOpen(false);
+    setLogSubViewMode('list');
     setLogTitle('');
     setLogDescription('');
     setLogCost(0);
@@ -341,8 +339,8 @@ export default function LabBookingTab({
     }
   };
 
-  // LAB EDITOR MODAL HANDLERS (+ THÊM PHÒNG MỚI & SỬA SƠ ĐỒ PHÒNG LAB MA TRẬN)
-  const handleOpenAddLabModal = () => {
+  // LAB EDITOR INLINE FORM HANDLERS (+ THÊM PHÒNG MỚI & SỬA SƠ ĐỒ PHÒNG LAB MA TRẬN)
+  const handleOpenAddLabForm = () => {
     const defaultRows = 6;
     const defaultCols = 6;
     const initialLayout = generateDefaultLabLayout(defaultRows, defaultCols);
@@ -361,10 +359,10 @@ export default function LabBookingTab({
     setLabFormLayout(initialLayout);
     setActiveEditorTool('aisle');
     setSelectedSwapKey(null);
-    setIsLabEditorModalOpen(true);
+    setAdminSubViewMode('editor');
   };
 
-  const handleOpenEditLabModal = (lab: LabInfo) => {
+  const handleOpenEditLabForm = (lab: LabInfo) => {
     const rows = lab.gridRows || 6;
     const cols = lab.gridCols || 6;
     const layout = (lab.customLayout && Object.keys(lab.customLayout).length > 0)
@@ -382,7 +380,7 @@ export default function LabBookingTab({
     setLabFormLayout(layout);
     setActiveEditorTool('aisle');
     setSelectedSwapKey(null);
-    setIsLabEditorModalOpen(true);
+    setAdminSubViewMode('editor');
   };
 
   const handleDeleteLab = async (labId: string) => {
@@ -597,7 +595,7 @@ export default function LabBookingTab({
       showToast(`Đã thêm phòng lab mới: ${newLab.name}!`, 'success');
     }
 
-    setIsLabEditorModalOpen(false);
+    setAdminSubViewMode('list');
   };
 
   // Xử lý Rê Chuột (Drag Mouse) vẽ lối đi & Kéo Thả Ô Hoán Đổi Vị Trí
@@ -811,7 +809,7 @@ export default function LabBookingTab({
             </button>
 
             <button
-              onClick={() => setActiveSubTab('log')}
+              onClick={() => { setActiveSubTab('log'); setLogSubViewMode('list'); }}
               className={`px-4 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
                 activeSubTab === 'log'
                   ? 'bg-indigo-700 text-white shadow-md'
@@ -823,7 +821,7 @@ export default function LabBookingTab({
             </button>
 
             <button
-              onClick={() => setActiveSubTab('admin')}
+              onClick={() => { setActiveSubTab('admin'); setAdminSubViewMode('list'); }}
               className={`px-4 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
                 activeSubTab === 'admin'
                   ? 'bg-amber-600 text-white shadow-md'
@@ -1012,7 +1010,7 @@ export default function LabBookingTab({
       )}
 
       {/* ====================================================================
-          MODULE 2: PHIẾU ĐĂNG KÝ MƯỢN (BOOKING FORM)
+          MODULE 2: PHIẾU ĐĂNG KÝ MƯỢN (BOOKING FORM - INLINE PAGE VIEW)
           ==================================================================== */}
       {activeSubTab === 'booking' && (
         <div className="max-w-4xl mx-auto space-y-6 animate-fadeIn">
@@ -1025,10 +1023,12 @@ export default function LabBookingTab({
                 <h3 className="text-xl font-black text-slate-900 mt-2">Tạo Phiếu Đăng Ký Mượn Phòng Máy</h3>
               </div>
               <button
+                type="button"
                 onClick={() => setActiveSubTab('calendar')}
-                className="text-xs text-slate-700 hover:text-slate-900 font-bold px-4 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 transition cursor-pointer"
+                className="text-xs text-slate-700 hover:text-slate-900 font-bold px-4 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 transition cursor-pointer flex items-center gap-1.5 active:scale-95"
               >
-                ← Quay lại lịch mượn
+                <ArrowLeft className="w-4 h-4" />
+                <span>Quay lại lịch mượn</span>
               </button>
             </div>
 
@@ -1352,7 +1352,7 @@ export default function LabBookingTab({
                     placeholder="Mô tả lỗi (Chuột không di chuyển được, liệt phím Space, không nạp Windows...)"
                     value={incidentIssue}
                     onChange={e => setIncidentIssue(e.target.value)}
-                    className="w-full p-3.5 rounded-2xl border border-slate-300 text-xs font-medium focus:ring-2 focus:ring-indigo-500 outline-none shadow-2xs"
+                    className="w-full p-3.5 rounded-2xl border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-indigo-500 outline-none shadow-2xs"
                   ></textarea>
                 </div>
 
@@ -1372,309 +1372,309 @@ export default function LabBookingTab({
       )}
 
       {/* ====================================================================
-          MODULE 4: NHẬT KÝ BẢO TRÌ & SỬA CHỮA THIẾT BỊ (MAINTENANCE LOGS)
+          MODULE 4: NHẬT KÝ BẢO TRÌ & SỬA CHỮA THIẾT BỊ (MAINTENANCE LOGS - INLINE PAGE VIEW)
           ==================================================================== */}
       {activeSubTab === 'log' && (
         <div className="space-y-6 animate-fadeIn">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
-            <div className="bg-[#fffbf0] p-5 rounded-3xl border border-[#cbb89d] shadow-xs flex items-center justify-between">
-              <div>
-                <div className="text-xs font-black text-slate-500 uppercase tracking-wide">Số Lượt Ghi Vết Bảo Trì</div>
-                <div className="text-2xl font-black text-[#3d2b17] mt-1">{filteredLogs.length} Lượt</div>
-              </div>
-              <div className="w-12 h-12 rounded-2xl bg-teal-100 text-teal-800 border border-teal-300 flex items-center justify-center text-xl font-bold shadow-2xs">
-                <BookMarked className="w-6 h-6" />
-              </div>
-            </div>
+          {logSubViewMode === 'add' ? (
+            /* INLINE FORM GHI NHẬT KÝ BẢO TRÌ MỚI */
+            <div className="max-w-4xl mx-auto space-y-6 animate-fadeIn">
+              <div className="bg-[#fffbf0] rounded-3xl border border-[#cbb89d] p-6 sm:p-8 space-y-6 shadow-sm text-left">
+                <div className="border-b border-[#cbb89d]/70 pb-4 flex items-center justify-between">
+                  <div>
+                    <span className="bg-indigo-100 text-indigo-900 border border-indigo-200 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
+                      NHẬT KÝ BẢO TRÌ
+                    </span>
+                    <h3 className="text-xl font-black text-slate-900 mt-2">Ghi Nhật Ký Bảo Trì & Sửa Chữa Mới</h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setLogSubViewMode('list')}
+                    className="text-xs text-slate-700 hover:text-slate-900 font-bold px-4 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 transition cursor-pointer flex items-center gap-1.5 active:scale-95"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>Quay lại nhật ký bảo trì</span>
+                  </button>
+                </div>
 
-            <div className="bg-[#fffbf0] p-5 rounded-3xl border border-[#cbb89d] shadow-xs flex items-center justify-between">
-              <div>
-                <div className="text-xs font-black text-slate-500 uppercase tracking-wide">Tổng Chi Phí Sửa / Thay Linh Kiện</div>
-                <div className="text-2xl font-black text-emerald-800 mt-1">{formatVND(totalSpent)}</div>
-              </div>
-              <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center justify-center text-xl font-bold shadow-2xs">
-                <Tag className="w-6 h-6" />
-              </div>
-            </div>
-
-            <div className="bg-[#fffbf0] p-5 rounded-3xl border border-[#cbb89d] shadow-xs flex items-center justify-between">
-              <div>
-                <div className="text-xs font-black text-slate-500 uppercase tracking-wide">Phòng Đang Chọn Ghi Chép</div>
-                <select
-                  value={selectedLab}
-                  onChange={e => setSelectedLab(e.target.value)}
-                  className="mt-1 font-black text-indigo-900 text-xs bg-white border border-slate-300 rounded-xl px-3 py-1.5 outline-none cursor-pointer"
-                >
-                  {labs.map(l => (
-                    <option key={l.id} value={l.id}>{l.name} ({l.code})</option>
-                  ))}
-                </select>
-              </div>
-              <button
-                onClick={() => setIsAddLogModalOpen(true)}
-                className="bg-indigo-700 hover:bg-indigo-800 text-white font-extrabold text-xs px-4 py-2.5 rounded-2xl shadow-md transition flex items-center gap-1.5 cursor-pointer active:scale-95"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Ghi Nhật Ký</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="bg-[#fffbf0] p-4.5 rounded-3xl border border-[#cbb89d] shadow-xs flex flex-col md:flex-row justify-between items-center gap-4 text-left">
-            <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-              <span className="text-xs font-black text-slate-700 uppercase">Lọc Theo:</span>
-              <select
-                value={logFilterType}
-                onChange={e => setLogFilterType(e.target.value)}
-                className="px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-black bg-white cursor-pointer"
-              >
-                <option value="All">Tất cả loại nhật ký</option>
-                <option value="Repair">🛠️ Sửa chữa</option>
-                <option value="Replacement">🔄 Thay linh kiện</option>
-                <option value="Upgrade">🚀 Nâng cấp phần cứng</option>
-                <option value="Maintenance">🧹 Bảo trì định kỳ</option>
-                <option value="Software">💻 Phần mềm</option>
-              </select>
-
-              <select
-                value={logFilterPC}
-                onChange={e => setLogFilterPC(e.target.value)}
-                className="px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-black bg-white cursor-pointer"
-              >
-                <option value="All">Tất cả thiết bị</option>
-                <option value="lab">🏢 Toàn bộ phòng máy</option>
-                {Array.from({ length: currentLabObj.totalPCs }).map((_, i) => (
-                  <option key={i + 1} value={i + 1}>💻 Máy #{i + 1}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="w-full md:w-80 relative">
-              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Tìm tiêu đề, người sửa, linh kiện..."
-                value={logSearchTerm}
-                onChange={e => setLogSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 rounded-2xl border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-indigo-500 outline-none shadow-2xs"
-              />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-3xl border border-[#cbb89d] overflow-hidden shadow-xs p-6 text-left">
-            {filteredLogs.length === 0 ? (
-              <div className="py-12 text-center text-slate-400 italic">
-                <BookMarked className="w-12 h-12 mx-auto mb-2 opacity-30 text-slate-500" />
-                <p className="text-xs font-extrabold">Chưa có ghi chép nhật ký bảo trì nào cho phòng máy này.</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {filteredLogs.map(log => (
-                  <div key={log.id} className="p-4.5 rounded-2xl border border-slate-200/90 hover:border-[#cbb89d] bg-slate-50/50 hover:bg-[#fffbf0]/90 transition-all flex flex-col md:flex-row justify-between gap-4 shadow-2xs">
-                    <div className="space-y-2 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="bg-indigo-100 text-indigo-900 border border-indigo-200 text-[10px] font-black px-3 py-0.5 rounded-full">
-                          {log.type === 'Repair' ? '🛠️ Sửa chữa' : log.type === 'Replacement' ? '🔄 Thay linh kiện' : log.type === 'Upgrade' ? '🚀 Nâng cấp' : log.type === 'Maintenance' ? '🧹 Bảo trì' : '💻 Phần mềm'}
-                        </span>
-                        <span className="bg-slate-800 text-white text-[10px] font-black px-2.5 py-0.5 rounded-md font-mono">
-                          {log.pcLabel || (log.pcNumber ? `Máy #${log.pcNumber}` : 'Toàn phòng')}
-                        </span>
-                        <span className="text-[11px] font-bold text-slate-500">
-                          📅 {formatDateDDMMYYYY(log.date)}
-                        </span>
-                      </div>
-
-                      <h4 className="text-sm font-black text-slate-900">{log.title}</h4>
-
-                      {log.description && (
-                        <p className="text-xs text-slate-600 bg-white p-3 rounded-xl border border-slate-200 leading-relaxed font-medium">
-                          {log.description}
-                        </p>
-                      )}
-
-                      <div className="flex flex-wrap items-center gap-4 text-xs text-slate-600 font-bold pt-1">
-                        <span>👨‍🔧 Thực hiện: <strong className="text-indigo-900">{log.technician}</strong></span>
-                        {log.cost > 0 && (
-                          <span className="text-emerald-900 font-black bg-emerald-100 px-2.5 py-0.5 rounded-md border border-emerald-300">
-                            💵 Chi phí: {formatVND(log.cost)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex md:flex-col justify-end items-end shrink-0">
-                      <button
-                        onClick={() => handleDeleteLog(log.id)}
-                        className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-2 rounded-xl transition cursor-pointer"
-                        title="Xóa nhật ký"
+                <form onSubmit={handleAddLog} className="space-y-4 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-black text-[#3d2b17] uppercase mb-1.5 text-[11px] tracking-wider">PHÒNG MÁY</label>
+                      <select
+                        value={selectedLab}
+                        onChange={e => setSelectedLab(e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-2xl border border-slate-300 font-semibold text-xs text-slate-800 bg-white focus:ring-2 focus:ring-indigo-600 outline-none shadow-2xs cursor-pointer"
                       >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                        {labs.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block font-black text-[#3d2b17] uppercase mb-1.5 text-[11px] tracking-wider">ĐỐI TƯỢNG</label>
+                      <select
+                        value={logTargetType}
+                        onChange={e => setLogTargetType(e.target.value as any)}
+                        className="w-full px-4 py-2.5 rounded-2xl border border-slate-300 font-semibold text-xs text-slate-800 bg-white focus:ring-2 focus:ring-indigo-600 outline-none shadow-2xs cursor-pointer"
+                      >
+                        <option value="pc">Từng máy cụ thể</option>
+                        <option value="lab">Toàn bộ phòng máy</option>
+                      </select>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
-      {/* MODAL GHI NHẬT KÝ BẢO TRÌ (CHUẨN GIAO DIỆN DESKOS IMAC WARM BEIGE THEME) */}
-      {isAddLogModalOpen && (
-        <div className="fixed inset-0 z-[500] flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4 animate-fadeIn">
-          <div className="bg-[#fffbf0] rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl border-2 border-[#cbb89d] space-y-5 text-left relative overflow-hidden">
-            
-            {/* HEADER BAR WARM BEIGE */}
-            <div className="px-6 py-4 -mx-6 -mt-6 sm:-mx-8 sm:-mt-8 border-b border-[#cbb89d] bg-[#dfccb0] flex justify-between items-center mb-5 shrink-0">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-white border border-[#cbb89d] flex items-center justify-center text-[#3d2b17] shadow-2xs">
-                  <BookMarked className="w-5 h-5 text-indigo-700" />
-                </div>
-                <h3 className="text-base font-black text-[#3d2b17] tracking-tight">
-                  Ghi Nhật Ký Bảo Trì & Sửa Chữa Mới
-                </h3>
+                  {logTargetType === 'pc' && (
+                    <div>
+                      <label className="block font-black text-[#3d2b17] uppercase mb-1.5 text-[11px] tracking-wider">CHỌN SỐ MÁY</label>
+                      <select
+                        value={logPcNumber}
+                        onChange={e => setLogPcNumber(Number(e.target.value))}
+                        className="w-full px-4 py-2.5 rounded-2xl border border-slate-300 font-semibold text-xs text-slate-800 bg-white focus:ring-2 focus:ring-indigo-600 outline-none shadow-2xs cursor-pointer"
+                      >
+                        {Array.from({ length: currentLabObj.totalPCs }).map((_, i) => (
+                          <option key={i + 1} value={i + 1}>Máy #{i + 1}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-black text-[#3d2b17] uppercase mb-1.5 text-[11px] tracking-wider">LOẠI HOẠT ĐỘNG</label>
+                      <select
+                        value={logType}
+                        onChange={e => setLogType(e.target.value as any)}
+                        className="w-full px-4 py-2.5 rounded-2xl border border-slate-300 font-semibold text-xs text-slate-800 bg-white focus:ring-2 focus:ring-indigo-600 outline-none shadow-2xs cursor-pointer"
+                      >
+                        <option value="Repair">🛠️ Sửa chữa</option>
+                        <option value="Replacement">🔄 Thay thế linh kiện</option>
+                        <option value="Upgrade">🚀 Nâng cấp phần cứng</option>
+                        <option value="Maintenance">🧹 Bảo trì định kỳ</option>
+                        <option value="Software">💻 Phần mềm</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block font-black text-[#3d2b17] uppercase mb-1.5 text-[11px] tracking-wider">NGÀY THỰC HIỆN</label>
+                      <input
+                        type="date"
+                        required
+                        value={logDate}
+                        onChange={e => setLogDate(e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-2xl border border-slate-300 font-semibold text-xs text-slate-800 bg-white focus:ring-2 focus:ring-indigo-600 outline-none shadow-2xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-black text-[#3d2b17] uppercase mb-1.5 text-[11px] tracking-wider">TIÊU ĐỀ HẠNG MỤC *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ví dụ: Thay RAM 8GB Kingston DDR4..."
+                      value={logTitle}
+                      onChange={e => setLogTitle(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-2xl border border-slate-300 font-semibold text-xs text-slate-800 bg-white focus:ring-2 focus:ring-indigo-600 outline-none shadow-2xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-black text-[#3d2b17] uppercase mb-1.5 text-[11px] tracking-wider">MÔ TẢ CHI TIẾT / THÔNG SỐ LINH KIỆN</label>
+                    <textarea
+                      rows={3}
+                      placeholder="Ghi chú chi tiết thông số linh kiện, tình trạng cũ/mới, thời hạn bảo hành..."
+                      value={logDescription}
+                      onChange={e => setLogDescription(e.target.value)}
+                      className="w-full p-4 rounded-2xl border border-slate-300 font-medium text-xs text-slate-800 bg-white focus:ring-2 focus:ring-indigo-600 outline-none shadow-2xs"
+                    ></textarea>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-black text-[#3d2b17] uppercase mb-1.5 text-[11px] tracking-wider">NGƯỜI SỬA / ĐƠN VỊ</label>
+                      <input
+                        type="text"
+                        placeholder="Tên Giáo viên / Kỹ thuật viên..."
+                        value={logTechnician}
+                        onChange={e => setLogTechnician(e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-2xl border border-slate-300 font-semibold text-xs text-slate-800 bg-white focus:ring-2 focus:ring-indigo-600 outline-none shadow-2xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-black text-[#3d2b17] uppercase mb-1.5 text-[11px] tracking-wider">CHI PHÍ THAY/SỬA (VNĐ)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="5000"
+                        placeholder="0"
+                        value={logCost}
+                        onChange={e => setLogCost(Number(e.target.value))}
+                        className="w-full px-4 py-2.5 rounded-2xl border border-slate-300 font-semibold text-xs text-slate-800 bg-white focus:ring-2 focus:ring-indigo-600 outline-none shadow-2xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-[#cbb89d]/70 flex justify-end items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setLogSubViewMode('list')}
+                      className="px-5 py-2.5 rounded-2xl border border-slate-300 bg-white text-slate-700 font-bold hover:bg-slate-100 transition cursor-pointer active:scale-95"
+                    >
+                      Hủy Bỏ
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-6 py-2.5 rounded-2xl bg-indigo-700 hover:bg-indigo-800 text-white font-black text-xs shadow-lg transition cursor-pointer active:scale-95"
+                    >
+                      Lưu Nhật Ký
+                    </button>
+                  </div>
+                </form>
               </div>
-              <button 
-                onClick={() => setIsAddLogModalOpen(false)} 
-                className="w-8 h-8 rounded-full border border-[#cbb89d] bg-white/80 hover:bg-white text-slate-600 hover:text-slate-900 flex items-center justify-center transition cursor-pointer shadow-2xs"
-                title="Đóng cửa sổ"
-              >
-                <X className="w-4 h-4" />
-              </button>
             </div>
-
-            <form onSubmit={handleAddLog} className="space-y-4 text-xs">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-black text-[#3d2b17] uppercase mb-1.5 text-[11px] tracking-wider">PHÒNG MÁY</label>
-                  <select
-                    value={selectedLab}
-                    onChange={e => setSelectedLab(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-2xl border border-slate-300 font-semibold text-xs text-slate-800 bg-white focus:ring-2 focus:ring-indigo-600 outline-none shadow-2xs cursor-pointer"
-                  >
-                    {labs.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-                  </select>
+          ) : (
+            /* DANH SÁCH NHẬT KÝ BẢO TRÌ BÌNH THƯỜNG */
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
+                <div className="bg-[#fffbf0] p-5 rounded-3xl border border-[#cbb89d] shadow-xs flex items-center justify-between">
+                  <div>
+                    <div className="text-xs font-black text-slate-500 uppercase tracking-wide">Số Lượt Ghi Vết Bảo Trì</div>
+                    <div className="text-2xl font-black text-[#3d2b17] mt-1">{filteredLogs.length} Lượt</div>
+                  </div>
+                  <div className="w-12 h-12 rounded-2xl bg-teal-100 text-teal-800 border border-teal-300 flex items-center justify-center text-xl font-bold shadow-2xs">
+                    <BookMarked className="w-6 h-6" />
+                  </div>
                 </div>
-                <div>
-                  <label className="block font-black text-[#3d2b17] uppercase mb-1.5 text-[11px] tracking-wider">ĐỐI TƯỢNG</label>
-                  <select
-                    value={logTargetType}
-                    onChange={e => setLogTargetType(e.target.value as any)}
-                    className="w-full px-4 py-2.5 rounded-2xl border border-slate-300 font-semibold text-xs text-slate-800 bg-white focus:ring-2 focus:ring-indigo-600 outline-none shadow-2xs cursor-pointer"
+
+                <div className="bg-[#fffbf0] p-5 rounded-3xl border border-[#cbb89d] shadow-xs flex items-center justify-between">
+                  <div>
+                    <div className="text-xs font-black text-slate-500 uppercase tracking-wide">Tổng Chi Phí Sửa / Thay Linh Kiện</div>
+                    <div className="text-2xl font-black text-emerald-800 mt-1">{formatVND(totalSpent)}</div>
+                  </div>
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center justify-center text-xl font-bold shadow-2xs">
+                    <Tag className="w-6 h-6" />
+                  </div>
+                </div>
+
+                <div className="bg-[#fffbf0] p-5 rounded-3xl border border-[#cbb89d] shadow-xs flex items-center justify-between">
+                  <div>
+                    <div className="text-xs font-black text-slate-500 uppercase tracking-wide">Phòng Đang Chọn Ghi Chép</div>
+                    <select
+                      value={selectedLab}
+                      onChange={e => setSelectedLab(e.target.value)}
+                      className="mt-1 font-black text-indigo-900 text-xs bg-white border border-slate-300 rounded-xl px-3 py-1.5 outline-none cursor-pointer"
+                    >
+                      {labs.map(l => (
+                        <option key={l.id} value={l.id}>{l.name} ({l.code})</option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    onClick={() => setLogSubViewMode('add')}
+                    className="bg-indigo-700 hover:bg-indigo-800 text-white font-extrabold text-xs px-4 py-2.5 rounded-2xl shadow-md transition flex items-center gap-1.5 cursor-pointer active:scale-95"
                   >
-                    <option value="pc">Từng máy cụ thể</option>
-                    <option value="lab">Toàn bộ phòng máy</option>
-                  </select>
+                    <Plus className="w-4 h-4" />
+                    <span>Ghi Nhật Ký</span>
+                  </button>
                 </div>
               </div>
 
-              {logTargetType === 'pc' && (
-                <div>
-                  <label className="block font-black text-[#3d2b17] uppercase mb-1.5 text-[11px] tracking-wider">CHỌN SỐ MÁY</label>
+              <div className="bg-[#fffbf0] p-4.5 rounded-3xl border border-[#cbb89d] shadow-xs flex flex-col md:flex-row justify-between items-center gap-4 text-left">
+                <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                  <span className="text-xs font-black text-slate-700 uppercase">Lọc Theo:</span>
                   <select
-                    value={logPcNumber}
-                    onChange={e => setLogPcNumber(Number(e.target.value))}
-                    className="w-full px-4 py-2.5 rounded-2xl border border-slate-300 font-semibold text-xs text-slate-800 bg-white focus:ring-2 focus:ring-indigo-600 outline-none shadow-2xs cursor-pointer"
+                    value={logFilterType}
+                    onChange={e => setLogFilterType(e.target.value)}
+                    className="px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-black bg-white cursor-pointer"
                   >
-                    {Array.from({ length: currentLabObj.totalPCs }).map((_, i) => (
-                      <option key={i + 1} value={i + 1}>Máy #{i + 1}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-black text-[#3d2b17] uppercase mb-1.5 text-[11px] tracking-wider">LOẠI HOẠT ĐỘNG</label>
-                  <select
-                    value={logType}
-                    onChange={e => setLogType(e.target.value as any)}
-                    className="w-full px-4 py-2.5 rounded-2xl border border-slate-300 font-semibold text-xs text-slate-800 bg-white focus:ring-2 focus:ring-indigo-600 outline-none shadow-2xs cursor-pointer"
-                  >
+                    <option value="All">Tất cả loại nhật ký</option>
                     <option value="Repair">🛠️ Sửa chữa</option>
-                    <option value="Replacement">🔄 Thay thế linh kiện</option>
+                    <option value="Replacement">🔄 Thay linh kiện</option>
                     <option value="Upgrade">🚀 Nâng cấp phần cứng</option>
                     <option value="Maintenance">🧹 Bảo trì định kỳ</option>
                     <option value="Software">💻 Phần mềm</option>
                   </select>
+
+                  <select
+                    value={logFilterPC}
+                    onChange={e => setLogFilterPC(e.target.value)}
+                    className="px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-black bg-white cursor-pointer"
+                  >
+                    <option value="All">Tất cả thiết bị</option>
+                    <option value="lab">🏢 Toàn bộ phòng máy</option>
+                    {Array.from({ length: currentLabObj.totalPCs }).map((_, i) => (
+                      <option key={i + 1} value={i + 1}>💻 Máy #{i + 1}</option>
+                    ))}
+                  </select>
                 </div>
-                <div>
-                  <label className="block font-black text-[#3d2b17] uppercase mb-1.5 text-[11px] tracking-wider">NGÀY THỰC HIỆN</label>
-                  <input
-                    type="date"
-                    required
-                    value={logDate}
-                    onChange={e => setLogDate(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-2xl border border-slate-300 font-semibold text-xs text-slate-800 bg-white focus:ring-2 focus:ring-indigo-600 outline-none shadow-2xs"
-                  />
-                </div>
-              </div>
 
-              <div>
-                <label className="block font-black text-[#3d2b17] uppercase mb-1.5 text-[11px] tracking-wider">TIÊU ĐỀ HẠNG MỤC *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ví dụ: Thay RAM 8GB Kingston DDR4..."
-                  value={logTitle}
-                  onChange={e => setLogTitle(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-2xl border border-slate-300 font-semibold text-xs text-slate-800 bg-white focus:ring-2 focus:ring-indigo-600 outline-none shadow-2xs"
-                />
-              </div>
-
-              <div>
-                <label className="block font-black text-[#3d2b17] uppercase mb-1.5 text-[11px] tracking-wider">MÔ TẢ CHI TIẾT / THÔNG SỐ LINH KIỆN</label>
-                <textarea
-                  rows={3}
-                  placeholder="Ghi chú chi tiết thông số linh kiện, tình trạng cũ/mới, thời hạn bảo hành..."
-                  value={logDescription}
-                  onChange={e => setLogDescription(e.target.value)}
-                  className="w-full p-4 rounded-2xl border border-slate-300 font-medium text-xs text-slate-800 bg-white focus:ring-2 focus:ring-indigo-600 outline-none shadow-2xs"
-                ></textarea>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-black text-[#3d2b17] uppercase mb-1.5 text-[11px] tracking-wider">NGƯỜI SỬA / ĐƠN VỊ</label>
+                <div className="w-full md:w-80 relative">
+                  <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
                     type="text"
-                    placeholder="Tên Giáo viên / Kỹ thuật viên..."
-                    value={logTechnician}
-                    onChange={e => setLogTechnician(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-2xl border border-slate-300 font-semibold text-xs text-slate-800 bg-white focus:ring-2 focus:ring-indigo-600 outline-none shadow-2xs"
-                  />
-                </div>
-                <div>
-                  <label className="block font-black text-[#3d2b17] uppercase mb-1.5 text-[11px] tracking-wider">CHI PHÍ THAY/SỬA (VNĐ)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="5000"
-                    placeholder="0"
-                    value={logCost}
-                    onChange={e => setLogCost(Number(e.target.value))}
-                    className="w-full px-4 py-2.5 rounded-2xl border border-slate-300 font-semibold text-xs text-slate-800 bg-white focus:ring-2 focus:ring-indigo-600 outline-none shadow-2xs"
+                    placeholder="Tìm tiêu đề, người sửa, linh kiện..."
+                    value={logSearchTerm}
+                    onChange={e => setLogSearchTerm(e.target.value)}
+                    className="w-full pl-9 pr-4 py-2 rounded-2xl border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-indigo-500 outline-none shadow-2xs"
                   />
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-[#cbb89d]/70 flex justify-end items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsAddLogModalOpen(false)}
-                  className="px-5 py-2.5 rounded-2xl border border-slate-300 bg-white text-slate-700 font-bold hover:bg-slate-100 transition cursor-pointer active:scale-95"
-                >
-                  Hủy Bỏ
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-2.5 rounded-2xl bg-indigo-700 hover:bg-indigo-800 text-white font-black text-xs shadow-lg transition cursor-pointer active:scale-95"
-                >
-                  Lưu Nhật Ký
-                </button>
+              <div className="bg-white rounded-3xl border border-[#cbb89d] overflow-hidden shadow-xs p-6 text-left">
+                {filteredLogs.length === 0 ? (
+                  <div className="py-12 text-center text-slate-400 italic">
+                    <BookMarked className="w-12 h-12 mx-auto mb-2 opacity-30 text-slate-500" />
+                    <p className="text-xs font-extrabold">Chưa có ghi chép nhật ký bảo trì nào cho phòng máy này.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {filteredLogs.map(log => (
+                      <div key={log.id} className="p-4.5 rounded-2xl border border-slate-200/90 hover:border-[#cbb89d] bg-slate-50/50 hover:bg-[#fffbf0]/90 transition-all flex flex-col md:flex-row justify-between gap-4 shadow-2xs">
+                        <div className="space-y-2 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="bg-indigo-100 text-indigo-900 border border-indigo-200 text-[10px] font-black px-3 py-0.5 rounded-full">
+                              {log.type === 'Repair' ? '🛠️ Sửa chữa' : log.type === 'Replacement' ? '🔄 Thay linh kiện' : log.type === 'Upgrade' ? '🚀 Nâng cấp' : log.type === 'Maintenance' ? '🧹 Bảo trì' : '💻 Phần mềm'}
+                            </span>
+                            <span className="bg-slate-800 text-white text-[10px] font-black px-2.5 py-0.5 rounded-md font-mono">
+                              {log.pcLabel || (log.pcNumber ? `Máy #${log.pcNumber}` : 'Toàn phòng')}
+                            </span>
+                            <span className="text-[11px] font-bold text-slate-500">
+                              📅 {formatDateDDMMYYYY(log.date)}
+                            </span>
+                          </div>
+
+                          <h4 className="text-sm font-black text-slate-900">{log.title}</h4>
+
+                          {log.description && (
+                            <p className="text-xs text-slate-600 bg-white p-3 rounded-xl border border-slate-200 leading-relaxed font-medium">
+                              {log.description}
+                            </p>
+                          )}
+
+                          <div className="flex flex-wrap items-center gap-4 text-xs text-slate-600 font-bold pt-1">
+                            <span>👨‍🔧 Thực hiện: <strong className="text-indigo-900">{log.technician}</strong></span>
+                            {log.cost > 0 && (
+                              <span className="text-emerald-900 font-black bg-emerald-100 px-2.5 py-0.5 rounded-md border border-emerald-300">
+                                💵 Chi phí: {formatVND(log.cost)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex md:flex-col justify-end items-end shrink-0">
+                          <button
+                            onClick={() => handleDeleteLog(log.id)}
+                            className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-2 rounded-xl transition cursor-pointer"
+                            title="Xóa nhật ký"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            </form>
-          </div>
+            </>
+          )}
         </div>
       )}
 
@@ -1683,588 +1683,583 @@ export default function LabBookingTab({
           ==================================================================== */}
       {activeSubTab === 'admin' && (
         <div className="space-y-6 animate-fadeIn text-left">
-          
-          {/* CARD TOP: QUẢN LÝ DANH SÁCH & SƠ ĐỒ PHÒNG LAB */}
-          <div className="bg-[#fffbf0] p-6 rounded-3xl border border-[#cbb89d] shadow-xs space-y-4">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-[#cbb89d]/70 pb-4">
-              <div>
-                <h3 className="text-lg font-black text-slate-900">Quản Lý Danh Sách & Sơ Đồ Phòng LAB</h3>
-                <p className="text-xs font-semibold text-slate-500 mt-0.5">
-                  Thêm mới phòng máy, thiết kế sơ đồ ma trận hàng x cột và chỉnh sửa tên máy trực tiếp.
-                </p>
-              </div>
+          {adminSubViewMode === 'editor' ? (
+            /* INLINE TRÌNH THIẾT KẾ SƠ ĐỒ MA TRẬN PHÒNG LAB */
+            <div className="space-y-6 animate-fadeIn">
+              <div className="bg-[#fffbf0] rounded-3xl border border-[#cbb89d] p-6 sm:p-8 space-y-6 shadow-sm text-left">
+                <div className="border-b border-[#cbb89d]/70 pb-4 flex items-center justify-between">
+                  <div>
+                    <span className="bg-indigo-100 text-indigo-900 border border-indigo-200 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
+                      TRÌNH THIẾT KẾ SƠ ĐỒ
+                    </span>
+                    <h3 className="text-xl font-black text-slate-900 mt-2">Thiết Kế Sơ Đồ – {labFormName || 'Phòng Lab'}</h3>
+                    <p className="text-xs text-slate-600 font-semibold mt-1">
+                      Mặc định tạo đủ máy theo Hàng x Cột. Chọn "Kẻ Lối Đi" và rê chuột hoặc bấm nút ở đầu Cột/Hàng.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setAdminSubViewMode('list')}
+                    className="text-xs text-slate-700 hover:text-slate-900 font-bold px-4 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 transition cursor-pointer flex items-center gap-1.5 active:scale-95"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>Quay lại danh sách phòng máy</span>
+                  </button>
+                </div>
 
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleOpenAddLabModal}
-                  className="bg-indigo-700 hover:bg-indigo-800 text-white font-extrabold text-xs px-4 py-2.5 rounded-2xl shadow-md transition flex items-center gap-1.5 cursor-pointer active:scale-95"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>+ Thêm Phòng Mới</span>
-                </button>
-              </div>
-            </div>
+                <form onSubmit={handleSaveLabLayout} className="space-y-6 text-xs">
+                  
+                  {/* PHẦN 1: THÔNG TIN CƠ BẢN (4 Ô INPUT CÙNG HÀNG) */}
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                    <div>
+                      <label className="block font-extrabold text-slate-700 uppercase mb-1">TÊN PHÒNG *</label>
+                      <input
+                        type="text"
+                        required
+                        value={labFormName}
+                        onChange={e => setLabFormName(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none"
+                        placeholder="Phòng Lab 01"
+                      />
+                    </div>
 
-            {/* CARDS LIST PHÒNG LAB */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {labs.map(lab => (
-                <div key={lab.id} className="p-4.5 rounded-2xl border border-slate-200/90 hover:border-indigo-400 bg-white hover:bg-indigo-50/30 transition-all flex items-center justify-between shadow-2xs hover:shadow-md">
-                  <div className="space-y-1">
-                    <div className="font-black text-slate-900 text-sm flex items-center gap-2">
-                      <span>{lab.name}</span>
-                      <span className="text-[10px] font-extrabold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-                        ({lab.code})
+                    <div>
+                      <label className="block font-extrabold text-slate-700 uppercase mb-1">MÃ PHÒNG *</label>
+                      <input
+                        type="text"
+                        required
+                        value={labFormCode}
+                        onChange={e => setLabFormCode(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none"
+                        placeholder="P.201"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-extrabold text-slate-700 uppercase mb-1">VỊ TRÍ</label>
+                      <input
+                        type="text"
+                        value={labFormLocation}
+                        onChange={e => setLabFormLocation(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none"
+                        placeholder="Tầng 2 - Nhà A"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-extrabold text-slate-700 uppercase mb-1">TRẠNG THÁI</label>
+                      <select
+                        value={labFormStatus}
+                        onChange={e => setLabFormStatus(e.target.value as any)}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold text-slate-800 bg-white focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer"
+                      >
+                        <option value="Active">Đang hoạt động</option>
+                        <option value="Maintenance">Đang bảo trì</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* PHẦN 2: THANH ĐIỀU KHIỂN SỐ HÀNG/CỘT, KHÔI PHỤC MÁY & BỘ CÔNG CỤ TOOLBAR */}
+                  <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200 space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      
+                      {/* DROPDOWN CHỌN SỐ HÀNG VÀ CỘT */}
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          <span className="font-extrabold text-slate-700">Số Hàng:</span>
+                          <select
+                            value={labFormRows}
+                            onChange={e => handleSelectRowsChange(Number(e.target.value))}
+                            className="px-3 py-1.5 rounded-xl border border-slate-300 font-bold bg-white outline-none cursor-pointer"
+                          >
+                            {Array.from({ length: 12 }).map((_, i) => (
+                              <option key={i + 1} value={i + 1}>{i + 1} Hàng</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <span className="text-slate-400 font-black text-sm">✕</span>
+
+                        <div className="flex items-center gap-2">
+                          <span className="font-extrabold text-slate-700">Số Cột:</span>
+                          <select
+                            value={labFormCols}
+                            onChange={e => handleSelectColsChange(Number(e.target.value))}
+                            className="px-3 py-1.5 rounded-xl border border-slate-300 font-bold bg-white outline-none cursor-pointer"
+                          >
+                            {Array.from({ length: 14 }).map((_, i) => (
+                              <option key={i + 1} value={i + 1}>{i + 1} Cột</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* NÚT KHÔI PHỤC ĐỦ MÁY */}
+                        <button
+                          type="button"
+                          onClick={handleRestoreFullPcs}
+                          className="px-3.5 py-1.5 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 font-black text-xs hover:bg-indigo-100 transition cursor-pointer flex items-center gap-1.5 active:scale-95"
+                        >
+                          <RotateCw className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>Khôi phục đủ {labFormRows * labFormCols} máy</span>
+                        </button>
+                      </div>
+
+                      {/* BỘ CÔNG CỤ TOOL MODES PILL BAR */}
+                      <div className="flex items-center gap-1.5 bg-slate-200/70 p-1 rounded-xl border border-slate-300">
+                        <button
+                          type="button"
+                          onClick={() => setActiveEditorTool('aisle')}
+                          className={`px-3 py-1.5 rounded-lg font-black text-xs transition cursor-pointer flex items-center gap-1.5 ${
+                            activeEditorTool === 'aisle'
+                              ? 'bg-amber-600 text-white shadow-md'
+                              : 'text-slate-700 hover:bg-slate-300/60'
+                          }`}
+                        >
+                          <span>🪛 Kẻ Lối Đi (Rê Chuột)</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setActiveEditorTool('drag')}
+                          className={`px-3 py-1.5 rounded-lg font-black text-xs transition cursor-pointer flex items-center gap-1.5 ${
+                            activeEditorTool === 'drag'
+                              ? 'bg-indigo-700 text-white shadow-md'
+                              : 'text-slate-700 hover:bg-slate-300/60'
+                          }`}
+                        >
+                          <Move className="w-3.5 h-3.5" />
+                          <span>Kéo Thả Ô</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setActiveEditorTool('desk')}
+                          className={`px-3 py-1.5 rounded-lg font-black text-xs transition cursor-pointer flex items-center gap-1.5 ${
+                            activeEditorTool === 'desk'
+                              ? 'bg-indigo-700 text-white shadow-md'
+                              : 'text-slate-700 hover:bg-slate-300/60'
+                          }`}
+                        >
+                          <User className="w-3.5 h-3.5" />
+                          <span>Đặt Bàn GV</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setActiveEditorTool('rename')}
+                          className={`px-3 py-1.5 rounded-lg font-black text-xs transition cursor-pointer flex items-center gap-1.5 ${
+                            activeEditorTool === 'rename'
+                              ? 'bg-indigo-700 text-white shadow-md'
+                              : 'text-slate-700 hover:bg-slate-300/60'
+                          }`}
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                          <span>Sửa Tên Máy</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="bg-indigo-50 border border-indigo-200 text-indigo-800 text-xs font-black px-3 py-1 rounded-xl">
+                        Máy thực tế: {Object.values(labFormLayout).filter((t: any) => t && t.type === 'pc').length} Máy
                       </span>
                     </div>
-                    <div className="text-xs font-semibold text-slate-500">
-                      {lab.totalPCs} Máy • {lab.location}
-                    </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleOpenEditLabModal(lab)}
-                      className="flex items-center gap-1.5 text-indigo-800 bg-indigo-100/90 hover:bg-indigo-200 border border-indigo-300 px-3 py-1.5 rounded-xl font-extrabold text-xs cursor-pointer transition active:scale-95"
-                      title="Thiết kế sơ đồ ma trận"
-                    >
-                      <Sliders className="w-3.5 h-3.5" />
-                      <span>Sửa</span>
-                    </button>
-                    <button
-                      onClick={() => handleDeleteLab(lab.id)}
-                      className="text-rose-600 hover:text-rose-800 hover:bg-rose-50 p-2 rounded-xl transition cursor-pointer"
-                      title="Xóa phòng"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* SEARCH & FILTER BAR */}
-          <div className="bg-[#fffbf0] p-4.5 rounded-3xl border border-[#cbb89d] shadow-xs flex flex-col md:flex-row justify-between items-center gap-4">
-            <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
-              <Sliders className="w-5 h-5 text-amber-600" />
-              <span>Bảng Quản Lý Duyệt Phiếu & Sửa Chữa Sự Cố</span>
-            </h3>
-
-            <div className="w-full md:w-80 relative">
-              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Tìm tên giáo viên, lớp, máy hỏng..."
-                value={adminSearchTerm}
-                onChange={e => setAdminSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 rounded-2xl border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-indigo-500 outline-none shadow-2xs"
-              />
-            </div>
-          </div>
-
-          {/* TABLE 1: BOOKINGS LIST */}
-          <div className="bg-white rounded-3xl border border-[#cbb89d] overflow-hidden shadow-xs">
-            <div className="p-4 border-b border-[#cbb89d] font-black text-[#3d2b17] text-sm flex justify-between items-center bg-[#dfccb0]/40">
-              <span>Danh Sách Phiếu Đăng Ký Mượn Phòng ({filteredBookings.length})</span>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-[#dfccb0] border-b border-[#cbb89d] text-[#3d2b17] font-black uppercase text-[11px] tracking-wider whitespace-nowrap">
-                    <th className="py-3.5 px-4 whitespace-nowrap">GIÁO VIÊN</th>
-                    <th className="py-3.5 px-4 whitespace-nowrap">LỚP & SĨ SỐ</th>
-                    <th className="py-3.5 px-4 whitespace-nowrap">PHÒNG MÁY</th>
-                    <th className="py-3.5 px-4 whitespace-nowrap">MÔN HỌC</th>
-                    <th className="py-3.5 px-4 whitespace-nowrap">TRẠNG THÁI</th>
-                    <th className="py-3.5 px-4 text-center whitespace-nowrap">THAO TÁC DUYỆT</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200/80">
-                  {filteredBookings.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="p-6 text-center text-slate-400 italic font-medium">
-                        Chưa có dữ liệu phiếu đăng ký mượn phòng máy.
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredBookings.map(b => (
-                      <tr key={b.id} className="hover:bg-[#fffbf0]/80 transition border-b border-slate-200">
-                        <td className="py-3.5 px-4 font-black text-slate-900 whitespace-nowrap">{b.teacherName}</td>
-                        <td className="py-3.5 px-4 font-extrabold text-slate-800 whitespace-nowrap">{b.className} ({b.studentCount} HS)</td>
-                        <td className="py-3.5 px-4 whitespace-nowrap">
-                          <span className="bg-indigo-100 text-indigo-900 font-mono font-black text-[10px] px-2.5 py-0.5 rounded-md border border-indigo-200">
-                            {b.labId}
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-4 text-slate-700 whitespace-nowrap font-medium">{b.subject}</td>
-                        <td className="py-3.5 px-4 whitespace-nowrap">
-                          <span className={`text-[10px] font-black px-3 py-0.5 rounded-full ${
-                            b.status === 'Approved' ? 'bg-emerald-100 text-emerald-950 border border-emerald-300' : 'bg-rose-100 text-rose-950 border border-rose-300'
-                          }`}>
-                            {b.status === 'Approved' ? 'Đã duyệt' : 'Từ chối'}
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                          <div className="flex items-center justify-center gap-1.5">
-                            <button
-                              onClick={() => handleUpdateBookingStatus(b.id, 'Approved')}
-                              className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[11px] px-3 py-1 rounded-xl shadow-2xs transition cursor-pointer active:scale-95"
-                            >
-                              Duyệt
-                            </button>
-                            <button
-                              onClick={() => handleUpdateBookingStatus(b.id, 'Rejected')}
-                              className="bg-amber-600 hover:bg-amber-700 text-white font-black text-[11px] px-3 py-1 rounded-xl shadow-2xs transition cursor-pointer active:scale-95"
-                            >
-                              Từ chối
-                            </button>
-                            <button
-                              onClick={() => handleDeleteBooking(b.id)}
-                              className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 p-1.5 rounded-xl border border-rose-200 transition cursor-pointer active:scale-95"
-                              title="Xóa phiếu"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* TABLE 2: INCIDENTS LIST */}
-          <div className="bg-white rounded-3xl border border-[#cbb89d] overflow-hidden shadow-xs">
-            <div className="p-4 border-b border-[#cbb89d] font-black text-[#3d2b17] text-sm flex justify-between items-center bg-[#dfccb0]/40">
-              <span>Danh Sách Báo Cáo Sự Cố Máy Tính ({filteredIncidents.length})</span>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-[#dfccb0] border-b border-[#cbb89d] text-[#3d2b17] font-black uppercase text-[11px] tracking-wider whitespace-nowrap">
-                    <th className="py-3.5 px-4 whitespace-nowrap">VỊ TRÍ MÁY</th>
-                    <th className="py-3.5 px-4 whitespace-nowrap">LOẠI LỖI</th>
-                    <th className="py-3.5 px-4 whitespace-nowrap">MÔ TẢ SỰ CỐ</th>
-                    <th className="py-3.5 px-4 whitespace-nowrap">TRẠNG THÁI</th>
-                    <th className="py-3.5 px-4 text-center whitespace-nowrap">THAO TÁC X XỬ LÝ</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200/80">
-                  {filteredIncidents.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="p-6 text-center text-slate-400 italic font-medium">
-                        Không có báo cáo sự cố máy tính nào.
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredIncidents.map(i => (
-                      <tr key={i.id} className="hover:bg-[#fffbf0]/80 transition border-b border-slate-200">
-                        <td className="py-3.5 px-4 font-black text-slate-900 whitespace-nowrap">
-                          {i.labId} - Máy #{i.pcNumber}
-                        </td>
-                        <td className="py-3.5 px-4 font-extrabold text-slate-800 whitespace-nowrap">{i.type}</td>
-                        <td className="py-3.5 px-4 text-slate-700 whitespace-nowrap font-medium">{i.issue}</td>
-                        <td className="py-3.5 px-4 whitespace-nowrap">
-                          <span className={`text-[10px] font-black px-3 py-0.5 rounded-full ${
-                            i.status === 'Resolved' ? 'bg-emerald-100 text-emerald-950 border border-emerald-300' :
-                            i.status === 'In Progress' ? 'bg-amber-100 text-amber-950 border border-amber-300' : 'bg-rose-100 text-rose-950 border border-rose-300'
-                          }`}>
-                            {i.status === 'Resolved' ? 'Đã khắc phục' : i.status === 'In Progress' ? 'Đang sửa' : 'Chờ xử lý'}
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                          <div className="flex items-center justify-center gap-1.5">
-                            <button
-                              onClick={() => handleUpdateIncidentStatus(i.id, 'In Progress')}
-                              className="bg-amber-600 hover:bg-amber-700 text-white font-black text-[11px] px-3 py-1 rounded-xl shadow-2xs transition cursor-pointer active:scale-95"
-                            >
-                              Đang sửa
-                            </button>
-                            <button
-                              onClick={() => handleUpdateIncidentStatus(i.id, 'Resolved')}
-                              className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[11px] px-3 py-1 rounded-xl shadow-2xs transition cursor-pointer active:scale-95"
-                            >
-                              Đã xong
-                            </button>
-                            <button
-                              onClick={() => handleDeleteIncident(i.id)}
-                              className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 p-1.5 rounded-xl border border-rose-200 transition cursor-pointer active:scale-95"
-                              title="Xóa báo cáo"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ====================================================================
-          LAB EDITOR MODAL: TRÌNH THIẾT KẾ SƠ ĐỒ MA TRẬN PHÒNG LAB ĐỘNG (POPUP FULL CHUẨN MẪU 100%)
-          ==================================================================== */}
-      {isLabEditorModalOpen && (
-        <div className="fixed inset-0 z-[500] flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-3 sm:p-6 animate-fadeIn">
-          <div className="bg-white rounded-3xl max-w-6xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-300 relative overflow-hidden text-left">
-            
-            {/* HEADER MODAL (STICKY TOP) */}
-            <div className="px-6 py-4 border-b border-[#cbb89d] bg-[#dfccb0]/50 flex justify-between items-center shrink-0">
-              <div className="space-y-0.5">
-                <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
-                  <Grid className="w-6 h-6 text-indigo-700" />
-                  <span>Thiết Kế Sơ Đồ – {labFormName || 'Phòng Lab'}</span>
-                </h3>
-                <p className="text-xs text-slate-600 font-semibold">
-                  Mặc định tạo đủ máy theo Hàng x Cột. Chọn "Kẻ Lối Đi" và rê chuột hoặc bấm nút ở đầu Cột/Hàng.
-                </p>
-              </div>
-              <button 
-                onClick={() => setIsLabEditorModalOpen(false)} 
-                className="text-slate-500 hover:text-slate-800 transition p-1.5 rounded-xl hover:bg-slate-200/60 cursor-pointer"
-                title="Đóng cửa sổ"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveLabLayout} className="flex flex-col flex-1 overflow-hidden">
-              
-              {/* BODY CONTAINER (SCROLLABLE CONTENT) */}
-              <div className="p-6 overflow-y-auto space-y-6 flex-1 text-xs">
-                
-                {/* PHẦN 1: THÔNG TIN CƠ BẢN (4 Ô INPUT CÙNG HÀNG) */}
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                  <div>
-                    <label className="block font-extrabold text-slate-700 uppercase mb-1">TÊN PHÒNG *</label>
-                    <input
-                      type="text"
-                      required
-                      value={labFormName}
-                      onChange={e => setLabFormName(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none"
-                      placeholder="Phòng Lab 01"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-extrabold text-slate-700 uppercase mb-1">MÃ PHÒNG *</label>
-                    <input
-                      type="text"
-                      required
-                      value={labFormCode}
-                      onChange={e => setLabFormCode(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none"
-                      placeholder="P.201"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-extrabold text-slate-700 uppercase mb-1">VỊ TRÍ</label>
-                    <input
-                      type="text"
-                      value={labFormLocation}
-                      onChange={e => setLabFormLocation(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none"
-                      placeholder="Tầng 2 - Nhà A"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-extrabold text-slate-700 uppercase mb-1">TRẠNG THÁI</label>
-                    <select
-                      value={labFormStatus}
-                      onChange={e => setLabFormStatus(e.target.value as any)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold text-slate-800 bg-white focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer"
-                    >
-                      <option value="Active">Đang hoạt động</option>
-                      <option value="Maintenance">Đang bảo trì</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* PHẦN 2: THANH ĐIỀU KHIỂN SỐ HÀNG/CỘT, KHÔI PHỤC MÁY & BỘ CÔNG CỤ TOOLBAR */}
-                <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200 space-y-3">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
+                  {/* PHẦN 3: MATRIX CANVAS CONTAINER (DARK NAVY THEME BG-[#0F172A] VỚI VẼ LỐI ĐI RÊ CHUỘT & KÉO THẢ Ô) */}
+                  <div 
+                    className="bg-[#0f172a] p-5 rounded-2xl border border-slate-800 overflow-x-auto shadow-2xl space-y-4 select-none"
+                    onMouseLeave={() => { setIsMouseDown(false); setPaintTargetType(null); }}
+                    onMouseUp={() => { setIsMouseDown(false); setPaintTargetType(null); }}
+                  >
                     
-                    {/* DROPDOWN CHỌN SỐ HÀNG VÀ CỘT */}
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2">
-                        <span className="font-extrabold text-slate-700">Số Hàng:</span>
-                        <select
-                          value={labFormRows}
-                          onChange={e => handleSelectRowsChange(Number(e.target.value))}
-                          className="px-3 py-1.5 rounded-xl border border-slate-300 font-bold bg-white outline-none cursor-pointer"
-                        >
-                          {Array.from({ length: 12 }).map((_, i) => (
-                            <option key={i + 1} value={i + 1}>{i + 1} Hàng</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <span className="text-slate-400 font-black text-sm">✕</span>
-
-                      <div className="flex items-center gap-2">
-                        <span className="font-extrabold text-slate-700">Số Cột:</span>
-                        <select
-                          value={labFormCols}
-                          onChange={e => handleSelectColsChange(Number(e.target.value))}
-                          className="px-3 py-1.5 rounded-xl border border-slate-300 font-bold bg-white outline-none cursor-pointer"
-                        >
-                          {Array.from({ length: 14 }).map((_, i) => (
-                            <option key={i + 1} value={i + 1}>{i + 1} Cột</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* NÚT KHÔI PHỤC ĐỦ MÁY */}
-                      <button
-                        type="button"
-                        onClick={handleRestoreFullPcs}
-                        className="px-3.5 py-1.5 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 font-black text-xs hover:bg-indigo-100 transition cursor-pointer flex items-center gap-1.5 active:scale-95"
-                      >
-                        <RotateCw className="w-3.5 h-3.5 text-indigo-600" />
-                        <span>Khôi phục đủ {labFormRows * labFormCols} máy</span>
-                      </button>
-                    </div>
-
-                    {/* BỘ CÔNG CỤ TOOL MODES PILL BAR */}
-                    <div className="flex items-center gap-1.5 bg-slate-200/70 p-1 rounded-xl border border-slate-300">
-                      <button
-                        type="button"
-                        onClick={() => setActiveEditorTool('aisle')}
-                        className={`px-3 py-1.5 rounded-lg font-black text-xs transition cursor-pointer flex items-center gap-1.5 ${
-                          activeEditorTool === 'aisle'
-                            ? 'bg-amber-600 text-white shadow-md'
-                            : 'text-slate-700 hover:bg-slate-300/60'
-                        }`}
-                      >
-                        <span>🪛 Kẻ Lối Đi (Rê Chuột)</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setActiveEditorTool('drag')}
-                        className={`px-3 py-1.5 rounded-lg font-black text-xs transition cursor-pointer flex items-center gap-1.5 ${
-                          activeEditorTool === 'drag'
-                            ? 'bg-indigo-700 text-white shadow-md'
-                            : 'text-slate-700 hover:bg-slate-300/60'
-                        }`}
-                      >
-                        <Move className="w-3.5 h-3.5" />
-                        <span>Kéo Thả Ô</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setActiveEditorTool('desk')}
-                        className={`px-3 py-1.5 rounded-lg font-black text-xs transition cursor-pointer flex items-center gap-1.5 ${
-                          activeEditorTool === 'desk'
-                            ? 'bg-indigo-700 text-white shadow-md'
-                            : 'text-slate-700 hover:bg-slate-300/60'
-                        }`}
-                      >
-                        <User className="w-3.5 h-3.5" />
-                        <span>Đặt Bàn GV</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setActiveEditorTool('rename')}
-                        className={`px-3 py-1.5 rounded-lg font-black text-xs transition cursor-pointer flex items-center gap-1.5 ${
-                          activeEditorTool === 'rename'
-                            ? 'bg-indigo-700 text-white shadow-md'
-                            : 'text-slate-700 hover:bg-slate-300/60'
-                        }`}
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                        <span>Sửa Tên Máy</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-1">
-                    <span className="bg-indigo-50 border border-indigo-200 text-indigo-800 text-xs font-black px-3 py-1 rounded-xl">
-                      Máy thực tế: {Object.values(labFormLayout).filter((t: any) => t && t.type === 'pc').length} Máy
-                    </span>
-                  </div>
-                </div>
-
-                {/* PHẦN 3: MATRIX CANVAS CONTAINER (DARK NAVY THEME BG-[#0F172A] VỚI VẼ LỐI ĐI RÊ CHUỘT & KÉO THẢ Ô) */}
-                <div 
-                  className="bg-[#0f172a] p-5 rounded-2xl border border-slate-800 overflow-x-auto shadow-2xl space-y-4 select-none"
-                  onMouseLeave={() => { setIsMouseDown(false); setPaintTargetType(null); }}
-                  onMouseUp={() => { setIsMouseDown(false); setPaintTargetType(null); }}
-                >
-                  
-                  <div className="inline-block min-w-full text-left">
-                    {/* HÀNG HÀNH ĐỘNG CỘT (TOP ACTION ROW) */}
-                    <div className="flex items-center gap-2 mb-2 font-mono">
-                      {/* Ô HÀNH ĐỘNG GÓC TRÁI (TOP-LEFT CORNER CELL) */}
-                      <div className="w-24 shrink-0 text-center font-bold text-[11px] text-slate-400">
-                        Thao Tác
-                      </div>
-
-                      {/* CÁC NÚT + CỘT VÀ XÓA CỘT TRÊN TỪNG CỘT */}
-                      {Array.from({ length: labFormCols }).map((_, cIdx) => (
-                        <div key={cIdx} className="w-24 shrink-0 flex flex-col items-center gap-1">
-                          <div className="flex items-center justify-center gap-1 w-full">
-                            <button
-                              type="button"
-                              onClick={() => handleInsertColumnAt(cIdx)}
-                              className="bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-600 text-emerald-400 font-extrabold text-[10px] px-1.5 py-0.5 rounded transition cursor-pointer flex items-center gap-0.5"
-                              title={`Chèn thêm cột mới tại vị trí Cột ${cIdx + 1}`}
-                            >
-                              + Cột
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteColumnAt(cIdx)}
-                              className="bg-rose-950/80 hover:bg-rose-900 border border-rose-600 text-rose-400 p-0.5 rounded transition cursor-pointer"
-                              title={`Xóa Cột ${cIdx + 1}`}
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          </div>
-                          <span className="text-[10px] font-extrabold text-slate-400">↓ Cột {cIdx + 1}</span>
+                    <div className="inline-block min-w-full text-left">
+                      {/* HÀNG HÀNH ĐỘNG CỘT (TOP ACTION ROW) */}
+                      <div className="flex items-center gap-2 mb-2 font-mono">
+                        {/* Ô HÀNH ĐỘNG GÓC TRÁI (TOP-LEFT CORNER CELL) */}
+                        <div className="w-24 shrink-0 text-center font-bold text-[11px] text-slate-400">
+                          Thao Tác
                         </div>
-                      ))}
 
-                      {/* NÚT THÊM CỘT VÀO CUỐI */}
-                      <button
-                        type="button"
-                        onClick={() => handleInsertColumnAt(labFormCols)}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-[11px] px-3 py-1.5 rounded-xl shadow-md transition cursor-pointer whitespace-nowrap ml-2 active:scale-95"
-                      >
-                        + Thêm Cột
-                      </button>
-                    </div>
-
-                    {/* CÁC HÀNG MA TRẬN VÀ CÁC THẺ MÁY TÍNH (ROW MATRIX CANVAS) */}
-                    <div className="space-y-2">
-                      {Array.from({ length: labFormRows }).map((_, rIdx) => (
-                        <div key={rIdx} className="flex items-center gap-2">
-                          
-                          {/* CỘT THAO TÁC HÀNG TRÊN TỪNG HÀNG (LEFT ACTION COLUMN) */}
-                          <div className="w-24 shrink-0 flex items-center justify-between bg-slate-900/90 border border-slate-800 p-1.5 rounded-xl">
-                            <div className="flex items-center gap-1">
+                        {/* CÁC NÚT + CỘT VÀ XÓA CỘT TRÊN TỪNG CỘT */}
+                        {Array.from({ length: labFormCols }).map((_, cIdx) => (
+                          <div key={cIdx} className="w-24 shrink-0 flex flex-col items-center gap-1">
+                            <div className="flex items-center justify-center gap-1 w-full">
                               <button
                                 type="button"
-                                onClick={() => handleInsertRowAt(rIdx)}
-                                className="bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-600 text-emerald-400 font-extrabold text-[10px] px-1 py-0.5 rounded transition cursor-pointer"
-                                title={`Chèn 1 hàng mới tại vị trí Hàng ${rIdx + 1}`}
+                                onClick={() => handleInsertColumnAt(cIdx)}
+                                className="bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-600 text-emerald-400 font-extrabold text-[10px] px-1.5 py-0.5 rounded transition cursor-pointer flex items-center gap-0.5"
+                                title={`Chèn thêm cột mới tại vị trí Cột ${cIdx + 1}`}
                               >
-                                + Hàng
+                                + Cột
                               </button>
                               <button
                                 type="button"
-                                onClick={() => handleDeleteRowAt(rIdx)}
+                                onClick={() => handleDeleteColumnAt(cIdx)}
                                 className="bg-rose-950/80 hover:bg-rose-900 border border-rose-600 text-rose-400 p-0.5 rounded transition cursor-pointer"
-                                title={`Xóa Hàng ${rIdx + 1}`}
+                                title={`Xóa Cột ${cIdx + 1}`}
                               >
                                 <Trash2 className="w-3 h-3" />
                               </button>
                             </div>
-                            <span className="text-[10px] font-extrabold text-slate-400 font-mono">→ H{rIdx + 1}</span>
+                            <span className="text-[10px] font-extrabold text-slate-400">↓ Cột {cIdx + 1}</span>
                           </div>
+                        ))}
 
-                          {/* CÁC THẺ MÁY TÍNH TRONG HÀNG */}
-                          {Array.from({ length: labFormCols }).map((_, cIdx) => {
-                            const key = `${rIdx}_${cIdx}`;
-                            const tile = labFormLayout[key] || { type: 'pc' };
-                            const isSelectedForSwap = selectedSwapKey === key;
+                        {/* NÚT THÊM CỘT VÀO CUỐI */}
+                        <button
+                          type="button"
+                          onClick={() => handleInsertColumnAt(labFormCols)}
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-[11px] px-3 py-1.5 rounded-xl shadow-md transition cursor-pointer whitespace-nowrap ml-2 active:scale-95"
+                        >
+                          + Thêm Cột
+                        </button>
+                      </div>
 
-                            let cardBg = 'bg-[#4338ca] hover:bg-[#4f46e5] text-white border-indigo-400/40 shadow-md';
-                            if (tile.type === 'desk') cardBg = 'bg-amber-600 hover:bg-amber-700 text-white border-amber-400/40 shadow-md';
-                            if (tile.type === 'aisle') cardBg = 'bg-slate-900/70 border-dashed border-slate-700 text-slate-600 hover:bg-slate-900';
-
-                            if (isSelectedForSwap) {
-                              cardBg += ' ring-4 ring-amber-400 ring-offset-2 ring-offset-slate-900 scale-105 z-20 animate-pulse';
-                            }
-
-                            return (
-                              <div
-                                key={key}
-                                draggable={activeEditorTool === 'drag'}
-                                onDragStart={(e) => handleTileDragStart(e, key)}
-                                onDragOver={(e) => e.preventDefault()}
-                                onDrop={(e) => handleTileDrop(e, key)}
-                                onMouseDown={() => handleTileMouseDown(rIdx, cIdx)}
-                                onMouseEnter={() => handleTileMouseEnter(rIdx, cIdx)}
-                                className={`w-24 h-16 shrink-0 rounded-2xl border-2 flex flex-col items-center justify-center p-1.5 cursor-pointer transition-all active:scale-95 select-none ${cardBg}`}
-                              >
-                                {tile.type === 'pc' && (
-                                  <>
-                                    <Monitor className="w-4 h-4 text-white mb-0.5" />
-                                    <span className="text-xs font-extrabold tracking-wider truncate max-w-full">
-                                      {tile.label || `M.${rIdx * labFormCols + cIdx + 1}`}
-                                    </span>
-                                  </>
-                                )}
-
-                                {tile.type === 'desk' && (
-                                  <>
-                                    <User className="w-4 h-4 text-white mb-0.5" />
-                                    <span className="text-xs font-black tracking-wider">Bàn GV</span>
-                                  </>
-                                )}
-
-                                {tile.type === 'aisle' && (
-                                  <span className="text-[10px] font-bold italic text-slate-500">Lối đi</span>
-                                )}
+                      {/* CÁC HÀNG MA TRẬN VÀ CÁC THẺ MÁY TÍNH (ROW MATRIX CANVAS) */}
+                      <div className="space-y-2">
+                        {Array.from({ length: labFormRows }).map((_, rIdx) => (
+                          <div key={rIdx} className="flex items-center gap-2">
+                            
+                            {/* CỘT THAO TÁC HÀNG TRÊN TỪNG HÀNG (LEFT ACTION COLUMN) */}
+                            <div className="w-24 shrink-0 flex items-center justify-between bg-slate-900/90 border border-slate-800 p-1.5 rounded-xl">
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => handleInsertRowAt(rIdx)}
+                                  className="bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-600 text-emerald-400 font-extrabold text-[10px] px-1 py-0.5 rounded transition cursor-pointer"
+                                  title={`Chèn 1 hàng mới tại vị trí Hàng ${rIdx + 1}`}
+                                >
+                                  + Hàng
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteRowAt(rIdx)}
+                                  className="bg-rose-950/80 hover:bg-rose-900 border border-rose-600 text-rose-400 p-0.5 rounded transition cursor-pointer"
+                                  title={`Xóa Hàng ${rIdx + 1}`}
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
                               </div>
-                            );
-                          })}
-                        </div>
-                      ))}
+                              <span className="text-[10px] font-extrabold text-slate-400 font-mono">→ H{rIdx + 1}</span>
+                            </div>
+
+                            {/* CÁC THẺ MÁY TÍNH TRONG HÀNG */}
+                            {Array.from({ length: labFormCols }).map((_, cIdx) => {
+                              const key = `${rIdx}_${cIdx}`;
+                              const tile = labFormLayout[key] || { type: 'pc' };
+                              const isSelectedForSwap = selectedSwapKey === key;
+
+                              let cardBg = 'bg-[#4338ca] hover:bg-[#4f46e5] text-white border-indigo-400/40 shadow-md';
+                              if (tile.type === 'desk') cardBg = 'bg-amber-600 hover:bg-amber-700 text-white border-amber-400/40 shadow-md';
+                              if (tile.type === 'aisle') cardBg = 'bg-slate-900/70 border-dashed border-slate-700 text-slate-600 hover:bg-slate-900';
+
+                              if (isSelectedForSwap) {
+                                cardBg += ' ring-4 ring-amber-400 ring-offset-2 ring-offset-slate-900 scale-105 z-20 animate-pulse';
+                              }
+
+                              return (
+                                <div
+                                  key={key}
+                                  draggable={activeEditorTool === 'drag'}
+                                  onDragStart={(e) => handleTileDragStart(e, key)}
+                                  onDragOver={(e) => e.preventDefault()}
+                                  onDrop={(e) => handleTileDrop(e, key)}
+                                  onMouseDown={() => handleTileMouseDown(rIdx, cIdx)}
+                                  onMouseEnter={() => handleTileMouseEnter(rIdx, cIdx)}
+                                  className={`w-24 h-16 shrink-0 rounded-2xl border-2 flex flex-col items-center justify-center p-1.5 cursor-pointer transition-all active:scale-95 select-none ${cardBg}`}
+                                >
+                                  {tile.type === 'pc' && (
+                                    <>
+                                      <Monitor className="w-4 h-4 text-white mb-0.5" />
+                                      <span className="text-xs font-extrabold tracking-wider truncate max-w-full">
+                                        {tile.label || `M.${rIdx * labFormCols + cIdx + 1}`}
+                                      </span>
+                                    </>
+                                  )}
+
+                                  {tile.type === 'desk' && (
+                                    <>
+                                      <User className="w-4 h-4 text-white mb-0.5" />
+                                      <span className="text-xs font-black tracking-wider">Bàn GV</span>
+                                    </>
+                                  )}
+
+                                  {tile.type === 'aisle' && (
+                                    <span className="text-[10px] font-bold italic text-slate-500">Lối đi</span>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* NÚT THÊM HÀNG VÀO CUỐI SƠ ĐỒ */}
+                      <div className="mt-3 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => handleInsertRowAt(labFormRows)}
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-[11px] px-4 py-2 rounded-xl shadow-md transition cursor-pointer active:scale-95"
+                        >
+                          + Thêm Hàng Vào Cuối Sơ Đồ
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* FOOTER ACTION BUTTONS */}
+                  <div className="pt-4 border-t border-[#cbb89d]/70 flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div className="text-xs font-medium text-slate-700 italic">
+                      💡 Mẹo: Bấm nút [+ Cột] hoặc [+ Hàng] ở bất kỳ vị trí nào để chèn thêm hàng/cột ngay tại đó.
                     </div>
 
-                    {/* NÚT THÊM HÀNG VÀO CUỐI SƠ ĐỒ */}
-                    <div className="mt-3 pt-2">
+                    <div className="flex items-center gap-3">
                       <button
                         type="button"
-                        onClick={() => handleInsertRowAt(labFormRows)}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-[11px] px-4 py-2 rounded-xl shadow-md transition cursor-pointer active:scale-95"
+                        onClick={() => setAdminSubViewMode('list')}
+                        className="px-5 py-2.5 rounded-2xl border border-slate-300 bg-white text-slate-700 font-bold hover:bg-slate-100 transition cursor-pointer active:scale-95"
                       >
-                        + Thêm Hàng Vào Cuối Sơ Đồ
+                        Hủy Bỏ
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-6 py-2.5 rounded-2xl bg-indigo-700 hover:bg-indigo-800 text-white font-black text-xs shadow-lg transition cursor-pointer active:scale-95"
+                      >
+                        Lưu Sơ Đồ & Thông Tin
                       </button>
                     </div>
                   </div>
+                </form>
+              </div>
+            </div>
+          ) : (
+            /* DANH SÁCH PHÒNG LAB & CÁC BẢNG QUẢN LÝ DUYỆT PHIẾU BÌNH THƯỜNG */
+            <>
+              {/* CARD TOP: QUẢN LÝ DANH SÁCH & SƠ ĐỒ PHÒNG LAB */}
+              <div className="bg-[#fffbf0] p-6 rounded-3xl border border-[#cbb89d] shadow-xs space-y-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-[#cbb89d]/70 pb-4">
+                  <div>
+                    <h3 className="text-lg font-black text-slate-900">Quản Lý Danh Sách & Sơ Đồ Phòng LAB</h3>
+                    <p className="text-xs font-semibold text-slate-500 mt-0.5">
+                      Thêm mới phòng máy, thiết kế sơ đồ ma trận hàng x cột và chỉnh sửa tên máy trực tiếp.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleOpenAddLabForm}
+                      className="bg-indigo-700 hover:bg-indigo-800 text-white font-extrabold text-xs px-4 py-2.5 rounded-2xl shadow-md transition flex items-center gap-1.5 cursor-pointer active:scale-95"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>+ Thêm Phòng Mới</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* CARDS LIST PHÒNG LAB */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {labs.map(lab => (
+                    <div key={lab.id} className="p-4.5 rounded-2xl border border-slate-200/90 hover:border-indigo-400 bg-white hover:bg-indigo-50/30 transition-all flex items-center justify-between shadow-2xs hover:shadow-md">
+                      <div className="space-y-1">
+                        <div className="font-black text-slate-900 text-sm flex items-center gap-2">
+                          <span>{lab.name}</span>
+                          <span className="text-[10px] font-extrabold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                            ({lab.code})
+                          </span>
+                        </div>
+                        <div className="text-xs font-semibold text-slate-500">
+                          {lab.totalPCs} Máy • {lab.location}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleOpenEditLabForm(lab)}
+                          className="flex items-center gap-1.5 text-indigo-800 bg-indigo-100/90 hover:bg-indigo-200 border border-indigo-300 px-3 py-1.5 rounded-xl font-extrabold text-xs cursor-pointer transition active:scale-95"
+                          title="Thiết kế sơ đồ ma trận"
+                        >
+                          <Sliders className="w-3.5 h-3.5" />
+                          <span>Sửa</span>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteLab(lab.id)}
+                          className="text-rose-600 hover:text-rose-800 hover:bg-rose-50 p-2 rounded-xl transition cursor-pointer"
+                          title="Xóa phòng"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              {/* FOOTER MODAL (STICKY BOTTOM) */}
-              <div className="px-6 py-4 border-t border-[#cbb89d] bg-[#dfccb0]/40 flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0">
-                <div className="text-xs font-medium text-slate-700 italic flex items-center gap-1.5">
-                  <span>💡 Mẹo: Bấm nút [+ Cột] hoặc [+ Hàng] ở bất kỳ vị trí nào để chèn thêm hàng/cột ngay tại đó.</span>
-                </div>
+              {/* SEARCH & FILTER BAR */}
+              <div className="bg-[#fffbf0] p-4.5 rounded-3xl border border-[#cbb89d] shadow-xs flex flex-col md:flex-row justify-between items-center gap-4">
+                <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                  <Sliders className="w-5 h-5 text-amber-600" />
+                  <span>Bảng Quản Lý Duyệt Phiếu & Sửa Chữa Sự Cố</span>
+                </h3>
 
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setIsLabEditorModalOpen(false)}
-                    className="px-5 py-2.5 rounded-2xl border border-slate-300 bg-white text-slate-700 font-bold hover:bg-slate-100 transition cursor-pointer"
-                  >
-                    Hủy Bỏ
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-6 py-2.5 rounded-2xl bg-indigo-700 hover:bg-indigo-800 text-white font-black text-xs shadow-lg transition cursor-pointer active:scale-95"
-                  >
-                    Lưu Sơ Đồ & Thông Tin
-                  </button>
+                <div className="w-full md:w-80 relative">
+                  <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Tìm tên giáo viên, lớp, máy hỏng..."
+                    value={adminSearchTerm}
+                    onChange={e => setAdminSearchTerm(e.target.value)}
+                    className="w-full pl-9 pr-4 py-2 rounded-2xl border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-indigo-500 outline-none shadow-2xs"
+                  />
                 </div>
               </div>
-            </form>
-          </div>
+
+              {/* TABLE 1: BOOKINGS LIST */}
+              <div className="bg-white rounded-3xl border border-[#cbb89d] overflow-hidden shadow-xs">
+                <div className="p-4 border-b border-[#cbb89d] font-black text-[#3d2b17] text-sm flex justify-between items-center bg-[#dfccb0]/40">
+                  <span>Danh Sách Phiếu Đăng Ký Mượn Phòng ({filteredBookings.length})</span>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-[#dfccb0] border-b border-[#cbb89d] text-[#3d2b17] font-black uppercase text-[11px] tracking-wider whitespace-nowrap">
+                        <th className="py-3.5 px-4 whitespace-nowrap">GIÁO VIÊN</th>
+                        <th className="py-3.5 px-4 whitespace-nowrap">LỚP & SĨ SỐ</th>
+                        <th className="py-3.5 px-4 whitespace-nowrap">PHÒNG MÁY</th>
+                        <th className="py-3.5 px-4 whitespace-nowrap">MÔN HỌC</th>
+                        <th className="py-3.5 px-4 whitespace-nowrap">TRẠNG THÁI</th>
+                        <th className="py-3.5 px-4 text-center whitespace-nowrap">THAO TÁC DUYỆT</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200/80">
+                      {filteredBookings.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="p-6 text-center text-slate-400 italic font-medium">
+                            Chưa có dữ liệu phiếu đăng ký mượn phòng máy.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredBookings.map(b => (
+                          <tr key={b.id} className="hover:bg-[#fffbf0]/80 transition border-b border-slate-200">
+                            <td className="py-3.5 px-4 font-black text-slate-900 whitespace-nowrap">{b.teacherName}</td>
+                            <td className="py-3.5 px-4 font-extrabold text-slate-800 whitespace-nowrap">{b.className} ({b.studentCount} HS)</td>
+                            <td className="py-3.5 px-4 whitespace-nowrap">
+                              <span className="bg-indigo-100 text-indigo-900 font-mono font-black text-[10px] px-2.5 py-0.5 rounded-md border border-indigo-200">
+                                {b.labId}
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-4 text-slate-700 whitespace-nowrap font-medium">{b.subject}</td>
+                            <td className="py-3.5 px-4 whitespace-nowrap">
+                              <span className={`text-[10px] font-black px-3 py-0.5 rounded-full ${
+                                b.status === 'Approved' ? 'bg-emerald-100 text-emerald-950 border border-emerald-300' : 'bg-rose-100 text-rose-950 border border-rose-300'
+                              }`}>
+                                {b.status === 'Approved' ? 'Đã duyệt' : 'Từ chối'}
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                              <div className="flex items-center justify-center gap-1.5">
+                                <button
+                                  onClick={() => handleUpdateBookingStatus(b.id, 'Approved')}
+                                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[11px] px-3 py-1 rounded-xl shadow-2xs transition cursor-pointer active:scale-95"
+                                >
+                                  Duyệt
+                                </button>
+                                <button
+                                  onClick={() => handleUpdateBookingStatus(b.id, 'Rejected')}
+                                  className="bg-amber-600 hover:bg-amber-700 text-white font-black text-[11px] px-3 py-1 rounded-xl shadow-2xs transition cursor-pointer active:scale-95"
+                                >
+                                  Từ chối
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteBooking(b.id)}
+                                  className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 p-1.5 rounded-xl border border-rose-200 transition cursor-pointer active:scale-95"
+                                  title="Xóa phiếu"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* TABLE 2: INCIDENTS LIST */}
+              <div className="bg-white rounded-3xl border border-[#cbb89d] overflow-hidden shadow-xs">
+                <div className="p-4 border-b border-[#cbb89d] font-black text-[#3d2b17] text-sm flex justify-between items-center bg-[#dfccb0]/40">
+                  <span>Danh Sách Báo Cáo Sự Cố Máy Tính ({filteredIncidents.length})</span>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-[#dfccb0] border-b border-[#cbb89d] text-[#3d2b17] font-black uppercase text-[11px] tracking-wider whitespace-nowrap">
+                        <th className="py-3.5 px-4 whitespace-nowrap">VỊ TRÍ MÁY</th>
+                        <th className="py-3.5 px-4 whitespace-nowrap">LOẠI LỖI</th>
+                        <th className="py-3.5 px-4 whitespace-nowrap">MÔ TẢ SỰ CỐ</th>
+                        <th className="py-3.5 px-4 whitespace-nowrap">TRẠNG THÁI</th>
+                        <th className="py-3.5 px-4 text-center whitespace-nowrap">THAO TÁC X XỬ LÝ</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200/80">
+                      {filteredIncidents.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="p-6 text-center text-slate-400 italic font-medium">
+                            Không có báo cáo sự cố máy tính nào.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredIncidents.map(i => (
+                          <tr key={i.id} className="hover:bg-[#fffbf0]/80 transition border-b border-slate-200">
+                            <td className="py-3.5 px-4 font-black text-slate-900 whitespace-nowrap">
+                              {i.labId} - Máy #{i.pcNumber}
+                            </td>
+                            <td className="py-3.5 px-4 font-extrabold text-slate-800 whitespace-nowrap">{i.type}</td>
+                            <td className="py-3.5 px-4 text-slate-700 whitespace-nowrap font-medium">{i.issue}</td>
+                            <td className="py-3.5 px-4 whitespace-nowrap">
+                              <span className={`text-[10px] font-black px-3 py-0.5 rounded-full ${
+                                i.status === 'Resolved' ? 'bg-emerald-100 text-emerald-950 border border-emerald-300' :
+                                i.status === 'In Progress' ? 'bg-amber-100 text-amber-950 border border-amber-300' : 'bg-rose-100 text-rose-950 border border-rose-300'
+                              }`}>
+                                {i.status === 'Resolved' ? 'Đã khắc phục' : i.status === 'In Progress' ? 'Đang sửa' : 'Chờ xử lý'}
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                              <div className="flex items-center justify-center gap-1.5">
+                                <button
+                                  onClick={() => handleUpdateIncidentStatus(i.id, 'In Progress')}
+                                  className="bg-amber-600 hover:bg-amber-700 text-white font-black text-[11px] px-3 py-1 rounded-xl shadow-2xs transition cursor-pointer active:scale-95"
+                                >
+                                  Đang sửa
+                                </button>
+                                <button
+                                  onClick={() => handleUpdateIncidentStatus(i.id, 'Resolved')}
+                                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[11px] px-3 py-1 rounded-xl shadow-2xs transition cursor-pointer active:scale-95"
+                                >
+                                  Đã xong
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteIncident(i.id)}
+                                  className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 p-1.5 rounded-xl border border-rose-200 transition cursor-pointer active:scale-95"
+                                  title="Xóa báo cáo"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
