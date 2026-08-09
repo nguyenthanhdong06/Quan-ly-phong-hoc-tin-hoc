@@ -527,7 +527,7 @@ export const AvatarGalleryTab: React.FC<AvatarGalleryTabProps> = ({
               ) : (
                 filteredClassStudents.map((student) => {
                   const isSelected = student.id === selectedStudentId;
-                  const avatarSrc = student.avatarUrl || (student.gender === 'Nữ' ? '/Nu.jpg' : '/Nam.jpg');
+                  const avatarSrc = student.avatarUrl || (student.gender === 'Nữ' ? '/thehocsinhnu.webp' : '/thehocsinhnam.webp');
                   return (
                     <button
                       key={student.id}
