@@ -1455,7 +1455,7 @@ export default function App() {
               />
 
               {/* Form Container */}
-              <form onSubmit={handleLoginSubmit} className="absolute inset-0 z-20">
+              <form onSubmit={handleLoginSubmit} className="absolute inset-0 z-20" autoComplete="off">
 
                 {/* VỊ TRÍ NHẬP "USER": CĂN CHÍNH GIỮA KHUNG TRẮNG BẦU (Center Y ≈ 43.1%) */}
                 <div 
@@ -1474,6 +1474,7 @@ export default function App() {
                     placeholder="tên đăng nhập"
                     className="w-full h-full bg-transparent border-none outline-none text-white font-extrabold text-xs sm:text-sm placeholder:text-white/80 placeholder:font-medium px-3 font-mono leading-none flex items-center"
                     autoFocus
+                    autoComplete="off"
                     required
                   />
                 </div>
@@ -1494,6 +1495,7 @@ export default function App() {
                     onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
                     placeholder="mật khẩu"
                     className="w-full h-full bg-transparent border-none outline-none text-white font-extrabold text-xs sm:text-sm placeholder:text-white/80 placeholder:font-medium px-3 font-mono leading-none flex items-center"
+                    autoComplete="off"
                     required
                   />
                 </div>
