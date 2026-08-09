@@ -167,10 +167,10 @@ export const ComputerCard3D: React.FC<ComputerCard3DProps> = ({
 
         {/* Monitor Frame Image Element (zIndex: 5) - renders the iMac monitor frame image natively */}
         <img 
-          src="/img/chongoi3.png"
+          src="/chongoi3.png"
           alt="iMac Monitor Frame"
           onError={(e) => {
-            (e.currentTarget as HTMLImageElement).src = '/public/chongoi3.png';
+            (e.currentTarget as HTMLImageElement).src = '/img/chongoi3.png';
           }}
           className="absolute inset-0 w-full h-full object-fill pointer-events-none select-none"
           style={{
