@@ -512,6 +512,594 @@ export default function EmulationTab({
     showToast(`Chúc mừng bé "${studentName}" đã đổi thành công Sticker: "${badgeName}"! (-${starCost} ⭐)`);
   };
 
+  // =========================================================================
+  // 1. FULL WINDOW SUB-VIEW: CỬA HÀNG ĐỔI THƯỞNG STICKER HỌC SINH
+  // =========================================================================
+  if (selectedStudentForReward) {
+    const s = selectedStudentForReward;
+    const stars = getStudentCurrentStars(s.id);
+    const avatar = getStudentAvatar(s.id, students);
+    const badge = getStudentBadge(stars);
+    const seatId = Object.keys(seatingChart[selectedClass] || {}).find(k => seatingChart[selectedClass][k] === s.id);
+    const seatObj = seatId ? computers.find(c => c.id === seatId) : null;
+    const emulationObj = emulationDataState[s.id] || { cumulativeStars: 0, exchangedStickers: 0, totalDeducted: 0, badges: [] };
+
+    const rewardsList = [
+      {
+        name: '👍Sticker Chăm Ngoan',
+        label: 'Chăm Ngoan Học Tập',
+        emoji: '👍',
+        cost: 5,
+        colorClass: 'hover:border-emerald-400 hover:bg-emerald-50/20 text-emerald-700 border-emerald-100',
+        buttonClass: 'bg-emerald-500 hover:bg-emerald-600 border-emerald-600'
+      },
+      {
+        name: '⚡Sticker Siêu Nhân Tin Học',
+        label: 'Siêu Nhân Tin Học',
+        emoji: '⚡',
+        cost: 10,
+        colorClass: 'hover:border-blue-400 hover:bg-blue-50/20 text-blue-700 border-blue-100',
+        buttonClass: 'bg-blue-500 hover:bg-blue-600 border-blue-600'
+      },
+      {
+        name: '🛡️Sticker Chiến Binh',
+        label: 'Chiến Binh Công Nghệ',
+        emoji: '🛡️',
+        cost: 15,
+        colorClass: 'hover:border-indigo-400 hover:bg-indigo-50/20 text-indigo-700 border-indigo-100',
+        buttonClass: 'bg-indigo-500 hover:bg-indigo-600 border-indigo-600'
+      },
+      {
+        name: '🎖️Sticker Siêu Sao Tin Học',
+        label: 'Siêu Sao Tin Học',
+        emoji: '🎖️',
+        cost: 20,
+        colorClass: 'hover:border-rose-400 hover:bg-rose-50/20 text-rose-700 border-rose-100',
+        buttonClass: 'bg-rose-500 hover:bg-rose-600 border-rose-600 animate-pulse'
+      }
+    ];
+
+    return (
+      <div className="w-full min-h-[85vh] bg-[#fffbf0] rounded-3xl border border-[#cbb89d] p-6 sm:p-8 space-y-6 shadow-sm relative text-left animate-fadeIn">
+        <FireworksCelebration
+          isOpen={celebration.isOpen}
+          onClose={() => setCelebration(prev => ({ ...prev, isOpen: false }))}
+          studentId={celebration.studentId}
+          studentName={celebration.studentName}
+          studentClass={celebration.studentClass}
+          badgeName={celebration.badgeName}
+          students={students}
+        />
+
+        {/* Header with Return Button */}
+        <div className="border-b border-[#cbb89d]/70 pb-4 flex items-center justify-between gap-4">
+          <div>
+            <span className="bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
+              CỬA HÀNG ĐỔI THƯỞNG STICKER
+            </span>
+            <h3 className="text-xl sm:text-2xl font-black text-slate-900 mt-2">
+              Đổi Quà Tích Lũy Cho: {s.name} (Lớp {s.classId})
+            </h3>
+          </div>
+          <button
+            type="button"
+            onClick={() => { setSelectedStudentForReward(null); scrollToFormTop(); }}
+            className="text-xs text-slate-700 hover:text-slate-900 font-bold px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 transition cursor-pointer flex items-center gap-1.5 active:scale-95 shadow-2xs shrink-0"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Quay lại danh sách đổi thưởng</span>
+          </button>
+        </div>
+
+        {/* View Content */}
+        <div className="space-y-6 text-left">
+          <div className="flex justify-center py-2 bg-white/80 rounded-2xl border border-amber-200/60 p-4 shadow-inner">
+            <StudentCard3D
+              student={s}
+              classStudents={classStudents}
+              machineName={seatObj ? seatObj.name : 'Chưa xếp máy'}
+              starCount={stars}
+              size="md"
+            />
+          </div>
+
+          <div className="space-y-3">
+            <h5 className="font-extrabold text-slate-800 text-xs uppercase tracking-wider">Danh Sách Quà Đổi Thưởng</h5>
+            
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {rewardsList.map((reward) => {
+                const isAffordable = stars >= reward.cost;
+                const hasBadge = emulationObj.badges?.includes(reward.name);
+
+                return (
+                  <div 
+                    key={reward.name}
+                    className={`p-4 border rounded-2xl transition-all relative flex flex-col justify-between items-center text-center min-h-[260px] group bg-white ${
+                      isAffordable 
+                        ? reward.colorClass + ' cursor-pointer shadow-xs hover:shadow-md' 
+                        : 'bg-slate-50/50 border-slate-100 opacity-60'
+                    }`}
+                    onClick={() => {
+                      if (isAffordable) {
+                        handleExchangeReward(s.id, s.name, reward.name, reward.cost);
+                      } else {
+                        showToast(`Không đủ sao để đổi ${reward.label}. Cần thêm ${reward.cost - stars} ⭐ nữa nhé!`, 'error');
+                      }
+                    }}
+                  >
+                    <div className="w-full flex justify-between items-start gap-1">
+                      {hasBadge ? (
+                        <span className="bg-emerald-100 text-emerald-800 border border-emerald-200 text-[8px] px-2 py-0.5 rounded-full font-black flex items-center gap-0.5 uppercase tracking-wide">
+                          <Check className="w-2.5 h-2.5 stroke-[3px]" /> Đã có
+                        </span>
+                      ) : <span className="h-4" />}
+                    </div>
+
+                    <div className="my-3 flex items-center justify-center">
+                      <StickerAvatar 
+                        emoji={reward.emoji} 
+                        studentId={reward.name} 
+                        size="w-16 h-16" 
+                        className="transform group-hover:scale-110 transition-transform duration-300 shadow-md"
+                      />
+                    </div>
+
+                    <div className="flex-1 flex flex-col items-center justify-center px-1">
+                      <strong className="text-[11px] font-black text-slate-800 block leading-tight uppercase tracking-wide">
+                        {reward.label}
+                      </strong>
+                      <span className="text-[9px] text-slate-400 font-bold block mt-1.5">
+                        Yêu cầu: {reward.cost} ⭐
+                      </span>
+                    </div>
+
+                    <div className="w-full mt-4 flex flex-col items-center gap-2 pt-3 border-t border-dashed border-slate-200">
+                      {isAffordable ? (
+                        <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Đủ Điều Kiện</span>
+                      ) : (
+                        <span className="text-[9px] font-extrabold text-rose-500 bg-rose-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Thiếu {reward.cost - stars} ⭐</span>
+                      )}
+
+                      <button
+                        disabled={!isAffordable}
+                        className={`w-full text-[9px] font-black py-1.5 rounded-xl text-white shadow-xs transition-colors cursor-pointer uppercase ${
+                          isAffordable 
+                            ? reward.buttonClass 
+                            : 'bg-slate-300 border-none cursor-not-allowed'
+                        }`}
+                      >
+                        Đổi ngay
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="border-t border-[#cbb89d]/50 pt-4">
+            <h5 className="font-extrabold text-slate-800 text-xs uppercase tracking-wider mb-2">Lịch Sử Đổi Thưởng ({emulationObj.exchangedStickers || 0} lần)</h5>
+            {emulationObj.badges && emulationObj.badges.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {emulationObj.badges.map((badgeName) => (
+                  <span 
+                    key={badgeName} 
+                    className="bg-amber-50 text-amber-900 border border-amber-200/60 text-[10px] px-3 py-1.5 rounded-full font-bold flex items-center gap-1.5 shadow-3xs"
+                  >
+                    <Sparkles className="w-3 h-3 text-amber-500" />
+                    <span>🎁 {badgeName}</span>
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs italic text-slate-400">Học sinh chưa quy đổi sticker phần thưởng nào trong tháng này.</p>
+            )}
+          </div>
+
+        </div>
+
+        {/* View Footer */}
+        <div className="pt-4 border-t border-[#cbb89d]/50 flex justify-end">
+          <button
+            onClick={() => { setSelectedStudentForReward(null); scrollToFormTop(); }}
+            className="px-6 py-3 rounded-2xl border border-slate-300 bg-white text-slate-700 font-extrabold hover:bg-slate-50 transition cursor-pointer flex items-center gap-2 active:scale-95 text-xs uppercase shadow-2xs"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Quay Lại</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // 2. FULL WINDOW SUB-VIEW: CHI TIẾT THI ĐUA TỪNG HỌC SINH CỦA LỚP
+  // =========================================================================
+  if (viewingDetailClassId) {
+    const classSts = students.filter(s => s.classId === viewingDetailClassId);
+    const sortedClassSts = [...classSts].map(s => {
+      const stState = emulationDataState[s.id] || { cumulativeStars: 0, exchangedStickers: 0, totalDeducted: 0, badges: [] };
+      const currentStars = Math.max(0, (stState.cumulativeStars || 0) - (stState.totalDeducted || (stState.exchangedStickers || 0) * 5));
+      return {
+        ...s,
+        cumulativeStars: stState.cumulativeStars || 0,
+        exchangedStickers: stState.exchangedStickers || 0,
+        currentStars,
+        badges: stState.badges || []
+      };
+    }).sort((a, b) => b.cumulativeStars - a.cumulativeStars);
+
+    const filteredClassSts = sortedClassSts.filter(s => s.name.toLowerCase().includes(classSearchTerm.toLowerCase()));
+
+    return (
+      <div className="w-full min-h-[85vh] bg-[#fffbf0] rounded-3xl border border-[#cbb89d] p-6 sm:p-8 space-y-6 shadow-sm relative text-left animate-fadeIn">
+        <FireworksCelebration
+          isOpen={celebration.isOpen}
+          onClose={() => setCelebration(prev => ({ ...prev, isOpen: false }))}
+          studentId={celebration.studentId}
+          studentName={celebration.studentName}
+          studentClass={celebration.studentClass}
+          badgeName={celebration.badgeName}
+          students={students}
+        />
+
+        {/* Header with Return Button */}
+        <div className="border-b border-[#cbb89d]/70 pb-4 flex items-center justify-between gap-4">
+          <div>
+            <span className="bg-indigo-100 text-indigo-900 border border-indigo-200 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
+              BẢNG VINH DANH CHI TIẾT LỚP
+            </span>
+            <h3 className="text-xl sm:text-2xl font-black text-slate-900 mt-2 flex items-center gap-2">
+              <Trophy className="w-6 h-6 text-amber-500" />
+              Chi Tiết Thi Đua Lớp {classes?.find(c => c.id === viewingDetailClassId)?.name || viewingDetailClassId}
+            </h3>
+            <p className="text-xs text-slate-500 font-semibold mt-1">
+              Khối {classes?.find(c => c.id === viewingDetailClassId)?.gradeId} • GVCN: {classes?.find(c => c.id === viewingDetailClassId)?.teacher || 'Đang cập nhật'}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => { setViewingDetailClassId(null); setClassSearchTerm(''); scrollToFormTop(); }}
+            className="text-xs text-slate-700 hover:text-slate-900 font-bold px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 transition cursor-pointer flex items-center gap-1.5 active:scale-95 shadow-2xs shrink-0"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Quay lại bảng so sánh thi đua</span>
+          </button>
+        </div>
+
+        {/* Search Student filter inside view */}
+        <div className="p-1 text-left">
+          <div className="relative">
+            <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+              <Search className="w-3.5 h-3.5 text-slate-400" />
+            </span>
+            <input
+              type="text"
+              value={classSearchTerm}
+              onChange={(e) => setClassSearchTerm(e.target.value)}
+              placeholder="Tìm kiếm học sinh trong lớp..."
+              className="w-full text-xs pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs"
+            />
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="space-y-4">
+          <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[9px] whitespace-nowrap">
+                  <th className="p-3 text-center w-12 whitespace-nowrap">Hạng</th>
+                  <th className="p-3 whitespace-nowrap">Tên Học Sinh</th>
+                  <th className="p-3 text-right whitespace-nowrap">Tổng Sao Tích Lũy</th>
+                  <th className="p-3 text-right whitespace-nowrap">Sticker Đã Đổi</th>
+                  <th className="p-3 text-right whitespace-nowrap">Sao Còn Lại</th>
+                  <th className="p-3 pl-4 whitespace-nowrap">Huy Hiệu Sở Hữu</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-150 font-semibold text-slate-700">
+                {filteredClassSts.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="p-6 text-center text-slate-400 font-bold">
+                      Không tìm thấy học sinh nào phù hợp.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredClassSts.map((st, idx) => (
+                    <tr key={st.id} className="hover:bg-slate-50/50">
+                      <td className="p-3 text-center">
+                        <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[9px] ${
+                          idx === 0 ? 'bg-amber-100 text-amber-700 font-extrabold' : 'bg-slate-100 text-slate-600'
+                        }`}>
+                          {idx + 1}
+                        </span>
+                      </td>
+                      <td className="p-3 font-extrabold text-slate-900 flex items-center gap-1.5 text-left whitespace-nowrap">
+                        <span>{getStudentAvatar(st.id, students).emoji}</span>
+                        <span>{st.name}</span>
+                      </td>
+                      <td className="p-3 text-right text-slate-900">
+                        {st.cumulativeStars} ⭐
+                      </td>
+                      <td className="p-3 text-right text-pink-600">
+                        {st.exchangedStickers} quà
+                      </td>
+                      <td className="p-3 text-right text-emerald-600">
+                        {st.currentStars} ⭐
+                      </td>
+                      <td className="p-3 pl-4">
+                        {st.badges.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {st.badges.map((b, i) => (
+                              <span key={i} className="bg-slate-100 text-slate-600 text-[8px] font-black px-1.5 py-0.5 rounded border border-slate-200">
+                                {b}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-slate-300 font-normal">Chưa có</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="pt-4 border-t border-[#cbb89d]/50 flex justify-end">
+          <button
+            onClick={() => {
+              setViewingDetailClassId(null);
+              setClassSearchTerm('');
+              scrollToFormTop();
+            }}
+            className="px-6 py-3 rounded-2xl border border-slate-300 bg-white text-slate-700 font-extrabold hover:bg-slate-50 transition cursor-pointer flex items-center gap-2 active:scale-95 text-xs uppercase shadow-2xs"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Quay Lại</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // 3. FULL WINDOW SUB-VIEW: BẢNG VINH DANH TOP 3 HỌC SINH XUẤT SẮC NHẤT THÁNG
+  // =========================================================================
+  if (isMonthlyHallOfFameOpen) {
+    let activeSts = [...students];
+
+    if (hallOfFameFilter === 'current-class' && selectedClass) {
+      activeSts = students.filter(s => s.classId === selectedClass);
+    } else if (hallOfFameFilter === 'grade-3' || hallOfFameFilter === 'grade-4' || hallOfFameFilter === 'grade-5') {
+      const targetGradeId = parseInt(hallOfFameFilter.replace('grade-', ''), 10);
+      const gradeClassIds = (classes || []).filter(c => c.gradeId === targetGradeId).map(c => c.id);
+      activeSts = students.filter(s => gradeClassIds.includes(s.classId));
+    }
+
+    const sortedStudents = [...activeSts].sort((a, b) => {
+      const starsA = getStarsForPeriod(a.id, 'month');
+      const starsB = getStarsForPeriod(b.id, 'month');
+      return starsB - starsA;
+    });
+
+    const top1 = sortedStudents[0];
+    const top2 = sortedStudents[1];
+    const top3 = sortedStudents[2];
+
+    const getAvatarData = (s?: Student) => s ? getStudentAvatar(s.id, students) : { emoji: '⭐', bg: 'bg-amber-50' };
+
+    return (
+      <div className="w-full min-h-[85vh] bg-gradient-to-b from-[#2b1f13] via-[#3d2c1b] to-[#1e150d] border-2 border-amber-500/80 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl text-white relative overflow-hidden animate-fadeIn text-left">
+        <FireworksCelebration
+          isOpen={celebration.isOpen}
+          onClose={() => setCelebration(prev => ({ ...prev, isOpen: false }))}
+          studentId={celebration.studentId}
+          studentName={celebration.studentName}
+          studentClass={celebration.studentClass}
+          badgeName={celebration.badgeName}
+          students={students}
+        />
+
+        {/* Header with Return Button */}
+        <div className="border-b border-amber-600/30 pb-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-amber-950 px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest shadow-md">
+              <Trophy className="w-4 h-4 fill-amber-950" />
+              <span>BẢNG VINH DANH THÁNG</span>
+            </div>
+          </div>
+          <button 
+            type="button"
+            onClick={() => { setIsMonthlyHallOfFameOpen(false); scrollToFormTop(); }}
+            className="text-xs text-amber-200 hover:text-white font-bold px-4 py-2.5 rounded-xl border border-amber-600/40 bg-amber-950/60 hover:bg-amber-900/80 transition cursor-pointer flex items-center gap-1.5 active:scale-95 shrink-0"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Quay lại trang thi đua</span>
+          </button>
+        </div>
+
+        {/* Celebration Title */}
+        <div className="text-center space-y-1.5 mb-5">
+          <h2 className="text-xl sm:text-2xl font-black text-amber-300 tracking-tight drop-shadow-md">
+            🏆 TOP 3 HỌC SINH XUẤT SẮC NHẤT THÁNG 🏆
+          </h2>
+          <p className="text-xs text-amber-200/80 font-semibold">
+            Tuyên dương 3 gương mặt tiêu biểu có thành tích tích lũy sao thi đua cao nhất!
+          </p>
+        </div>
+
+        {/* Grade & Scope Filter Pills */}
+        <div className="flex flex-wrap items-center justify-center gap-1.5 mb-6 bg-[#1a110a] p-1.5 rounded-2xl border border-amber-600/30">
+          {[
+            { id: 'current-class', label: `Lớp ${selectedClass || ''}` },
+            { id: 'grade-3', label: 'Toàn Khối 3' },
+            { id: 'grade-4', label: 'Toàn Khối 4' },
+            { id: 'grade-5', label: 'Toàn Khối 5' },
+            { id: 'all-school', label: 'Toàn Trường' },
+          ].map((item) => (
+            <button
+              key={item.id}
+              onClick={() => {
+                playButtonClickSound();
+                setHallOfFameFilter(item.id as any);
+                setPodiumAnimKey(prev => prev + 1);
+              }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                hallOfFameFilter === item.id
+                  ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-amber-950 shadow-md border border-amber-300 scale-102'
+                  : 'text-amber-200/70 hover:text-amber-100 hover:bg-amber-950/50'
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+
+        {/* 3D Podium Hall of Fame Showcase with Student Hopping Animation */}
+        <div key={podiumAnimKey} className="grid grid-cols-3 gap-3 sm:gap-6 items-end justify-center mb-8 pt-4">
+          
+          {/* 🥈 TOP 2 SILVER (LEFT) */}
+          <div className="flex flex-col items-center space-y-2 animate-podium-hop-2">
+            {top2 ? (
+              <>
+                <div className="relative group cursor-pointer">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-4 border-slate-300 shadow-[0_0_25px_rgba(203,213,225,0.7)] overflow-hidden flex items-center justify-center bg-slate-800">
+                    {top2.avatarUrl ? (
+                      <img src={top2.avatarUrl} alt={top2.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-2xl">{getAvatarData(top2).emoji}</span>
+                    )}
+                  </div>
+                  <span className="absolute -top-2 -right-1 bg-gradient-to-r from-slate-300 to-slate-400 text-slate-900 w-7 h-7 rounded-full font-black text-xs flex items-center justify-center border border-white shadow-md">
+                    🥈
+                  </span>
+                </div>
+                <div className="text-center">
+                  <h4 className="font-extrabold text-xs sm:text-sm text-slate-200 truncate max-w-[100px] sm:max-w-[130px]">{top2.name}</h4>
+                  <span className="text-[10px] font-bold text-slate-400 block">Lớp: {top2.classId}</span>
+                  <span className="inline-block mt-1 bg-slate-200/20 text-slate-200 font-black text-[11px] px-2.5 py-0.5 rounded-full border border-slate-300/30">
+                    {getStarsForPeriod(top2.id, 'month')} ⭐
+                  </span>
+                </div>
+              </>
+            ) : (
+              <span className="text-xs text-slate-500">Chưa có</span>
+            )}
+            <div className="w-full bg-gradient-to-b from-slate-400/30 to-slate-600/40 rounded-t-xl h-16 flex items-center justify-center font-black text-slate-300 text-sm border-t-2 border-slate-300">
+              TOP 2
+            </div>
+          </div>
+
+          {/* 🥇 TOP 1 GOLD CHAMPION (CENTER - HIGHEST) */}
+          <div className="flex flex-col items-center space-y-2 -translate-y-3 animate-podium-hop-1">
+            {top1 ? (
+              <>
+                <div className="relative group cursor-pointer">
+                  <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-2xl animate-bounce">
+                    👑
+                  </div>
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-amber-400 shadow-[0_0_35px_rgba(251,191,36,0.9)] overflow-hidden flex items-center justify-center bg-amber-950 ring-4 ring-amber-300/40">
+                    {top1.avatarUrl ? (
+                      <img src={top1.avatarUrl} alt={top1.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-3xl">{getAvatarData(top1).emoji}</span>
+                    )}
+                  </div>
+                  <span className="absolute -top-1 -right-1 bg-gradient-to-r from-amber-400 to-yellow-500 text-amber-950 w-8 h-8 rounded-full font-black text-sm flex items-center justify-center border-2 border-white shadow-lg">
+                    🥇
+                  </span>
+                </div>
+                <div className="text-center">
+                  <h4 className="font-black text-sm sm:text-base text-amber-300 truncate max-w-[120px] sm:max-w-[150px] drop-shadow-md">{top1.name}</h4>
+                  <span className="text-[11px] font-extrabold text-amber-200/90 block">Lớp: {top1.classId}</span>
+                  <span className="inline-block mt-1 bg-gradient-to-r from-amber-500 to-yellow-500 text-amber-950 font-black text-xs px-3 py-0.5 rounded-full shadow-md border border-yellow-300">
+                    {getStarsForPeriod(top1.id, 'month')} ⭐
+                  </span>
+                </div>
+              </>
+            ) : (
+              <span className="text-xs text-amber-500">Chưa có</span>
+            )}
+            <div className="w-full bg-gradient-to-b from-amber-400/40 to-amber-600/50 rounded-t-xl h-24 flex items-center justify-center font-black text-amber-300 text-base border-t-2 border-amber-400 shadow-lg">
+              QUÁN QUÂN
+            </div>
+          </div>
+
+          {/* 🥉 TOP 3 BRONZE (RIGHT) */}
+          <div className="flex flex-col items-center space-y-2 animate-podium-hop-3">
+            {top3 ? (
+              <>
+                <div className="relative group cursor-pointer">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-4 border-amber-700 shadow-[0_0_25px_rgba(217,119,6,0.7)] overflow-hidden flex items-center justify-center bg-amber-950">
+                    {top3.avatarUrl ? (
+                      <img src={top3.avatarUrl} alt={top3.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-2xl">{getAvatarData(top3).emoji}</span>
+                    )}
+                  </div>
+                  <span className="absolute -top-2 -right-1 bg-gradient-to-r from-amber-600 to-amber-800 text-white w-7 h-7 rounded-full font-black text-xs flex items-center justify-center border border-white shadow-md">
+                    🥉
+                  </span>
+                </div>
+                <div className="text-center">
+                  <h4 className="font-extrabold text-xs sm:text-sm text-amber-200/90 truncate max-w-[100px] sm:max-w-[130px]">{top3.name}</h4>
+                  <span className="text-[10px] font-bold text-amber-300/70 block">Lớp: {top3.classId}</span>
+                  <span className="inline-block mt-1 bg-amber-700/30 text-amber-200 font-black text-[11px] px-2.5 py-0.5 rounded-full border border-amber-600/30">
+                    {getStarsForPeriod(top3.id, 'month')} ⭐
+                  </span>
+                </div>
+              </>
+            ) : (
+              <span className="text-xs text-amber-500">Chưa có</span>
+            )}
+            <div className="w-full bg-gradient-to-b from-amber-700/30 to-amber-900/40 rounded-t-xl h-12 flex items-center justify-center font-black text-amber-400 text-xs border-t-2 border-amber-600">
+              TOP 3
+            </div>
+          </div>
+
+        </div>
+
+        {/* Celebration Action Controls */}
+        <div className="flex flex-col sm:flex-row gap-2.5 pt-4 border-t border-amber-600/30">
+          <button
+            onClick={() => {
+              setPodiumAnimKey(prev => prev + 1);
+              playButtonClickSound();
+            }}
+            className="bg-amber-900/60 hover:bg-amber-800/80 text-amber-200 font-black text-xs py-3 px-4 rounded-2xl border border-amber-600/40 transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-1.5"
+            title="Bấm để trình diễn lại hiệu ứng 3D nhân vật nhảy lên bục vinh danh"
+          >
+            <span>🏃 Nhảy Lên Bục Lại</span>
+          </button>
+          <button
+            onClick={() => {
+              setPodiumAnimKey(prev => prev + 1);
+              triggerVictoryConfetti();
+              playVictoryFanfareSound();
+            }}
+            className="flex-1 bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-600 hover:to-yellow-600 text-amber-950 font-black text-xs py-3 px-4 rounded-2xl shadow-lg border border-amber-300 flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95"
+          >
+            <span>🎆 Bắn Pháo Hoa & Nhạc Mừng</span>
+          </button>
+          <button
+            onClick={() => { setIsMonthlyHallOfFameOpen(false); scrollToFormTop(); }}
+            className="bg-amber-950/80 hover:bg-amber-900 text-amber-200 font-bold text-xs py-3 px-5 rounded-2xl border border-amber-700/50 transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-1.5"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Quay Lại</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // DEFAULT CASE: TRANG CHÍNH ỨNG DỤNG THI ĐUA
+  // =========================================================================
   return (
     <div className="space-y-6">
 
@@ -1308,595 +1896,9 @@ export default function EmulationTab({
               </div>
             </div>
           )}
-
         </div>
-
       </div>
       )}
-
-      {/* Selection Reward Modal */}
-      {selectedStudentForReward && (() => {
-        const s = selectedStudentForReward;
-        const stars = getStudentCurrentStars(s.id);
-        const avatar = getStudentAvatar(s.id, students);
-        const badge = getStudentBadge(stars);
-        const seatId = Object.keys(seatingChart[selectedClass] || {}).find(k => seatingChart[selectedClass][k] === s.id);
-        const seatObj = seatId ? computers.find(c => c.id === seatId) : null;
-        
-        const emulationObj = emulationDataState[s.id] || { cumulativeStars: 0, exchangedStickers: 0, totalDeducted: 0, badges: [] };
-
-        const rewardsList = [
-          {
-            name: '👍Sticker Chăm Ngoan',
-            label: 'Chăm Ngoan Học Tập',
-            emoji: '👍',
-            cost: 5,
-            colorClass: 'hover:border-emerald-400 hover:bg-emerald-50/20 text-emerald-700 border-emerald-100',
-            buttonClass: 'bg-emerald-500 hover:bg-emerald-600 border-emerald-600'
-          },
-          {
-            name: '⚡Sticker Siêu Nhân Tin Học',
-            label: 'Siêu Nhân Tin Học',
-            emoji: '⚡',
-            cost: 10,
-            colorClass: 'hover:border-blue-400 hover:bg-blue-50/20 text-blue-700 border-blue-100',
-            buttonClass: 'bg-blue-500 hover:bg-blue-600 border-blue-600'
-          },
-          {
-            name: '🛡️Sticker Chiến Binh',
-            label: 'Chiến Binh Công Nghệ',
-            emoji: '🛡️',
-            cost: 15,
-            colorClass: 'hover:border-indigo-400 hover:bg-indigo-50/20 text-indigo-700 border-indigo-100',
-            buttonClass: 'bg-indigo-500 hover:bg-indigo-600 border-indigo-600'
-          },
-          {
-            name: '🎖️Sticker Siêu Sao Tin Học',
-            label: 'Siêu Sao Tin Học',
-            emoji: '🎖️',
-            cost: 20,
-            colorClass: 'hover:border-rose-400 hover:bg-rose-50/20 text-rose-700 border-rose-100',
-            buttonClass: 'bg-rose-500 hover:bg-rose-600 border-rose-600 animate-pulse'
-          }
-        ];
-
-        return (
-          <div className="max-w-4xl mx-auto space-y-6 animate-fadeIn text-left mt-4">
-            <div className="bg-[#fffbf0] rounded-3xl border border-[#cbb89d] p-6 sm:p-8 space-y-6 shadow-sm relative">
-              
-              {/* Header with Return Button */}
-              <div className="border-b border-[#cbb89d]/70 pb-4 flex items-center justify-between gap-4">
-                <div>
-                  <span className="bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
-                    CỬA HÀNG ĐỔI THƯỞNG STICKER
-                  </span>
-                  <h3 className="text-xl font-black text-slate-900 mt-2">
-                    Đổi Quà Tích Lũy Cho: {s.name} (Lớp {s.classId})
-                  </h3>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => { setSelectedStudentForReward(null); scrollToFormTop(); }}
-                  className="text-xs text-slate-700 hover:text-slate-900 font-bold px-4 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 transition cursor-pointer flex items-center gap-1.5 active:scale-95 shadow-2xs shrink-0"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  <span>Quay lại danh sách đổi thưởng</span>
-                </button>
-              </div>
-
-              {/* View Content */}
-              <div className="space-y-6 text-left">
-                
-                {/* Official Student ID Card with thehocsinh.png Frame */}
-                <div className="flex justify-center py-2 bg-white/80 rounded-2xl border border-amber-200/60 p-4 shadow-inner">
-                  <StudentCard3D
-                    student={s}
-                    classStudents={classStudents}
-                    machineName={seatObj ? seatObj.name : 'Chưa xếp máy'}
-                    starCount={stars}
-                    size="md"
-                  />
-                </div>
-
-                {/* Rewards Grid */}
-                <div className="space-y-3">
-                  <h5 className="font-extrabold text-slate-800 text-xs uppercase tracking-wider">Danh Sách Quà Đổi Thưởng</h5>
-                  
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    {rewardsList.map((reward) => {
-                      const isAffordable = stars >= reward.cost;
-                      const hasBadge = emulationObj.badges?.includes(reward.name);
-
-                      return (
-                        <div 
-                          key={reward.name}
-                          className={`p-4 border rounded-2xl transition-all relative flex flex-col justify-between items-center text-center min-h-[260px] group bg-white ${
-                            isAffordable 
-                              ? reward.colorClass + ' cursor-pointer shadow-xs hover:shadow-md' 
-                              : 'bg-slate-50/50 border-slate-100 opacity-60'
-                          }`}
-                          onClick={() => {
-                            if (isAffordable) {
-                              handleExchangeReward(s.id, s.name, reward.name, reward.cost);
-                            } else {
-                              showToast(`Không đủ sao để đổi ${reward.label}. Cần thêm ${reward.cost - stars} ⭐ nữa nhé!`, 'error');
-                            }
-                          }}
-                        >
-                          <div className="w-full flex justify-between items-start gap-1">
-                            {hasBadge ? (
-                              <span className="bg-emerald-100 text-emerald-800 border border-emerald-200 text-[8px] px-2 py-0.5 rounded-full font-black flex items-center gap-0.5 uppercase tracking-wide">
-                                <Check className="w-2.5 h-2.5 stroke-[3px]" /> Đã có
-                              </span>
-                            ) : <span className="h-4" />}
-                          </div>
-
-                          {/* Beautiful 3D Pixel Sticker */}
-                          <div className="my-3 flex items-center justify-center">
-                            <StickerAvatar 
-                              emoji={reward.emoji} 
-                              studentId={reward.name} 
-                              size="w-16 h-16" 
-                              className="transform group-hover:scale-110 transition-transform duration-300 shadow-md"
-                            />
-                          </div>
-
-                          {/* Sticker Label & Details */}
-                          <div className="flex-1 flex flex-col items-center justify-center px-1">
-                            <strong className="text-[11px] font-black text-slate-800 block leading-tight uppercase tracking-wide">
-                              {reward.label}
-                            </strong>
-                            <span className="text-[9px] text-slate-400 font-bold block mt-1.5">
-                              Yêu cầu: {reward.cost} ⭐
-                            </span>
-                          </div>
-
-                          <div className="w-full mt-4 flex flex-col items-center gap-2 pt-3 border-t border-dashed border-slate-200">
-                            {isAffordable ? (
-                              <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Đủ Điều Kiện</span>
-                            ) : (
-                              <span className="text-[9px] font-extrabold text-rose-500 bg-rose-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Thiếu {reward.cost - stars} ⭐</span>
-                            )}
-
-                            <button
-                              disabled={!isAffordable}
-                              className={`w-full text-[9px] font-black py-1.5 rounded-xl text-white shadow-xs transition-colors cursor-pointer uppercase ${
-                                isAffordable 
-                                  ? reward.buttonClass 
-                                  : 'bg-slate-300 border-none cursor-not-allowed'
-                              }`}
-                            >
-                              Đổi ngay
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Exchanged Badges / History */}
-                <div className="border-t border-[#cbb89d]/50 pt-4">
-                  <h5 className="font-extrabold text-slate-800 text-xs uppercase tracking-wider mb-2">Lịch Sử Đổi Thưởng ({emulationObj.exchangedStickers || 0} lần)</h5>
-                  {emulationObj.badges && emulationObj.badges.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {emulationObj.badges.map((badgeName) => (
-                        <span 
-                          key={badgeName} 
-                          className="bg-amber-50 text-amber-900 border border-amber-200/60 text-[10px] px-3 py-1.5 rounded-full font-bold flex items-center gap-1.5 shadow-3xs"
-                        >
-                          <Sparkles className="w-3 h-3 text-amber-500" />
-                          <span>🎁 {badgeName}</span>
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-xs italic text-slate-400">Học sinh chưa quy đổi sticker phần thưởng nào trong tháng này.</p>
-                  )}
-                </div>
-
-              </div>
-
-              {/* View Footer */}
-              <div className="pt-4 border-t border-[#cbb89d]/50 flex justify-end">
-                <button
-                  onClick={() => { setSelectedStudentForReward(null); scrollToFormTop(); }}
-                  className="px-5 py-2.5 rounded-2xl border border-slate-300 bg-white text-slate-700 font-bold hover:bg-slate-50 transition cursor-pointer flex items-center gap-1.5 active:scale-95 text-xs uppercase"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  <span>Quay Lại</span>
-                </button>
-              </div>
-
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* INLINE VIEW: CHI TIẾT THI ĐUA TỪNG HỌC SINH CỦA LỚP */}
-      {viewingDetailClassId && (
-        <div className="max-w-5xl mx-auto space-y-6 animate-fadeIn text-left mt-4">
-          <div className="bg-[#fffbf0] rounded-3xl border border-[#cbb89d] p-6 sm:p-8 space-y-6 shadow-sm relative">
-            
-            {/* Header with Return Button */}
-            <div className="border-b border-[#cbb89d]/70 pb-4 flex items-center justify-between gap-4">
-              <div>
-                <span className="bg-indigo-100 text-indigo-900 border border-indigo-200 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
-                  BẢNG VINH DANH CHI TIẾT LỚP
-                </span>
-                <h3 className="text-xl font-black text-slate-900 mt-2 flex items-center gap-2">
-                  <Trophy className="w-5 h-5 text-amber-500" />
-                  Chi Tiết Thi Đua Lớp {classes?.find(c => c.id === viewingDetailClassId)?.name || viewingDetailClassId}
-                </h3>
-                <p className="text-xs text-slate-500 font-semibold mt-1">
-                  Khối {classes?.find(c => c.id === viewingDetailClassId)?.gradeId} • GVCN: {classes?.find(c => c.id === viewingDetailClassId)?.teacher || 'Đang cập nhật'}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => { setViewingDetailClassId(null); setClassSearchTerm(''); scrollToFormTop(); }}
-                className="text-xs text-slate-700 hover:text-slate-900 font-bold px-4 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 transition cursor-pointer flex items-center gap-1.5 active:scale-95 shadow-2xs shrink-0"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Quay lại bảng so sánh thi đua</span>
-              </button>
-            </div>
-
-            {/* Search Student filter inside popup */}
-            <div className="p-1 text-left">
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                  <Search className="w-3.5 h-3.5 text-slate-400" />
-                </span>
-                <input
-                  type="text"
-                  value={classSearchTerm}
-                  onChange={(e) => setClassSearchTerm(e.target.value)}
-                  placeholder="Tìm kiếm học sinh trong lớp..."
-                  className="w-full text-xs pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs"
-                />
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="space-y-4">
-              <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
-                <table className="w-full text-xs text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[9px] whitespace-nowrap">
-                      <th className="p-3 text-center w-12 whitespace-nowrap">Hạng</th>
-                      <th className="p-3 whitespace-nowrap">Tên Học Sinh</th>
-                      <th className="p-3 text-right whitespace-nowrap">Tổng Sao Tích Lũy</th>
-                      <th className="p-3 text-right whitespace-nowrap">Sticker Đã Đổi</th>
-                      <th className="p-3 text-right whitespace-nowrap">Sao Còn Lại</th>
-                      <th className="p-3 pl-4 whitespace-nowrap">Huy Hiệu Sở Hữu</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-150 font-semibold text-slate-700">
-                    {(() => {
-                      const classSts = students.filter(s => s.classId === viewingDetailClassId);
-                      const sortedClassSts = [...classSts].map(s => {
-                        const stState = emulationDataState[s.id] || { cumulativeStars: 0, exchangedStickers: 0, totalDeducted: 0, badges: [] };
-                        const currentStars = Math.max(0, (stState.cumulativeStars || 0) - (stState.totalDeducted || (stState.exchangedStickers || 0) * 5));
-                        return {
-                          ...s,
-                          cumulativeStars: stState.cumulativeStars || 0,
-                          exchangedStickers: stState.exchangedStickers || 0,
-                          currentStars,
-                          badges: stState.badges || []
-                        };
-                      }).sort((a, b) => b.cumulativeStars - a.cumulativeStars);
-
-                      const filteredClassSts = sortedClassSts.filter(s => s.name.toLowerCase().includes(classSearchTerm.toLowerCase()));
-
-                      if (filteredClassSts.length === 0) {
-                        return (
-                          <tr>
-                            <td colSpan={6} className="p-6 text-center text-slate-400 font-bold">
-                              Không tìm thấy học sinh nào phù hợp.
-                            </td>
-                          </tr>
-                        );
-                      }
-
-                      return filteredClassSts.map((st, idx) => (
-                        <tr key={st.id} className="hover:bg-slate-50/50">
-                          <td className="p-3 text-center">
-                            <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[9px] ${
-                              idx === 0 ? 'bg-amber-100 text-amber-700 font-extrabold' : 'bg-slate-100 text-slate-600'
-                            }`}>
-                              {idx + 1}
-                            </span>
-                          </td>
-                          <td className="p-3 font-extrabold text-slate-900 flex items-center gap-1.5 text-left whitespace-nowrap">
-                            <span>{getStudentAvatar(st.id, students).emoji}</span>
-                            <span>{st.name}</span>
-                          </td>
-                          <td className="p-3 text-right text-slate-900">
-                            {st.cumulativeStars} ⭐
-                          </td>
-                          <td className="p-3 text-right text-pink-600">
-                            {st.exchangedStickers} quà
-                          </td>
-                          <td className="p-3 text-right text-emerald-600">
-                            {st.currentStars} ⭐
-                          </td>
-                          <td className="p-3 pl-4">
-                            {st.badges.length > 0 ? (
-                              <div className="flex flex-wrap gap-1">
-                                {st.badges.map((b, i) => (
-                                  <span key={i} className="bg-slate-100 text-slate-600 text-[8px] font-black px-1.5 py-0.5 rounded border border-slate-200">
-                                    {b}
-                                  </span>
-                                ))}
-                              </div>
-                            ) : (
-                              <span className="text-slate-300 font-normal">Chưa có</span>
-                            )}
-                          </td>
-                        </tr>
-                      ));
-                    })()}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="pt-4 border-t border-[#cbb89d]/50 flex justify-end">
-              <button
-                onClick={() => {
-                  setViewingDetailClassId(null);
-                  setClassSearchTerm('');
-                  scrollToFormTop();
-                }}
-                className="px-5 py-2.5 rounded-2xl border border-slate-300 bg-white text-slate-700 font-bold hover:bg-slate-50 transition cursor-pointer flex items-center gap-1.5 active:scale-95 text-xs uppercase"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Quay Lại</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <FireworksCelebration
-        isOpen={celebration.isOpen}
-        onClose={() => setCelebration(prev => ({ ...prev, isOpen: false }))}
-        studentId={celebration.studentId}
-        studentName={celebration.studentName}
-        studentClass={celebration.studentClass}
-        badgeName={celebration.badgeName}
-        students={students}
-      />
-
-      {/* Monthly Top 3 Outstanding Students Celebration Hall of Fame Modal */}
-      {isMonthlyHallOfFameOpen && (() => {
-        let activeSts = [...students];
-
-        if (hallOfFameFilter === 'current-class' && selectedClass) {
-          activeSts = students.filter(s => s.classId === selectedClass);
-        } else if (hallOfFameFilter === 'grade-3' || hallOfFameFilter === 'grade-4' || hallOfFameFilter === 'grade-5') {
-          const targetGradeId = parseInt(hallOfFameFilter.replace('grade-', ''), 10);
-          const gradeClassIds = (classes || []).filter(c => c.gradeId === targetGradeId).map(c => c.id);
-          activeSts = students.filter(s => gradeClassIds.includes(s.classId));
-        }
-
-        const sortedStudents = [...activeSts].sort((a, b) => {
-          const starsA = getStarsForPeriod(a.id, 'month');
-          const starsB = getStarsForPeriod(b.id, 'month');
-          return starsB - starsA;
-        });
-
-        const top1 = sortedStudents[0];
-        const top2 = sortedStudents[1];
-        const top3 = sortedStudents[2];
-
-        const getAvatarData = (s?: Student) => s ? getStudentAvatar(s.id, students) : { emoji: '⭐', bg: 'bg-amber-50' };
-
-        return (
-          <div className="max-w-4xl mx-auto space-y-6 animate-fadeIn text-left mt-4">
-            <div className="bg-gradient-to-b from-[#2b1f13] via-[#3d2c1b] to-[#1e150d] border-2 border-amber-500/80 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl text-white relative overflow-hidden">
-              
-              {/* Header with Return Button */}
-              <div className="border-b border-amber-600/30 pb-4 flex items-center justify-between gap-4">
-                <div className="flex items-center gap-2">
-                  <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-amber-950 px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest shadow-md">
-                    <Trophy className="w-4 h-4 fill-amber-950" />
-                    <span>BẢNG VINH DANH THÁNG</span>
-                  </div>
-                </div>
-                <button 
-                  type="button"
-                  onClick={() => { setIsMonthlyHallOfFameOpen(false); scrollToFormTop(); }}
-                  className="text-xs text-amber-200 hover:text-white font-bold px-4 py-2 rounded-xl border border-amber-600/40 bg-amber-950/60 hover:bg-amber-900/80 transition cursor-pointer flex items-center gap-1.5 active:scale-95 shrink-0"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  <span>Quay lại trang thi đua</span>
-                </button>
-              </div>
-
-              {/* Celebration Title */}
-              <div className="text-center space-y-1.5 mb-5">
-                <h2 className="text-xl sm:text-2xl font-black text-amber-300 tracking-tight drop-shadow-md">
-                  🏆 TOP 3 HỌC SINH XUẤT SẮC NHẤT THÁNG 🏆
-                </h2>
-                <p className="text-xs text-amber-200/80 font-semibold">
-                  Tuyên dương 3 gương mặt tiêu biểu có thành tích tích lũy sao thi đua cao nhất!
-                </p>
-              </div>
-
-              {/* Grade & Scope Filter Pills */}
-              <div className="flex flex-wrap items-center justify-center gap-1.5 mb-6 bg-[#1a110a] p-1.5 rounded-2xl border border-amber-600/30">
-                {[
-                  { id: 'current-class', label: `Lớp ${selectedClass || ''}` },
-                  { id: 'grade-3', label: 'Toàn Khối 3' },
-                  { id: 'grade-4', label: 'Toàn Khối 4' },
-                  { id: 'grade-5', label: 'Toàn Khối 5' },
-                  { id: 'all-school', label: 'Toàn Trường' },
-                ].map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      playButtonClickSound();
-                      setHallOfFameFilter(item.id as any);
-                      setPodiumAnimKey(prev => prev + 1);
-                    }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                      hallOfFameFilter === item.id
-                        ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-amber-950 shadow-md border border-amber-300 scale-102'
-                        : 'text-amber-200/70 hover:text-amber-100 hover:bg-amber-950/50'
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* 3D Podium Hall of Fame Showcase with Student Hopping Animation */}
-              <div key={podiumAnimKey} className="grid grid-cols-3 gap-3 sm:gap-6 items-end justify-center mb-8 pt-4">
-                
-                {/* 🥈 TOP 2 SILVER (LEFT) */}
-                <div className="flex flex-col items-center space-y-2 animate-podium-hop-2">
-                  {top2 ? (
-                    <>
-                      <div className="relative group cursor-pointer">
-                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-4 border-slate-300 shadow-[0_0_25px_rgba(203,213,225,0.7)] overflow-hidden flex items-center justify-center bg-slate-800">
-                          {top2.avatarUrl ? (
-                            <img src={top2.avatarUrl} alt={top2.name} className="w-full h-full object-cover" />
-                          ) : (
-                            <span className="text-2xl">{getAvatarData(top2).emoji}</span>
-                          )}
-                        </div>
-                        <span className="absolute -top-2 -right-1 bg-gradient-to-r from-slate-300 to-slate-400 text-slate-900 w-7 h-7 rounded-full font-black text-xs flex items-center justify-center border border-white shadow-md">
-                          🥈
-                        </span>
-                      </div>
-                      <div className="text-center">
-                        <h4 className="font-extrabold text-xs sm:text-sm text-slate-200 truncate max-w-[100px] sm:max-w-[130px]">{top2.name}</h4>
-                        <span className="text-[10px] font-bold text-slate-400 block">Lớp: {top2.classId}</span>
-                        <span className="inline-block mt-1 bg-slate-200/20 text-slate-200 font-black text-[11px] px-2.5 py-0.5 rounded-full border border-slate-300/30">
-                          {getStarsForPeriod(top2.id, 'month')} ⭐
-                        </span>
-                      </div>
-                    </>
-                  ) : (
-                    <span className="text-xs text-slate-500">Chưa có</span>
-                  )}
-                  {/* Podium Base */}
-                  <div className="w-full bg-gradient-to-b from-slate-400/30 to-slate-600/40 rounded-t-xl h-16 flex items-center justify-center font-black text-slate-300 text-sm border-t-2 border-slate-300">
-                    TOP 2
-                  </div>
-                </div>
-
-                {/* 🥇 TOP 1 GOLD CHAMPION (CENTER - HIGHEST) */}
-                <div className="flex flex-col items-center space-y-2 -translate-y-3 animate-podium-hop-1">
-                  {top1 ? (
-                    <>
-                      <div className="relative group cursor-pointer">
-                        {/* Crown */}
-                        <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-2xl animate-bounce">
-                          👑
-                        </div>
-                        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-amber-400 shadow-[0_0_35px_rgba(251,191,36,0.9)] overflow-hidden flex items-center justify-center bg-amber-950 ring-4 ring-amber-300/40">
-                          {top1.avatarUrl ? (
-                            <img src={top1.avatarUrl} alt={top1.name} className="w-full h-full object-cover" />
-                          ) : (
-                            <span className="text-3xl">{getAvatarData(top1).emoji}</span>
-                          )}
-                        </div>
-                        <span className="absolute -top-1 -right-1 bg-gradient-to-r from-amber-400 to-yellow-500 text-amber-950 w-8 h-8 rounded-full font-black text-sm flex items-center justify-center border-2 border-white shadow-lg">
-                          🥇
-                        </span>
-                      </div>
-                      <div className="text-center">
-                        <h4 className="font-black text-sm sm:text-base text-amber-300 truncate max-w-[120px] sm:max-w-[150px] drop-shadow-md">{top1.name}</h4>
-                        <span className="text-[11px] font-extrabold text-amber-200/90 block">Lớp: {top1.classId}</span>
-                        <span className="inline-block mt-1 bg-gradient-to-r from-amber-500 to-yellow-500 text-amber-950 font-black text-xs px-3 py-0.5 rounded-full shadow-md border border-yellow-300">
-                          {getStarsForPeriod(top1.id, 'month')} ⭐
-                        </span>
-                      </div>
-                    </>
-                  ) : (
-                    <span className="text-xs text-amber-500">Chưa có</span>
-                  )}
-                  {/* Podium Base */}
-                  <div className="w-full bg-gradient-to-b from-amber-400/40 to-amber-600/50 rounded-t-xl h-24 flex items-center justify-center font-black text-amber-300 text-base border-t-2 border-amber-400 shadow-lg">
-                    QUÁN QUÂN
-                  </div>
-                </div>
-
-                {/* 🥉 TOP 3 BRONZE (RIGHT) */}
-                <div className="flex flex-col items-center space-y-2 animate-podium-hop-3">
-                  {top3 ? (
-                    <>
-                      <div className="relative group cursor-pointer">
-                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-4 border-amber-700 shadow-[0_0_25px_rgba(217,119,6,0.7)] overflow-hidden flex items-center justify-center bg-amber-950">
-                          {top3.avatarUrl ? (
-                            <img src={top3.avatarUrl} alt={top3.name} className="w-full h-full object-cover" />
-                          ) : (
-                            <span className="text-2xl">{getAvatarData(top3).emoji}</span>
-                          )}
-                        </div>
-                        <span className="absolute -top-2 -right-1 bg-gradient-to-r from-amber-600 to-amber-800 text-white w-7 h-7 rounded-full font-black text-xs flex items-center justify-center border border-white shadow-md">
-                          🥉
-                        </span>
-                      </div>
-                      <div className="text-center">
-                        <h4 className="font-extrabold text-xs sm:text-sm text-amber-200/90 truncate max-w-[100px] sm:max-w-[130px]">{top3.name}</h4>
-                        <span className="text-[10px] font-bold text-amber-300/70 block">Lớp: {top3.classId}</span>
-                        <span className="inline-block mt-1 bg-amber-700/30 text-amber-200 font-black text-[11px] px-2.5 py-0.5 rounded-full border border-amber-600/30">
-                          {getStarsForPeriod(top3.id, 'month')} ⭐
-                        </span>
-                      </div>
-                    </>
-                  ) : (
-                    <span className="text-xs text-amber-500">Chưa có</span>
-                  )}
-                  {/* Podium Base */}
-                  <div className="w-full bg-gradient-to-b from-amber-700/30 to-amber-900/40 rounded-t-xl h-12 flex items-center justify-center font-black text-amber-400 text-xs border-t-2 border-amber-600">
-                    TOP 3
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Celebration Action Controls */}
-              <div className="flex flex-col sm:flex-row gap-2.5 pt-2 border-t border-amber-600/30">
-                <button
-                  onClick={() => {
-                    setPodiumAnimKey(prev => prev + 1);
-                    playButtonClickSound();
-                  }}
-                  className="bg-amber-900/60 hover:bg-amber-800/80 text-amber-200 font-black text-xs py-3 px-4 rounded-2xl border border-amber-600/40 transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-1.5"
-                  title="Bấm để trình diễn lại hiệu ứng 3D nhân vật nhảy lên bục vinh danh"
-                >
-                  <span>🏃 Nhảy Lên Bục Lại</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setPodiumAnimKey(prev => prev + 1);
-                    triggerVictoryConfetti();
-                    playVictoryFanfareSound();
-                  }}
-                  className="flex-1 bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-600 hover:to-yellow-600 text-amber-950 font-black text-xs py-3 px-4 rounded-2xl shadow-lg border border-amber-300 flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95"
-                >
-                  <span>🎆 Bắn Pháo Hoa & Nhạc Mừng</span>
-                </button>
-                <button
-                  onClick={() => { setIsMonthlyHallOfFameOpen(false); scrollToFormTop(); }}
-                  className="bg-amber-950/80 hover:bg-amber-900 text-amber-200 font-bold text-xs py-3 px-5 rounded-2xl border border-amber-700/50 transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-1.5"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  <span>Quay Lại</span>
-                </button>
-              </div>
-
-            </div>
-          </div>
-        );
-      })()}
-
     </div>
   );
 }
