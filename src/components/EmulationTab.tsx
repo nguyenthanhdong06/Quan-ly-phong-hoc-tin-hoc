@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Student, EmulationDataState, SeatingChart, Computer, ClassItem, Grade, EvaluationData } from '../types';
-import { Award, ShoppingBag, HelpCircle, Search, Sparkles, Check, Star, X, BarChart3, Trophy, TrendingUp, Calendar, Clock, Award as AwardIcon } from 'lucide-react';
+import { Award, ShoppingBag, HelpCircle, Search, Sparkles, Check, Star, X, BarChart3, Trophy, TrendingUp, Calendar, Clock, Award as AwardIcon, ArrowLeft } from 'lucide-react';
 import FireworksCelebration from './FireworksCelebration';
 import { triggerVictoryConfetti } from '../utils/confetti';
 import { playVictoryFanfareSound, playButtonClickSound } from '../utils/audioEffects';
@@ -230,11 +230,19 @@ export default function EmulationTab({
     return () => clearInterval(timer);
   }, []);
 
+  // Helper Cuộn Mượt (Smooth Scroll) lên đầu trang khi mở Inline Sub-View
+  const scrollToFormTop = () => {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   const handleOpenMonthlyHallOfFame = () => {
     setIsMonthlyHallOfFameOpen(true);
     setPodiumAnimKey(prev => prev + 1);
     triggerVictoryConfetti();
     playVictoryFanfareSound();
+    scrollToFormTop();
   };
   
   // Emulation Period filter state for BẢNG VÀNG VINH DANH KHỐI
@@ -895,6 +903,7 @@ export default function EmulationTab({
                               onClick={() => {
                                 setViewingDetailClassId(classData.id);
                                 setClassSearchTerm('');
+                                scrollToFormTop();
                               }}
                               className="bg-blue-50 hover:bg-blue-100 text-blue-600 px-3.5 py-1.5 rounded-xl border border-blue-150 font-black text-[10px] uppercase transition-all cursor-pointer"
                             >
@@ -1164,7 +1173,10 @@ export default function EmulationTab({
                 return (
                   <div 
                     key={s.id} 
-                    onClick={() => setSelectedStudentForReward(s)}
+                    onClick={() => {
+                      setSelectedStudentForReward(s);
+                      scrollToFormTop();
+                    }}
                     className="bg-white p-4 rounded-3xl border border-amber-300/80 shadow-[0_6px_0_0_#f59e0b,0_10px_20px_rgba(245,158,11,0.2)] hover:shadow-[0_9px_0_0_#d97706,0_15px_25px_rgba(245,158,11,0.3)] hover:-translate-y-1 active:translate-y-0.5 active:shadow-[0_2px_0_0_#b45309] transition-all flex flex-col items-center justify-center relative text-center select-none cursor-pointer group duration-150 min-h-[180px] h-[180px] overflow-hidden"
                   >
                     {/* Honey Beehive Frame Decoration */}
@@ -1349,23 +1361,34 @@ export default function EmulationTab({
         ];
 
         return (
-          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4">
-            <div className="relative bg-white rounded-3xl w-full max-w-4xl overflow-hidden shadow-2xl border border-slate-100 flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
+          <div className="max-w-4xl mx-auto space-y-6 animate-fadeIn text-left mt-4">
+            <div className="bg-[#fffbf0] rounded-3xl border border-[#cbb89d] p-6 sm:p-8 space-y-6 shadow-sm relative">
               
-              {/* Close Button at top-right */}
-              <button
-                onClick={() => setSelectedStudentForReward(null)}
-                className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-2 rounded-full transition-all cursor-pointer z-20"
-                title="Đóng"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              {/* Header with Return Button */}
+              <div className="border-b border-[#cbb89d]/70 pb-4 flex items-center justify-between gap-4">
+                <div>
+                  <span className="bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
+                    CỬA HÀNG ĐỔI THƯỞNG STICKER
+                  </span>
+                  <h3 className="text-xl font-black text-slate-900 mt-2">
+                    Đổi Quà Tích Lũy Cho: {s.name} (Lớp {s.classId})
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setSelectedStudentForReward(null); scrollToFormTop(); }}
+                  className="text-xs text-slate-700 hover:text-slate-900 font-bold px-4 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 transition cursor-pointer flex items-center gap-1.5 active:scale-95 shadow-2xs shrink-0"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Quay lại danh sách đổi thưởng</span>
+                </button>
+              </div>
 
-              {/* Modal Content */}
-              <div className="p-6 space-y-6 overflow-y-auto flex-1 text-left">
+              {/* View Content */}
+              <div className="space-y-6 text-left">
                 
                 {/* Official Student ID Card with thehocsinh.png Frame */}
-                <div className="flex justify-center py-2 bg-slate-50/80 rounded-2xl border border-slate-100 p-4 shadow-inner">
+                <div className="flex justify-center py-2 bg-white/80 rounded-2xl border border-amber-200/60 p-4 shadow-inner">
                   <StudentCard3D
                     student={s}
                     classStudents={classStudents}
@@ -1387,7 +1410,7 @@ export default function EmulationTab({
                       return (
                         <div 
                           key={reward.name}
-                          className={`p-4 border rounded-2xl transition-all relative flex flex-col justify-between items-center text-center min-h-[260px] group ${
+                          className={`p-4 border rounded-2xl transition-all relative flex flex-col justify-between items-center text-center min-h-[260px] group bg-white ${
                             isAffordable 
                               ? reward.colorClass + ' cursor-pointer shadow-xs hover:shadow-md' 
                               : 'bg-slate-50/50 border-slate-100 opacity-60'
@@ -1418,7 +1441,7 @@ export default function EmulationTab({
                             />
                           </div>
 
-                          {/* Sticker Label & Details (Placed below the 3D sticker icon) */}
+                          {/* Sticker Label & Details */}
                           <div className="flex-1 flex flex-col items-center justify-center px-1">
                             <strong className="text-[11px] font-black text-slate-800 block leading-tight uppercase tracking-wide">
                               {reward.label}
@@ -1453,7 +1476,7 @@ export default function EmulationTab({
                 </div>
 
                 {/* Exchanged Badges / History */}
-                <div className="border-t pt-4">
+                <div className="border-t border-[#cbb89d]/50 pt-4">
                   <h5 className="font-extrabold text-slate-800 text-xs uppercase tracking-wider mb-2">Lịch Sử Đổi Thưởng ({emulationObj.exchangedStickers || 0} lần)</h5>
                   {emulationObj.badges && emulationObj.badges.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
@@ -1474,13 +1497,14 @@ export default function EmulationTab({
 
               </div>
 
-              {/* Modal Footer */}
-              <div className="p-4 bg-slate-50 border-t flex justify-end">
+              {/* View Footer */}
+              <div className="pt-4 border-t border-[#cbb89d]/50 flex justify-end">
                 <button
-                  onClick={() => setSelectedStudentForReward(null)}
-                  className="bg-slate-250 hover:bg-slate-350 text-slate-700 font-extrabold text-xs py-2 px-5 rounded-xl border border-slate-300 transition-colors cursor-pointer"
+                  onClick={() => { setSelectedStudentForReward(null); scrollToFormTop(); }}
+                  className="px-5 py-2.5 rounded-2xl border border-slate-300 bg-white text-slate-700 font-bold hover:bg-slate-50 transition cursor-pointer flex items-center gap-1.5 active:scale-95 text-xs uppercase"
                 >
-                  Đóng
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Quay Lại</span>
                 </button>
               </div>
 
@@ -1489,30 +1513,37 @@ export default function EmulationTab({
         );
       })()}
 
-      {/* POPUP MODAL: CHI TIẾT THI ĐUA TỪNG HỌC SINH CỦA LỚP */}
+      {/* INLINE VIEW: CHI TIẾT THI ĐUA TỪNG HỌC SINH CỦA LỚP */}
       {viewingDetailClassId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
-          <div className="bg-white rounded-3xl w-full max-w-4xl md:max-w-5xl max-h-[85vh] flex flex-col overflow-hidden border-2 border-indigo-500 shadow-2xl animate-in zoom-in-95 duration-200">
+        <div className="max-w-5xl mx-auto space-y-6 animate-fadeIn text-left mt-4">
+          <div className="bg-[#fffbf0] rounded-3xl border border-[#cbb89d] p-6 sm:p-8 space-y-6 shadow-sm relative">
             
-            {/* Header */}
-            <div className="bg-indigo-600 p-5 text-white flex justify-between items-center text-left">
+            {/* Header with Return Button */}
+            <div className="border-b border-[#cbb89d]/70 pb-4 flex items-center justify-between gap-4">
               <div>
-                <h3 className="font-black text-sm uppercase tracking-wider flex items-center gap-2">
-                  <Trophy className="w-5 h-5 text-amber-300" />
+                <span className="bg-indigo-100 text-indigo-900 border border-indigo-200 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
+                  BẢNG VINH DANH CHI TIẾT LỚP
+                </span>
+                <h3 className="text-xl font-black text-slate-900 mt-2 flex items-center gap-2">
+                  <Trophy className="w-5 h-5 text-amber-500" />
                   Chi Tiết Thi Đua Lớp {classes?.find(c => c.id === viewingDetailClassId)?.name || viewingDetailClassId}
                 </h3>
-                <p className="text-[10px] text-indigo-100 font-semibold">Khối {classes?.find(c => c.id === viewingDetailClassId)?.gradeId} • GVCN: {classes?.find(c => c.id === viewingDetailClassId)?.teacher || 'Đang cập nhật'}</p>
+                <p className="text-xs text-slate-500 font-semibold mt-1">
+                  Khối {classes?.find(c => c.id === viewingDetailClassId)?.gradeId} • GVCN: {classes?.find(c => c.id === viewingDetailClassId)?.teacher || 'Đang cập nhật'}
+                </p>
               </div>
               <button
-                onClick={() => setViewingDetailClassId(null)}
-                className="p-1 hover:bg-white/25 rounded-lg text-white"
+                type="button"
+                onClick={() => { setViewingDetailClassId(null); setClassSearchTerm(''); scrollToFormTop(); }}
+                className="text-xs text-slate-700 hover:text-slate-900 font-bold px-4 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 transition cursor-pointer flex items-center gap-1.5 active:scale-95 shadow-2xs shrink-0"
               >
-                <X className="w-5 h-5" />
+                <ArrowLeft className="w-4 h-4" />
+                <span>Quay lại bảng so sánh thi đua</span>
               </button>
             </div>
 
             {/* Search Student filter inside popup */}
-            <div className="p-4 bg-slate-50 border-b border-slate-100 text-left">
+            <div className="p-1 text-left">
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 flex items-center pl-3">
                   <Search className="w-3.5 h-3.5 text-slate-400" />
@@ -1522,23 +1553,23 @@ export default function EmulationTab({
                   value={classSearchTerm}
                   onChange={(e) => setClassSearchTerm(e.target.value)}
                   placeholder="Tìm kiếm học sinh trong lớp..."
-                  className="w-full text-xs pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full text-xs pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs"
                 />
               </div>
             </div>
 
             {/* Content */}
-            <div className="p-5 flex-1 overflow-y-auto space-y-4">
-              <div className="overflow-x-auto rounded-xl border border-slate-200">
+            <div className="space-y-4">
+              <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
                 <table className="w-full text-xs text-left border-collapse">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[9px] whitespace-nowrap">
-                      <th className="p-2.5 text-center w-12 whitespace-nowrap">Hạng</th>
-                      <th className="p-2.5 whitespace-nowrap">Tên Học Sinh</th>
-                      <th className="p-2.5 text-right whitespace-nowrap">Tổng Sao Tích Lũy</th>
-                      <th className="p-2.5 text-right whitespace-nowrap">Sticker Đã Đổi</th>
-                      <th className="p-2.5 text-right whitespace-nowrap">Sao Còn Lại</th>
-                      <th className="p-2.5 pl-4 whitespace-nowrap">Huy Hiệu Sở Hữu</th>
+                      <th className="p-3 text-center w-12 whitespace-nowrap">Hạng</th>
+                      <th className="p-3 whitespace-nowrap">Tên Học Sinh</th>
+                      <th className="p-3 text-right whitespace-nowrap">Tổng Sao Tích Lũy</th>
+                      <th className="p-3 text-right whitespace-nowrap">Sticker Đã Đổi</th>
+                      <th className="p-3 text-right whitespace-nowrap">Sao Còn Lại</th>
+                      <th className="p-3 pl-4 whitespace-nowrap">Huy Hiệu Sở Hữu</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-150 font-semibold text-slate-700">
@@ -1570,27 +1601,27 @@ export default function EmulationTab({
 
                       return filteredClassSts.map((st, idx) => (
                         <tr key={st.id} className="hover:bg-slate-50/50">
-                          <td className="p-2.5 text-center">
+                          <td className="p-3 text-center">
                             <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[9px] ${
                               idx === 0 ? 'bg-amber-100 text-amber-700 font-extrabold' : 'bg-slate-100 text-slate-600'
                             }`}>
                               {idx + 1}
                             </span>
                           </td>
-                          <td className="p-2.5 font-extrabold text-slate-900 flex items-center gap-1.5 text-left whitespace-nowrap">
+                          <td className="p-3 font-extrabold text-slate-900 flex items-center gap-1.5 text-left whitespace-nowrap">
                             <span>{getStudentAvatar(st.id, students).emoji}</span>
                             <span>{st.name}</span>
                           </td>
-                          <td className="p-2.5 text-right text-slate-900">
+                          <td className="p-3 text-right text-slate-900">
                             {st.cumulativeStars} ⭐
                           </td>
-                          <td className="p-2.5 text-right text-pink-600">
+                          <td className="p-3 text-right text-pink-600">
                             {st.exchangedStickers} quà
                           </td>
-                          <td className="p-2.5 text-right text-emerald-600">
+                          <td className="p-3 text-right text-emerald-600">
                             {st.currentStars} ⭐
                           </td>
-                          <td className="p-2.5 pl-4">
+                          <td className="p-3 pl-4">
                             {st.badges.length > 0 ? (
                               <div className="flex flex-wrap gap-1">
                                 {st.badges.map((b, i) => (
@@ -1612,15 +1643,17 @@ export default function EmulationTab({
             </div>
 
             {/* Footer */}
-            <div className="p-4 bg-slate-50 border-t border-slate-150 flex justify-end">
+            <div className="pt-4 border-t border-[#cbb89d]/50 flex justify-end">
               <button
                 onClick={() => {
                   setViewingDetailClassId(null);
                   setClassSearchTerm('');
+                  scrollToFormTop();
                 }}
-                className="px-5 py-2 bg-slate-250 hover:bg-slate-350 text-slate-700 rounded-xl text-xs font-black uppercase cursor-pointer"
+                className="px-5 py-2.5 rounded-2xl border border-slate-300 bg-white text-slate-700 font-bold hover:bg-slate-50 transition cursor-pointer flex items-center gap-1.5 active:scale-95 text-xs uppercase"
               >
-                Đóng
+                <ArrowLeft className="w-4 h-4" />
+                <span>Quay Lại</span>
               </button>
             </div>
           </div>
@@ -1662,24 +1695,29 @@ export default function EmulationTab({
         const getAvatarData = (s?: Student) => s ? getStudentAvatar(s.id, students) : { emoji: '⭐', bg: 'bg-amber-50' };
 
         return (
-          <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
-            <div className="bg-gradient-to-b from-[#2b1f13] via-[#3d2c1b] to-[#1e150d] border-2 border-amber-500/80 rounded-3xl p-5 sm:p-7 max-w-2xl w-full text-white shadow-[0_0_60px_rgba(245,158,11,0.35)] relative overflow-hidden animate-in zoom-in-95 duration-300">
+          <div className="max-w-4xl mx-auto space-y-6 animate-fadeIn text-left mt-4">
+            <div className="bg-gradient-to-b from-[#2b1f13] via-[#3d2c1b] to-[#1e150d] border-2 border-amber-500/80 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl text-white relative overflow-hidden">
               
-              {/* Top Close Button */}
-              <button 
-                onClick={() => setIsMonthlyHallOfFameOpen(false)}
-                className="absolute top-4 right-4 text-amber-200/80 hover:text-white bg-amber-950/60 hover:bg-amber-900/80 p-2 rounded-full transition-all cursor-pointer border border-amber-600/40"
-                title="Đóng bảng vinh danh"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              {/* Header with Return Button */}
+              <div className="border-b border-amber-600/30 pb-4 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-amber-950 px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest shadow-md">
+                    <Trophy className="w-4 h-4 fill-amber-950" />
+                    <span>BẢNG VINH DANH THÁNG</span>
+                  </div>
+                </div>
+                <button 
+                  type="button"
+                  onClick={() => { setIsMonthlyHallOfFameOpen(false); scrollToFormTop(); }}
+                  className="text-xs text-amber-200 hover:text-white font-bold px-4 py-2 rounded-xl border border-amber-600/40 bg-amber-950/60 hover:bg-amber-900/80 transition cursor-pointer flex items-center gap-1.5 active:scale-95 shrink-0"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Quay lại trang thi đua</span>
+                </button>
+              </div>
 
               {/* Celebration Title */}
               <div className="text-center space-y-1.5 mb-5">
-                <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-amber-950 px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest shadow-md">
-                  <Trophy className="w-4 h-4 fill-amber-950" />
-                  <span>BẢNG VINH DANH THÁNG</span>
-                </div>
                 <h2 className="text-xl sm:text-2xl font-black text-amber-300 tracking-tight drop-shadow-md">
                   🏆 TOP 3 HỌC SINH XUẤT SẮC NHẤT THÁNG 🏆
                 </h2>
@@ -1688,7 +1726,7 @@ export default function EmulationTab({
                 </p>
               </div>
 
-              {/* Grade & Scope Filter Pills (Request 2: Hiệu Ứng Bục Vinh Danh Xếp Hạng Khối) */}
+              {/* Grade & Scope Filter Pills */}
               <div className="flex flex-wrap items-center justify-center gap-1.5 mb-6 bg-[#1a110a] p-1.5 rounded-2xl border border-amber-600/30">
                 {[
                   { id: 'current-class', label: `Lớp ${selectedClass || ''}` },
@@ -1824,7 +1862,7 @@ export default function EmulationTab({
               </div>
 
               {/* Celebration Action Controls */}
-              <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
+              <div className="flex flex-col sm:flex-row gap-2.5 pt-2 border-t border-amber-600/30">
                 <button
                   onClick={() => {
                     setPodiumAnimKey(prev => prev + 1);
@@ -1846,10 +1884,11 @@ export default function EmulationTab({
                   <span>🎆 Bắn Pháo Hoa & Nhạc Mừng</span>
                 </button>
                 <button
-                  onClick={() => setIsMonthlyHallOfFameOpen(false)}
-                  className="bg-amber-950/80 hover:bg-amber-900 text-amber-200 font-bold text-xs py-3 px-5 rounded-2xl border border-amber-700/50 transition-all cursor-pointer active:scale-95"
+                  onClick={() => { setIsMonthlyHallOfFameOpen(false); scrollToFormTop(); }}
+                  className="bg-amber-950/80 hover:bg-amber-900 text-amber-200 font-bold text-xs py-3 px-5 rounded-2xl border border-amber-700/50 transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-1.5"
                 >
-                  Xong & Đóng
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Quay Lại</span>
                 </button>
               </div>
 
