@@ -410,6 +410,7 @@ export default function EvaluationTab({
                   machineName={seatObj ? seatObj.name : 'Chưa xếp máy'}
                   starCount={currentStars}
                   size="sm"
+                  isAbsent={isAbsent}
                 />
               </div>
             );

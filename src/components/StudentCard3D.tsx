@@ -10,6 +10,7 @@ interface StudentCard3DProps {
   starCount?: number;
   className?: string;
   size?: 'xs' | 'sm' | 'md' | 'lg';
+  isAbsent?: boolean;
 }
 
 export const StudentCard3D: React.FC<StudentCard3DProps> = ({
@@ -19,6 +20,7 @@ export const StudentCard3D: React.FC<StudentCard3DProps> = ({
   starCount = 0,
   className = '',
   size = 'sm',
+  isAbsent = false,
 }) => {
   const isFemale = student.gender === 'Nữ';
 
@@ -59,13 +61,17 @@ export const StudentCard3D: React.FC<StudentCard3DProps> = ({
 
   const cardBgImage = isFemale ? '/thehocsinhnu.webp?v=4' : '/thehocsinhnam.webp?v=4';
   const fallbackBgImage = isFemale ? '/thehocsinhnu.png?v=4' : '/thehocsinhnam.png?v=4';
-  const aspectClass = isFemale ? 'aspect-[353/484]' : 'aspect-[354/460]';
+  
+  // Standardized aspect ratio aspect-[354/470] ensures 100% equal card height & width across all genders
+  const aspectClass = 'aspect-[354/470]';
 
   return (
     <div className={`relative mx-auto select-none ${widthClasses} ${className}`}>
-      {/* 3D Container with exact native aspect ratio for female (353x484) or male (354x460) */}
+      {/* 3D Container with standardized aspect ratio for 100% synchronized card sizes */}
       <div 
-        className={`relative w-full ${aspectClass} rounded-2xl sm:rounded-3xl overflow-hidden shadow-md border border-slate-300/80 transition-all duration-300 hover:shadow-xl hover:scale-[1.015]`}
+        className={`relative w-full ${aspectClass} rounded-2xl sm:rounded-3xl overflow-hidden shadow-md border border-slate-300/80 transition-all duration-300 hover:shadow-xl hover:scale-[1.015] ${
+          isAbsent ? 'opacity-85 filter grayscale-[20%]' : ''
+        }`}
       >
         {/* Background Card Image: /thehocsinhnu.webp or /thehocsinhnam.webp */}
         <img
@@ -76,6 +82,13 @@ export const StudentCard3D: React.FC<StudentCard3DProps> = ({
           }}
           className="absolute inset-0 w-full h-full object-fill pointer-events-none z-0 select-none"
         />
+
+        {/* Optional Absent Badge Indicator at Top Left */}
+        {isAbsent && (
+          <div className="absolute top-2 left-2 z-20 bg-rose-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-md border border-rose-300 flex items-center gap-1 uppercase tracking-wider animate-pulse">
+            <span>⚠️ Vắng</span>
+          </div>
+        )}
 
         {/* ==================================================================== */}
         {/* VỊ TRÍ SỐ 1: SỐ SAO HIỆN CÓ (Top Right inside white board box)       */}
