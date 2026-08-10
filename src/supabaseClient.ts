@@ -48,24 +48,20 @@ CREATE POLICY "Cho phép truy cập công khai Delete" ON school_states FOR DELE
 `;
 
 /**
- * Load all states from Supabase at once
+ * Load all states from Supabase at once with auto-retry
  */
 export async function loadAllSupabaseStates(): Promise<Record<string, any>> {
-  if (!isSupabaseOnline) {
-    console.info('Supabase client is currently offline. Skipping fetch.');
-    return {};
-  }
   try {
     const { data, error } = await supabase
       .from('school_states')
       .select('*');
 
     if (error) {
-      console.warn('Supabase fetch error, using local storage/mock fallback:', error.message);
+      console.warn('Supabase fetch warning, using local storage fallback:', error.message);
       return {};
     }
 
-    isSupabaseOnline = true; // Successfully connected
+    isSupabaseOnline = true; // Connection healthy
 
     if (!data || data.length === 0) {
       return {};
@@ -74,31 +70,26 @@ export async function loadAllSupabaseStates(): Promise<Record<string, any>> {
     const stateMap: Record<string, any> = {};
     data.forEach((row: any) => {
       stateMap[row.key] = row.value;
+      // Sync loaded cloud state to LocalStorage for instant local cache availability
+      safeSetLocalStorage(row.key, row.value);
     });
     return stateMap;
   } catch (err: any) {
     const errMsg = err?.message || String(err);
     console.warn('Error in loadAllSupabaseStates:', errMsg);
-    if (errMsg.includes('Failed to fetch') || errMsg.includes('fetch') || errMsg.includes('NetworkError')) {
-      isSupabaseOnline = false;
-      console.warn('Supabase offline or unreachable. Background auto-sync is disabled to prevent user warnings.');
-    }
+    isSupabaseOnline = false;
     return {};
   }
 }
 
 /**
- * Save state key-value to Supabase
+ * Save state key-value to Supabase with auto-reconnect
  */
 export async function saveSupabaseState(key: string, value: any): Promise<boolean> {
   // Sync to localStorage first for instant client responsiveness
   safeSetLocalStorage(key, value);
 
-  if (!isSupabaseOnline) {
-    return false;
-  }
-
-  // Then save to Supabase database
+  // Always attempt saving to Supabase database
   try {
     const { error } = await supabase
       .from('school_states')
@@ -112,14 +103,12 @@ export async function saveSupabaseState(key: string, value: any): Promise<boolea
       console.warn(`Supabase upsert failed for key [${key}]:`, error.message);
       return false;
     }
+    isSupabaseOnline = true; // Connection healthy
     return true;
   } catch (err: any) {
     const errMsg = err?.message || String(err);
     console.warn(`Error saving to Supabase for key [${key}]:`, errMsg);
-    if (errMsg.includes('Failed to fetch') || errMsg.includes('fetch') || errMsg.includes('NetworkError')) {
-      isSupabaseOnline = false;
-      console.warn('Supabase offline or unreachable. Background auto-sync is disabled to prevent user warnings.');
-    }
+    isSupabaseOnline = false;
     return false;
   }
 }
