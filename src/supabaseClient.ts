@@ -45,6 +45,9 @@ CREATE POLICY "Cho phép truy cập công khai Select" ON school_states FOR SELE
 CREATE POLICY "Cho phép truy cập công khai Insert" ON school_states FOR INSERT WITH CHECK (true);
 CREATE POLICY "Cho phép truy cập công khai Update" ON school_states FOR UPDATE USING (true);
 CREATE POLICY "Cho phép truy cập công khai Delete" ON school_states FOR DELETE USING (true);
+
+-- 4. Kích hoạt tính năng Realtime đồng bộ hai chiều tức thì giữa Localhost và Vercel
+ALTER PUBLICATION supabase_realtime ADD TABLE school_states;
 `;
 
 /**

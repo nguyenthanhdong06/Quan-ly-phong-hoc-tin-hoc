@@ -37,7 +37,7 @@ import { SciFi3DPopupFrame } from './components/SciFi3DPopupFrame';
 import { CalendarCheck } from 'lucide-react';
 
 // Supabase services
-import { loadAllSupabaseStates, saveSupabaseState, setSupabaseOnline } from './supabaseClient';
+import { supabase, loadAllSupabaseStates, saveSupabaseState, setSupabaseOnline } from './supabaseClient';
 import { safeSetLocalStorage } from './utils/safeStorage';
 import { verifyPassword, sanitizeInput } from './utils/security';
 import { createSessionId, setLocalSession, getLocalSession, clearLocalSession } from './features/auth/multiDeviceSession';
@@ -332,17 +332,96 @@ export default function App() {
     syncFromSupabase();
   }, []);
 
-  // --- BACKGROUND CLOUD SYNC FOR AVATARS ON WINDOW FOCUS ---
+  // --- REALTIME TWO-WAY CLOUD SYNC BETWEEN LOCALHOST AND VERCEL ---
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    // Helper to update local state from incoming Cloud payload
+    const applyCloudState = (key: string, value: any) => {
+      safeSetLocalStorage(key, value);
+      switch (key) {
+        case 'school_grades': setGrades(value); break;
+        case 'school_classes': setClasses(value); break;
+        case 'school_students': setStudents(value); break;
+        case 'school_computers': setComputers(value); break;
+        case 'school_seating_chart': setSeatingChart(value); break;
+        case 'school_attendance_data': setAttendanceData(value); break;
+        case 'school_evaluation_data': setEvaluationData(value); break;
+        case 'school_emulation_state': setEmulationDataState(value); break;
+        case 'school_documents': setDocuments(value); break;
+        case 'school_members': setMembers(value); break;
+        case 'school_timetable_data': setTimetableData(value); break;
+        case 'school_quotes': setQuotes(value); break;
+        case 'school_lab_bookings': setLabBookings(value); break;
+        case 'school_lab_incidents': setLabIncidents(value); break;
+        case 'school_lab_maintenance_logs': setLabMaintenanceLogs(value); break;
+        case 'school_labs': setLabs(value); break;
+        case 'custom_avatars_list':
+          if (Array.isArray(value)) {
+            window.dispatchEvent(new CustomEvent('custom_avatars_updated', { detail: value }));
+          }
+          break;
+      }
+    };
+
+    // 1. Listen to Realtime Postgres Changes via Supabase WebSocket Channel
+    const channel = supabase
+      .channel('school_states_realtime_sync')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'school_states'
+        },
+        (payload: any) => {
+          if (payload.new && payload.new.key) {
+            const { key, value } = payload.new;
+            applyCloudState(key, value);
+          }
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('⚡ Realtime Supabase 2-way sync connected! Localhost ↔ Vercel active.');
+        }
+      });
+
+    // 2. Periodic background poll (every 10s) to guarantee zero data drift across all sessions
+    const interval = setInterval(async () => {
+      try {
+        const dbStates = await loadAllSupabaseStates();
+        if (dbStates && Object.keys(dbStates).length > 0) {
+          Object.keys(dbStates).forEach(key => {
+            applyCloudState(key, dbStates[key]);
+          });
+        }
+      } catch (e) {
+        // Silent background check
+      }
+    }, 10000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(interval);
+    };
+  }, [isLoaded]);
+
+  // --- BACKGROUND CLOUD SYNC FOR AVATARS & DATA ON WINDOW FOCUS ---
   useEffect(() => {
     const handleFocusOrVisibility = async () => {
       try {
         const dbStates = await loadAllSupabaseStates();
-        if (dbStates && dbStates['custom_avatars_list'] && Array.isArray(dbStates['custom_avatars_list'])) {
-          safeSetLocalStorage('custom_avatars_list', dbStates['custom_avatars_list']);
-          window.dispatchEvent(new CustomEvent('custom_avatars_updated', { detail: dbStates['custom_avatars_list'] }));
-        }
-        if (dbStates && dbStates['school_students'] && Array.isArray(dbStates['school_students'])) {
-          setStudents(dbStates['school_students']);
+        if (dbStates && Object.keys(dbStates).length > 0) {
+          if (dbStates['custom_avatars_list'] && Array.isArray(dbStates['custom_avatars_list'])) {
+            safeSetLocalStorage('custom_avatars_list', dbStates['custom_avatars_list']);
+            window.dispatchEvent(new CustomEvent('custom_avatars_updated', { detail: dbStates['custom_avatars_list'] }));
+          }
+          if (dbStates['school_students']) setStudents(dbStates['school_students']);
+          if (dbStates['school_seating_chart']) setSeatingChart(dbStates['school_seating_chart']);
+          if (dbStates['school_attendance_data']) setAttendanceData(dbStates['school_attendance_data']);
+          if (dbStates['school_evaluation_data']) setEvaluationData(dbStates['school_evaluation_data']);
+          if (dbStates['school_emulation_state']) setEmulationDataState(dbStates['school_emulation_state']);
         }
       } catch (e) {
         // Silent background check
