@@ -19,13 +19,14 @@ import {
   SlidersHorizontal,
   Filter
 } from 'lucide-react';
-import { Student, ClassItem, GardenStudentData, GardenReward, WaterLog } from '../types';
+import { Student, ClassItem, GardenStudentData, GardenReward, WaterLog, CustomSeedSet } from '../types';
 import { triggerStarsConfetti } from '../utils/confetti';
 import { 
   playStarRewardSound, 
   playVictoryFanfareSound, 
   playWarningDeductSound
 } from '../utils/audioEffects';
+import { saveSupabaseState } from '../supabaseClient';
 
 interface KnowledgeGardenTabProps {
   students: Student[];
@@ -48,6 +49,24 @@ export const GARDEN_STAGES = [
 
 // Seed Option Mặc Định
 const DEFAULT_SEED_NAME = '🌸 Cây Hoa Đào';
+
+// Mẫu Bộ Hạt Giống Mặc Định
+const DEFAULT_CUSTOM_SEED_SETS: CustomSeedSet[] = [
+  {
+    id: 'seed-set-test',
+    name: 'Test',
+    icon: '🌾',
+    levels: {
+      1: 'hoadao1.webp?v=4',
+      2: 'hoadao2.webp?v=4',
+      3: 'hoadao3.webp?v=4',
+      4: 'hoadao4.webp?v=4',
+      5: 'hoadao5.webp?v=4',
+      6: 'hoadao6.webp?v=4',
+      7: 'hoadao7.webp?v=4'
+    }
+  }
+];
 
 // Danh Sách Quà Mặc Định
 const DEFAULT_REWARDS: GardenReward[] = [
@@ -96,7 +115,58 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
   const [classStageFilter, setClassStageFilter] = useState<string>('ALL');
   const [teacherSearch, setTeacherSearch] = useState('');
 
-  // Modals state
+  // Custom Seed Sets Collection (7 Levels)
+  const [customSeedSets, setCustomSeedSets] = useState<CustomSeedSet[]>(() => {
+    try {
+      const saved = localStorage.getItem('deskos_custom_seed_sets_v1');
+      return saved ? JSON.parse(saved) : DEFAULT_CUSTOM_SEED_SETS;
+    } catch (e) {
+      return DEFAULT_CUSTOM_SEED_SETS;
+    }
+  });
+
+  // Seed Bank Modals State
+  const [isSeedBankModalOpen, setIsSeedBankModalOpen] = useState<boolean>(false);
+  const [isSeedFormModalOpen, setIsSeedFormModalOpen] = useState<boolean>(false);
+  const [editingSeedSet, setEditingSeedSet] = useState<CustomSeedSet | null>(null);
+  const [seedSetName, setSeedSetName] = useState<string>('');
+  const [seedSetLevels, setSeedSetLevels] = useState<{ [lvl: number]: string }>({
+    1: '', 2: '', 3: '', 4: '', 5: '', 6: '', 7: ''
+  });
+
+  // Persist Custom Seed Sets
+  useEffect(() => {
+    try {
+      localStorage.setItem('deskos_custom_seed_sets_v1', JSON.stringify(customSeedSets));
+      saveSupabaseState('school_custom_seed_sets', customSeedSets);
+    } catch (e) {}
+  }, [customSeedSets]);
+
+  // Sync Cloud Updates for Seed Sets
+  useEffect(() => {
+    const handleRemoteSeedSetsUpdate = (e: any) => {
+      if (e.detail && Array.isArray(e.detail)) {
+        setCustomSeedSets(e.detail);
+      }
+    };
+    window.addEventListener('custom_seed_sets_updated', handleRemoteSeedSetsUpdate);
+    return () => {
+      window.removeEventListener('custom_seed_sets_updated', handleRemoteSeedSetsUpdate);
+    };
+  }, []);
+
+  // Helper to fetch exact stage image URL based on student's assigned seed set
+  const getStageImageUrl = (seedName: string, level: number): { url: string; fallback: string } => {
+    const customSet = customSeedSets.find(s => s.name === seedName || s.id === seedName);
+    if (customSet && customSet.levels && customSet.levels[level as keyof typeof customSet.levels]) {
+      const customImg = customSet.levels[level as keyof typeof customSet.levels];
+      if (customImg && customImg.trim()) {
+        return { url: customImg, fallback: GARDEN_STAGES[level - 1].fallbackUrl };
+      }
+    }
+    const defaultStage = GARDEN_STAGES[level - 1] || GARDEN_STAGES[0];
+    return { url: defaultStage.imgUrl, fallback: defaultStage.fallbackUrl };
+  };
   const [waterModalStudent, setWaterModalStudent] = useState<Student | null>(null);
   const [selectedWaterAmount, setSelectedWaterAmount] = useState<number>(3);
   const [waterReason, setWaterReason] = useState<string>('Hoàn thành bài tập tốt');
@@ -359,6 +429,128 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     showToast(`Đã thêm món quà mới "${item.title}" vào Cửa Hàng!`, 'success');
   };
 
+  // Seed Set Management Handlers
+  const handleOpenEditSeedSet = (set: CustomSeedSet) => {
+    setEditingSeedSet(set);
+    setSeedSetName(set.name);
+    setSeedSetLevels({
+      1: set.levels[1] || '',
+      2: set.levels[2] || '',
+      3: set.levels[3] || '',
+      4: set.levels[4] || '',
+      5: set.levels[5] || '',
+      6: set.levels[6] || '',
+      7: set.levels[7] || ''
+    });
+    setIsSeedFormModalOpen(true);
+  };
+
+  const handleSaveSeedSet = () => {
+    if (!seedSetName.trim()) {
+      showToast('Vui lòng nhập tên bộ hạt giống!', 'warning');
+      return;
+    }
+
+    const newSet: CustomSeedSet = {
+      id: editingSeedSet ? editingSeedSet.id : `seed-set-${Date.now()}`,
+      name: seedSetName.trim(),
+      icon: '🌾',
+      levels: {
+        1: seedSetLevels[1] || '',
+        2: seedSetLevels[2] || '',
+        3: seedSetLevels[3] || '',
+        4: seedSetLevels[4] || '',
+        5: seedSetLevels[5] || '',
+        6: seedSetLevels[6] || '',
+        7: seedSetLevels[7] || ''
+      },
+      createdAt: editingSeedSet?.createdAt || new Date().toISOString()
+    };
+
+    if (editingSeedSet) {
+      setCustomSeedSets(prev => prev.map(s => s.id === editingSeedSet.id ? newSet : s));
+      showToast(`Đã cập nhật bộ hạt giống "${newSet.name}" thành công!`, 'success');
+    } else {
+      setCustomSeedSets(prev => [...prev, newSet]);
+      showToast(`Đã tạo bộ hạt giống mới "${newSet.name}" thành công!`, 'success');
+    }
+
+    setIsSeedFormModalOpen(false);
+    setEditingSeedSet(null);
+    setSeedSetName('');
+  };
+
+  const handleDeleteSeedSet = (id: string) => {
+    const target = customSeedSets.find(s => s.id === id);
+    if (target && window.confirm(`Xác nhận xóa bộ hạt giống "${target.name}"?`)) {
+      setCustomSeedSets(prev => prev.filter(s => s.id !== id));
+      showToast(`Đã xóa bộ hạt giống "${target.name}"!`, 'info');
+    }
+  };
+
+  const handleRandomizeSeedsForClass = () => {
+    if (classStudents.length === 0) {
+      showToast('Lớp hiện tại chưa có học sinh!', 'warning');
+      return;
+    }
+
+    const availableSets = [
+      DEFAULT_SEED_NAME,
+      ...customSeedSets.map(s => s.name)
+    ];
+
+    const updated = { ...gardenData };
+    classStudents.forEach(s => {
+      const randomSeed = availableSets[Math.floor(Math.random() * availableSets.length)];
+      const currentG = getStudentGarden(s.id);
+      updated[s.id] = {
+        ...currentG,
+        seed: randomSeed
+      };
+    });
+
+    setGardenData(updated);
+    playVictoryFanfareSound();
+    triggerStarsConfetti();
+    showToast(`🎲 Đã gán ngẫu nhiên bộ hạt giống 7 cấp cho toàn bộ ${classStudents.length} học sinh lớp ${selectedClass}!`, 'success');
+  };
+
+  const handleStudentSeedChange = (studentId: string, newSeedName: string) => {
+    const currentG = getStudentGarden(studentId);
+    setGardenData(prev => ({
+      ...prev,
+      [studentId]: {
+        ...currentG,
+        seed: newSeedName
+      }
+    }));
+    const st = students.find(s => s.id === studentId);
+    showToast(`Đã thay đổi bộ hạt giống cho ${st ? st.name : 'học sinh'} sang "${newSeedName}"!`, 'success');
+  };
+
+  const handleFileUploadForLevel = (level: number, event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('Dung lượng ảnh vượt quá 5MB. Vui lòng chọn ảnh nhỏ hơn!', 'warning');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      if (result) {
+        setSeedSetLevels(prev => ({
+          ...prev,
+          [level]: result
+        }));
+        showToast(`Đã tải ảnh Level ${level} thành công!`, 'success');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   // Export Class Garden TXT Report
   const handleExportReport = () => {
     let reportText = `📊 BÁO CÁO THI ĐUA KHU VƯỜN TRI THỨC • LỚP ${selectedClass}\n`;
@@ -582,13 +774,13 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                       className="bg-white rounded-2xl p-4 text-center border border-[#cbb89d] hover:border-emerald-500 hover:shadow-md transition-all cursor-pointer transform hover:-translate-y-1 group"
                     >
                       <img 
-                        src={currentStage.imgUrl} 
+                        src={getStageImageUrl(g.seed, currentStage.level).url} 
                         alt={currentStage.name} 
                         onError={(e) => {
                           const target = e.currentTarget as HTMLImageElement;
                           if (!target.dataset.triedFallback) {
                             target.dataset.triedFallback = 'true';
-                            target.src = currentStage.fallbackUrl;
+                            target.src = getStageImageUrl(g.seed, currentStage.level).fallback;
                           }
                         }}
                         className="h-32 w-auto object-contain mx-auto my-2 group-hover:scale-105 transition-transform filter drop-shadow-xs" 
@@ -655,7 +847,7 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                 </div>
 
                 <div className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-900 px-3.5 py-1.5 rounded-xl border border-amber-200 font-extrabold text-xs">
-                  <span>🌸 Cây Hoa Đào Tri Thức</span>
+                  <span>{activeGarden.seed || DEFAULT_SEED_NAME}</span>
                 </div>
               </div>
 
@@ -697,13 +889,13 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                 onClick={handleTreeClick}
               >
                 <img
-                  src={activeStageInfo.currentStage.imgUrl}
+                  src={getStageImageUrl(activeGarden.seed, activeStageInfo.currentStage.level).url}
                   alt={activeStageInfo.currentStage.name}
                   onError={(e) => {
                     const target = e.currentTarget as HTMLImageElement;
                     if (!target.dataset.triedFallback) {
                       target.dataset.triedFallback = 'true';
-                      target.src = activeStageInfo.currentStage.fallbackUrl;
+                      target.src = getStageImageUrl(activeGarden.seed, activeStageInfo.currentStage.level).fallback;
                     }
                   }}
                   className="h-60 sm:h-72 object-contain filter drop-shadow-md mx-auto transition-transform duration-300 hover:scale-105 active:scale-95"
@@ -936,10 +1128,17 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
               <div className="flex flex-wrap items-center gap-2">
 
                 <button
+                  onClick={() => setIsSeedBankModalOpen(true)}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-xs transition-all flex items-center gap-1.5 active:scale-95"
+                >
+                  <span>🌾</span> Kho Hạt Giống (7 Cấp)
+                </button>
+
+                <button
                   onClick={handleAddWaterToAll}
                   className="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-black text-xs shadow-xs transition-all flex items-center gap-1.5"
                 >
-                  <span>💧</span> Tặng Nước Cả Lớp (+5)
+                  <span>💧</span> Thưởng Cả Lớp (+5)
                 </button>
                 <button
                   onClick={() => setIsAddRewardModalOpen(true)}
@@ -985,7 +1184,7 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                     <tr className="bg-[#e8d7c0] border-b border-[#cbb89d] text-[#3d2b17] font-black uppercase text-[10px] tracking-wider whitespace-nowrap">
                       <th className="p-3.5 whitespace-nowrap">Học Sinh</th>
                       <th className="p-3.5 whitespace-nowrap">Mã MSHS</th>
-                      <th className="p-3.5 whitespace-nowrap">Loại Cây</th>
+                      <th className="p-3.5 whitespace-nowrap">Bộ Hạt Giống</th>
                       <th className="p-3.5 whitespace-nowrap">Cấp Độ</th>
                       <th className="p-3.5 whitespace-nowrap">Giọt Nước</th>
                       <th className="p-3.5 whitespace-nowrap">Huy Hiệu</th>
@@ -1006,7 +1205,20 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                               </div>
                             </td>
                             <td className="p-3.5 font-mono text-slate-500">{student.code}</td>
-                            <td className="p-3.5 text-slate-600">{g.seed}</td>
+                            <td className="p-3.5">
+                              <select
+                                value={g.seed || DEFAULT_SEED_NAME}
+                                onChange={(e) => handleStudentSeedChange(student.id, e.target.value)}
+                                className="px-2.5 py-1.5 text-xs font-bold rounded-xl border border-slate-300 bg-white focus:outline-none focus:border-emerald-500 text-slate-800 shadow-2xs cursor-pointer max-w-[200px]"
+                              >
+                                <option value={DEFAULT_SEED_NAME}>🌱 Tiêu chuẩn (🌸 Cây Hoa Đào)</option>
+                                {customSeedSets.map(set => (
+                                  <option key={set.id} value={set.name}>
+                                    {set.icon || '🌾'} {set.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </td>
                             <td className="p-3.5">
                               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 text-[11px] font-black border border-emerald-200">
                                 <span className="text-sm">{currentStage.icon}</span>
@@ -1231,6 +1443,215 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                 Tạo Quà Mới
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 4. KHO HẠT GIỐNG TRI THỨC (7 CẤP ĐỘ) MODAL */}
+      {isSeedBankModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-4xl w-full shadow-2xl space-y-6 my-8 border border-slate-100">
+            
+            {/* Modal Header & Quick Actions */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-4">
+              <div>
+                <h3 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2">
+                  <span>🌾</span> Kho Hạt Giống Tri Thức (7 Cấp Độ)
+                </h3>
+                <p className="text-xs font-bold text-slate-500">Tạo bộ hình ảnh tăng trưởng cây từ Level 1 đến Level 7 cho học sinh.</p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={handleRandomizeSeedsForClass}
+                  className="px-4 py-2.5 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white font-black text-xs shadow-xs transition-all flex items-center gap-1.5 active:scale-95"
+                >
+                  <span>🎲</span> Gán Ngẫu Nhiên Cho Cả Lớp
+                </button>
+
+                <button
+                  onClick={() => {
+                    setEditingSeedSet(null);
+                    setSeedSetName('');
+                    setSeedSetLevels({ 1: '', 2: '', 3: '', 4: '', 5: '', 6: '', 7: '' });
+                    setIsSeedFormModalOpen(true);
+                  }}
+                  className="px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-xs transition-all flex items-center gap-1.5 active:scale-95"
+                >
+                  <span>➕</span> Tạo Bộ Hạt Giống Mới
+                </button>
+              </div>
+            </div>
+
+            {/* Seed Sets Cards List */}
+            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+              {/* Render Default Set */}
+              <div className="bg-slate-50/80 rounded-2xl p-4 sm:p-5 border border-slate-200 space-y-3">
+                <div className="flex justify-between items-center">
+                  <h4 className="font-black text-sm text-slate-900 flex items-center gap-2">
+                    <span>🌸</span> Cây Hoa Đào (Mặc định Hệ thống)
+                  </h4>
+                  <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full">Gói mặc định</span>
+                </div>
+
+                <div className="grid grid-cols-7 gap-2">
+                  {GARDEN_STAGES.map(st => (
+                    <div key={st.level} className="bg-white rounded-xl p-2 text-center border border-slate-200/80 space-y-1">
+                      <span className="text-[10px] font-black text-slate-400 block">Lvl {st.level}</span>
+                      <img src={st.imgUrl} alt={st.name} className="h-10 w-auto object-contain mx-auto my-1" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Render Custom Seed Sets */}
+              {customSeedSets.map(set => (
+                <div key={set.id} className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-2xs space-y-3 hover:border-emerald-300 transition-colors">
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-black text-sm text-slate-900 flex items-center gap-2">
+                      <span>{set.icon || '🌾'}</span> {set.name}
+                    </h4>
+                    
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleOpenEditSeedSet(set)}
+                        className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs shadow-2xs transition-all active:scale-95"
+                      >
+                        Sửa
+                      </button>
+                      <button
+                        onClick={() => handleDeleteSeedSet(set.id)}
+                        className="px-3.5 py-1.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-black text-xs shadow-2xs transition-all active:scale-95"
+                      >
+                        Xóa
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 7 Levels Preview */}
+                  <div className="grid grid-cols-7 gap-2">
+                    {[1, 2, 3, 4, 5, 6, 7].map(lvl => {
+                      const img = set.levels[lvl as keyof typeof set.levels];
+                      const stageDefault = GARDEN_STAGES[lvl - 1];
+                      return (
+                        <div key={lvl} className="bg-slate-50 rounded-xl p-2 text-center border border-slate-200 space-y-1">
+                          <span className="text-[10px] font-black text-slate-400 block">Lvl {lvl}</span>
+                          {img ? (
+                            <img src={img} alt={`Lvl ${lvl}`} className="h-10 w-auto object-contain mx-auto my-1" />
+                          ) : (
+                            <span className="text-xl block my-1">{stageDefault.icon}</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Footer Modal Action */}
+            <div className="flex justify-end pt-2 border-t border-slate-100">
+              <button
+                onClick={() => setIsSeedBankModalOpen(false)}
+                className="px-6 py-2.5 rounded-2xl bg-slate-200 hover:bg-slate-300 font-black text-slate-700 text-xs transition-all"
+              >
+                Đóng
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* 5. THIẾT LẬP BỘ HẠT GIỐNG MỚI MODAL */}
+      {isSeedFormModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-3xl w-full shadow-2xl space-y-6 my-8 border border-slate-100">
+            
+            {/* Header */}
+            <div>
+              <h3 className="text-xl font-black text-emerald-950 flex items-center gap-2">
+                <span>🌱</span> {editingSeedSet ? 'Sửa Bộ Hạt Giống' : 'Thiết Lập Bộ Hạt Giống Mới'}
+              </h3>
+              <p className="text-xs font-bold text-slate-500">
+                Nhập tên bộ cây và tải ảnh lên từ máy tính hoặc dán Link/Google Drive cho 7 cấp độ.
+              </p>
+            </div>
+
+            {/* Name Input */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-black text-slate-700 uppercase tracking-wider">TÊN BỘ HẠT GIỐNG:</label>
+              <input
+                type="text"
+                value={seedSetName}
+                onChange={(e) => setSeedSetName(e.target.value)}
+                placeholder="VD: Cây Táo Thần 7 Màu"
+                className="w-full px-4 py-3 text-xs font-bold rounded-2xl border border-slate-200 bg-slate-50/50 focus:outline-none focus:border-emerald-500 focus:bg-white transition-all"
+              />
+            </div>
+
+            {/* 7 Level Cards Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[50vh] overflow-y-auto pr-1">
+              {[
+                { level: 1, name: 'Hạt giống', icon: '🌰' },
+                { level: 2, name: 'Nảy mầm', icon: '🌱' },
+                { level: 3, name: 'Hai lá', icon: '🌿' },
+                { level: 4, name: 'Cây non', icon: '🪴' },
+                { level: 5, name: 'Cây lớn', icon: '🌲' },
+                { level: 6, name: 'Ra hoa', icon: '🌸' },
+                { level: 7, name: 'Kết trái', icon: '🍎' },
+              ].map(st => {
+                const currentUrl = seedSetLevels[st.level as keyof typeof seedSetLevels] || '';
+                return (
+                  <div key={st.level} className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200 space-y-2.5">
+                    <div className="flex justify-between items-center font-black text-xs text-slate-800">
+                      <span className="flex items-center gap-1.5">
+                        <span>{st.icon}</span> Level {st.level}: {st.name}
+                      </span>
+                      {currentUrl && (
+                        <img src={currentUrl} alt={`Preview ${st.level}`} className="w-8 h-8 object-contain rounded-lg border border-slate-200 bg-white p-0.5" />
+                      )}
+                    </div>
+
+                    {/* Link Input */}
+                    <input
+                      type="text"
+                      value={currentUrl}
+                      onChange={(e) => setSeedSetLevels(prev => ({ ...prev, [st.level]: e.target.value }))}
+                      placeholder="Dán Link Ảnh / Google Drive"
+                      className="w-full px-3.5 py-2 text-xs font-bold rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-emerald-500"
+                    />
+
+                    {/* File Input */}
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleFileUploadForLevel(st.level, e)}
+                        className="text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-emerald-100 file:text-emerald-800 hover:file:bg-emerald-200 cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Footer Buttons */}
+            <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+              <button
+                onClick={() => setIsSeedFormModalOpen(false)}
+                className="px-6 py-2.5 rounded-2xl bg-slate-200 hover:bg-slate-300 font-black text-slate-700 text-xs transition-all"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleSaveSeedSet}
+                className="px-6 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-md transition-all active:scale-95"
+              >
+                Lưu Bộ Hạt Giống
+              </button>
+            </div>
+
           </div>
         </div>
       )}

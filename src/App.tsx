@@ -361,6 +361,11 @@ export default function App() {
             window.dispatchEvent(new CustomEvent('custom_avatars_updated', { detail: value }));
           }
           break;
+        case 'school_custom_seed_sets':
+          if (Array.isArray(value)) {
+            window.dispatchEvent(new CustomEvent('custom_seed_sets_updated', { detail: value }));
+          }
+          break;
       }
     };
 
