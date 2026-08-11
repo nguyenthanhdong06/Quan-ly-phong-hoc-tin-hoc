@@ -17,7 +17,10 @@ import {
   Info,
   RefreshCw,
   SlidersHorizontal,
-  Filter
+  Filter,
+  ArrowLeft,
+  Edit3,
+  ExternalLink
 } from 'lucide-react';
 import { Student, ClassItem, GardenStudentData, GardenReward, WaterLog, CustomSeedSet } from '../types';
 import { triggerStarsConfetti } from '../utils/confetti';
@@ -35,6 +38,26 @@ interface KnowledgeGardenTabProps {
   onSelectClass?: (classId: string) => void;
   showToast: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
 }
+
+/**
+ * Helper to convert Google Drive share links into direct viewable image URLs
+ */
+export const convertGoogleDriveUrl = (url: string): string => {
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+
+  // Match Google Drive File ID patterns: /file/d/ID/ or ?id=ID or /d/ID
+  const fileIdMatch = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
+                      trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/) ||
+                      trimmed.match(/\/d\/([a-zA-Z0-9_-]+)/);
+
+  if (fileIdMatch && fileIdMatch[1]) {
+    const fileId = fileIdMatch[1];
+    return `https://lh3.googleusercontent.com/d/${fileId}`;
+  }
+
+  return trimmed;
+};
 
 // 7 Cấp Độ Tăng Trưởng - Cây Hoa Đào (Hỗ trợ WebP nén siêu nhẹ)
 export const GARDEN_STAGES = [
@@ -161,7 +184,7 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     if (customSet && customSet.levels && customSet.levels[level as keyof typeof customSet.levels]) {
       const customImg = customSet.levels[level as keyof typeof customSet.levels];
       if (customImg && customImg.trim()) {
-        return { url: customImg, fallback: GARDEN_STAGES[level - 1].fallbackUrl };
+        return { url: convertGoogleDriveUrl(customImg), fallback: GARDEN_STAGES[level - 1].fallbackUrl };
       }
     }
     const defaultStage = GARDEN_STAGES[level - 1] || GARDEN_STAGES[0];
@@ -451,24 +474,42 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
       return;
     }
 
+    const processedLevels = {
+      1: convertGoogleDriveUrl(seedSetLevels[1] || ''),
+      2: convertGoogleDriveUrl(seedSetLevels[2] || ''),
+      3: convertGoogleDriveUrl(seedSetLevels[3] || ''),
+      4: convertGoogleDriveUrl(seedSetLevels[4] || ''),
+      5: convertGoogleDriveUrl(seedSetLevels[5] || ''),
+      6: convertGoogleDriveUrl(seedSetLevels[6] || ''),
+      7: convertGoogleDriveUrl(seedSetLevels[7] || '')
+    };
+
     const newSet: CustomSeedSet = {
       id: editingSeedSet ? editingSeedSet.id : `seed-set-${Date.now()}`,
       name: seedSetName.trim(),
       icon: '🌾',
-      levels: {
-        1: seedSetLevels[1] || '',
-        2: seedSetLevels[2] || '',
-        3: seedSetLevels[3] || '',
-        4: seedSetLevels[4] || '',
-        5: seedSetLevels[5] || '',
-        6: seedSetLevels[6] || '',
-        7: seedSetLevels[7] || ''
-      },
+      levels: processedLevels,
       createdAt: editingSeedSet?.createdAt || new Date().toISOString()
     };
 
     if (editingSeedSet) {
+      const oldName = editingSeedSet.name;
+      const newName = newSet.name;
+
       setCustomSeedSets(prev => prev.map(s => s.id === editingSeedSet.id ? newSet : s));
+
+      if (oldName !== newName) {
+        setGardenData(prev => {
+          const updated = { ...prev };
+          Object.keys(updated).forEach(stId => {
+            if (updated[stId].seed === oldName) {
+              updated[stId] = { ...updated[stId], seed: newName };
+            }
+          });
+          return updated;
+        });
+      }
+
       showToast(`Đã cập nhật bộ hạt giống "${newSet.name}" thành công!`, 'success');
     } else {
       setCustomSeedSets(prev => [...prev, newSet]);
@@ -482,8 +523,21 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
 
   const handleDeleteSeedSet = (id: string) => {
     const target = customSeedSets.find(s => s.id === id);
-    if (target && window.confirm(`Xác nhận xóa bộ hạt giống "${target.name}"?`)) {
+    if (!target) return;
+
+    if (window.confirm(`Xác nhận xóa bộ hạt giống "${target.name}"?`)) {
       setCustomSeedSets(prev => prev.filter(s => s.id !== id));
+
+      setGardenData(prev => {
+        const updated = { ...prev };
+        Object.keys(updated).forEach(stId => {
+          if (updated[stId].seed === target.name) {
+            updated[stId] = { ...updated[stId], seed: DEFAULT_SEED_NAME };
+          }
+        });
+        return updated;
+      });
+
       showToast(`Đã xóa bộ hạt giống "${target.name}"!`, 'info');
     }
   };
@@ -617,6 +671,273 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
   const filteredTeacherStudents = classStudents.filter(s => 
     s.name.toLowerCase().includes(teacherSearch.toLowerCase()) || s.code.toLowerCase().includes(teacherSearch.toLowerCase())
   );
+
+  // --- INLINE SUB-VIEW 1: THIẾT LẬP / SỬA BỘ HẠT GIỐNG MỚI (100% TAKEOVER) ---
+  if (isSeedFormModalOpen) {
+    return (
+      <div className="space-y-6 text-slate-800 pb-10">
+        {/* Header Bar with Back Button */}
+        <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs">
+          <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  setIsSeedFormModalOpen(false);
+                  setEditingSeedSet(null);
+                }}
+                className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-[#cbb89d] font-black text-xs transition-all flex items-center gap-1.5 shadow-2xs active:scale-95 cursor-pointer"
+              >
+                <ArrowLeft className="w-4 h-4 text-slate-700" /> Quay Về Kho Hạt Giống
+              </button>
+              <div>
+                <h3 className="font-black text-sm sm:text-base text-[#3d2b17] flex items-center gap-2">
+                  <span>🌱</span> {editingSeedSet ? 'CHỈNH SỬA BỘ HẠT GIỐNG' : 'THIẾT LẬP BỘ HẠT GIỐNG MỚI'}
+                </h3>
+                <p className="text-[11px] font-bold text-[#5c4327]">
+                  Nhập tên bộ cây và tải ảnh lên từ máy tính hoặc dán Link/Google Drive cho 7 cấp độ.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setIsSeedFormModalOpen(false);
+                  setEditingSeedSet(null);
+                }}
+                className="px-5 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 font-black text-slate-700 text-xs transition-all cursor-pointer"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleSaveSeedSet}
+                className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-md transition-all active:scale-95 cursor-pointer"
+              >
+                Lưu Bộ Hạt Giống
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Form Body */}
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
+          {/* Name Input */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-black text-slate-700 uppercase tracking-wider">TÊN BỘ HẠT GIỐNG:</label>
+            <input
+              type="text"
+              value={seedSetName}
+              onChange={(e) => setSeedSetName(e.target.value)}
+              placeholder="VD: Cây Táo Thần 7 Màu"
+              className="w-full px-4 py-3 text-xs font-bold rounded-2xl border border-slate-300 bg-slate-50/50 focus:outline-none focus:border-emerald-500 focus:bg-white transition-all shadow-2xs"
+            />
+          </div>
+
+          {/* 7 Level Cards Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { level: 1, name: 'Hạt giống', icon: '🌰' },
+              { level: 2, name: 'Nảy mầm', icon: '🌱' },
+              { level: 3, name: 'Hai lá', icon: '🌿' },
+              { level: 4, name: 'Cây non', icon: '🪴' },
+              { level: 5, name: 'Cây lớn', icon: '🌲' },
+              { level: 6, name: 'Ra hoa', icon: '🌸' },
+              { level: 7, name: 'Kết trái', icon: '🍎' },
+            ].map(st => {
+              const currentUrl = seedSetLevels[st.level as keyof typeof seedSetLevels] || '';
+              const processedUrl = convertGoogleDriveUrl(currentUrl);
+              return (
+                <div key={st.level} className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200 space-y-3 flex flex-col justify-between hover:border-emerald-300 transition-colors">
+                  <div className="flex justify-between items-center font-black text-xs text-slate-800">
+                    <span className="flex items-center gap-1.5">
+                      <span>{st.icon}</span> Level {st.level}: {st.name}
+                    </span>
+                    {processedUrl ? (
+                      <img 
+                        src={processedUrl} 
+                        alt={`Preview ${st.level}`} 
+                        className="w-10 h-10 object-contain rounded-lg border border-slate-200 bg-white p-1 shadow-2xs"
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = GARDEN_STAGES[st.level - 1].fallbackUrl; }}
+                      />
+                    ) : (
+                      <span className="text-2xl">{st.icon}</span>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    {/* Link Input */}
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">Dán Link / Google Drive:</label>
+                      <input
+                        type="text"
+                        value={currentUrl}
+                        onChange={(e) => setSeedSetLevels(prev => ({ ...prev, [st.level]: e.target.value }))}
+                        placeholder="Link Ảnh / Google Drive"
+                        className="w-full px-3 py-2 text-xs font-bold rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+
+                    {/* File Input */}
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">Hoặc Chọn Tệp từ Máy Tính:</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleFileUploadForLevel(st.level, e)}
+                        className="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-emerald-100 file:text-emerald-800 hover:file:bg-emerald-200 cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+            <button
+              onClick={() => {
+                setIsSeedFormModalOpen(false);
+                setEditingSeedSet(null);
+              }}
+              className="px-6 py-2.5 rounded-2xl bg-slate-200 hover:bg-slate-300 font-black text-slate-700 text-xs transition-all cursor-pointer"
+            >
+              Hủy
+            </button>
+            <button
+              onClick={handleSaveSeedSet}
+              className="px-6 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-md transition-all active:scale-95 cursor-pointer"
+            >
+              Lưu Bộ Hạt Giống
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- INLINE SUB-VIEW 2: KHO HẠT GIỐNG TRI THỨC (100% TAKEOVER) ---
+  if (isSeedBankModalOpen) {
+    return (
+      <div className="space-y-6 text-slate-800 pb-10">
+        {/* Header Bar with Back Button */}
+        <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs">
+          <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setIsSeedBankModalOpen(false)}
+                className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-[#cbb89d] font-black text-xs transition-all flex items-center gap-1.5 shadow-2xs active:scale-95 cursor-pointer"
+              >
+                <ArrowLeft className="w-4 h-4 text-slate-700" /> Quay Về Bảng Quản Lý
+              </button>
+              <div>
+                <h3 className="font-black text-sm sm:text-base text-[#3d2b17] flex items-center gap-2">
+                  <span>🌾</span> KHO HẠT GIỐNG TRI THỨC (7 CẤP ĐỘ)
+                </h3>
+                <p className="text-[11px] font-bold text-[#5c4327]">Tạo bộ hình ảnh tăng trưởng cây từ Level 1 đến Level 7 cho học sinh.</p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={handleRandomizeSeedsForClass}
+                className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-black text-xs shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
+              >
+                <span>🎲</span> Gán Ngẫu Nhiên Cho Cả Lớp
+              </button>
+
+              <button
+                onClick={() => {
+                  setEditingSeedSet(null);
+                  setSeedSetName('');
+                  setSeedSetLevels({ 1: '', 2: '', 3: '', 4: '', 5: '', 6: '', 7: '' });
+                  setIsSeedFormModalOpen(true);
+                }}
+                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
+              >
+                <span>➕</span> Tạo Bộ Hạt Giống Mới
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Seed Sets Cards List */}
+        <div className="space-y-4">
+          {/* Render Default Set */}
+          <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
+            <div className="flex justify-between items-center">
+              <h4 className="font-black text-base text-slate-900 flex items-center gap-2">
+                <span>🌸</span> Cây Hoa Đào (Mặc định Hệ thống)
+              </h4>
+              <span className="text-xs font-black bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full border border-emerald-200">
+                Gói mặc định
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+              {GARDEN_STAGES.map(st => (
+                <div key={st.level} className="bg-slate-50 rounded-2xl p-3 text-center border border-slate-200 space-y-1.5">
+                  <span className="text-xs font-black text-slate-400 block">Lvl {st.level}</span>
+                  <img src={st.imgUrl} alt={st.name} className="h-14 w-auto object-contain mx-auto my-1 filter drop-shadow-2xs" />
+                  <span className="text-[10px] font-bold text-slate-500 block truncate">{st.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Render Custom Seed Sets */}
+          {customSeedSets.map(set => (
+            <div key={set.id} className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4 hover:border-emerald-400 transition-colors">
+              <div className="flex justify-between items-center">
+                <h4 className="font-black text-base text-slate-900 flex items-center gap-2">
+                  <span>{set.icon || '🌾'}</span> {set.name}
+                </h4>
+                
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleOpenEditSeedSet(set)}
+                    className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs shadow-2xs transition-all active:scale-95 flex items-center gap-1 cursor-pointer"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" /> Sửa
+                  </button>
+                  <button
+                    onClick={() => handleDeleteSeedSet(set.id)}
+                    className="px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-black text-xs shadow-2xs transition-all active:scale-95 flex items-center gap-1 cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" /> Xóa
+                  </button>
+                </div>
+              </div>
+
+              {/* 7 Levels Preview */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+                {[1, 2, 3, 4, 5, 6, 7].map(lvl => {
+                  const img = set.levels[lvl as keyof typeof set.levels];
+                  const stageDefault = GARDEN_STAGES[lvl - 1];
+                  const processedUrl = convertGoogleDriveUrl(img);
+                  return (
+                    <div key={lvl} className="bg-slate-50 rounded-2xl p-3 text-center border border-slate-200 space-y-1.5">
+                      <span className="text-xs font-black text-slate-400 block">Lvl {lvl}</span>
+                      {processedUrl ? (
+                        <img 
+                          src={processedUrl} 
+                          alt={`Lvl ${lvl}`} 
+                          className="h-14 w-auto object-contain mx-auto my-1 filter drop-shadow-2xs" 
+                          onError={(e) => { (e.currentTarget as HTMLImageElement).src = stageDefault.fallbackUrl; }}
+                        />
+                      ) : (
+                        <span className="text-3xl block my-2">{stageDefault.icon}</span>
+                      )}
+                      <span className="text-[10px] font-bold text-slate-500 block truncate">{stageDefault.name}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 sm:space-y-6 text-slate-800 pb-10">
@@ -1443,215 +1764,6 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                 Tạo Quà Mới
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* 4. KHO HẠT GIỐNG TRI THỨC (7 CẤP ĐỘ) MODAL */}
-      {isSeedBankModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-4xl w-full shadow-2xl space-y-6 my-8 border border-slate-100">
-            
-            {/* Modal Header & Quick Actions */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-4">
-              <div>
-                <h3 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2">
-                  <span>🌾</span> Kho Hạt Giống Tri Thức (7 Cấp Độ)
-                </h3>
-                <p className="text-xs font-bold text-slate-500">Tạo bộ hình ảnh tăng trưởng cây từ Level 1 đến Level 7 cho học sinh.</p>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  onClick={handleRandomizeSeedsForClass}
-                  className="px-4 py-2.5 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white font-black text-xs shadow-xs transition-all flex items-center gap-1.5 active:scale-95"
-                >
-                  <span>🎲</span> Gán Ngẫu Nhiên Cho Cả Lớp
-                </button>
-
-                <button
-                  onClick={() => {
-                    setEditingSeedSet(null);
-                    setSeedSetName('');
-                    setSeedSetLevels({ 1: '', 2: '', 3: '', 4: '', 5: '', 6: '', 7: '' });
-                    setIsSeedFormModalOpen(true);
-                  }}
-                  className="px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-xs transition-all flex items-center gap-1.5 active:scale-95"
-                >
-                  <span>➕</span> Tạo Bộ Hạt Giống Mới
-                </button>
-              </div>
-            </div>
-
-            {/* Seed Sets Cards List */}
-            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
-              {/* Render Default Set */}
-              <div className="bg-slate-50/80 rounded-2xl p-4 sm:p-5 border border-slate-200 space-y-3">
-                <div className="flex justify-between items-center">
-                  <h4 className="font-black text-sm text-slate-900 flex items-center gap-2">
-                    <span>🌸</span> Cây Hoa Đào (Mặc định Hệ thống)
-                  </h4>
-                  <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full">Gói mặc định</span>
-                </div>
-
-                <div className="grid grid-cols-7 gap-2">
-                  {GARDEN_STAGES.map(st => (
-                    <div key={st.level} className="bg-white rounded-xl p-2 text-center border border-slate-200/80 space-y-1">
-                      <span className="text-[10px] font-black text-slate-400 block">Lvl {st.level}</span>
-                      <img src={st.imgUrl} alt={st.name} className="h-10 w-auto object-contain mx-auto my-1" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Render Custom Seed Sets */}
-              {customSeedSets.map(set => (
-                <div key={set.id} className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-2xs space-y-3 hover:border-emerald-300 transition-colors">
-                  <div className="flex justify-between items-center">
-                    <h4 className="font-black text-sm text-slate-900 flex items-center gap-2">
-                      <span>{set.icon || '🌾'}</span> {set.name}
-                    </h4>
-                    
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleOpenEditSeedSet(set)}
-                        className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs shadow-2xs transition-all active:scale-95"
-                      >
-                        Sửa
-                      </button>
-                      <button
-                        onClick={() => handleDeleteSeedSet(set.id)}
-                        className="px-3.5 py-1.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-black text-xs shadow-2xs transition-all active:scale-95"
-                      >
-                        Xóa
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* 7 Levels Preview */}
-                  <div className="grid grid-cols-7 gap-2">
-                    {[1, 2, 3, 4, 5, 6, 7].map(lvl => {
-                      const img = set.levels[lvl as keyof typeof set.levels];
-                      const stageDefault = GARDEN_STAGES[lvl - 1];
-                      return (
-                        <div key={lvl} className="bg-slate-50 rounded-xl p-2 text-center border border-slate-200 space-y-1">
-                          <span className="text-[10px] font-black text-slate-400 block">Lvl {lvl}</span>
-                          {img ? (
-                            <img src={img} alt={`Lvl ${lvl}`} className="h-10 w-auto object-contain mx-auto my-1" />
-                          ) : (
-                            <span className="text-xl block my-1">{stageDefault.icon}</span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Footer Modal Action */}
-            <div className="flex justify-end pt-2 border-t border-slate-100">
-              <button
-                onClick={() => setIsSeedBankModalOpen(false)}
-                className="px-6 py-2.5 rounded-2xl bg-slate-200 hover:bg-slate-300 font-black text-slate-700 text-xs transition-all"
-              >
-                Đóng
-              </button>
-            </div>
-
-          </div>
-        </div>
-      )}
-
-      {/* 5. THIẾT LẬP BỘ HẠT GIỐNG MỚI MODAL */}
-      {isSeedFormModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-3xl w-full shadow-2xl space-y-6 my-8 border border-slate-100">
-            
-            {/* Header */}
-            <div>
-              <h3 className="text-xl font-black text-emerald-950 flex items-center gap-2">
-                <span>🌱</span> {editingSeedSet ? 'Sửa Bộ Hạt Giống' : 'Thiết Lập Bộ Hạt Giống Mới'}
-              </h3>
-              <p className="text-xs font-bold text-slate-500">
-                Nhập tên bộ cây và tải ảnh lên từ máy tính hoặc dán Link/Google Drive cho 7 cấp độ.
-              </p>
-            </div>
-
-            {/* Name Input */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-black text-slate-700 uppercase tracking-wider">TÊN BỘ HẠT GIỐNG:</label>
-              <input
-                type="text"
-                value={seedSetName}
-                onChange={(e) => setSeedSetName(e.target.value)}
-                placeholder="VD: Cây Táo Thần 7 Màu"
-                className="w-full px-4 py-3 text-xs font-bold rounded-2xl border border-slate-200 bg-slate-50/50 focus:outline-none focus:border-emerald-500 focus:bg-white transition-all"
-              />
-            </div>
-
-            {/* 7 Level Cards Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[50vh] overflow-y-auto pr-1">
-              {[
-                { level: 1, name: 'Hạt giống', icon: '🌰' },
-                { level: 2, name: 'Nảy mầm', icon: '🌱' },
-                { level: 3, name: 'Hai lá', icon: '🌿' },
-                { level: 4, name: 'Cây non', icon: '🪴' },
-                { level: 5, name: 'Cây lớn', icon: '🌲' },
-                { level: 6, name: 'Ra hoa', icon: '🌸' },
-                { level: 7, name: 'Kết trái', icon: '🍎' },
-              ].map(st => {
-                const currentUrl = seedSetLevels[st.level as keyof typeof seedSetLevels] || '';
-                return (
-                  <div key={st.level} className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200 space-y-2.5">
-                    <div className="flex justify-between items-center font-black text-xs text-slate-800">
-                      <span className="flex items-center gap-1.5">
-                        <span>{st.icon}</span> Level {st.level}: {st.name}
-                      </span>
-                      {currentUrl && (
-                        <img src={currentUrl} alt={`Preview ${st.level}`} className="w-8 h-8 object-contain rounded-lg border border-slate-200 bg-white p-0.5" />
-                      )}
-                    </div>
-
-                    {/* Link Input */}
-                    <input
-                      type="text"
-                      value={currentUrl}
-                      onChange={(e) => setSeedSetLevels(prev => ({ ...prev, [st.level]: e.target.value }))}
-                      placeholder="Dán Link Ảnh / Google Drive"
-                      className="w-full px-3.5 py-2 text-xs font-bold rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-emerald-500"
-                    />
-
-                    {/* File Input */}
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handleFileUploadForLevel(st.level, e)}
-                        className="text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-emerald-100 file:text-emerald-800 hover:file:bg-emerald-200 cursor-pointer"
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Footer Buttons */}
-            <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
-              <button
-                onClick={() => setIsSeedFormModalOpen(false)}
-                className="px-6 py-2.5 rounded-2xl bg-slate-200 hover:bg-slate-300 font-black text-slate-700 text-xs transition-all"
-              >
-                Hủy
-              </button>
-              <button
-                onClick={handleSaveSeedSet}
-                className="px-6 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-md transition-all active:scale-95"
-              >
-                Lưu Bộ Hạt Giống
-              </button>
-            </div>
-
           </div>
         </div>
       )}
