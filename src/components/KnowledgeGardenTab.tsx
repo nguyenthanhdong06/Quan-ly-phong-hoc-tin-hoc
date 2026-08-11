@@ -102,6 +102,44 @@ const DEFAULT_REWARDS: GardenReward[] = [
   { id: 'rew-4', icon: '🧩', title: 'Đồ chơi lắp ráp trí tuệ', cost: 350, type: 'HARVEST' }
 ];
 
+/**
+ * Image compression utility to compress local file uploads down to ~40KB JPEG DataURL
+ */
+export const compressImageFile = (file: File, maxWidth: number = 600, quality: number = 0.75): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+          resolve(compressedDataUrl);
+        } else {
+          resolve(e.target?.result as string);
+        }
+      };
+      img.onerror = () => resolve(e.target?.result as string);
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = (err) => reject(err);
+    reader.readAsDataURL(file);
+  });
+};
+
 export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
   students,
   selectedClass,
@@ -160,6 +198,8 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     1: '', 2: '', 3: '', 4: '', 5: '', 6: '', 7: ''
   });
 
+  const lastLocalSaveTimeRef = React.useRef<number>(0);
+
   // Persist Custom Seed Sets
   useEffect(() => {
     try {
@@ -171,6 +211,10 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
   // Sync Cloud Updates for Seed Sets
   useEffect(() => {
     const handleRemoteSeedSetsUpdate = (e: any) => {
+      // Ignore remote echo if we saved locally in the last 4 seconds
+      if (Date.now() - lastLocalSaveTimeRef.current < 4000) {
+        return;
+      }
       if (e.detail && Array.isArray(e.detail)) {
         setCustomSeedSets(e.detail);
       }
@@ -495,38 +539,55 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
       createdAt: editingSeedSet?.createdAt || new Date().toISOString()
     };
 
-    if (editingSeedSet) {
-      const oldName = editingSeedSet.name;
-      const newName = newSet.name;
+    // Calculate next sets array explicitly
+    const nextSets = editingSeedSet
+      ? customSeedSets.map(s => s.id === editingSeedSet.id ? newSet : s)
+      : [...customSeedSets, newSet];
 
-      setCustomSeedSets(prev => prev.map(s => s.id === editingSeedSet.id ? newSet : s));
+    // Mark local save timestamp to protect against cloud echo overwrite
+    lastLocalSaveTimeRef.current = Date.now();
 
-      if (oldName !== newName) {
-        setGardenData(prev => {
-          const updated = { ...prev };
-          Object.keys(updated).forEach(stId => {
-            if (updated[stId].seed === oldName) {
-              updated[stId] = { ...updated[stId], seed: newName };
-            }
-          });
-          return updated;
-        });
-      }
+    // 1. Update React state immediately
+    setCustomSeedSets(nextSets);
 
-      showToast(`Đã cập nhật bộ hạt giống "${newSet.name}" thành công!`, 'success');
-    } else {
-      setCustomSeedSets(prev => [...prev, newSet]);
-      showToast(`Đã tạo bộ hạt giống mới "${newSet.name}" thành công!`, 'success');
+    // 2. Persist to localStorage & Supabase synchronously
+    try {
+      localStorage.setItem('deskos_custom_seed_sets_v1', JSON.stringify(nextSets));
+      saveSupabaseState('school_custom_seed_sets', nextSets);
+    } catch (e) {
+      console.warn('Persistence save error:', e);
     }
 
+    // 3. Handle student seed rename if editing
+    if (editingSeedSet && editingSeedSet.name !== newSet.name) {
+      const oldName = editingSeedSet.name;
+      const newName = newSet.name;
+      setGardenData(prev => {
+        const updated = { ...prev };
+        Object.keys(updated).forEach(stId => {
+          if (updated[stId].seed === oldName) {
+            updated[stId] = { ...updated[stId], seed: newName };
+          }
+        });
+        return updated;
+      });
+    }
+
+    showToast(editingSeedSet ? `Đã cập nhật bộ hạt giống "${newSet.name}"!` : `Đã lưu bộ hạt giống mới "${newSet.name}" vào Kho!`, 'success');
+
+    // Reset Form inputs and navigate back to Seed Bank Sub-View
     setIsSeedFormModalOpen(false);
+    setIsSeedBankModalOpen(true);
     setEditingSeedSet(null);
     setSeedSetName('');
+    setSeedSetLevels({ 1: '', 2: '', 3: '', 4: '', 5: '', 6: '', 7: '' });
   };
 
   const handleDeleteSeedSet = (id: string) => {
     const target = customSeedSets.find(s => s.id === id);
     if (!target) return;
+
+    lastLocalSaveTimeRef.current = Date.now();
 
     const nextSets = customSeedSets.filter(s => s.id !== id);
     setCustomSeedSets(nextSets);
@@ -545,7 +606,7 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
       return updated;
     });
 
-    showToast(`Đã xóa bộ hạt giống "${target.name}" khỏi danh sách!`, 'info');
+    showToast(`Đã xóa bộ hạt giống "${target.name}" khỏi Kho!`, 'info');
   };
 
   const handleRandomizeSeedsForClass = () => {
@@ -588,27 +649,21 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     showToast(`Đã thay đổi bộ hạt giống cho ${st ? st.name : 'học sinh'} sang "${newSeedName}"!`, 'success');
   };
 
-  const handleFileUploadForLevel = (level: number, event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUploadForLevel = async (level: number, event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      showToast('Dung lượng ảnh vượt quá 5MB. Vui lòng chọn ảnh nhỏ hơn!', 'warning');
-      return;
+    try {
+      showToast(`Đang tối ưu ảnh Level ${level}...`, 'info');
+      const compressedDataUrl = await compressImageFile(file, 600, 0.75);
+      setSeedSetLevels(prev => ({
+        ...prev,
+        [level]: compressedDataUrl
+      }));
+      showToast(`Đã tải & tối ưu ảnh Level ${level} thành công!`, 'success');
+    } catch (err) {
+      showToast('Lỗi khi đọc tệp ảnh, vui lòng thử lại!', 'error');
     }
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const result = e.target?.result as string;
-      if (result) {
-        setSeedSetLevels(prev => ({
-          ...prev,
-          [level]: result
-        }));
-        showToast(`Đã tải ảnh Level ${level} thành công!`, 'success');
-      }
-    };
-    reader.readAsDataURL(file);
   };
 
   // Export Class Garden TXT Report
