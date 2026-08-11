@@ -62,7 +62,7 @@ export const extractGoogleDriveFileId = (url: string): string | null => {
 };
 
 /**
- * Helper to convert Google Drive share links into direct high-res viewable image URLs
+ * Helper to convert Google Drive share links into direct high-res 200 OK viewable image URLs
  */
 export const convertGoogleDriveUrl = (url: string): string => {
   if (!url || typeof url !== 'string') return '';
@@ -70,8 +70,8 @@ export const convertGoogleDriveUrl = (url: string): string => {
 
   const fileId = extractGoogleDriveFileId(trimmed);
   if (fileId) {
-    // Drive Thumbnail CDN endpoint (sz=w1000 for high resolution, universally supported)
-    return `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
+    // Direct 200 OK Google FIFE Image CDN endpoint (=s1000 for crisp 1000px direct image without 302 redirects)
+    return `https://lh3.googleusercontent.com/d/${fileId}=s1000`;
   }
 
   return trimmed;
@@ -768,14 +768,19 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                         onError={(e) => {
                           const target = e.currentTarget as HTMLImageElement;
                           if (driveFileId) {
-                            if (!target.dataset.triedLh3) {
-                              target.dataset.triedLh3 = 'true';
-                              target.src = `https://lh3.googleusercontent.com/d/${driveFileId}=s1000`;
+                            if (!target.dataset.triedUserContent) {
+                              target.dataset.triedUserContent = 'true';
+                              target.src = `https://drive.usercontent.google.com/download?id=${driveFileId}&export=view`;
                               return;
                             }
-                            if (!target.dataset.triedUc) {
-                              target.dataset.triedUc = 'true';
-                              target.src = `https://drive.google.com/uc?export=view&id=${driveFileId}`;
+                            if (!target.dataset.triedRawLh3) {
+                              target.dataset.triedRawLh3 = 'true';
+                              target.src = `https://lh3.googleusercontent.com/d/${driveFileId}`;
+                              return;
+                            }
+                            if (!target.dataset.triedThumbnail) {
+                              target.dataset.triedThumbnail = 'true';
+                              target.src = `https://drive.google.com/thumbnail?id=${driveFileId}&sz=w1000`;
                               return;
                             }
                           }
@@ -965,14 +970,19 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                           onError={(e) => {
                             const target = e.currentTarget as HTMLImageElement;
                             if (driveFileId) {
-                              if (!target.dataset.triedLh3) {
-                                target.dataset.triedLh3 = 'true';
-                                target.src = `https://lh3.googleusercontent.com/d/${driveFileId}=s1000`;
+                              if (!target.dataset.triedUserContent) {
+                                target.dataset.triedUserContent = 'true';
+                                target.src = `https://drive.usercontent.google.com/download?id=${driveFileId}&export=view`;
                                 return;
                               }
-                              if (!target.dataset.triedUc) {
-                                target.dataset.triedUc = 'true';
-                                target.src = `https://drive.google.com/uc?export=view&id=${driveFileId}`;
+                              if (!target.dataset.triedRawLh3) {
+                                target.dataset.triedRawLh3 = 'true';
+                                target.src = `https://lh3.googleusercontent.com/d/${driveFileId}`;
+                                return;
+                              }
+                              if (!target.dataset.triedThumbnail) {
+                                target.dataset.triedThumbnail = 'true';
+                                target.src = `https://drive.google.com/thumbnail?id=${driveFileId}&sz=w1000`;
                                 return;
                               }
                             }
@@ -1156,14 +1166,19 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                           const target = e.currentTarget as HTMLImageElement;
                           const fileId = extractGoogleDriveFileId(target.src) || extractGoogleDriveFileId(g.seed);
                           if (fileId) {
-                            if (!target.dataset.triedLh3) {
-                              target.dataset.triedLh3 = 'true';
-                              target.src = `https://lh3.googleusercontent.com/d/${fileId}=s1000`;
+                            if (!target.dataset.triedUserContent) {
+                              target.dataset.triedUserContent = 'true';
+                              target.src = `https://drive.usercontent.google.com/download?id=${fileId}&export=view`;
                               return;
                             }
-                            if (!target.dataset.triedUc) {
-                              target.dataset.triedUc = 'true';
-                              target.src = `https://drive.google.com/uc?export=view&id=${fileId}`;
+                            if (!target.dataset.triedRawLh3) {
+                              target.dataset.triedRawLh3 = 'true';
+                              target.src = `https://lh3.googleusercontent.com/d/${fileId}`;
+                              return;
+                            }
+                            if (!target.dataset.triedThumbnail) {
+                              target.dataset.triedThumbnail = 'true';
+                              target.src = `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
                               return;
                             }
                           }
@@ -1284,14 +1299,19 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                     const target = e.currentTarget as HTMLImageElement;
                     const fileId = extractGoogleDriveFileId(target.src) || extractGoogleDriveFileId(activeGarden.seed);
                     if (fileId) {
-                      if (!target.dataset.triedLh3) {
-                        target.dataset.triedLh3 = 'true';
-                        target.src = `https://lh3.googleusercontent.com/d/${fileId}=s1000`;
+                      if (!target.dataset.triedUserContent) {
+                        target.dataset.triedUserContent = 'true';
+                        target.src = `https://drive.usercontent.google.com/download?id=${fileId}&export=view`;
                         return;
                       }
-                      if (!target.dataset.triedUc) {
-                        target.dataset.triedUc = 'true';
-                        target.src = `https://drive.google.com/uc?export=view&id=${fileId}`;
+                      if (!target.dataset.triedRawLh3) {
+                        target.dataset.triedRawLh3 = 'true';
+                        target.src = `https://lh3.googleusercontent.com/d/${fileId}`;
+                        return;
+                      }
+                      if (!target.dataset.triedThumbnail) {
+                        target.dataset.triedThumbnail = 'true';
+                        target.src = `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
                         return;
                       }
                     }
