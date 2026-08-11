@@ -40,20 +40,38 @@ interface KnowledgeGardenTabProps {
 }
 
 /**
- * Helper to convert Google Drive share links into direct viewable image URLs
+ * Extract Google Drive File ID from any Google Drive link variation
+ */
+export const extractGoogleDriveFileId = (url: string): string | null => {
+  if (!url || typeof url !== 'string') return null;
+  const trimmed = url.trim();
+
+  // Pattern 1: /file/d/FILE_ID
+  const match1 = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (match1 && match1[1] && match1[1].length >= 10) return match1[1];
+
+  // Pattern 2: id=FILE_ID
+  const match2 = trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (match2 && match2[1] && match2[1].length >= 10) return match2[1];
+
+  // Pattern 3: /d/FILE_ID
+  const match3 = trimmed.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (match3 && match3[1] && match3[1].length >= 10) return match3[1];
+
+  return null;
+};
+
+/**
+ * Helper to convert Google Drive share links into direct high-res viewable image URLs
  */
 export const convertGoogleDriveUrl = (url: string): string => {
   if (!url || typeof url !== 'string') return '';
   const trimmed = url.trim();
 
-  // Match Google Drive File ID patterns: /file/d/ID/ or ?id=ID or /d/ID
-  const fileIdMatch = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
-                      trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/) ||
-                      trimmed.match(/\/d\/([a-zA-Z0-9_-]+)/);
-
-  if (fileIdMatch && fileIdMatch[1]) {
-    const fileId = fileIdMatch[1];
-    return `https://lh3.googleusercontent.com/d/${fileId}`;
+  const fileId = extractGoogleDriveFileId(trimmed);
+  if (fileId) {
+    // Drive Thumbnail CDN endpoint (sz=w1000 for high resolution, universally supported)
+    return `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
   }
 
   return trimmed;
@@ -734,6 +752,8 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
             ].map(st => {
               const currentUrl = seedSetLevels[st.level as keyof typeof seedSetLevels] || '';
               const processedUrl = convertGoogleDriveUrl(currentUrl);
+              const driveFileId = extractGoogleDriveFileId(currentUrl);
+
               return (
                 <div key={st.level} className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200 space-y-3 flex flex-col justify-between hover:border-emerald-300 transition-colors">
                   <div className="flex justify-between items-center font-black text-xs text-slate-800">
@@ -744,14 +764,18 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                       <img 
                         src={processedUrl} 
                         alt={`Preview ${st.level}`} 
-                        className="w-10 h-10 object-contain rounded-lg border border-slate-200 bg-white p-1 shadow-2xs"
+                        className="w-12 h-12 object-contain rounded-lg border border-slate-200 bg-white p-1 shadow-2xs"
                         onError={(e) => {
                           const target = e.currentTarget as HTMLImageElement;
-                          if (processedUrl.includes('lh3.googleusercontent.com/d/') && !target.dataset.triedDriveThumbnail) {
-                            target.dataset.triedDriveThumbnail = 'true';
-                            const fileId = processedUrl.split('/d/')[1]?.split('?')[0];
-                            if (fileId) {
-                              target.src = `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
+                          if (driveFileId) {
+                            if (!target.dataset.triedLh3) {
+                              target.dataset.triedLh3 = 'true';
+                              target.src = `https://lh3.googleusercontent.com/d/${driveFileId}=s1000`;
+                              return;
+                            }
+                            if (!target.dataset.triedUc) {
+                              target.dataset.triedUc = 'true';
+                              target.src = `https://drive.google.com/uc?export=view&id=${driveFileId}`;
                               return;
                             }
                           }
@@ -766,13 +790,28 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                   <div className="space-y-2">
                     {/* Link Input */}
                     <div>
-                      <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">Dán Link / Google Drive:</label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-[10px] font-black text-slate-400 uppercase">Dán Link / Google Drive:</label>
+                        {driveFileId ? (
+                          <span className="text-[9px] font-black bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-200">
+                            🟢 Drive OK
+                          </span>
+                        ) : currentUrl.startsWith('data:image/') ? (
+                          <span className="text-[9px] font-black bg-sky-100 text-sky-800 px-2 py-0.5 rounded-full border border-sky-200">
+                            📁 Ảnh Máy Tính
+                          </span>
+                        ) : currentUrl ? (
+                          <span className="text-[9px] font-black bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full border border-amber-200">
+                            🌐 Link Web
+                          </span>
+                        ) : null}
+                      </div>
                       <input
                         type="text"
                         value={currentUrl}
                         onChange={(e) => setSeedSetLevels(prev => ({ ...prev, [st.level]: e.target.value }))}
-                        placeholder="Link Ảnh / Google Drive"
-                        className="w-full px-3 py-2 text-xs font-bold rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-emerald-500"
+                        placeholder="Dán Link Google Drive hoặc Link Ảnh"
+                        className="w-full px-3 py-2 text-xs font-bold rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-emerald-500 shadow-2xs"
                       />
                     </div>
 
@@ -913,6 +952,8 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                   const img = set.levels[lvl as keyof typeof set.levels];
                   const stageDefault = GARDEN_STAGES[lvl - 1];
                   const processedUrl = convertGoogleDriveUrl(img);
+                  const driveFileId = extractGoogleDriveFileId(img);
+
                   return (
                     <div key={lvl} className="bg-slate-50 rounded-2xl p-3 text-center border border-slate-200 space-y-1.5">
                       <span className="text-xs font-black text-slate-400 block">Lvl {lvl}</span>
@@ -923,11 +964,15 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                           className="h-14 w-auto object-contain mx-auto my-1 filter drop-shadow-2xs" 
                           onError={(e) => {
                             const target = e.currentTarget as HTMLImageElement;
-                            if (processedUrl.includes('lh3.googleusercontent.com/d/') && !target.dataset.triedDriveThumbnail) {
-                              target.dataset.triedDriveThumbnail = 'true';
-                              const fileId = processedUrl.split('/d/')[1]?.split('?')[0];
-                              if (fileId) {
-                                target.src = `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
+                            if (driveFileId) {
+                              if (!target.dataset.triedLh3) {
+                                target.dataset.triedLh3 = 'true';
+                                target.src = `https://lh3.googleusercontent.com/d/${driveFileId}=s1000`;
+                                return;
+                              }
+                              if (!target.dataset.triedUc) {
+                                target.dataset.triedUc = 'true';
+                                target.src = `https://drive.google.com/uc?export=view&id=${driveFileId}`;
                                 return;
                               }
                             }
@@ -1109,12 +1154,16 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                         alt={currentStage.name} 
                         onError={(e) => {
                           const target = e.currentTarget as HTMLImageElement;
-                          const currentUrl = target.src;
-                          if (currentUrl.includes('lh3.googleusercontent.com/d/') && !target.dataset.triedDriveThumbnail) {
-                            target.dataset.triedDriveThumbnail = 'true';
-                            const fileId = currentUrl.split('/d/')[1]?.split('?')[0];
-                            if (fileId) {
-                              target.src = `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
+                          const fileId = extractGoogleDriveFileId(target.src) || extractGoogleDriveFileId(g.seed);
+                          if (fileId) {
+                            if (!target.dataset.triedLh3) {
+                              target.dataset.triedLh3 = 'true';
+                              target.src = `https://lh3.googleusercontent.com/d/${fileId}=s1000`;
+                              return;
+                            }
+                            if (!target.dataset.triedUc) {
+                              target.dataset.triedUc = 'true';
+                              target.src = `https://drive.google.com/uc?export=view&id=${fileId}`;
                               return;
                             }
                           }
@@ -1233,12 +1282,16 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                   alt={activeStageInfo.currentStage.name}
                   onError={(e) => {
                     const target = e.currentTarget as HTMLImageElement;
-                    const currentUrl = target.src;
-                    if (currentUrl.includes('lh3.googleusercontent.com/d/') && !target.dataset.triedDriveThumbnail) {
-                      target.dataset.triedDriveThumbnail = 'true';
-                      const fileId = currentUrl.split('/d/')[1]?.split('?')[0];
-                      if (fileId) {
-                        target.src = `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
+                    const fileId = extractGoogleDriveFileId(target.src) || extractGoogleDriveFileId(activeGarden.seed);
+                    if (fileId) {
+                      if (!target.dataset.triedLh3) {
+                        target.dataset.triedLh3 = 'true';
+                        target.src = `https://lh3.googleusercontent.com/d/${fileId}=s1000`;
+                        return;
+                      }
+                      if (!target.dataset.triedUc) {
+                        target.dataset.triedUc = 'true';
+                        target.src = `https://drive.google.com/uc?export=view&id=${fileId}`;
                         return;
                       }
                     }
