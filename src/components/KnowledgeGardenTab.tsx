@@ -74,22 +74,7 @@ export const GARDEN_STAGES = [
 const DEFAULT_SEED_NAME = '🌸 Cây Hoa Đào';
 
 // Mẫu Bộ Hạt Giống Mặc Định
-const DEFAULT_CUSTOM_SEED_SETS: CustomSeedSet[] = [
-  {
-    id: 'seed-set-test',
-    name: 'Test',
-    icon: '🌾',
-    levels: {
-      1: 'hoadao1.webp?v=4',
-      2: 'hoadao2.webp?v=4',
-      3: 'hoadao3.webp?v=4',
-      4: 'hoadao4.webp?v=4',
-      5: 'hoadao5.webp?v=4',
-      6: 'hoadao6.webp?v=4',
-      7: 'hoadao7.webp?v=4'
-    }
-  }
-];
+const DEFAULT_CUSTOM_SEED_SETS: CustomSeedSet[] = [];
 
 // Danh Sách Quà Mặc Định
 const DEFAULT_REWARDS: GardenReward[] = [
@@ -525,21 +510,24 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     const target = customSeedSets.find(s => s.id === id);
     if (!target) return;
 
-    if (window.confirm(`Xác nhận xóa bộ hạt giống "${target.name}"?`)) {
-      setCustomSeedSets(prev => prev.filter(s => s.id !== id));
+    const nextSets = customSeedSets.filter(s => s.id !== id);
+    setCustomSeedSets(nextSets);
+    try {
+      localStorage.setItem('deskos_custom_seed_sets_v1', JSON.stringify(nextSets));
+      saveSupabaseState('school_custom_seed_sets', nextSets);
+    } catch (e) {}
 
-      setGardenData(prev => {
-        const updated = { ...prev };
-        Object.keys(updated).forEach(stId => {
-          if (updated[stId].seed === target.name) {
-            updated[stId] = { ...updated[stId], seed: DEFAULT_SEED_NAME };
-          }
-        });
-        return updated;
+    setGardenData(prev => {
+      const updated = { ...prev };
+      Object.keys(updated).forEach(stId => {
+        if (updated[stId].seed === target.name) {
+          updated[stId] = { ...updated[stId], seed: DEFAULT_SEED_NAME };
+        }
       });
+      return updated;
+    });
 
-      showToast(`Đã xóa bộ hạt giống "${target.name}"!`, 'info');
-    }
+    showToast(`Đã xóa bộ hạt giống "${target.name}" khỏi danh sách!`, 'info');
   };
 
   const handleRandomizeSeedsForClass = () => {
@@ -757,7 +745,18 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                         src={processedUrl} 
                         alt={`Preview ${st.level}`} 
                         className="w-10 h-10 object-contain rounded-lg border border-slate-200 bg-white p-1 shadow-2xs"
-                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = GARDEN_STAGES[st.level - 1].fallbackUrl; }}
+                        onError={(e) => {
+                          const target = e.currentTarget as HTMLImageElement;
+                          if (processedUrl.includes('lh3.googleusercontent.com/d/') && !target.dataset.triedDriveThumbnail) {
+                            target.dataset.triedDriveThumbnail = 'true';
+                            const fileId = processedUrl.split('/d/')[1]?.split('?')[0];
+                            if (fileId) {
+                              target.src = `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
+                              return;
+                            }
+                          }
+                          target.src = GARDEN_STAGES[st.level - 1].fallbackUrl;
+                        }}
                       />
                     ) : (
                       <span className="text-2xl">{st.icon}</span>
@@ -922,7 +921,18 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                           src={processedUrl} 
                           alt={`Lvl ${lvl}`} 
                           className="h-14 w-auto object-contain mx-auto my-1 filter drop-shadow-2xs" 
-                          onError={(e) => { (e.currentTarget as HTMLImageElement).src = stageDefault.fallbackUrl; }}
+                          onError={(e) => {
+                            const target = e.currentTarget as HTMLImageElement;
+                            if (processedUrl.includes('lh3.googleusercontent.com/d/') && !target.dataset.triedDriveThumbnail) {
+                              target.dataset.triedDriveThumbnail = 'true';
+                              const fileId = processedUrl.split('/d/')[1]?.split('?')[0];
+                              if (fileId) {
+                                target.src = `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
+                                return;
+                              }
+                            }
+                            target.src = stageDefault.fallbackUrl;
+                          }}
                         />
                       ) : (
                         <span className="text-3xl block my-2">{stageDefault.icon}</span>
@@ -1099,6 +1109,15 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                         alt={currentStage.name} 
                         onError={(e) => {
                           const target = e.currentTarget as HTMLImageElement;
+                          const currentUrl = target.src;
+                          if (currentUrl.includes('lh3.googleusercontent.com/d/') && !target.dataset.triedDriveThumbnail) {
+                            target.dataset.triedDriveThumbnail = 'true';
+                            const fileId = currentUrl.split('/d/')[1]?.split('?')[0];
+                            if (fileId) {
+                              target.src = `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
+                              return;
+                            }
+                          }
                           if (!target.dataset.triedFallback) {
                             target.dataset.triedFallback = 'true';
                             target.src = getStageImageUrl(g.seed, currentStage.level).fallback;
@@ -1214,6 +1233,15 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                   alt={activeStageInfo.currentStage.name}
                   onError={(e) => {
                     const target = e.currentTarget as HTMLImageElement;
+                    const currentUrl = target.src;
+                    if (currentUrl.includes('lh3.googleusercontent.com/d/') && !target.dataset.triedDriveThumbnail) {
+                      target.dataset.triedDriveThumbnail = 'true';
+                      const fileId = currentUrl.split('/d/')[1]?.split('?')[0];
+                      if (fileId) {
+                        target.src = `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
+                        return;
+                      }
+                    }
                     if (!target.dataset.triedFallback) {
                       target.dataset.triedFallback = 'true';
                       target.src = getStageImageUrl(activeGarden.seed, activeStageInfo.currentStage.level).fallback;
@@ -1466,12 +1494,6 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                   className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs shadow-xs transition-all flex items-center gap-1.5"
                 >
                   <span>🎁</span> Thêm Quà Mới
-                </button>
-                <button
-                  onClick={handleExportReport}
-                  className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-[#cbb89d] font-black text-xs transition-all flex items-center gap-1.5"
-                >
-                  <Download className="w-3.5 h-3.5" /> Báo Cáo TXT
                 </button>
                 <button
                   onClick={handleResetGardenData}
