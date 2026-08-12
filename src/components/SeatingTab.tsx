@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Student, Computer, SeatingChart, LabInfo, ClassItem } from '../types';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Student, Computer, SeatingChart, LabInfo, ClassItem, LabIncident } from '../types';
 import { 
   Monitor, X, Wrench, AlertTriangle, PenTool, Clipboard, Search, Check, ChevronDown, 
   Maximize, Minimize, Tv, ZoomIn, ZoomOut, Sun, Moon, ArrowLeft, Palette, Sparkles, 
   RotateCcw, Users, Plus, LayoutGrid, CheckCircle2, UserCheck, ShieldCheck, Image as ImageIcon,
-  Sliders, Move, ArrowRightLeft, Upload, Link, CheckCheck, RefreshCw, Zap, Eye, EyeOff, PanelLeftClose, PanelLeftOpen
+  Sliders, Move, ArrowRightLeft, Upload, Link, CheckCheck, RefreshCw, Zap, Eye, EyeOff, 
+  PanelLeftClose, PanelLeftOpen, Printer
 } from 'lucide-react';
 import { extractGoogleDriveFileId, convertGoogleDriveUrl, compressImageFile } from './KnowledgeGardenTab';
 import { playButtonClickSound, playVictoryFanfareSound } from '../utils/audioEffects';
@@ -104,28 +105,28 @@ export interface FrameSkin {
 
 export const PRESET_FRAME_SKINS: FrameSkin[] = [
   {
-    id: 'modern-slate',
-    name: 'Modern Slate (Mặc Định)',
-    icon: '🖥️',
-    bgGradient: 'bg-slate-900/90',
-    borderColor: 'border-indigo-500/50 hover:border-indigo-400',
-    textColor: 'text-slate-100',
-    headerBg: 'bg-indigo-950/80 text-indigo-200 border-indigo-500/30',
-    pillBg: 'bg-emerald-500 hover:bg-emerald-600',
-    pillText: 'text-slate-950',
-    glowShadow: 'shadow-[0_0_15px_rgba(99,102,241,0.2)]'
-  },
-  {
     id: 'imac-beige',
-    name: 'iMac Classic Cream (DeskOS)',
+    name: 'iMac Classic Cream (Mặc Định)',
     icon: '🍏',
     bgGradient: 'bg-[#fffbf0]',
     borderColor: 'border-[#cbb89d] hover:border-emerald-500',
     textColor: 'text-slate-900',
     headerBg: 'bg-[#dfccb0] text-slate-800 border-[#cbb89d]',
-    pillBg: 'bg-emerald-600 hover:bg-emerald-700',
-    pillText: 'text-white',
+    pillBg: 'bg-emerald-400 hover:bg-emerald-300',
+    pillText: 'text-slate-950 font-black',
     glowShadow: 'shadow-md'
+  },
+  {
+    id: 'modern-slate',
+    name: 'Modern Slate Dark',
+    icon: '🖥️',
+    bgGradient: 'bg-slate-900/90',
+    borderColor: 'border-indigo-500/50 hover:border-indigo-400',
+    textColor: 'text-slate-100',
+    headerBg: 'bg-indigo-950/80 text-indigo-200 border-indigo-500/30',
+    pillBg: 'bg-emerald-400 hover:bg-emerald-300',
+    pillText: 'text-slate-950 font-black',
+    glowShadow: 'shadow-[0_0_15px_rgba(99,102,241,0.2)]'
   },
   {
     id: 'cyber-neon',
@@ -140,18 +141,6 @@ export const PRESET_FRAME_SKINS: FrameSkin[] = [
     glowShadow: 'shadow-[0_0_20px_rgba(6,182,212,0.4)]'
   },
   {
-    id: 'vintage-crt',
-    name: 'Vintage CRT Terminal',
-    icon: '📟',
-    bgGradient: 'bg-zinc-950',
-    borderColor: 'border-emerald-500/80 hover:border-emerald-400',
-    textColor: 'text-emerald-400 font-mono',
-    headerBg: 'bg-emerald-950/90 text-emerald-300 border-emerald-500/60',
-    pillBg: 'bg-emerald-400 hover:bg-emerald-300',
-    pillText: 'text-zinc-950 font-black',
-    glowShadow: 'shadow-[0_0_15px_rgba(16,185,129,0.3)]'
-  },
-  {
     id: 'emerald-glass',
     name: 'Emerald Glassmorphism',
     icon: '💎',
@@ -162,18 +151,6 @@ export const PRESET_FRAME_SKINS: FrameSkin[] = [
     pillBg: 'bg-emerald-400 hover:bg-emerald-300',
     pillText: 'text-emerald-950 font-black',
     glowShadow: 'shadow-[0_0_25px_rgba(52,211,153,0.25)]'
-  },
-  {
-    id: 'deep-space',
-    name: 'Deep Space Aurora',
-    icon: '🌌',
-    bgGradient: 'bg-gradient-to-b from-indigo-950 via-slate-900 to-purple-950',
-    borderColor: 'border-purple-500/60 hover:border-pink-400',
-    textColor: 'text-purple-100',
-    headerBg: 'bg-purple-900/60 text-purple-200 border-purple-400/30',
-    pillBg: 'bg-gradient-to-r from-purple-400 to-pink-400',
-    pillText: 'text-slate-950 font-black',
-    glowShadow: 'shadow-[0_0_20px_rgba(168,85,247,0.3)]'
   }
 ];
 
@@ -229,6 +206,28 @@ export default function SeatingTab({
     return labs.find(l => l.id === selectedLabId) || labs[0];
   }, [labs, selectedLabId]);
 
+  // Load Incidents from localStorage to trigger Incident Glow Indicators
+  const [incidents, setIncidents] = useState<LabIncident[]>(() => {
+    try {
+      const saved = localStorage.getItem('school_lab_incidents');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Re-sync incidents periodically / on mount
+  useEffect(() => {
+    const handleStorageChange = () => {
+      try {
+        const saved = localStorage.getItem('school_lab_incidents');
+        if (saved) setIncidents(JSON.parse(saved));
+      } catch (e) {}
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   // Compute exact layout matrix synchronized 100% with the selected Lab from LabBookingTab!
   const activeLabGrid = useMemo(() => {
     const rows = activeLab?.gridRows || 5;
@@ -237,20 +236,23 @@ export default function SeatingTab({
       ? activeLab.customLayout
       : generateDefaultLabLayout(rows, cols);
 
-    const cells: Array<{ row: number; col: number; type: 'pc' | 'aisle' | 'desk'; label: string }> = [];
-    const pcList: Array<{ id: string; label: string }> = [];
+    const cells: Array<{ row: number; col: number; type: 'pc' | 'aisle' | 'desk'; label: string; pcNum: number }> = [];
+    const pcList: Array<{ id: string; label: string; pcNum: number }> = [];
 
+    let pCounter = 1;
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const key = `${r}_${c}`;
         const tile = layoutObj[key] || { type: 'pc' };
         if (tile.type === 'pc') {
-          const pcNumStr = (tile.pcNumber || (cells.length + 1)) < 10 ? `0${tile.pcNumber || (cells.length + 1)}` : `${tile.pcNumber || (cells.length + 1)}`;
+          const num = tile.pcNumber || pCounter;
+          const pcNumStr = num < 10 ? `0${num}` : `${num}`;
           const pcLabel = tile.label || tile.pcLabel || `M.${pcNumStr}`;
-          cells.push({ row: r, col: c, type: 'pc', label: pcLabel });
-          pcList.push({ id: pcLabel, label: pcLabel });
+          cells.push({ row: r, col: c, type: 'pc', label: pcLabel, pcNum: num });
+          pcList.push({ id: pcLabel, label: pcLabel, pcNum: num });
+          pCounter++;
         } else {
-          cells.push({ row: r, col: c, type: 'aisle', label: 'Lối đi' });
+          cells.push({ row: r, col: c, type: 'aisle', label: 'Lối đi', pcNum: 0 });
         }
       }
     }
@@ -269,10 +271,10 @@ export default function SeatingTab({
   }, [seatingChart, selectedClass]);
 
   // Helper to parse student IDs assigned to a computer
-  const getAssignedStudentIds = (seatingVal?: string): string[] => {
+  const getAssignedStudentIds = useCallback((seatingVal?: string): string[] => {
     if (!seatingVal) return [];
     return seatingVal.split(/[,+;]/).map(s => s.trim()).filter(Boolean);
-  };
+  }, []);
 
   // List of student IDs currently assigned to ANY PC in this class
   const assignedStudentIdsList = useMemo(() => {
@@ -281,14 +283,14 @@ export default function SeatingTab({
       getAssignedStudentIds(String(val || '')).forEach(id => assigned.add(id));
     });
     return Array.from(assigned);
-  }, [currentClassSeating]);
+  }, [currentClassSeating, getAssignedStudentIds]);
 
   // List of unassigned students in this class
   const unassignedStudents = useMemo(() => {
     return classStudents.filter(s => !assignedStudentIdsList.includes(s.id));
   }, [classStudents, assignedStudentIdsList]);
 
-  // Toggle Left Unassigned Students Panel Visibility (Hidden/Shown to maximize room canvas)
+  // Toggle Left Unassigned Students Panel Visibility
   const [isUnassignedPanelVisible, setIsUnassignedPanelVisible] = useState<boolean>(true);
 
   // Search input for unassigned left column
@@ -303,19 +305,52 @@ export default function SeatingTab({
     );
   }, [unassignedStudents, unassignedSearch]);
 
+  // --- 🔍 QUICK STUDENT FINDER SEARCH STATE ---
+  const [searchStudentSeat, setSearchStudentSeat] = useState<string>('');
+
+  // Matches for Quick Student Finder
+  const matchingPcIdsForSearch = useMemo(() => {
+    if (!searchStudentSeat.trim()) return new Set<string>();
+    const q = searchStudentSeat.toLowerCase().trim();
+    const matchedPcs = new Set<string>();
+
+    Object.entries(currentClassSeating).forEach(([pcId, valStr]) => {
+      const studentIds = getAssignedStudentIds(String(valStr || ''));
+      const hasMatch = studentIds.some(id => {
+        const st = students.find(s => s.id === id);
+        if (!st) return false;
+        return st.name.toLowerCase().includes(q) || 
+               st.code.toLowerCase().includes(q) || 
+               formatStudentNameFirstAndMiddle(st.name).toLowerCase().includes(q);
+      });
+      if (hasMatch) {
+        matchedPcs.add(pcId);
+      }
+    });
+
+    return matchedPcs;
+  }, [searchStudentSeat, currentClassSeating, students, getAssignedStudentIds]);
+
+  // --- 🔍 ZOOM LEVEL CONTROL STATE (80% to 140%) ---
+  const [zoomLevel, setZoomLevel] = useState<number>(100);
+
+  const handleZoomIn = () => setZoomLevel(prev => Math.min(140, prev + 10));
+  const handleZoomOut = () => setZoomLevel(prev => Math.max(70, prev - 10));
+  const handleZoomReset = () => setZoomLevel(100);
+
   // --- PC FRAME CUSTOMIZER CONFIG STATE ---
   const [frameConfig, setFrameConfig] = useState<PCFrameConfig>(() => {
     try {
       const saved = localStorage.getItem('deskos_pc_frame_config_v1');
       return saved ? JSON.parse(saved) : {
-        skinId: 'modern-slate',
+        skinId: 'imac-beige',
         cardSize: 'md',
         borderRadius: 'rounded-2xl',
         glowEffect: true
       };
     } catch {
       return {
-        skinId: 'modern-slate',
+        skinId: 'imac-beige',
         cardSize: 'md',
         borderRadius: 'rounded-2xl',
         glowEffect: true
@@ -323,12 +358,10 @@ export default function SeatingTab({
     }
   });
 
-  // Active Frame Skin Object
   const activeSkin = useMemo(() => {
     return PRESET_FRAME_SKINS.find(s => s.id === frameConfig.skinId) || PRESET_FRAME_SKINS[0];
   }, [frameConfig.skinId]);
 
-  // Save Frame Config effect
   useEffect(() => {
     try {
       localStorage.setItem('deskos_pc_frame_config_v1', JSON.stringify(frameConfig));
@@ -352,21 +385,27 @@ export default function SeatingTab({
     xl: 'p-4.5 min-h-[150px]'
   };
 
-  // --- SEATING ASSIGNMENT MUTATION HANDLERS ---
-  const saveSeatingState = (newClassSeating: { [pcId: string]: string }) => {
+  // --- SEATING ASSIGNMENT MUTATION HANDLERS (OPTIMIZED 0MS INSTANT LATENCY) ---
+  const saveSeatingState = useCallback((newClassSeating: { [pcId: string]: string }) => {
     const updatedChart: SeatingChart = {
       ...seatingChart,
       [selectedClass]: newClassSeating
     };
+    
+    // 1. Instant React UI Update with 0ms delay!
     setSeatingChart(updatedChart);
-    try {
-      localStorage.setItem('school_seating_chart', JSON.stringify(updatedChart));
-      saveSupabaseState('school_seating_chart', updatedChart);
-    } catch (e) {}
-  };
 
-  // Assign a student to a PC (supports pairing up to 2 students per PC!)
-  const assignStudentToComputer = (pcId: string, studentId: string) => {
+    // 2. Non-blocking Async persistence in background
+    setTimeout(() => {
+      try {
+        localStorage.setItem('school_seating_chart', JSON.stringify(updatedChart));
+        saveSupabaseState('school_seating_chart', updatedChart);
+      } catch (e) {}
+    }, 0);
+  }, [seatingChart, selectedClass, setSeatingChart]);
+
+  // Assign student to computer
+  const assignStudentToComputer = useCallback((pcId: string, studentId: string) => {
     const currentSeating = { ...currentClassSeating };
 
     // First remove student from any other PC in this class
@@ -393,10 +432,10 @@ export default function SeatingTab({
 
     const st = classStudents.find(s => s.id === studentId);
     showToast(`Đã xếp ${st ? formatStudentNameFirstAndMiddle(st.name) : 'học sinh'} vào ${pcId}!`, 'success');
-  };
+  }, [currentClassSeating, getAssignedStudentIds, saveSeatingState, classStudents, showToast]);
 
   // Remove a specific student from a PC
-  const unassignStudentFromComputer = (pcId: string, studentId: string) => {
+  const unassignStudentFromComputer = useCallback((pcId: string, studentId: string) => {
     const currentSeating = { ...currentClassSeating };
     const targetPCHs = getAssignedStudentIds(currentSeating[pcId]).filter(id => id !== studentId);
     if (targetPCHs.length > 0) {
@@ -407,7 +446,7 @@ export default function SeatingTab({
     saveSeatingState(currentSeating);
     playButtonClickSound();
     showToast('Đã gỡ học sinh khỏi vị trí máy!', 'info');
-  };
+  }, [currentClassSeating, getAssignedStudentIds, saveSeatingState, showToast]);
 
   // Clear all seating for selected class
   const handleClearAllClassSeating = () => {
@@ -457,13 +496,13 @@ export default function SeatingTab({
   };
 
   // Drag handlers
-  const handleStudentDragStart = (e: React.DragEvent, studentId: string, sourcePcId: string | null = null) => {
+  const handleStudentDragStart = useCallback((e: React.DragEvent, studentId: string, sourcePcId: string | null = null) => {
     e.dataTransfer.setData('application/json', JSON.stringify({ studentId, sourcePcId }));
     setDraggedStudentId(studentId);
     setDraggedSourcePcId(sourcePcId);
-  };
+  }, []);
 
-  const handlePcDrop = (e: React.DragEvent, targetPcId: string) => {
+  const handlePcDrop = useCallback((e: React.DragEvent, targetPcId: string) => {
     e.preventDefault();
     setDragOverPcId(null);
     const dataRaw = e.dataTransfer.getData('application/json');
@@ -477,6 +516,11 @@ export default function SeatingTab({
 
       assignStudentToComputer(targetPcId, studentId);
     } catch (err) {}
+  }, [assignStudentToComputer]);
+
+  // 🖨️ PRINT SEATING MAP HANDLER
+  const handlePrintSeatingMap = () => {
+    window.print();
   };
 
   // Custom Image URL Upload for PC Frame (Google Drive link or Computer file upload)
@@ -683,8 +727,8 @@ export default function SeatingTab({
 
           {/* Right Live Preview Column */}
           <div className="lg:col-span-5 space-y-4">
-            <div className="bg-slate-900 rounded-3xl p-6 border border-slate-800 text-slate-100 space-y-4 shadow-xl sticky top-4">
-              <h4 className="font-black text-xs text-indigo-300 uppercase tracking-wider flex items-center gap-2">
+            <div className="bg-[#fffbf0] rounded-3xl p-6 border border-[#cbb89d] text-slate-900 space-y-4 shadow-md sticky top-4">
+              <h4 className="font-black text-xs text-[#3d2b17] uppercase tracking-wider flex items-center gap-2">
                 <span>👁️</span> XEM TRƯỚC HIỂN THỊ KHUNG CARD PC
               </h4>
 
@@ -701,30 +745,30 @@ export default function SeatingTab({
                   backgroundPosition: 'center'
                 } : undefined}
               >
-                {/* Header PC info */}
+                {/* Header PC info - Green Badge when assigned */}
                 <div className="flex justify-between items-center mb-3">
-                  <span className="font-mono font-black text-xs bg-slate-950/60 px-2.5 py-1 rounded-lg text-indigo-300 border border-indigo-500/30">
+                  <span className="font-mono font-black text-xs bg-emerald-600 text-white px-2.5 py-1 rounded-lg border border-emerald-400 shadow-2xs">
                     🖥️ M.01
                   </span>
-                  <span className="text-[10px] font-black bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                  <span className="text-[10px] font-black bg-emerald-500 text-white px-2 py-0.5 rounded-full border border-emerald-400">
                     2/2 HS
                   </span>
                 </div>
 
-                {/* Sample Student Pills */}
-                <div className="space-y-1.5">
-                  <div className="bg-emerald-500/20 border border-emerald-400/40 text-emerald-200 rounded-xl px-3 py-1.5 flex justify-between items-center">
-                    <span className="font-black text-xs">Văn An</span>
-                    <span className="text-[10px] opacity-70">×</span>
+                {/* Sample Student Pills - High Contrast Neon Emerald Pill with Centered Name */}
+                <div className="space-y-1.5 text-center">
+                  <div className="bg-emerald-400 border-2 border-emerald-300 text-slate-950 rounded-xl px-3 py-1.5 flex items-center justify-center relative shadow-md">
+                    <span className="font-black text-xs text-center mx-auto">Văn An</span>
+                    <span className="absolute right-2 text-[10px] opacity-70">×</span>
                   </div>
-                  <div className="bg-emerald-500/20 border border-emerald-400/40 text-emerald-200 rounded-xl px-3 py-1.5 flex justify-between items-center">
-                    <span className="font-black text-xs">Thị Bích</span>
-                    <span className="text-[10px] opacity-70">×</span>
+                  <div className="bg-emerald-400 border-2 border-emerald-300 text-slate-950 rounded-xl px-3 py-1.5 flex items-center justify-center relative shadow-md">
+                    <span className="font-black text-xs text-center mx-auto">Thị Bích</span>
+                    <span className="absolute right-2 text-[10px] opacity-70">×</span>
                   </div>
                 </div>
               </div>
 
-              <p className="text-[11px] font-bold text-slate-400 text-center leading-relaxed">
+              <p className="text-[11px] font-bold text-slate-600 text-center leading-relaxed">
                 Tất cả ô máy tính trên sơ đồ sẽ tự động áp dụng kiểu khung card đã chọn ở trên!
               </p>
             </div>
@@ -741,8 +785,32 @@ export default function SeatingTab({
   return (
     <div className="space-y-5 pb-12 text-slate-800">
       
+      {/* CSS @media print style for clean A4 printing */}
+      <style>{`
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          #printable-room-map, #printable-room-map * {
+            visibility: visible;
+          }
+          #printable-room-map {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            background: white !important;
+            color: black !important;
+            padding: 10px;
+          }
+          .no-print {
+            display: none !important;
+          }
+        }
+      `}</style>
+
       {/* 🌟 1. BANNER HEADER MÀU SẮC ĐỒNG BỘ KHU VƯỜN TRI THỨC (IMAC WARM BEIGE & EMERALD GOLD) */}
-      <div className="relative rounded-2xl border border-[#cbb89d] bg-[#fffbf0] py-3.5 px-5 text-slate-900 shadow-sm overflow-hidden">
+      <div className="relative rounded-2xl border border-[#cbb89d] bg-[#fffbf0] py-3.5 px-5 text-slate-900 shadow-sm overflow-hidden no-print">
         <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           
           {/* Left Single Instruction Line (Bỏ chữ 'Sơ đồ lớp học & chỗ ngồi máy tính') */}
@@ -777,19 +845,19 @@ export default function SeatingTab({
         </div>
       </div>
 
-      {/* 🎛️ 2. CONTROL FILTER BAR */}
-      <div className="bg-white rounded-2xl p-3.5 sm:p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+      {/* 🎛️ 2. CONTROL FILTER BAR & QUICK STUDENT FINDER */}
+      <div className="bg-[#fffbf0] rounded-2xl p-3.5 sm:p-4 border border-[#cbb89d] shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 no-print">
         
-        {/* Selectors & Toggle Unassigned Panel Button */}
-        <div className="flex flex-wrap items-center gap-3.5 w-full sm:w-auto">
+        {/* Selectors & Quick Student Finder Input */}
+        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
           
           {/* Lab Selector */}
           <div className="flex items-center gap-2">
-            <label className="text-[11px] font-black text-slate-500 uppercase tracking-wider shrink-0">CHỌN PHÒNG MÁY:</label>
+            <label className="text-[11px] font-black text-[#5c4327] uppercase tracking-wider shrink-0">CHỌN PHÒNG MÁY:</label>
             <select
               value={selectedLabId}
               onChange={(e) => setSelectedLabId(e.target.value)}
-              className="px-3.5 py-1.5 text-xs font-black rounded-xl border border-slate-200 bg-slate-50 text-slate-900 focus:outline-none focus:border-emerald-500 shadow-2xs cursor-pointer min-w-[170px]"
+              className="px-3.5 py-1.5 text-xs font-black rounded-xl border border-[#cbb89d] bg-white text-slate-900 focus:outline-none focus:border-emerald-600 shadow-2xs cursor-pointer min-w-[170px]"
             >
               {labs.map(lab => (
                 <option key={lab.id} value={lab.id}>
@@ -799,12 +867,39 @@ export default function SeatingTab({
             </select>
           </div>
 
+          {/* 🔍 QUICK STUDENT FINDER SEARCH INPUT */}
+          <div className="relative flex-1 min-w-[200px] max-w-[300px]">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-amber-700" />
+            <input
+              type="text"
+              value={searchStudentSeat}
+              onChange={(e) => setSearchStudentSeat(e.target.value)}
+              placeholder="🔍 Tìm vị trí chỗ ngồi HS..."
+              className="w-full pl-9 pr-7 py-1.5 text-xs font-black rounded-xl border border-amber-300 bg-amber-50/80 text-amber-950 focus:outline-none focus:border-amber-500 shadow-2xs placeholder:text-amber-700/60"
+            />
+            {searchStudentSeat && (
+              <button
+                onClick={() => setSearchStudentSeat('')}
+                className="absolute right-2 top-2 text-amber-700 hover:text-amber-950 text-xs font-black cursor-pointer"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* Search Result Counter Indicator */}
+          {searchStudentSeat && (
+            <span className="text-[11px] font-black text-amber-900 bg-amber-200/90 px-2.5 py-1 rounded-lg border border-amber-400 animate-pulse">
+              ✨ {matchingPcIdsForSearch.size} ô máy khớp!
+            </span>
+          )}
+
           {/* Toggle Button to Hide/Show Unassigned Left Panel */}
           <button
             onClick={() => setIsUnassignedPanelVisible(!isUnassignedPanelVisible)}
             className={`px-3 py-1.5 rounded-xl font-black text-xs transition-all border flex items-center gap-1.5 cursor-pointer ${
               isUnassignedPanelVisible
-                ? 'bg-sky-50 text-sky-800 border-sky-200 hover:bg-sky-100'
+                ? 'bg-amber-100/70 text-amber-900 border-amber-300 hover:bg-amber-200/80'
                 : 'bg-emerald-600 text-white border-emerald-500 hover:bg-emerald-700 shadow-xs'
             }`}
           >
@@ -822,11 +917,11 @@ export default function SeatingTab({
         </div>
 
         {/* Right Info & Clear Seating Button */}
-        <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-2.5 sm:pt-0 border-slate-100">
+        <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-2.5 sm:pt-0 border-[#cbb89d]">
           
           <div className="text-xs font-bold">
-            <span className="text-slate-500">Chờ xếp chỗ: </span>
-            <span className="font-black text-amber-600">{unassignedStudents.length} HS</span>
+            <span className="text-slate-600">Chờ xếp chỗ: </span>
+            <span className="font-black text-amber-700">{unassignedStudents.length} HS</span>
           </div>
 
           <button
@@ -843,24 +938,24 @@ export default function SeatingTab({
       {/* 🖼️ 3. MAIN ROOM CANVAS GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         
-        {/* ================= LEFT COLUMN: HỌC SINH CHỜ NGỒI (CAN BE TOGGLED HIDE/SHOW) ================= */}
+        {/* ================= LEFT COLUMN: HỌC SINH CHỜ NGỒI ================= */}
         {isUnassignedPanelVisible && (
-          <div className="lg:col-span-4 bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-3 flex flex-col max-h-[720px] overflow-hidden">
+          <div className="lg:col-span-4 bg-[#fffbf0] rounded-2xl p-4 border border-[#cbb89d] shadow-sm space-y-3 flex flex-col max-h-[720px] overflow-hidden no-print">
             
-            <div className="space-y-0.5 border-b border-slate-100 pb-2.5">
+            <div className="space-y-0.5 border-b border-[#cbb89d] pb-2.5">
               <div className="flex justify-between items-center">
-                <h3 className="font-black text-xs text-slate-900 flex items-center gap-1.5">
+                <h3 className="font-black text-xs text-[#3d2b17] flex items-center gap-1.5">
                   <span>👦</span> HỌC SINH CHỜ NGỒI ({unassignedStudents.length})
                 </h3>
                 <button
                   onClick={() => setIsUnassignedPanelVisible(false)}
-                  className="text-[10px] font-black text-slate-400 hover:text-slate-600 cursor-pointer"
+                  className="text-[10px] font-black text-slate-500 hover:text-slate-800 cursor-pointer"
                   title="Ẩn bảng chờ để mở rộng sơ đồ"
                 >
                   ◀ Ẩn
                 </button>
               </div>
-              <p className="text-[10px] font-bold text-slate-400 leading-snug">
+              <p className="text-[10px] font-bold text-slate-500 leading-snug">
                 Kéo tên học sinh vào ô máy tính bên phải để xếp chỗ.
               </p>
             </div>
@@ -873,7 +968,7 @@ export default function SeatingTab({
                 value={unassignedSearch}
                 onChange={(e) => setUnassignedSearch(e.target.value)}
                 placeholder="Tìm kiếm học sinh..."
-                className="w-full pl-9 pr-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:border-emerald-500"
+                className="w-full pl-9 pr-3 py-1.5 text-xs font-bold rounded-xl border border-[#cbb89d] bg-white focus:outline-none focus:border-emerald-600"
               />
             </div>
 
@@ -885,7 +980,7 @@ export default function SeatingTab({
                     key={st.id}
                     draggable={true}
                     onDragStart={(e) => handleStudentDragStart(e, st.id)}
-                    className="bg-slate-50 hover:bg-emerald-50/80 p-2.5 rounded-xl border border-slate-200 hover:border-emerald-300 transition-all flex items-center justify-between cursor-grab active:cursor-grabbing group shadow-2xs"
+                    className="bg-white hover:bg-emerald-50 p-2.5 rounded-xl border border-[#cbb89d] hover:border-emerald-500 transition-all flex items-center justify-between cursor-grab active:cursor-grabbing group shadow-2xs"
                   >
                     <div className="flex items-center gap-2.5">
                       <span className="text-lg select-none">
@@ -901,7 +996,7 @@ export default function SeatingTab({
                       </div>
                     </div>
 
-                    <span className="text-[9px] font-black bg-slate-200 group-hover:bg-emerald-200 group-hover:text-emerald-900 text-slate-600 px-2 py-0.5 rounded-md">
+                    <span className="text-[9px] font-black bg-amber-100 group-hover:bg-emerald-200 group-hover:text-emerald-900 text-amber-900 px-2 py-0.5 rounded-md border border-amber-200">
                       Kéo chỗ 🖐️
                     </span>
                   </div>
@@ -926,124 +1021,226 @@ export default function SeatingTab({
           </div>
         )}
 
-        {/* ================= RIGHT COLUMN: SƠ ĐỒ PHÒNG MÁY TÍNH (SYNCHRONIZED 100% WITH LAB LAYOUT) ================= */}
-        <div className={`${isUnassignedPanelVisible ? 'lg:col-span-8' : 'lg:col-span-12'} bg-[#0b1120] rounded-2xl p-4 sm:p-5 border border-slate-800 shadow-2xl space-y-4 transition-all duration-300`}>
+        {/* ================= RIGHT COLUMN: SƠ ĐỒ PHÒNG MÁY TÍNH (NỀN SÁNG VÀNG KEM iMAC) ================= */}
+        <div 
+          id="printable-room-map"
+          className={`${isUnassignedPanelVisible ? 'lg:col-span-8' : 'lg:col-span-12'} bg-[#fbf7ee] rounded-2xl p-4 sm:p-5 border border-[#cbb89d] shadow-sm space-y-4 transition-all duration-300`}
+        >
           
-          {/* Top Teacher Board Banner */}
-          <div className="w-full bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-xl py-2.5 px-4 border border-indigo-500/30 text-center shadow-inner">
-            <span className="text-xs font-black text-amber-300 uppercase tracking-widest flex items-center justify-center gap-2">
+          {/* Top Canvas Toolbar with Teacher Screen Board & Zoom / Print Controls */}
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-3 bg-[#dfccb0] p-2.5 rounded-xl border border-[#cbb89d]">
+            
+            {/* Màn chiếu bảng giáo viên */}
+            <span className="text-xs font-black text-[#3d2b17] uppercase tracking-widest flex items-center gap-2 mx-auto sm:mx-0">
               👨‍🏫 MÀN CHIẾU & BẢNG GIÁO VIÊN ({activeLab.name} - {activeLab.code})
             </span>
+
+            {/* Right Zoom & Print Controls */}
+            <div className="flex items-center gap-2 no-print">
+              
+              {/* Zoom Out */}
+              <button
+                onClick={handleZoomOut}
+                disabled={zoomLevel <= 70}
+                className="p-1.5 rounded-lg bg-white hover:bg-amber-50 text-slate-800 border border-[#cbb89d] text-xs font-black shadow-2xs disabled:opacity-40 cursor-pointer"
+                title="Thu nhỏ sơ đồ (-10%)"
+              >
+                <ZoomOut className="w-3.5 h-3.5" />
+              </button>
+
+              <span className="text-[11px] font-black text-[#3d2b17] min-w-[42px] text-center select-none">
+                {zoomLevel}%
+              </span>
+
+              {/* Zoom In */}
+              <button
+                onClick={handleZoomIn}
+                disabled={zoomLevel >= 140}
+                className="p-1.5 rounded-lg bg-white hover:bg-amber-50 text-slate-800 border border-[#cbb89d] text-xs font-black shadow-2xs disabled:opacity-40 cursor-pointer"
+                title="Phóng to sơ đồ (+10%)"
+              >
+                <ZoomIn className="w-3.5 h-3.5" />
+              </button>
+
+              {/* Reset Zoom */}
+              {zoomLevel !== 100 && (
+                <button
+                  onClick={handleZoomReset}
+                  className="px-2 py-1 rounded-lg bg-white hover:bg-amber-50 text-[10px] font-black text-slate-700 border border-[#cbb89d] cursor-pointer"
+                >
+                  ↺ 100%
+                </button>
+              )}
+
+              {/* 🖨️ Print Button */}
+              <button
+                onClick={handlePrintSeatingMap}
+                className="px-3 py-1.5 rounded-xl bg-amber-800 hover:bg-amber-900 text-amber-100 font-black text-xs shadow-xs transition-all active:scale-95 flex items-center gap-1.5 border border-amber-950 cursor-pointer ml-1"
+                title="In sơ đồ chỗ ngồi ra PDF hoặc giấy A4"
+              >
+                <Printer className="w-3.5 h-3.5" /> In Sơ Đồ
+              </button>
+
+            </div>
+
           </div>
 
-          {/* Room Matrix Grid matching activeLab gridRows x gridCols */}
+          {/* Room Matrix Grid matching activeLab gridRows x gridCols with Dynamic Zoom Scaling */}
           <div 
-            className="grid gap-3"
+            className="transition-transform duration-200 origin-top"
             style={{
-              gridTemplateColumns: `repeat(${activeLabGrid.cols}, minmax(0, 1fr))`
+              zoom: `${zoomLevel}%`
             }}
           >
-            {activeLabGrid.cells.map(tile => {
-              // AISLE TILE (Lối đi)
-              if (tile.type === 'aisle') {
-                return (
-                  <div 
-                    key={`aisle_${tile.row}_${tile.col}`}
-                    className="bg-slate-950/40 border border-slate-800/40 rounded-xl p-2 flex items-center justify-center min-h-[90px] select-none"
-                  >
-                    <span className="text-[10px] font-black text-slate-600 uppercase tracking-wider">Lối đi</span>
-                  </div>
+            <div 
+              className="grid gap-3"
+              style={{
+                gridTemplateColumns: `repeat(${activeLabGrid.cols}, minmax(0, 1fr))`
+              }}
+            >
+              {activeLabGrid.cells.map(tile => {
+                // AISLE TILE (Lối đi)
+                if (tile.type === 'aisle') {
+                  return (
+                    <div 
+                      key={`aisle_${tile.row}_${tile.col}`}
+                      className="bg-amber-100/40 border border-amber-200/50 rounded-xl p-2 flex items-center justify-center min-h-[90px] select-none"
+                    >
+                      <span className="text-[10px] font-black text-amber-800/40 uppercase tracking-wider">Lối đi</span>
+                    </div>
+                  );
+                }
+
+                // PC TILE (Máy tính)
+                const pcId = tile.label;
+                const pcNum = tile.pcNum;
+                const assignedIds = getAssignedStudentIds(currentClassSeating[pcId]);
+                const assignedStudents = assignedIds.map(id => students.find(s => s.id === id)).filter(Boolean) as Student[];
+
+                const isFull = assignedStudents.length >= 2;
+                const hasOne = assignedStudents.length === 1;
+                const isDragOver = dragOverPcId === pcId;
+                const isSearchMatch = matchingPcIdsForSearch.has(pcId);
+
+                // ⚠️ INCIDENT REPORT CHECK (Incident Glow Indicator)
+                const targetIncident = incidents.find(inc => 
+                  inc.labId === selectedLabId && 
+                  (inc.pcNumber === pcNum || pcId.includes(String(inc.pcNumber))) && 
+                  inc.status !== 'Resolved'
                 );
-              }
 
-              // PC TILE (Máy tính) - Synchronized 100% with Lab PC Label (M.01, M.02...)
-              const pcId = tile.label;
-              const assignedIds = getAssignedStudentIds(currentClassSeating[pcId]);
-              const assignedStudents = assignedIds.map(id => students.find(s => s.id === id)).filter(Boolean) as Student[];
+                // Dynamic Border Style for PC Card (1 HS: Vàng Cam, 2 HS: Xanh Lá, Search Match: Dazzling Pulse, Incident: Red Glow)
+                let borderStyleClass = 'border-[#cbb89d] bg-[#fffbf0]';
+                if (targetIncident) {
+                  borderStyleClass = 'border-rose-500 bg-rose-100/90 ring-4 ring-rose-400 animate-pulse text-rose-950 z-20';
+                } else if (isSearchMatch) {
+                  borderStyleClass = 'border-amber-400 bg-amber-100/90 ring-4 ring-amber-400 animate-pulse scale-105 shadow-[0_0_25px_rgba(245,158,11,0.8)] z-30';
+                } else if (isFull) {
+                  borderStyleClass = 'border-emerald-500 ring-2 ring-emerald-400/40 bg-emerald-50/60 shadow-[0_0_12px_rgba(16,185,129,0.3)]';
+                } else if (hasOne) {
+                  borderStyleClass = 'border-amber-500 ring-2 ring-amber-400/40 bg-amber-50/60 shadow-[0_0_12px_rgba(245,158,11,0.3)]';
+                }
 
-              const isFull = assignedStudents.length >= 2;
-              const isDragOver = dragOverPcId === pcId;
+                return (
+                  <div
+                    key={`pc_${pcId}`}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setDragOverPcId(pcId);
+                    }}
+                    onDragLeave={() => setDragOverPcId(null)}
+                    onDrop={(e) => handlePcDrop(e, pcId)}
+                    className={`rounded-xl border-2 transition-all relative flex flex-col justify-between ${cardSizeClasses[frameConfig.cardSize]} ${
+                      isDragOver ? 'border-amber-500 scale-105 bg-amber-100 ring-4 ring-amber-400/50 z-20' : ''
+                    } ${
+                      frameConfig.customImageUrl 
+                        ? 'border-indigo-400/80 bg-slate-950/90' 
+                        : `${borderStyleClass} ${frameConfig.glowEffect && !targetIncident && !isSearchMatch ? activeSkin.glowShadow : ''}`
+                    }`}
+                    style={frameConfig.customImageUrl ? {
+                      backgroundImage: `url(${frameConfig.customImageUrl})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center'
+                    } : undefined}
+                  >
+                    {/* PC Header Bar - Green Badge 'M.' background when assigned */}
+                    <div className="flex justify-between items-center mb-1.5">
+                      <span className={`font-mono font-black text-[11px] px-2 py-0.5 rounded-md border shadow-2xs ${
+                        assignedStudents.length > 0
+                          ? 'bg-emerald-600 text-white border-emerald-400'
+                          : 'bg-[#dfccb0] text-[#3d2b17] border-[#cbb89d]'
+                      }`}>
+                        🖥️ {pcId}
+                      </span>
 
-              return (
-                <div
-                  key={`pc_${pcId}`}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setDragOverPcId(pcId);
-                  }}
-                  onDragLeave={() => setDragOverPcId(null)}
-                  onDrop={(e) => handlePcDrop(e, pcId)}
-                  className={`rounded-xl border-2 transition-all relative flex flex-col justify-between ${cardSizeClasses[frameConfig.cardSize]} ${
-                    isDragOver ? 'border-amber-400 scale-105 bg-amber-950/40 ring-4 ring-amber-400/40 z-20' : ''
-                  } ${
-                    frameConfig.customImageUrl 
-                      ? 'border-indigo-400/80 bg-slate-950/90' 
-                      : `${activeSkin.bgGradient} ${activeSkin.borderColor} ${frameConfig.glowEffect ? activeSkin.glowShadow : ''}`
-                  }`}
-                  style={frameConfig.customImageUrl ? {
-                    backgroundImage: `url(${frameConfig.customImageUrl})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center'
-                  } : undefined}
-                >
-                  {/* PC Header Bar - High Contrast Amber Badge */}
-                  <div className="flex justify-between items-center mb-1.5">
-                    <span className="font-mono font-black text-[11px] bg-amber-400 text-slate-950 px-2 py-0.5 rounded-md border border-amber-300 shadow-2xs">
-                      🖥️ {pcId}
-                    </span>
-                    <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full border shadow-2xs ${
-                      isFull 
-                        ? 'bg-rose-500 text-white border-rose-400' 
-                        : assignedStudents.length > 0 
-                          ? 'bg-amber-300 text-slate-950 border-amber-400' 
-                          : 'bg-slate-800 text-slate-300 border-slate-700'
-                    }`}>
-                      {assignedStudents.length}/2 HS
-                    </span>
-                  </div>
-
-                  {/* Student Seating Slot Content - High Contrast Neon Emerald Pill with CENTERED Student Name */}
-                  {assignedStudents.length > 0 ? (
-                    <div className="space-y-1 my-auto w-full text-center">
-                      {assignedStudents.map(st => (
-                        <div
-                          key={st.id}
-                          draggable={true}
-                          onDragStart={(e) => handleStudentDragStart(e, st.id, pcId)}
-                          className="bg-emerald-400 hover:bg-emerald-300 border-2 border-emerald-300 text-slate-950 rounded-lg px-2 py-1 flex items-center justify-center relative transition-all cursor-grab active:cursor-grabbing group shadow-md text-center"
-                        >
-                          <span className="font-black text-xs text-slate-950 text-center truncate max-w-[100px] mx-auto drop-shadow-2xs" title={st.name}>
-                            {formatStudentNameFirstAndMiddle(st.name)}
-                          </span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              unassignStudentFromComputer(pcId, st.id);
-                            }}
-                            className="absolute right-1 text-slate-950/70 hover:text-rose-700 p-0.5 rounded-full hover:bg-white/60 transition-colors cursor-pointer"
-                            title="Xóa học sinh khỏi máy"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </div>
-                      ))}
-
-                      {/* Display formatted concatenated string e.g. "Văn An + Thị Bích" when 2 students seated */}
-                      {assignedStudents.length === 2 && (
-                        <div className="text-[10px] font-black text-amber-300 bg-slate-950/90 px-2 py-0.5 rounded-md border border-amber-400/60 text-center justify-center tracking-tight truncate mx-auto w-full shadow-xs">
-                          {formatStudentNameFirstAndMiddle(assignedStudents[0].name)} + {formatStudentNameFirstAndMiddle(assignedStudents[1].name)}
-                        </div>
+                      {/* Incident Warning Badge or Student Count */}
+                      {targetIncident ? (
+                        <span className="text-[9px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded-full border border-rose-400 animate-bounce" title={targetIncident.issue}>
+                          ⚠️ HỎNG
+                        </span>
+                      ) : (
+                        <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full border shadow-2xs ${
+                          isFull 
+                            ? 'bg-emerald-500 text-white border-emerald-400' 
+                            : assignedStudents.length > 0 
+                              ? 'bg-amber-500 text-white border-amber-400' 
+                              : 'bg-slate-200 text-slate-600 border-slate-300'
+                        }`}>
+                          {assignedStudents.length}/2 HS
+                        </span>
                       )}
                     </div>
-                  ) : (
-                    <div className="my-auto py-1.5 text-center justify-center flex items-center text-slate-300 font-black text-[10px] border border-dashed border-slate-500/60 rounded-lg bg-slate-950/60">
-                      Kéo HS vào đây
-                    </div>
-                  )}
 
-                </div>
-              );
-            })}
+                    {/* Incident Issue Banner Warning if Broken */}
+                    {targetIncident && (
+                      <div className="text-[9px] font-black text-rose-900 bg-rose-200 px-1 py-0.5 rounded text-center truncate mb-1 border border-rose-300">
+                        {targetIncident.type}: {targetIncident.issue}
+                      </div>
+                    )}
+
+                    {/* Student Seating Slot Content - High Contrast Neon Emerald Pill with CENTERED Student Name */}
+                    {assignedStudents.length > 0 ? (
+                      <div className="space-y-1 my-auto w-full text-center">
+                        {assignedStudents.map(st => (
+                          <div
+                            key={st.id}
+                            draggable={true}
+                            onDragStart={(e) => handleStudentDragStart(e, st.id, pcId)}
+                            className="bg-emerald-400 hover:bg-emerald-300 border-2 border-emerald-300 text-slate-950 rounded-lg px-2 py-1 flex items-center justify-center relative transition-all cursor-grab active:cursor-grabbing group shadow-md text-center"
+                          >
+                            <span className="font-black text-xs text-slate-950 text-center truncate max-w-[100px] mx-auto drop-shadow-2xs" title={st.name}>
+                              {formatStudentNameFirstAndMiddle(st.name)}
+                            </span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                unassignStudentFromComputer(pcId, st.id);
+                              }}
+                              className="absolute right-1 text-slate-950/70 hover:text-rose-700 p-0.5 rounded-full hover:bg-white/60 transition-colors cursor-pointer"
+                              title="Xóa học sinh khỏi máy"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+
+                        {/* Display formatted concatenated string e.g. "Văn An + Thị Bích" when 2 students seated */}
+                        {assignedStudents.length === 2 && (
+                          <div className="text-[10px] font-black text-emerald-950 bg-emerald-200 px-2 py-0.5 rounded-md border border-emerald-400 text-center justify-center tracking-tight truncate mx-auto w-full shadow-xs">
+                            {formatStudentNameFirstAndMiddle(assignedStudents[0].name)} + {formatStudentNameFirstAndMiddle(assignedStudents[1].name)}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="my-auto py-1.5 text-center justify-center flex items-center text-amber-900/60 font-bold text-[10px] border border-dashed border-amber-300/80 rounded-lg bg-amber-50/50">
+                        Kéo HS vào đây
+                      </div>
+                    )}
+
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
         </div>
