@@ -1360,6 +1360,8 @@ export default function App() {
                 labs={labs}
                 classes={classes}
                 onSelectClass={setSelectedClass}
+                attendanceData={attendanceData}
+                selectedDate={selectedDate}
               />
             )}
 
