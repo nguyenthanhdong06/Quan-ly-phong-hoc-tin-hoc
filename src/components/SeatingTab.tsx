@@ -4,12 +4,32 @@ import {
   Monitor, X, Wrench, AlertTriangle, PenTool, Clipboard, Search, Check, ChevronDown, 
   Maximize, Minimize, Tv, ZoomIn, ZoomOut, Sun, Moon, ArrowLeft, Palette, Sparkles, 
   RotateCcw, Users, Plus, LayoutGrid, CheckCircle2, UserCheck, ShieldCheck, Image as ImageIcon,
-  Sliders, Move, ArrowRightLeft, Upload, Link, CheckCheck, RefreshCw, Zap
+  Sliders, Move, ArrowRightLeft, Upload, Link, CheckCheck, RefreshCw, Zap, Eye, EyeOff, PanelLeftClose, PanelLeftOpen
 } from 'lucide-react';
 import { extractGoogleDriveFileId, convertGoogleDriveUrl, compressImageFile } from './KnowledgeGardenTab';
 import { playButtonClickSound, playVictoryFanfareSound } from '../utils/audioEffects';
 import { safeSetLocalStorage } from '../utils/safeStorage';
 import { saveSupabaseState } from '../supabaseClient';
+
+// Helper to generate default lab matrix layout (Rows x Cols) with labels M.01, M.02...
+export const generateDefaultLabLayout = (rows: number = 5, cols: number = 8) => {
+  const layout: Record<string, { type: 'pc' | 'aisle' | 'desk'; label?: string; pcNumber?: number }> = {};
+  let pcCounter = 1;
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const key = `${r}_${c}`;
+      const pcNumStr = pcCounter < 10 ? `0${pcCounter}` : `${pcCounter}`;
+      layout[key] = { 
+        type: 'pc', 
+        pcNumber: pcCounter, 
+        label: `M.${pcNumStr}` 
+      };
+      pcCounter++;
+    }
+  }
+  return layout;
+};
 
 // 3D Pixel/Cartoon Avatar component for boy/girl or custom Google Drive URL
 export const StudentAvatar3D = ({ gender, size = 'w-10 h-10', name = '', avatarUrl }: { gender: string; size?: string; name?: string; avatarUrl?: string }) => {
@@ -161,7 +181,7 @@ export interface PCFrameConfig {
   skinId: string;
   customImageUrl?: string;
   cardSize: 'sm' | 'md' | 'lg' | 'xl';
-  borderRadius: string; // 'rounded-2xl', 'rounded-3xl' etc.
+  borderRadius: string;
   glowEffect: boolean;
 }
 
@@ -209,6 +229,35 @@ export default function SeatingTab({
     return labs.find(l => l.id === selectedLabId) || labs[0];
   }, [labs, selectedLabId]);
 
+  // Compute exact layout matrix synchronized 100% with the selected Lab from LabBookingTab!
+  const activeLabGrid = useMemo(() => {
+    const rows = activeLab?.gridRows || 5;
+    const cols = activeLab?.gridCols || 8;
+    const layoutObj = (activeLab?.customLayout && Object.keys(activeLab.customLayout).length > 0)
+      ? activeLab.customLayout
+      : generateDefaultLabLayout(rows, cols);
+
+    const cells: Array<{ row: number; col: number; type: 'pc' | 'aisle' | 'desk'; label: string }> = [];
+    const pcList: Array<{ id: string; label: string }> = [];
+
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const key = `${r}_${c}`;
+        const tile = layoutObj[key] || { type: 'pc' };
+        if (tile.type === 'pc') {
+          const pcNumStr = (tile.pcNumber || (cells.length + 1)) < 10 ? `0${tile.pcNumber || (cells.length + 1)}` : `${tile.pcNumber || (cells.length + 1)}`;
+          const pcLabel = tile.label || tile.pcLabel || `M.${pcNumStr}`;
+          cells.push({ row: r, col: c, type: 'pc', label: pcLabel });
+          pcList.push({ id: pcLabel, label: pcLabel });
+        } else {
+          cells.push({ row: r, col: c, type: 'aisle', label: 'Lối đi' });
+        }
+      }
+    }
+
+    return { rows, cols, cells, pcList };
+  }, [activeLab]);
+
   // Students of current selected class
   const classStudents = useMemo(() => {
     return students.filter(s => s.classId === selectedClass);
@@ -238,6 +287,9 @@ export default function SeatingTab({
   const unassignedStudents = useMemo(() => {
     return classStudents.filter(s => !assignedStudentIdsList.includes(s.id));
   }, [classStudents, assignedStudentIdsList]);
+
+  // Toggle Left Unassigned Students Panel Visibility (Hidden/Shown to maximize room canvas)
+  const [isUnassignedPanelVisible, setIsUnassignedPanelVisible] = useState<boolean>(true);
 
   // Search input for unassigned left column
   const [unassignedSearch, setUnassignedSearch] = useState('');
@@ -284,8 +336,7 @@ export default function SeatingTab({
     } catch (e) {}
   }, [frameConfig]);
 
-  // --- INLINE SUB-VIEWS STATES (100% WINDOW TAKEOVER) ---
-  const [isClassListSubViewOpen, setIsClassListSubViewOpen] = useState(false);
+  // --- INLINE SUB-VIEW STATE (100% WINDOW TAKEOVER) ---
   const [isFrameConfigSubViewOpen, setIsFrameConfigSubViewOpen] = useState(false);
 
   // Drag and Drop States
@@ -296,9 +347,9 @@ export default function SeatingTab({
   // Card Size Tailwind mappings
   const cardSizeClasses = {
     sm: 'p-2 min-h-[90px]',
-    md: 'p-3.5 min-h-[115px]',
-    lg: 'p-4 min-h-[135px]',
-    xl: 'p-5 min-h-[155px]'
+    md: 'p-3 min-h-[110px]',
+    lg: 'p-3.5 min-h-[130px]',
+    xl: 'p-4.5 min-h-[150px]'
   };
 
   // --- SEATING ASSIGNMENT MUTATION HANDLERS ---
@@ -376,19 +427,18 @@ export default function SeatingTab({
       return;
     }
 
-    const availablePcs = computers.filter(c => c.status === 'Hoạt động');
+    const availablePcs = activeLabGrid.pcList;
     if (availablePcs.length === 0) {
-      showToast('Không có máy tính nào khả dụng trong phòng!', 'error');
+      showToast('Không có máy tính nào trong sơ đồ phòng máy này!', 'error');
       return;
     }
 
     const newSeating: { [pcId: string]: string } = {};
     let pcIndex = 0;
 
-    classStudents.forEach((st, idx) => {
-      // 2 students per PC if student count exceeds PC count, otherwise 1 student per PC
+    classStudents.forEach((st) => {
       const targetPc = availablePcs[pcIndex % availablePcs.length];
-      const pcId = targetPc.id || `M.${targetPc.num < 10 ? '0' + targetPc.num : targetPc.num}`;
+      const pcId = targetPc.id;
 
       const existing = getAssignedStudentIds(newSeating[pcId]);
       if (existing.length < 2) {
@@ -397,8 +447,7 @@ export default function SeatingTab({
       } else {
         pcIndex++;
         const nextPc = availablePcs[pcIndex % availablePcs.length];
-        const nextPcId = nextPc.id || `M.${nextPc.num < 10 ? '0' + nextPc.num : nextPc.num}`;
-        newSeating[nextPcId] = [st.id].join(',');
+        newSeating[nextPc.id] = [st.id].join(',');
       }
     });
 
@@ -461,134 +510,7 @@ export default function SeatingTab({
   };
 
   // =========================================================================
-  // 🌟 INLINE SUB-VIEW 1: DANH SÁCH LỚP HỌC (100% FULL WINDOW TAKEOVER)
-  // =========================================================================
-  if (isClassListSubViewOpen) {
-    return (
-      <div className="space-y-6 text-slate-800 pb-10">
-        {/* Header Header Bar */}
-        <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs">
-          <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setIsClassListSubViewOpen(false)}
-                className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-[#cbb89d] font-black text-xs transition-all flex items-center gap-1.5 shadow-2xs active:scale-95 cursor-pointer"
-              >
-                <ArrowLeft className="w-4 h-4 text-slate-700" /> Quay Về Sơ Đồ Phòng Máy
-              </button>
-              <div>
-                <h3 className="font-black text-sm text-slate-900 flex items-center gap-2">
-                  <span>📋</span> DANH SÁCH HỌC SINH LỚP {selectedClass} ({classStudents.length} HS)
-                </h3>
-                <p className="text-[11px] font-bold text-slate-600">Xem chi tiết trạng thái xếp máy và gán máy nhanh cho từng học sinh</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleAutoSeatClass}
-                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-2xs transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
-              >
-                <Sparkles className="w-4 h-4" /> 🪄 Xếp Tự Động Toàn Lớp
-              </button>
-              <button
-                onClick={handleClearAllClassSeating}
-                className="px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-black text-xs transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
-              >
-                <RotateCcw className="w-4 h-4" /> ↺ Xóa Chỗ Ngồi
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Table View */}
-        <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-100/80 border-b border-slate-200 text-[11px] font-black text-slate-500 uppercase tracking-wider">
-                  <th className="py-3 px-4">STT</th>
-                  <th className="py-3 px-4">Mã MSHS</th>
-                  <th className="py-3 px-4">Họ và Tên Học Sinh</th>
-                  <th className="py-3 px-4">Tên Rút Gọn (Chữ Lót + Tên)</th>
-                  <th className="py-3 px-4">Giới Tính</th>
-                  <th className="py-3 px-4">Vị Trí Máy Tính</th>
-                  <th className="py-3 px-4 text-center">Thao Tác Nhanh</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-xs font-bold text-slate-700">
-                {classStudents.map((st, idx) => {
-                  const assignedPcId = Object.keys(currentClassSeating).find(pcId => 
-                    getAssignedStudentIds(currentClassSeating[pcId]).includes(st.id)
-                  );
-                  const isSeated = Boolean(assignedPcId);
-
-                  return (
-                    <tr key={st.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-3.5 px-4 text-slate-400 font-extrabold">{idx + 1}</td>
-                      <td className="py-3.5 px-4 font-mono font-black text-emerald-800">{st.code}</td>
-                      <td className="py-3.5 px-4 font-black text-slate-900">{st.name}</td>
-                      <td className="py-3.5 px-4">
-                        <span className="bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-full border border-emerald-200 font-extrabold text-[11px]">
-                          {formatStudentNameFirstAndMiddle(st.name)}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4">{st.gender === 'Nữ' ? '👧 Nữ' : '👦 Nam'}</td>
-                      <td className="py-3.5 px-4">
-                        {isSeated ? (
-                          <span className="bg-indigo-50 text-indigo-800 px-3 py-1 rounded-full border border-indigo-200 font-black text-[11px] inline-flex items-center gap-1">
-                            <Monitor className="w-3.5 h-3.5" /> {assignedPcId}
-                          </span>
-                        ) : (
-                          <span className="bg-amber-50 text-amber-800 px-3 py-1 rounded-full border border-amber-200 font-bold text-[11px]">
-                            Chưa có chỗ
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3.5 px-4 text-center">
-                        {isSeated ? (
-                          <button
-                            onClick={() => unassignStudentFromComputer(assignedPcId!, st.id)}
-                            className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-black text-[11px] border border-rose-200 transition-all active:scale-95 cursor-pointer"
-                          >
-                            Xóa khỏi máy
-                          </button>
-                        ) : (
-                          <select
-                            onChange={(e) => {
-                              if (e.target.value) {
-                                assignStudentToComputer(e.target.value, st.id);
-                              }
-                            }}
-                            defaultValue=""
-                            className="px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-900 font-black text-[11px] border border-emerald-200 focus:outline-none cursor-pointer"
-                          >
-                            <option value="" disabled>+ Chọn máy để gán...</option>
-                            {computers.filter(c => c.status === 'Hoạt động').map(c => {
-                              const pcId = c.id || `M.${c.num < 10 ? '0' + c.num : c.num}`;
-                              const count = getAssignedStudentIds(currentClassSeating[pcId]).length;
-                              return (
-                                <option key={pcId} value={pcId} disabled={count >= 2}>
-                                  {pcId} ({count}/2 HS)
-                                </option>
-                              );
-                            })}
-                          </select>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // =========================================================================
-  // 🎨 INLINE SUB-VIEW 2: ĐỔI KHUNG CARD PC (100% FULL WINDOW TAKEOVER)
+  // 🎨 INLINE SUB-VIEW: ĐỔI KHUNG CARD PC (100% FULL WINDOW TAKEOVER)
   // =========================================================================
   if (isFrameConfigSubViewOpen) {
     return (
@@ -732,7 +654,7 @@ export default function SeatingTab({
                   <select
                     value={frameConfig.cardSize}
                     onChange={(e) => setFrameConfig(prev => ({ ...prev, cardSize: e.target.value as any }))}
-                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 font-black text-slate-800 focus:outline-none"
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 font-black text-slate-800 focus:outline-none cursor-pointer"
                   >
                     <option value="sm">Nhỏ (Gọn gàng)</option>
                     <option value="md">Vừa (Chuẩn đẹp)</option>
@@ -745,7 +667,7 @@ export default function SeatingTab({
                   <label className="block text-slate-600 mb-1.5">Hiệu Ứng Phát Sáng:</label>
                   <button
                     onClick={() => setFrameConfig(prev => ({ ...prev, glowEffect: !prev.glowEffect }))}
-                    className={`w-full py-2 px-3 rounded-xl font-black text-xs border transition-all ${
+                    className={`w-full py-2 px-3 rounded-xl font-black text-xs border transition-all cursor-pointer ${
                       frameConfig.glowEffect 
                         ? 'bg-emerald-100 text-emerald-900 border-emerald-300' 
                         : 'bg-slate-100 text-slate-600 border-slate-200'
@@ -803,7 +725,7 @@ export default function SeatingTab({
               </div>
 
               <p className="text-[11px] font-bold text-slate-400 text-center leading-relaxed">
-                Tất cả {computers.length} ô máy tính trên sơ đồ sẽ tự động áp dụng kiểu khung card đã chọn ở trên!
+                Tất cả ô máy tính trên sơ đồ sẽ tự động áp dụng kiểu khung card đã chọn ở trên!
               </p>
             </div>
           </div>
@@ -817,52 +739,37 @@ export default function SeatingTab({
   // 🖥️ MAIN VIEW: SƠ ĐỒ LỚP HỌC & CHỖ NGỒI MÁY TÍNH (MAIN ROOM CANVAS)
   // =========================================================================
   return (
-    <div className="space-y-6 pb-12 text-slate-800">
+    <div className="space-y-5 pb-12 text-slate-800">
       
-      {/* 🌟 1. BANNER HEADER TÍM GRADIENT GIỐNG HÌNH ẢNH ĐÍNH KÈM (MODULE 2: PHÒNG LAB) */}
-      <div className="relative rounded-3xl bg-gradient-to-r from-[#2a0845] via-[#4b1248] to-[#1e0538] p-6 sm:p-8 text-white shadow-xl overflow-hidden border border-purple-500/30">
-        {/* Glow Ambient Orbs */}
-        <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/3 -mb-8 w-48 h-48 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+      {/* 🌟 1. BANNER HEADER TÍM COMPACT THU GỌN THEO YÊU CẦU */}
+      <div className="relative rounded-2xl bg-gradient-to-r from-[#2a0845] via-[#4b1248] to-[#1e0538] py-3.5 px-5 text-white shadow-lg overflow-hidden border border-purple-500/30">
+        <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           
-          {/* Left Text Block */}
-          <div className="space-y-2">
-            <span className="inline-block px-3.5 py-1 rounded-full bg-purple-500/25 border border-purple-400/40 text-[11px] font-black uppercase tracking-wider text-purple-200">
-              MODULE 2: PHÒNG LAB (SƠ ĐỒ HỌC SINH MÁY TÍNH)
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
+          {/* Left Text Title & Single Instruction Line */}
+          <div className="space-y-0.5">
+            <h2 className="text-lg sm:text-xl font-black tracking-tight text-white flex items-center gap-2">
               <span>🖥️</span> Sơ Đồ Lớp Học & Chỗ Ngồi Máy Tính
             </h2>
-            <p className="text-xs sm:text-sm font-medium text-purple-200/90 leading-relaxed max-w-2xl">
-              Ghi danh học sinh, ghép 2 học sinh/máy (hiển thị <strong className="text-amber-300">'Văn An + Thị Bích'</strong>) & kéo thả sắp xếp linh hoạt.
+            <p className="text-[11px] font-bold text-purple-200/90">
+              👉 Kéo thả tên học sinh vào máy tính để xếp chỗ (ghép tối đa 2 HS/máy).
             </p>
           </div>
 
           {/* Right Action Buttons */}
-          <div className="flex flex-wrap items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2.5 shrink-0">
             
-            {/* Button 1: Danh sách lớp */}
-            <button
-              onClick={() => setIsClassListSubViewOpen(true)}
-              className="px-4 py-2.5 rounded-2xl bg-white hover:bg-slate-100 text-slate-900 font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-2 cursor-pointer"
-            >
-              <span>📋</span> Danh Sách Lớp ({classStudents.length} HS)
-            </button>
-
-            {/* Button 2: Đổi khung Card PC */}
+            {/* Button 1: Đổi khung Card PC */}
             <button
               onClick={() => setIsFrameConfigSubViewOpen(true)}
-              className="px-4 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-2 border border-indigo-400/40 cursor-pointer"
+              className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 border border-indigo-400/40 cursor-pointer"
             >
               <span>🎨</span> Đổi Khung Card PC
             </button>
 
-            {/* Button 3: Xếp Tự Động */}
+            {/* Button 2: Xếp Tự Động */}
             <button
               onClick={handleAutoSeatClass}
-              className="px-4.5 py-2.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs shadow-lg transition-all active:scale-95 flex items-center gap-2 cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs shadow-lg transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
             >
               <span>🪄</span> Xếp Tự Động
             </button>
@@ -873,18 +780,18 @@ export default function SeatingTab({
       </div>
 
       {/* 🎛️ 2. CONTROL FILTER BAR */}
-      <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="bg-white rounded-2xl p-3.5 sm:p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         
-        {/* Selectors */}
-        <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
+        {/* Selectors & Toggle Unassigned Panel Button */}
+        <div className="flex flex-wrap items-center gap-3.5 w-full sm:w-auto">
           
           {/* Lab Selector */}
-          <div className="space-y-1">
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider">CHỌN PHÒNG MÁY</label>
+          <div className="flex items-center gap-2">
+            <label className="text-[11px] font-black text-slate-500 uppercase tracking-wider shrink-0">CHỌN PHÒNG MÁY:</label>
             <select
               value={selectedLabId}
               onChange={(e) => setSelectedLabId(e.target.value)}
-              className="px-4 py-2 text-xs font-black rounded-2xl border border-slate-200 bg-slate-50 text-slate-900 focus:outline-none focus:border-emerald-500 shadow-2xs cursor-pointer min-w-[180px]"
+              className="px-3.5 py-1.5 text-xs font-black rounded-xl border border-slate-200 bg-slate-50 text-slate-900 focus:outline-none focus:border-emerald-500 shadow-2xs cursor-pointer min-w-[170px]"
             >
               {labs.map(lab => (
                 <option key={lab.id} value={lab.id}>
@@ -894,35 +801,30 @@ export default function SeatingTab({
             </select>
           </div>
 
-          {/* Class Selector */}
-          <div className="space-y-1">
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider">TÊN LỚP HỌC</label>
-            {classes.length > 0 && onSelectClass ? (
-              <select
-                value={selectedClass}
-                onChange={(e) => onSelectClass(e.target.value)}
-                className="px-4 py-2 text-xs font-black rounded-2xl border border-slate-200 bg-slate-50 text-slate-900 focus:outline-none focus:border-emerald-500 shadow-2xs cursor-pointer min-w-[140px]"
-              >
-                {classes.map(c => (
-                  <option key={c.id} value={c.name}>
-                    Lớp {c.name}
-                  </option>
-                ))}
-              </select>
+          {/* Toggle Button to Hide/Show Unassigned Left Panel */}
+          <button
+            onClick={() => setIsUnassignedPanelVisible(!isUnassignedPanelVisible)}
+            className={`px-3 py-1.5 rounded-xl font-black text-xs transition-all border flex items-center gap-1.5 cursor-pointer ${
+              isUnassignedPanelVisible
+                ? 'bg-sky-50 text-sky-800 border-sky-200 hover:bg-sky-100'
+                : 'bg-emerald-600 text-white border-emerald-500 hover:bg-emerald-700 shadow-xs'
+            }`}
+          >
+            {isUnassignedPanelVisible ? (
+              <>
+                <PanelLeftClose className="w-3.5 h-3.5" /> Ẩn Bảng CHỜ
+              </>
             ) : (
-              <input
-                type="text"
-                value={selectedClass}
-                readOnly
-                className="px-4 py-2 text-xs font-black rounded-2xl border border-slate-200 bg-slate-50 text-slate-900 w-[140px]"
-              />
+              <>
+                <PanelLeftOpen className="w-3.5 h-3.5" /> ▶ Hiện Bảng CHỜ ({unassignedStudents.length} HS)
+              </>
             )}
-          </div>
+          </button>
 
         </div>
 
-        {/* Right Info & Clear Button */}
-        <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 pt-3 md:pt-0 border-slate-100">
+        {/* Right Info & Clear Seating Button */}
+        <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-2.5 sm:pt-0 border-slate-100">
           
           <div className="text-xs font-bold">
             <span className="text-slate-500">Chờ xếp chỗ: </span>
@@ -931,7 +833,7 @@ export default function SeatingTab({
 
           <button
             onClick={handleClearAllClassSeating}
-            className="px-4 py-2 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-black text-xs transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            className="px-3.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-black text-xs transition-all active:scale-95 flex items-center gap-1 cursor-pointer shadow-2xs"
           >
             <span>↺</span> Xóa Chỗ Ngồi
           </button>
@@ -940,97 +842,124 @@ export default function SeatingTab({
 
       </div>
 
-      {/* 🖼️ 3. TWO-COLUMN MAIN CANVAS (LEFT: UNASSIGNED LIST, RIGHT: PC ROOM MAP) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      {/* 🖼️ 3. MAIN ROOM CANVAS GRID */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         
-        {/* ================= LEFT COLUMN: HỌC SINH CHỜ NGỒI ================= */}
-        <div className="lg:col-span-4 bg-white rounded-3xl p-5 border border-slate-200 shadow-sm space-y-4 flex flex-col max-h-[750px] overflow-hidden">
-          
-          <div className="space-y-1 border-b border-slate-100 pb-3">
-            <div className="flex justify-between items-center">
-              <h3 className="font-black text-sm text-slate-900 flex items-center gap-2">
-                <span>👦</span> HỌC SINH CHỜ NGỒI ({unassignedStudents.length})
-              </h3>
-            </div>
-            <p className="text-[11px] font-bold text-slate-400 leading-snug">
-              Kéo tên học sinh vào ô máy tính bên phải để xếp chỗ.
-            </p>
-          </div>
-
-          {/* Search Unassigned Input */}
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
-            <input
-              type="text"
-              value={unassignedSearch}
-              onChange={(e) => setUnassignedSearch(e.target.value)}
-              placeholder="Tìm kiếm học sinh..."
-              className="w-full pl-9 pr-3 py-2 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:border-emerald-500"
-            />
-          </div>
-
-          {/* Scrollable Students List */}
-          <div className="flex-1 overflow-y-auto space-y-2.5 pr-1 max-h-[560px]">
-            {filteredUnassignedStudents.length > 0 ? (
-              filteredUnassignedStudents.map(st => (
-                <div
-                  key={st.id}
-                  draggable={true}
-                  onDragStart={(e) => handleStudentDragStart(e, st.id)}
-                  className="bg-slate-50 hover:bg-emerald-50/80 p-3 rounded-2xl border border-slate-200 hover:border-emerald-300 transition-all flex items-center justify-between cursor-grab active:cursor-grabbing group shadow-2xs"
+        {/* ================= LEFT COLUMN: HỌC SINH CHỜ NGỒI (CAN BE TOGGLED HIDE/SHOW) ================= */}
+        {isUnassignedPanelVisible && (
+          <div className="lg:col-span-4 bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-3 flex flex-col max-h-[720px] overflow-hidden">
+            
+            <div className="space-y-0.5 border-b border-slate-100 pb-2.5">
+              <div className="flex justify-between items-center">
+                <h3 className="font-black text-xs text-slate-900 flex items-center gap-1.5">
+                  <span>👦</span> HỌC SINH CHỜ NGỒI ({unassignedStudents.length})
+                </h3>
+                <button
+                  onClick={() => setIsUnassignedPanelVisible(false)}
+                  className="text-[10px] font-black text-slate-400 hover:text-slate-600 cursor-pointer"
+                  title="Ẩn bảng chờ để mở rộng sơ đồ"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl select-none">
-                      {st.gender === 'Nữ' ? '👧' : '👦'}
-                    </span>
-                    <div>
-                      <div className="font-black text-xs text-slate-900 group-hover:text-emerald-950">
-                        {st.name}
-                      </div>
-                      <div className="text-[10px] font-bold text-slate-400">
-                        MSHS: {st.code} • Tên ngắn: <span className="text-emerald-700 font-extrabold">{formatStudentNameFirstAndMiddle(st.name)}</span>
+                  ◀ Ẩn
+                </button>
+              </div>
+              <p className="text-[10px] font-bold text-slate-400 leading-snug">
+                Kéo tên học sinh vào ô máy tính bên phải để xếp chỗ.
+              </p>
+            </div>
+
+            {/* Search Unassigned Input */}
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
+              <input
+                type="text"
+                value={unassignedSearch}
+                onChange={(e) => setUnassignedSearch(e.target.value)}
+                placeholder="Tìm kiếm học sinh..."
+                className="w-full pl-9 pr-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+
+            {/* Scrollable Students List */}
+            <div className="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[540px]">
+              {filteredUnassignedStudents.length > 0 ? (
+                filteredUnassignedStudents.map(st => (
+                  <div
+                    key={st.id}
+                    draggable={true}
+                    onDragStart={(e) => handleStudentDragStart(e, st.id)}
+                    className="bg-slate-50 hover:bg-emerald-50/80 p-2.5 rounded-xl border border-slate-200 hover:border-emerald-300 transition-all flex items-center justify-between cursor-grab active:cursor-grabbing group shadow-2xs"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-lg select-none">
+                        {st.gender === 'Nữ' ? '👧' : '👦'}
+                      </span>
+                      <div>
+                        <div className="font-black text-xs text-slate-900 group-hover:text-emerald-950">
+                          {st.name}
+                        </div>
+                        <div className="text-[10px] font-bold text-slate-400">
+                          MSHS: {st.code} • Tên ngắn: <span className="text-emerald-700 font-extrabold">{formatStudentNameFirstAndMiddle(st.name)}</span>
+                        </div>
                       </div>
                     </div>
+
+                    <span className="text-[9px] font-black bg-slate-200 group-hover:bg-emerald-200 group-hover:text-emerald-900 text-slate-600 px-2 py-0.5 rounded-md">
+                      Kéo chỗ 🖐️
+                    </span>
                   </div>
+                ))
+              ) : unassignedStudents.length === 0 ? (
+                <div className="text-center py-10 space-y-2">
+                  <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto text-xl">
+                    ✓
+                  </div>
+                  <div className="font-black text-xs text-emerald-800">Tất cả học sinh đã có máy!</div>
+                  <p className="text-[10px] font-bold text-slate-400 max-w-[180px] mx-auto">
+                    Toàn bộ học sinh lớp {selectedClass} đã được xếp vị trí chỗ ngồi.
+                  </p>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-slate-400 font-bold text-xs">
+                  Không tìm thấy học sinh nào khớp từ khóa
+                </div>
+              )}
+            </div>
 
-                  <span className="text-[10px] font-black bg-slate-200 group-hover:bg-emerald-200 group-hover:text-emerald-900 text-slate-600 px-2 py-1 rounded-lg">
-                    Kéo chỗ 🖐️
-                  </span>
-                </div>
-              ))
-            ) : unassignedStudents.length === 0 ? (
-              <div className="text-center py-12 space-y-3">
-                <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto text-2xl">
-                  ✓
-                </div>
-                <div className="font-black text-xs text-emerald-800">Tất cả học sinh đã có máy!</div>
-                <p className="text-[11px] font-bold text-slate-400 max-w-[200px] mx-auto">
-                  Toàn bộ {classStudents.length} học sinh lớp {selectedClass} đã được xếp vị trí chỗ ngồi máy tính thành công.
-                </p>
-              </div>
-            ) : (
-              <div className="text-center py-8 text-slate-400 font-bold text-xs">
-                Không tìm thấy học sinh nào khớp với từ khóa "{unassignedSearch}"
-              </div>
-            )}
           </div>
+        )}
 
-        </div>
-
-        {/* ================= RIGHT COLUMN: SƠ ĐỒ PHÒNG MÁY TÍNH (DARK CANVAS) ================= */}
-        <div className="lg:col-span-8 bg-[#0b1120] rounded-3xl p-5 sm:p-6 border border-slate-800 shadow-2xl space-y-6 overflow-hidden">
+        {/* ================= RIGHT COLUMN: SƠ ĐỒ PHÒNG MÁY TÍNH (SYNCHRONIZED 100% WITH LAB LAYOUT) ================= */}
+        <div className={`${isUnassignedPanelVisible ? 'lg:col-span-8' : 'lg:col-span-12'} bg-[#0b1120] rounded-2xl p-4 sm:p-5 border border-slate-800 shadow-2xl space-y-4 transition-all duration-300`}>
           
           {/* Top Teacher Board Banner */}
-          <div className="w-full bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl py-3 px-4 border border-indigo-500/30 text-center shadow-inner">
+          <div className="w-full bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-xl py-2.5 px-4 border border-indigo-500/30 text-center shadow-inner">
             <span className="text-xs font-black text-amber-300 uppercase tracking-widest flex items-center justify-center gap-2">
               👨‍🏫 MÀN CHIẾU & BẢNG GIÁO VIÊN ({activeLab.name} - {activeLab.code})
             </span>
           </div>
 
-          {/* PC Seating Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            {computers.map(c => {
-              const pcId = c.id || `M.${c.num < 10 ? '0' + c.num : c.num}`;
+          {/* Room Matrix Grid matching activeLab gridRows x gridCols */}
+          <div 
+            className="grid gap-3"
+            style={{
+              gridTemplateColumns: `repeat(${activeLabGrid.cols}, minmax(0, 1fr))`
+            }}
+          >
+            {activeLabGrid.cells.map(tile => {
+              // AISLE TILE (Lối đi)
+              if (tile.type === 'aisle') {
+                return (
+                  <div 
+                    key={`aisle_${tile.row}_${tile.col}`}
+                    className="bg-slate-950/40 border border-slate-800/40 rounded-xl p-2 flex items-center justify-center min-h-[90px] select-none"
+                  >
+                    <span className="text-[10px] font-black text-slate-600 uppercase tracking-wider">Lối đi</span>
+                  </div>
+                );
+              }
+
+              // PC TILE (Máy tính) - Synchronized 100% with Lab PC Label (M.01, M.02...)
+              const pcId = tile.label;
               const assignedIds = getAssignedStudentIds(currentClassSeating[pcId]);
               const assignedStudents = assignedIds.map(id => students.find(s => s.id === id)).filter(Boolean) as Student[];
 
@@ -1039,14 +968,14 @@ export default function SeatingTab({
 
               return (
                 <div
-                  key={pcId}
+                  key={`pc_${pcId}`}
                   onDragOver={(e) => {
                     e.preventDefault();
                     setDragOverPcId(pcId);
                   }}
                   onDragLeave={() => setDragOverPcId(null)}
                   onDrop={(e) => handlePcDrop(e, pcId)}
-                  className={`rounded-2xl border-2 transition-all relative flex flex-col justify-between ${cardSizeClasses[frameConfig.cardSize]} ${
+                  className={`rounded-xl border-2 transition-all relative flex flex-col justify-between ${cardSizeClasses[frameConfig.cardSize]} ${
                     isDragOver ? 'border-amber-400 scale-105 bg-amber-950/40 ring-4 ring-amber-400/40 z-20' : ''
                   } ${
                     frameConfig.customImageUrl 
@@ -1060,11 +989,11 @@ export default function SeatingTab({
                   } : undefined}
                 >
                   {/* PC Header Bar */}
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-mono font-black text-xs bg-slate-950/70 px-2.5 py-0.5 rounded-lg text-indigo-300 border border-indigo-500/30">
+                  <div className="flex justify-between items-center mb-1.5">
+                    <span className="font-mono font-black text-[11px] bg-slate-950/70 px-2 py-0.5 rounded-md text-indigo-300 border border-indigo-500/30">
                       🖥️ {pcId}
                     </span>
-                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
+                    <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full border ${
                       isFull 
                         ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' 
                         : assignedStudents.length > 0 
@@ -1077,15 +1006,15 @@ export default function SeatingTab({
 
                   {/* Student Seating Slot Content */}
                   {assignedStudents.length > 0 ? (
-                    <div className="space-y-1.5 my-auto">
+                    <div className="space-y-1 my-auto">
                       {assignedStudents.map(st => (
                         <div
                           key={st.id}
                           draggable={true}
                           onDragStart={(e) => handleStudentDragStart(e, st.id, pcId)}
-                          className="bg-emerald-500/25 hover:bg-emerald-500/35 border border-emerald-400/50 text-emerald-200 rounded-xl px-2.5 py-1 flex items-center justify-between transition-all cursor-grab active:cursor-grabbing group shadow-xs"
+                          className="bg-emerald-500/25 hover:bg-emerald-500/35 border border-emerald-400/50 text-emerald-200 rounded-lg px-2 py-1 flex items-center justify-between transition-all cursor-grab active:cursor-grabbing group shadow-xs"
                         >
-                          <span className="font-black text-xs truncate max-w-[110px]" title={st.name}>
+                          <span className="font-black text-[11px] truncate max-w-[100px]" title={st.name}>
                             {formatStudentNameFirstAndMiddle(st.name)}
                           </span>
                           <button
@@ -1109,7 +1038,7 @@ export default function SeatingTab({
                       )}
                     </div>
                   ) : (
-                    <div className="my-auto py-2 text-center text-slate-500 font-bold text-[11px] border border-dashed border-slate-700/60 rounded-xl bg-slate-950/40">
+                    <div className="my-auto py-1.5 text-center text-slate-500 font-bold text-[10px] border border-dashed border-slate-700/60 rounded-lg bg-slate-950/40">
                       Kéo HS vào đây
                     </div>
                   )}
