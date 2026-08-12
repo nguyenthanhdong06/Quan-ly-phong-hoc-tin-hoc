@@ -1,26 +1,21 @@
-import React from 'react';
-import { Student, Computer, SeatingChart } from '../types';
-import { Monitor, X, Wrench, AlertTriangle, PenTool, Clipboard, Search, Check, ChevronDown, Maximize, Minimize, Tv, ZoomIn, ZoomOut, Sun, Moon } from 'lucide-react';
-import { googleDriveAvatars, categorizedAvatars, avatarCategories, getMergedAvatars } from './AvatarGalleryTab';
-import { ComputerCard3D } from './ComputerCard3D';
-import { StudentCard3D } from './StudentCard3D';
-
-// Format name: If name has more than 2 words, display only the middle name and first name (last 2 words)
-const formatStudentName = (name: string): string => {
-  if (!name) return '';
-  const trimmed = name.trim();
-  const words = trimmed.split(/\s+/);
-  if (words.length > 2) {
-    return words.slice(-2).join(' ');
-  }
-  return trimmed;
-};
+import React, { useState, useEffect, useMemo } from 'react';
+import { Student, Computer, SeatingChart, LabInfo, ClassItem } from '../types';
+import { 
+  Monitor, X, Wrench, AlertTriangle, PenTool, Clipboard, Search, Check, ChevronDown, 
+  Maximize, Minimize, Tv, ZoomIn, ZoomOut, Sun, Moon, ArrowLeft, Palette, Sparkles, 
+  RotateCcw, Users, Plus, LayoutGrid, CheckCircle2, UserCheck, ShieldCheck, Image as ImageIcon,
+  Sliders, Move, ArrowRightLeft, Upload, Link, CheckCheck, RefreshCw, Zap
+} from 'lucide-react';
+import { extractGoogleDriveFileId, convertGoogleDriveUrl, compressImageFile } from './KnowledgeGardenTab';
+import { playButtonClickSound, playVictoryFanfareSound } from '../utils/audioEffects';
+import { safeSetLocalStorage } from '../utils/safeStorage';
+import { saveSupabaseState } from '../supabaseClient';
 
 // 3D Pixel/Cartoon Avatar component for boy/girl or custom Google Drive URL
 export const StudentAvatar3D = ({ gender, size = 'w-10 h-10', name = '', avatarUrl }: { gender: string; size?: string; name?: string; avatarUrl?: string }) => {
-  const [error, setError] = React.useState(false);
+  const [error, setError] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setError(false);
   }, [avatarUrl]);
 
@@ -54,6 +49,122 @@ export const StudentAvatar3D = ({ gender, size = 'w-10 h-10', name = '', avatarU
   );
 };
 
+/**
+ * Format student name: Display ONLY First name + Middle name (Chỉ hiện tên và chữ lót)
+ * Examples:
+ * - "Nguyễn Thị Bích" -> "Thị Bích"
+ * - "Trần Văn An" -> "Văn An"
+ * - "Phạm Phương Thảo" -> "Phương Thảo"
+ * - "Lê Anh Quân" -> "Anh Quân"
+ * - "Vũ Quốc Cường" -> "Quốc Cường"
+ */
+export const formatStudentNameFirstAndMiddle = (name: string): string => {
+  if (!name || typeof name !== 'string') return '';
+  const trimmed = name.trim();
+  const words = trimmed.split(/\s+/);
+  if (words.length > 2) {
+    return words.slice(-2).join(' ');
+  }
+  return trimmed;
+};
+
+// Preset Frame Skin Options for PC Card
+export interface FrameSkin {
+  id: string;
+  name: string;
+  icon: string;
+  bgGradient: string;
+  borderColor: string;
+  textColor: string;
+  headerBg: string;
+  pillBg: string;
+  pillText: string;
+  glowShadow: string;
+}
+
+export const PRESET_FRAME_SKINS: FrameSkin[] = [
+  {
+    id: 'modern-slate',
+    name: 'Modern Slate (Mặc Định)',
+    icon: '🖥️',
+    bgGradient: 'bg-slate-900/90',
+    borderColor: 'border-indigo-500/50 hover:border-indigo-400',
+    textColor: 'text-slate-100',
+    headerBg: 'bg-indigo-950/80 text-indigo-200 border-indigo-500/30',
+    pillBg: 'bg-emerald-500 hover:bg-emerald-600',
+    pillText: 'text-slate-950',
+    glowShadow: 'shadow-[0_0_15px_rgba(99,102,241,0.2)]'
+  },
+  {
+    id: 'imac-beige',
+    name: 'iMac Classic Cream (DeskOS)',
+    icon: '🍏',
+    bgGradient: 'bg-[#fffbf0]',
+    borderColor: 'border-[#cbb89d] hover:border-emerald-500',
+    textColor: 'text-slate-900',
+    headerBg: 'bg-[#dfccb0] text-slate-800 border-[#cbb89d]',
+    pillBg: 'bg-emerald-600 hover:bg-emerald-700',
+    pillText: 'text-white',
+    glowShadow: 'shadow-md'
+  },
+  {
+    id: 'cyber-neon',
+    name: 'Cyberpunk Neon Glow',
+    icon: '⚡',
+    bgGradient: 'bg-black/95',
+    borderColor: 'border-cyan-400 hover:border-fuchsia-400',
+    textColor: 'text-cyan-200',
+    headerBg: 'bg-gradient-to-r from-cyan-950 to-fuchsia-950 text-cyan-300 border-cyan-500/50',
+    pillBg: 'bg-gradient-to-r from-cyan-400 to-fuchsia-400',
+    pillText: 'text-black font-black',
+    glowShadow: 'shadow-[0_0_20px_rgba(6,182,212,0.4)]'
+  },
+  {
+    id: 'vintage-crt',
+    name: 'Vintage CRT Terminal',
+    icon: '📟',
+    bgGradient: 'bg-zinc-950',
+    borderColor: 'border-emerald-500/80 hover:border-emerald-400',
+    textColor: 'text-emerald-400 font-mono',
+    headerBg: 'bg-emerald-950/90 text-emerald-300 border-emerald-500/60',
+    pillBg: 'bg-emerald-400 hover:bg-emerald-300',
+    pillText: 'text-zinc-950 font-black',
+    glowShadow: 'shadow-[0_0_15px_rgba(16,185,129,0.3)]'
+  },
+  {
+    id: 'emerald-glass',
+    name: 'Emerald Glassmorphism',
+    icon: '💎',
+    bgGradient: 'bg-emerald-950/80 backdrop-blur-md',
+    borderColor: 'border-emerald-400/60 hover:border-emerald-300',
+    textColor: 'text-emerald-100',
+    headerBg: 'bg-emerald-900/70 text-emerald-200 border-emerald-400/40',
+    pillBg: 'bg-emerald-400 hover:bg-emerald-300',
+    pillText: 'text-emerald-950 font-black',
+    glowShadow: 'shadow-[0_0_25px_rgba(52,211,153,0.25)]'
+  },
+  {
+    id: 'deep-space',
+    name: 'Deep Space Aurora',
+    icon: '🌌',
+    bgGradient: 'bg-gradient-to-b from-indigo-950 via-slate-900 to-purple-950',
+    borderColor: 'border-purple-500/60 hover:border-pink-400',
+    textColor: 'text-purple-100',
+    headerBg: 'bg-purple-900/60 text-purple-200 border-purple-400/30',
+    pillBg: 'bg-gradient-to-r from-purple-400 to-pink-400',
+    pillText: 'text-slate-950 font-black',
+    glowShadow: 'shadow-[0_0_20px_rgba(168,85,247,0.3)]'
+  }
+];
+
+export interface PCFrameConfig {
+  skinId: string;
+  customImageUrl?: string;
+  cardSize: 'sm' | 'md' | 'lg' | 'xl';
+  borderRadius: string; // 'rounded-2xl', 'rounded-3xl' etc.
+  glowEffect: boolean;
+}
+
 interface SeatingTabProps {
   selectedClass: string;
   computers: Computer[];
@@ -64,8 +175,11 @@ interface SeatingTabProps {
   setSeatingChart: React.Dispatch<React.SetStateAction<SeatingChart>>;
   activeAssignModal: string | null;
   setActiveAssignModal: (computerId: string | null) => void;
-  showToast: (message: string, type?: 'success' | 'error') => void;
+  showToast: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
   classroomColumns: any[];
+  labs?: LabInfo[];
+  classes?: ClassItem[];
+  onSelectClass?: (className: string) => void;
 }
 
 export default function SeatingTab({
@@ -79,925 +193,935 @@ export default function SeatingTab({
   activeAssignModal,
   setActiveAssignModal,
   showToast,
-  classroomColumns
+  classroomColumns,
+  labs = [
+    { id: 'lab1', name: 'Phòng Lab 01', code: 'P.201', totalPCs: 36, status: 'Active', location: 'Tầng 2 - Nhà A', gridRows: 5, gridCols: 8 },
+    { id: 'lab2', name: 'Phòng Lab 02', code: 'P.202', totalPCs: 40, status: 'Active', location: 'Tầng 2 - Nhà A', gridRows: 5, gridCols: 8 },
+    { id: 'lab3', name: 'Phòng Lab 03', code: 'P.301', totalPCs: 32, status: 'Maintenance', location: 'Tầng 3 - Nhà B', gridRows: 4, gridCols: 8 }
+  ],
+  classes = [],
+  onSelectClass
 }: SeatingTabProps) {
 
-  const classStudents = students.filter(s => s.classId === selectedClass);
+  // Selected Lab State (default to Lab 01 P.201)
+  const [selectedLabId, setSelectedLabId] = useState<string>(labs[0]?.id || 'lab1');
+  const activeLab = useMemo(() => {
+    return labs.find(l => l.id === selectedLabId) || labs[0];
+  }, [labs, selectedLabId]);
 
-  const [modalSearch, setModalSearch] = React.useState('');
-  const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
-  const [isFullscreen, setIsFullscreen] = React.useState(false);
-  const [scaleSize, setScaleSize] = React.useState<'sm' | 'md' | 'lg' | 'xl'>('lg');
-  const [projectorTheme, setProjectorTheme] = React.useState<'dark' | 'light'>('dark');
-  const [avatarChangeStudent, setAvatarChangeStudent] = React.useState<Student | null>(null);
-  const [modalAvatarCategory, setModalAvatarCategory] = React.useState<string>('all');
+  // Students of current selected class
+  const classStudents = useMemo(() => {
+    return students.filter(s => s.classId === selectedClass);
+  }, [students, selectedClass]);
 
-  React.useEffect(() => {
-    if (avatarChangeStudent) {
-      setModalAvatarCategory('all');
+  // Seating assignments map for selectedClass: { [computerId]: "std1,std2" }
+  const currentClassSeating = useMemo(() => {
+    return seatingChart[selectedClass] || {};
+  }, [seatingChart, selectedClass]);
+
+  // Helper to parse student IDs assigned to a computer
+  const getAssignedStudentIds = (seatingVal?: string): string[] => {
+    if (!seatingVal) return [];
+    return seatingVal.split(/[,+;]/).map(s => s.trim()).filter(Boolean);
+  };
+
+  // List of student IDs currently assigned to ANY PC in this class
+  const assignedStudentIdsList = useMemo(() => {
+    const assigned = new Set<string>();
+    Object.values(currentClassSeating).forEach((val: any) => {
+      getAssignedStudentIds(String(val || '')).forEach(id => assigned.add(id));
+    });
+    return Array.from(assigned);
+  }, [currentClassSeating]);
+
+  // List of unassigned students in this class
+  const unassignedStudents = useMemo(() => {
+    return classStudents.filter(s => !assignedStudentIdsList.includes(s.id));
+  }, [classStudents, assignedStudentIdsList]);
+
+  // Search input for unassigned left column
+  const [unassignedSearch, setUnassignedSearch] = useState('');
+  const filteredUnassignedStudents = useMemo(() => {
+    if (!unassignedSearch.trim()) return unassignedStudents;
+    const q = unassignedSearch.toLowerCase();
+    return unassignedStudents.filter(s => 
+      s.name.toLowerCase().includes(q) || 
+      s.code.toLowerCase().includes(q) ||
+      formatStudentNameFirstAndMiddle(s.name).toLowerCase().includes(q)
+    );
+  }, [unassignedStudents, unassignedSearch]);
+
+  // --- PC FRAME CUSTOMIZER CONFIG STATE ---
+  const [frameConfig, setFrameConfig] = useState<PCFrameConfig>(() => {
+    try {
+      const saved = localStorage.getItem('deskos_pc_frame_config_v1');
+      return saved ? JSON.parse(saved) : {
+        skinId: 'modern-slate',
+        cardSize: 'md',
+        borderRadius: 'rounded-2xl',
+        glowEffect: true
+      };
+    } catch {
+      return {
+        skinId: 'modern-slate',
+        cardSize: 'md',
+        borderRadius: 'rounded-2xl',
+        glowEffect: true
+      };
     }
-  }, [avatarChangeStudent]);
+  });
 
-  // Drag and drop states for interactive seating rearrangement
-  const [draggedOverId, setDraggedOverId] = React.useState<string | null>(null);
-  const [activeDraggingId, setActiveDraggingId] = React.useState<string | null>(null);
+  // Active Frame Skin Object
+  const activeSkin = useMemo(() => {
+    return PRESET_FRAME_SKINS.find(s => s.id === frameConfig.skinId) || PRESET_FRAME_SKINS[0];
+  }, [frameConfig.skinId]);
 
-  const handleDragStart = (e: React.DragEvent, computerId: string) => {
-    e.dataTransfer.setData('text/plain', computerId);
-    e.dataTransfer.effectAllowed = 'move';
-    setActiveDraggingId(computerId);
+  // Save Frame Config effect
+  useEffect(() => {
+    try {
+      localStorage.setItem('deskos_pc_frame_config_v1', JSON.stringify(frameConfig));
+      saveSupabaseState('school_pc_frame_config', frameConfig);
+    } catch (e) {}
+  }, [frameConfig]);
+
+  // --- INLINE SUB-VIEWS STATES (100% WINDOW TAKEOVER) ---
+  const [isClassListSubViewOpen, setIsClassListSubViewOpen] = useState(false);
+  const [isFrameConfigSubViewOpen, setIsFrameConfigSubViewOpen] = useState(false);
+
+  // Drag and Drop States
+  const [draggedStudentId, setDraggedStudentId] = useState<string | null>(null);
+  const [draggedSourcePcId, setDraggedSourcePcId] = useState<string | null>(null);
+  const [dragOverPcId, setDragOverPcId] = useState<string | null>(null);
+
+  // Card Size Tailwind mappings
+  const cardSizeClasses = {
+    sm: 'p-2 min-h-[90px]',
+    md: 'p-3.5 min-h-[115px]',
+    lg: 'p-4 min-h-[135px]',
+    xl: 'p-5 min-h-[155px]'
   };
 
-  const handleDragEnd = () => {
-    setActiveDraggingId(null);
-    setDraggedOverId(null);
+  // --- SEATING ASSIGNMENT MUTATION HANDLERS ---
+  const saveSeatingState = (newClassSeating: { [pcId: string]: string }) => {
+    const updatedChart: SeatingChart = {
+      ...seatingChart,
+      [selectedClass]: newClassSeating
+    };
+    setSeatingChart(updatedChart);
+    try {
+      localStorage.setItem('school_seating_chart', JSON.stringify(updatedChart));
+      saveSupabaseState('school_seating_chart', updatedChart);
+    } catch (e) {}
   };
 
-  const handleDragOverCustom = (e: React.DragEvent, computerId: string) => {
-    e.preventDefault();
-    if (activeDraggingId !== computerId) {
-      setDraggedOverId(computerId);
-    }
-  };
+  // Assign a student to a PC (supports pairing up to 2 students per PC!)
+  const assignStudentToComputer = (pcId: string, studentId: string) => {
+    const currentSeating = { ...currentClassSeating };
 
-  const handleDragLeaveCustom = () => {
-    setDraggedOverId(null);
-  };
+    // First remove student from any other PC in this class
+    Object.keys(currentSeating).forEach(key => {
+      const ids = getAssignedStudentIds(currentSeating[key]).filter(id => id !== studentId);
+      if (ids.length > 0) {
+        currentSeating[key] = ids.join(',');
+      } else {
+        delete currentSeating[key];
+      }
+    });
 
-  const handleDrop = (e: React.DragEvent, targetComputerId: string) => {
-    e.preventDefault();
-    const sourceComputerId = e.dataTransfer.getData('text/plain');
-    if (!sourceComputerId || sourceComputerId === targetComputerId) {
-      setDraggedOverId(null);
+    // Get current students at target PC
+    const targetPCHs = getAssignedStudentIds(currentSeating[pcId]);
+    if (targetPCHs.length >= 2) {
+      showToast('Máy tính này đã đủ 2 học sinh!', 'warning');
       return;
     }
 
-    setSeatingChart(prev => {
-      const currentClassSeating = { ...(prev[selectedClass] || {}) };
-      const sourceStudentId = currentClassSeating[sourceComputerId];
-      const targetStudentId = currentClassSeating[targetComputerId];
+    targetPCHs.push(studentId);
+    currentSeating[pcId] = targetPCHs.join(',');
+    saveSeatingState(currentSeating);
+    playButtonClickSound();
 
-      if (sourceStudentId) {
-        if (targetStudentId) {
-          // Swap positions of two students
-          currentClassSeating[targetComputerId] = sourceStudentId;
-          currentClassSeating[sourceComputerId] = targetStudentId;
-        } else {
-          // Move from source to empty target
-          currentClassSeating[targetComputerId] = sourceStudentId;
-          delete currentClassSeating[sourceComputerId];
-        }
-      }
-      return {
-        ...prev,
-        [selectedClass]: currentClassSeating
-      };
-    });
-
-    setDraggedOverId(null);
-    setActiveDraggingId(null);
-    showToast('Đổi chỗ học sinh thành công!');
+    const st = classStudents.find(s => s.id === studentId);
+    showToast(`Đã xếp ${st ? formatStudentNameFirstAndMiddle(st.name) : 'học sinh'} vào ${pcId}!`, 'success');
   };
 
-  React.useEffect(() => {
-    setModalSearch('');
-    setIsDropdownOpen(false);
-  }, [activeAssignModal]);
-
-  React.useEffect(() => {
-    const handleFullscreenChange = () => {
-      const isCurrentlyNativeFullscreen = !!document.fullscreenElement;
-      if (!isCurrentlyNativeFullscreen && isFullscreen) {
-        setIsFullscreen(false);
-      }
-    };
-    
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-    };
-  }, [isFullscreen]);
-
-  React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isFullscreen) {
-        setIsFullscreen(false);
-        try {
-          if (document.fullscreenElement && document.exitFullscreen) {
-            document.exitFullscreen();
-          }
-        } catch (err) {
-          console.warn(err);
-        }
-      }
-    };
-    
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isFullscreen]);
-
-  React.useEffect(() => {
-    if (isFullscreen) {
-      document.body.classList.add('overflow-hidden');
+  // Remove a specific student from a PC
+  const unassignStudentFromComputer = (pcId: string, studentId: string) => {
+    const currentSeating = { ...currentClassSeating };
+    const targetPCHs = getAssignedStudentIds(currentSeating[pcId]).filter(id => id !== studentId);
+    if (targetPCHs.length > 0) {
+      currentSeating[pcId] = targetPCHs.join(',');
     } else {
-      document.body.classList.remove('overflow-hidden');
+      delete currentSeating[pcId];
     }
-    return () => {
-      document.body.classList.remove('overflow-hidden');
-    };
-  }, [isFullscreen]);
+    saveSeatingState(currentSeating);
+    playButtonClickSound();
+    showToast('Đã gỡ học sinh khỏi vị trí máy!', 'info');
+  };
 
-  const toggleBrowserFullscreen = async () => {
-    const nextVal = !isFullscreen;
-    setIsFullscreen(nextVal);
-    
+  // Clear all seating for selected class
+  const handleClearAllClassSeating = () => {
+    if (assignedStudentIdsList.length === 0) {
+      showToast('Lớp hiện tại chưa có chỗ ngồi nào được xếp!', 'info');
+      return;
+    }
+    saveSeatingState({});
+    playButtonClickSound();
+    showToast(`Đã xóa toàn bộ chỗ ngồi của lớp ${selectedClass}!`, 'info');
+  };
+
+  // Auto seating algorithm (🪄 Xếp Tự Động)
+  const handleAutoSeatClass = () => {
+    if (classStudents.length === 0) {
+      showToast('Lớp học chưa có học sinh nào!', 'warning');
+      return;
+    }
+
+    const availablePcs = computers.filter(c => c.status === 'Hoạt động');
+    if (availablePcs.length === 0) {
+      showToast('Không có máy tính nào khả dụng trong phòng!', 'error');
+      return;
+    }
+
+    const newSeating: { [pcId: string]: string } = {};
+    let pcIndex = 0;
+
+    classStudents.forEach((st, idx) => {
+      // 2 students per PC if student count exceeds PC count, otherwise 1 student per PC
+      const targetPc = availablePcs[pcIndex % availablePcs.length];
+      const pcId = targetPc.id || `M.${targetPc.num < 10 ? '0' + targetPc.num : targetPc.num}`;
+
+      const existing = getAssignedStudentIds(newSeating[pcId]);
+      if (existing.length < 2) {
+        existing.push(st.id);
+        newSeating[pcId] = existing.join(',');
+      } else {
+        pcIndex++;
+        const nextPc = availablePcs[pcIndex % availablePcs.length];
+        const nextPcId = nextPc.id || `M.${nextPc.num < 10 ? '0' + nextPc.num : nextPc.num}`;
+        newSeating[nextPcId] = [st.id].join(',');
+      }
+    });
+
+    saveSeatingState(newSeating);
+    playVictoryFanfareSound();
+    showToast(`🪄 Đã xếp tự động chỗ ngồi máy tính cho toàn bộ ${classStudents.length} học sinh lớp ${selectedClass}!`, 'success');
+  };
+
+  // Drag handlers
+  const handleStudentDragStart = (e: React.DragEvent, studentId: string, sourcePcId: string | null = null) => {
+    e.dataTransfer.setData('application/json', JSON.stringify({ studentId, sourcePcId }));
+    setDraggedStudentId(studentId);
+    setDraggedSourcePcId(sourcePcId);
+  };
+
+  const handlePcDrop = (e: React.DragEvent, targetPcId: string) => {
+    e.preventDefault();
+    setDragOverPcId(null);
+    const dataRaw = e.dataTransfer.getData('application/json');
+    if (!dataRaw) return;
+
     try {
-      if (nextVal) {
-        const element = document.documentElement;
-        if (element.requestFullscreen) {
-          await element.requestFullscreen();
-        }
-      } else {
-        if (document.exitFullscreen && document.fullscreenElement) {
-          await document.exitFullscreen();
-        }
-      }
-    } catch (err) {
-      console.warn("Fullscreen API is not fully supported or restricted in sandbox iframe:", err);
-    }
+      const { studentId, sourcePcId } = JSON.parse(dataRaw);
+      if (!studentId) return;
+
+      if (sourcePcId === targetPcId) return;
+
+      assignStudentToComputer(targetPcId, studentId);
+    } catch (err) {}
   };
 
-  const getComputerContrastClasses = (status: string, isThemeDark: boolean) => {
-    if (isThemeDark) {
-      if (status === 'Đang hỏng') {
-        return 'bg-red-950/90 border-red-500/80 text-rose-300 hover:bg-red-900/80';
-      } else if (status === 'Bảo trì') {
-        return 'bg-blue-950/90 border-blue-500/80 text-blue-200 hover:bg-blue-900/80';
-      }
-      return 'bg-slate-850 border-amber-500/60 text-amber-200 hover:bg-slate-800 hover:border-amber-400';
-    } else {
-      if (status === 'Đang hỏng') {
-        return 'bg-red-500 border-red-600 text-white hover:bg-red-600';
-      } else if (status === 'Bảo trì') {
-        return 'bg-blue-500 border-blue-600 text-white hover:bg-blue-600';
-      }
-      return 'bg-amber-400 border-amber-500 text-slate-900 hover:bg-amber-500 hover:border-amber-600';
-    }
+  // Custom Image URL Upload for PC Frame (Google Drive link or Computer file upload)
+  const [customDriveInput, setCustomDriveInput] = useState('');
+  const driveFileId = useMemo(() => extractGoogleDriveFileId(customDriveInput), [customDriveInput]);
+
+  const handleApplyDriveFrameImage = () => {
+    if (!customDriveInput.trim()) return;
+    const processedUrl = convertGoogleDriveUrl(customDriveInput);
+    setFrameConfig(prev => ({
+      ...prev,
+      customImageUrl: processedUrl
+    }));
+    showToast('Đã áp dụng ảnh khung card từ Google Drive!', 'success');
   };
 
-  const scaleConfig = {
-    sm: {
-      card: 'p-1.5 border rounded-lg',
-      name: 'text-[11px] font-bold',
-      student: 'text-[9px] max-w-[85px]',
-      icon: 'w-2 h-2',
-      columnSpacing: 'p-2 rounded-xl space-y-2',
-      colTitle: 'text-[9px]'
-    },
-    md: {
-      card: 'p-2.5 border-2 rounded-xl',
-      name: 'text-xs font-extrabold',
-      student: 'text-[10px] max-w-[110px]',
-      icon: 'w-3 h-3',
-      columnSpacing: 'p-3 rounded-2xl space-y-2.5',
-      colTitle: 'text-[10px]'
-    },
-    lg: {
-      card: 'p-3.5 border-2 rounded-xl',
-      name: 'text-sm font-black',
-      student: 'text-xs font-black max-w-[140px]',
-      icon: 'w-3.5 h-3.5',
-      columnSpacing: 'p-4 rounded-2xl space-y-3',
-      colTitle: 'text-xs'
-    },
-    xl: {
-      card: 'p-5 border-[3px] rounded-2xl',
-      name: 'text-lg font-black',
-      student: 'text-sm font-black max-w-[180px]',
-      icon: 'w-4 h-4',
-      columnSpacing: 'p-5 rounded-2xl space-y-4',
-      colTitle: 'text-sm'
-    }
-  };
-
-  // Assign student to computer seat
-  const handleAssignStudent = (computerId: string, studentId: string) => {
-    setSeatingChart(prev => {
-      const currentClassSeating = { ...(prev[selectedClass] || {}) };
-      if (!studentId) {
-        delete currentClassSeating[computerId];
-      } else {
-        // If student was assigned to another computer in the SAME class, vacate them from previous machine
-        Object.keys(currentClassSeating).forEach(key => {
-          if (currentClassSeating[key] === studentId) {
-            delete currentClassSeating[key];
-          }
-        });
-        currentClassSeating[computerId] = studentId;
-      }
-      return {
+  const handleUploadFrameImageFromComputer = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      showToast('Đang tối ưu ảnh khung card...', 'info');
+      const compressed = await compressImageFile(file, 800, 0.8);
+      setFrameConfig(prev => ({
         ...prev,
-        [selectedClass]: currentClassSeating
-      };
-    });
-    
-    setActiveAssignModal(null);
-    showToast('Cập nhật sơ đồ chỗ ngồi thành công!');
+        customImageUrl: compressed
+      }));
+      showToast('Đã tải ảnh khung card từ máy tính thành công!', 'success');
+    } catch (err) {
+      showToast('Lỗi khi tải ảnh, vui lòng thử lại!', 'error');
+    }
   };
 
-  // Change computer hardware status
-  const handleUpdateComputerStatus = (computerId: string, newStatus: 'Hoạt động' | 'Đang hỏng' | 'Bảo trì') => {
-    setComputers(prev => prev.map(c => c.id === computerId ? { ...c, status: newStatus } : c));
-    showToast(`Đã chuyển trạng thái thiết bị thành: ${newStatus}`);
-  };
+  // =========================================================================
+  // 🌟 INLINE SUB-VIEW 1: DANH SÁCH LỚP HỌC (100% FULL WINDOW TAKEOVER)
+  // =========================================================================
+  if (isClassListSubViewOpen) {
+    return (
+      <div className="space-y-6 text-slate-800 pb-10">
+        {/* Header Header Bar */}
+        <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs">
+          <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setIsClassListSubViewOpen(false)}
+                className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-[#cbb89d] font-black text-xs transition-all flex items-center gap-1.5 shadow-2xs active:scale-95 cursor-pointer"
+              >
+                <ArrowLeft className="w-4 h-4 text-slate-700" /> Quay Về Sơ Đồ Phòng Máy
+              </button>
+              <div>
+                <h3 className="font-black text-sm text-slate-900 flex items-center gap-2">
+                  <span>📋</span> DANH SÁCH HỌC SINH LỚP {selectedClass} ({classStudents.length} HS)
+                </h3>
+                <p className="text-[11px] font-bold text-slate-600">Xem chi tiết trạng thái xếp máy và gán máy nhanh cho từng học sinh</p>
+              </div>
+            </div>
 
-  return (
-    <div className="space-y-6">
-
-      {/* Control guidelines */}
-      <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="text-left">
-          <h2 className="text-lg font-black text-slate-800 flex items-center gap-2 uppercase">
-            Sơ Đồ Phân Máy Phòng Học Tin học
-          </h2>
-          <p className="text-xs text-slate-400">
-            ✨Mẹo: Click chuột trực tiếp vào ô máy trạm để chỉ định học sinh. 
-          </p>
-        </div>
-
-        {/* Legend */}
-        <div className="flex flex-wrap items-center gap-4 text-xs font-semibold">
-          <div className="flex items-center gap-1.5">
-            <span className="w-3.5 h-3.5 bg-amber-400 border border-amber-500 rounded shadow-sm inline-block"></span>
-            <span>Thiết bị tốt</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-3.5 h-3.5 bg-red-400 border border-red-500 rounded shadow-sm inline-block animate-pulse"></span>
-            <span>Gặp Sự Cố</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-3.5 h-3.5 bg-blue-400 border border-blue-500 rounded shadow-sm inline-block"></span>
-            <span>Bảo Trì</span>
-          </div>
-
-          <button
-            type="button"
-            onClick={toggleBrowserFullscreen}
-            className="btn-3d btn-3d-purple text-xs px-4 py-2 shadow-md"
-          >
-            <Tv className="w-4 h-4 animate-pulse text-white" />
-            <span>Chế độ toàn màn hình</span>
-          </button>
-        </div>
-
-      </div>
-
-      {/* PHYSICAL CLASSROOM POSITION CANVAS */}
-      <div className="bg-white p-6 rounded-3xl shadow-md border-4 border-slate-800 space-y-6 overflow-x-auto min-w-[900px]">
-        
-        {/* UPPER ROW: Teachers Desk, Blackboard, Class Entry gate */}
-        <div className="grid grid-cols-12 gap-4 items-center">
-          
-          {/* Teachers Desk */}
-          <div className="col-span-3 bg-slate-100 border-2 border-dashed border-slate-300 rounded-xl p-3 text-center flex flex-col items-center justify-center">
-            <div className="w-12 h-6 bg-amber-200 border-2 border-amber-500 rounded mb-1 shadow-sm"></div>
-            <strong className="text-xs text-slate-500 block font-bold">BÀN GIÁO VIÊN</strong>
-          </div>
-
-          {/* Blackboard board */}
-          <div className="col-span-6 bg-slate-800 text-white rounded-xl py-4 shadow-inner border-2 border-slate-700 text-center relative">
-            <span className="font-extrabold text-sm tracking-widest uppercase block">BẢNG LỚP HỌC</span>
-          </div>
-
-          {/* Doorway gate */}
-          <div className="col-span-3 flex justify-end">
-            <div className="bg-amber-500 text-white font-black text-xs py-5 px-6 rounded-xl border-2 border-amber-600 shadow-md text-center max-w-[120px] tracking-wider uppercase">
-              CỬA RA VÀO
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleAutoSeatClass}
+                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-2xs transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+              >
+                <Sparkles className="w-4 h-4" /> 🪄 Xếp Tự Động Toàn Lớp
+              </button>
+              <button
+                onClick={handleClearAllClassSeating}
+                className="px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-black text-xs transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+              >
+                <RotateCcw className="w-4 h-4" /> ↺ Xóa Chỗ Ngồi
+              </button>
             </div>
           </div>
-
         </div>
 
-        {/* COLUMNS MATRIX OF COMPUTERS */}
-        <div className="grid grid-cols-5 gap-4 pt-4 border-t border-slate-200">
-          {classroomColumns.map((col, colIndex) => (
-            <div key={colIndex} className="space-y-3 bg-slate-50/50 p-2.5 rounded-2xl border border-slate-100">
-              <p className="text-[10px] font-black uppercase text-slate-400 text-center tracking-widest pb-1.5 border-b border-slate-200">{col.title}</p>
-              
-              <div className="space-y-2">
-                {col.items.map((computer: Computer) => {
-                  const assignedStudentId = seatingChart[selectedClass]?.[computer.id];
-                  const studentObj = classStudents.find(s => s.id === assignedStudentId);
-
-                  const isDraggingThis = activeDraggingId === computer.id;
-                  const isDraggedOverThis = draggedOverId === computer.id;
+        {/* Table View */}
+        <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100/80 border-b border-slate-200 text-[11px] font-black text-slate-500 uppercase tracking-wider">
+                  <th className="py-3 px-4">STT</th>
+                  <th className="py-3 px-4">Mã MSHS</th>
+                  <th className="py-3 px-4">Họ và Tên Học Sinh</th>
+                  <th className="py-3 px-4">Tên Rút Gọn (Chữ Lót + Tên)</th>
+                  <th className="py-3 px-4">Giới Tính</th>
+                  <th className="py-3 px-4">Vị Trí Máy Tính</th>
+                  <th className="py-3 px-4 text-center">Thao Tác Nhanh</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-xs font-bold text-slate-700">
+                {classStudents.map((st, idx) => {
+                  const assignedPcId = Object.keys(currentClassSeating).find(pcId => 
+                    getAssignedStudentIds(currentClassSeating[pcId]).includes(st.id)
+                  );
+                  const isSeated = Boolean(assignedPcId);
 
                   return (
-                    <ComputerCard3D
-                      key={computer.id}
-                      computer={computer}
-                      studentObj={studentObj}
-                      classStudents={classStudents}
-                      isDraggingThis={isDraggingThis}
-                      isDraggedOverThis={isDraggedOverThis}
-                      onClick={() => setActiveAssignModal(computer.id)}
-                      onAvatarClick={(e, student) => setAvatarChangeStudent(student)}
-                      onDragStart={(e) => handleDragStart(e, computer.id)}
-                      onDragEnd={handleDragEnd}
-                      onDragOver={(e) => handleDragOverCustom(e, computer.id)}
-                      onDragLeave={handleDragLeaveCustom}
-                      onDrop={(e) => handleDrop(e, computer.id)}
-                      formatStudentName={formatStudentName}
-                    />
+                    <tr key={st.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="py-3.5 px-4 text-slate-400 font-extrabold">{idx + 1}</td>
+                      <td className="py-3.5 px-4 font-mono font-black text-emerald-800">{st.code}</td>
+                      <td className="py-3.5 px-4 font-black text-slate-900">{st.name}</td>
+                      <td className="py-3.5 px-4">
+                        <span className="bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-full border border-emerald-200 font-extrabold text-[11px]">
+                          {formatStudentNameFirstAndMiddle(st.name)}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4">{st.gender === 'Nữ' ? '👧 Nữ' : '👦 Nam'}</td>
+                      <td className="py-3.5 px-4">
+                        {isSeated ? (
+                          <span className="bg-indigo-50 text-indigo-800 px-3 py-1 rounded-full border border-indigo-200 font-black text-[11px] inline-flex items-center gap-1">
+                            <Monitor className="w-3.5 h-3.5" /> {assignedPcId}
+                          </span>
+                        ) : (
+                          <span className="bg-amber-50 text-amber-800 px-3 py-1 rounded-full border border-amber-200 font-bold text-[11px]">
+                            Chưa có chỗ
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4 text-center">
+                        {isSeated ? (
+                          <button
+                            onClick={() => unassignStudentFromComputer(assignedPcId!, st.id)}
+                            className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-black text-[11px] border border-rose-200 transition-all active:scale-95 cursor-pointer"
+                          >
+                            Xóa khỏi máy
+                          </button>
+                        ) : (
+                          <select
+                            onChange={(e) => {
+                              if (e.target.value) {
+                                assignStudentToComputer(e.target.value, st.id);
+                              }
+                            }}
+                            defaultValue=""
+                            className="px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-900 font-black text-[11px] border border-emerald-200 focus:outline-none cursor-pointer"
+                          >
+                            <option value="" disabled>+ Chọn máy để gán...</option>
+                            {computers.filter(c => c.status === 'Hoạt động').map(c => {
+                              const pcId = c.id || `M.${c.num < 10 ? '0' + c.num : c.num}`;
+                              const count = getAssignedStudentIds(currentClassSeating[pcId]).length;
+                              return (
+                                <option key={pcId} value={pcId} disabled={count >= 2}>
+                                  {pcId} ({count}/2 HS)
+                                </option>
+                              );
+                            })}
+                          </select>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // 🎨 INLINE SUB-VIEW 2: ĐỔI KHUNG CARD PC (100% FULL WINDOW TAKEOVER)
+  // =========================================================================
+  if (isFrameConfigSubViewOpen) {
+    return (
+      <div className="space-y-6 text-slate-800 pb-10">
+        {/* Header Bar */}
+        <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs">
+          <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setIsFrameConfigSubViewOpen(false)}
+                className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-[#cbb89d] font-black text-xs transition-all flex items-center gap-1.5 shadow-2xs active:scale-95 cursor-pointer"
+              >
+                <ArrowLeft className="w-4 h-4 text-slate-700" /> Quay Về Sơ Đồ Phòng Máy
+              </button>
+              <div>
+                <h3 className="font-black text-sm text-slate-900 flex items-center gap-2">
+                  <span>🎨</span> THIẾT LẬP & ĐỔI KHUNG CARD PC SƠ ĐỒ PHÒNG MÁY
+                </h3>
+                <p className="text-[11px] font-bold text-slate-600">Tùy biến viền card PC, màu sắc, hình nền từ Google Drive hoặc máy tính</p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setIsFrameConfigSubViewOpen(false)}
+              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-2xs transition-all active:scale-95 cursor-pointer"
+            >
+              ✓ Hoàn Tất & Áp Dụng
+            </button>
+          </div>
+        </div>
+
+        {/* Customizer Layout Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          {/* Left Controls Column */}
+          <div className="lg:col-span-7 space-y-6">
+            
+            {/* Presets Card */}
+            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
+              <h4 className="font-black text-sm text-slate-900 flex items-center gap-2">
+                <span>🌟</span> MẪU PRESET KHUNG CARD CÓ SẴN
+              </h4>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {PRESET_FRAME_SKINS.map(skin => {
+                  const isSelected = frameConfig.skinId === skin.id && !frameConfig.customImageUrl;
+                  return (
+                    <div
+                      key={skin.id}
+                      onClick={() => {
+                        setFrameConfig(prev => ({
+                          ...prev,
+                          skinId: skin.id,
+                          customImageUrl: undefined
+                        }));
+                        showToast(`Đã chọn mẫu khung "${skin.name}"!`, 'info');
+                      }}
+                      className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center gap-3 ${
+                        isSelected 
+                          ? 'border-emerald-500 bg-emerald-50/80 shadow-md ring-2 ring-emerald-400/30' 
+                          : 'border-slate-200 hover:border-slate-300 bg-slate-50/50'
+                      }`}
+                    >
+                      <span className="text-3xl">{skin.icon}</span>
+                      <div>
+                        <div className="font-black text-xs text-slate-900">{skin.name}</div>
+                        <div className="text-[10px] font-bold text-slate-400 mt-0.5">Click để chọn ngay</div>
+                      </div>
+                    </div>
                   );
                 })}
               </div>
-
             </div>
-          ))}
+
+            {/* Custom Google Drive / Computer Upload Card */}
+            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
+              <h4 className="font-black text-sm text-slate-900 flex items-center gap-2">
+                <span>🌐</span> NẠP ẢNH KHUNG CARD TỪ GOOGLE DRIVE HOẶC MÁY TÍNH
+              </h4>
+
+              {/* Google Drive Link Input */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <label className="block text-xs font-black text-slate-700">Dán Link Google Drive:</label>
+                  {driveFileId && (
+                    <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                      🟢 Drive OK
+                    </span>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={customDriveInput}
+                    onChange={(e) => setCustomDriveInput(e.target.value)}
+                    placeholder="https://drive.google.com/file/d/.../view?usp=sharing"
+                    className="flex-1 px-3.5 py-2.5 text-xs font-bold rounded-2xl border border-slate-200 bg-white focus:outline-none focus:border-emerald-500 shadow-2xs"
+                  />
+                  <button
+                    onClick={handleApplyDriveFrameImage}
+                    className="px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-2xs transition-all active:scale-95 cursor-pointer"
+                  >
+                    Áp Dụng
+                  </button>
+                </div>
+              </div>
+
+              {/* Upload File from Computer */}
+              <div className="pt-3 border-t border-slate-100 space-y-2">
+                <label className="block text-xs font-black text-slate-700">Hoặc Tải Tệp Ảnh từ Máy Tính:</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleUploadFrameImageFromComputer}
+                  className="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-2xl file:border-0 file:text-xs file:font-black file:bg-sky-100 file:text-sky-800 hover:file:bg-sky-200 cursor-pointer"
+                />
+              </div>
+
+              {frameConfig.customImageUrl && (
+                <div className="pt-2 flex items-center justify-between bg-emerald-50 p-3 rounded-2xl border border-emerald-200">
+                  <span className="text-xs font-bold text-emerald-900">✨ Đang dùng Ảnh Khung Tùy Chỉnh!</span>
+                  <button
+                    onClick={() => setFrameConfig(prev => ({ ...prev, customImageUrl: undefined }))}
+                    className="text-xs font-black text-rose-600 hover:underline cursor-pointer"
+                  >
+                    Gỡ bỏ ảnh tùy chỉnh
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Sizing & Alignment tuning */}
+            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
+              <h4 className="font-black text-sm text-slate-900 flex items-center gap-2">
+                <span>📐</span> ĐỒNG BỘ KÍCH THƯỚC CARD & SƠ ĐỒ LỚP HỌC
+              </h4>
+
+              <div className="grid grid-cols-2 gap-4 text-xs font-bold">
+                <div>
+                  <label className="block text-slate-600 mb-1.5">Kích thước Ô Máy Tính:</label>
+                  <select
+                    value={frameConfig.cardSize}
+                    onChange={(e) => setFrameConfig(prev => ({ ...prev, cardSize: e.target.value as any }))}
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 font-black text-slate-800 focus:outline-none"
+                  >
+                    <option value="sm">Nhỏ (Gọn gàng)</option>
+                    <option value="md">Vừa (Chuẩn đẹp)</option>
+                    <option value="lg">Lớn (Nổi bật)</option>
+                    <option value="xl">Rất Lớn (Trình chiếu)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-600 mb-1.5">Hiệu Ứng Phát Sáng:</label>
+                  <button
+                    onClick={() => setFrameConfig(prev => ({ ...prev, glowEffect: !prev.glowEffect }))}
+                    className={`w-full py-2 px-3 rounded-xl font-black text-xs border transition-all ${
+                      frameConfig.glowEffect 
+                        ? 'bg-emerald-100 text-emerald-900 border-emerald-300' 
+                        : 'bg-slate-100 text-slate-600 border-slate-200'
+                    }`}
+                  >
+                    {frameConfig.glowEffect ? '✨ Bật Phát Sáng' : 'Tắt Phát Sáng'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Right Live Preview Column */}
+          <div className="lg:col-span-5 space-y-4">
+            <div className="bg-slate-900 rounded-3xl p-6 border border-slate-800 text-slate-100 space-y-4 shadow-xl sticky top-4">
+              <h4 className="font-black text-xs text-indigo-300 uppercase tracking-wider flex items-center gap-2">
+                <span>👁️</span> XEM TRƯỚC HIỂN THỊ KHUNG CARD PC
+              </h4>
+
+              {/* Sample Card Render */}
+              <div 
+                className={`rounded-2xl border-2 transition-all relative overflow-hidden ${cardSizeClasses[frameConfig.cardSize]} ${
+                  frameConfig.customImageUrl 
+                    ? 'border-indigo-400/80 bg-slate-950/90' 
+                    : `${activeSkin.bgGradient} ${activeSkin.borderColor} ${frameConfig.glowEffect ? activeSkin.glowShadow : ''}`
+                }`}
+                style={frameConfig.customImageUrl ? {
+                  backgroundImage: `url(${frameConfig.customImageUrl})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center'
+                } : undefined}
+              >
+                {/* Header PC info */}
+                <div className="flex justify-between items-center mb-3">
+                  <span className="font-mono font-black text-xs bg-slate-950/60 px-2.5 py-1 rounded-lg text-indigo-300 border border-indigo-500/30">
+                    🖥️ M.01
+                  </span>
+                  <span className="text-[10px] font-black bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                    2/2 HS
+                  </span>
+                </div>
+
+                {/* Sample Student Pills */}
+                <div className="space-y-1.5">
+                  <div className="bg-emerald-500/20 border border-emerald-400/40 text-emerald-200 rounded-xl px-3 py-1.5 flex justify-between items-center">
+                    <span className="font-black text-xs">Văn An</span>
+                    <span className="text-[10px] opacity-70">×</span>
+                  </div>
+                  <div className="bg-emerald-500/20 border border-emerald-400/40 text-emerald-200 rounded-xl px-3 py-1.5 flex justify-between items-center">
+                    <span className="font-black text-xs">Thị Bích</span>
+                    <span className="text-[10px] opacity-70">×</span>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-[11px] font-bold text-slate-400 text-center leading-relaxed">
+                Tất cả {computers.length} ô máy tính trên sơ đồ sẽ tự động áp dụng kiểu khung card đã chọn ở trên!
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // 🖥️ MAIN VIEW: SƠ ĐỒ LỚP HỌC & CHỖ NGỒI MÁY TÍNH (MAIN ROOM CANVAS)
+  // =========================================================================
+  return (
+    <div className="space-y-6 pb-12 text-slate-800">
+      
+      {/* 🌟 1. BANNER HEADER TÍM GRADIENT GIỐNG HÌNH ẢNH ĐÍNH KÈM (MODULE 2: PHÒNG LAB) */}
+      <div className="relative rounded-3xl bg-gradient-to-r from-[#2a0845] via-[#4b1248] to-[#1e0538] p-6 sm:p-8 text-white shadow-xl overflow-hidden border border-purple-500/30">
+        {/* Glow Ambient Orbs */}
+        <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/3 -mb-8 w-48 h-48 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+          
+          {/* Left Text Block */}
+          <div className="space-y-2">
+            <span className="inline-block px-3.5 py-1 rounded-full bg-purple-500/25 border border-purple-400/40 text-[11px] font-black uppercase tracking-wider text-purple-200">
+              MODULE 2: PHÒNG LAB (SƠ ĐỒ HỌC SINH MÁY TÍNH)
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
+              <span>🖥️</span> Sơ Đồ Lớp Học & Chỗ Ngồi Máy Tính
+            </h2>
+            <p className="text-xs sm:text-sm font-medium text-purple-200/90 leading-relaxed max-w-2xl">
+              Ghi danh học sinh, ghép 2 học sinh/máy (hiển thị <strong className="text-amber-300">'Văn An + Thị Bích'</strong>) & kéo thả sắp xếp linh hoạt.
+            </p>
+          </div>
+
+          {/* Right Action Buttons */}
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            
+            {/* Button 1: Danh sách lớp */}
+            <button
+              onClick={() => setIsClassListSubViewOpen(true)}
+              className="px-4 py-2.5 rounded-2xl bg-white hover:bg-slate-100 text-slate-900 font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-2 cursor-pointer"
+            >
+              <span>📋</span> Danh Sách Lớp ({classStudents.length} HS)
+            </button>
+
+            {/* Button 2: Đổi khung Card PC */}
+            <button
+              onClick={() => setIsFrameConfigSubViewOpen(true)}
+              className="px-4 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-2 border border-indigo-400/40 cursor-pointer"
+            >
+              <span>🎨</span> Đổi Khung Card PC
+            </button>
+
+            {/* Button 3: Xếp Tự Động */}
+            <button
+              onClick={handleAutoSeatClass}
+              className="px-4.5 py-2.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs shadow-lg transition-all active:scale-95 flex items-center gap-2 cursor-pointer"
+            >
+              <span>🪄</span> Xếp Tự Động
+            </button>
+
+          </div>
+
+        </div>
+      </div>
+
+      {/* 🎛️ 2. CONTROL FILTER BAR */}
+      <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        
+        {/* Selectors */}
+        <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
+          
+          {/* Lab Selector */}
+          <div className="space-y-1">
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider">CHỌN PHÒNG MÁY</label>
+            <select
+              value={selectedLabId}
+              onChange={(e) => setSelectedLabId(e.target.value)}
+              className="px-4 py-2 text-xs font-black rounded-2xl border border-slate-200 bg-slate-50 text-slate-900 focus:outline-none focus:border-emerald-500 shadow-2xs cursor-pointer min-w-[180px]"
+            >
+              {labs.map(lab => (
+                <option key={lab.id} value={lab.id}>
+                  {lab.name} ({lab.code})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Class Selector */}
+          <div className="space-y-1">
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider">TÊN LỚP HỌC</label>
+            {classes.length > 0 && onSelectClass ? (
+              <select
+                value={selectedClass}
+                onChange={(e) => onSelectClass(e.target.value)}
+                className="px-4 py-2 text-xs font-black rounded-2xl border border-slate-200 bg-slate-50 text-slate-900 focus:outline-none focus:border-emerald-500 shadow-2xs cursor-pointer min-w-[140px]"
+              >
+                {classes.map(c => (
+                  <option key={c.id} value={c.name}>
+                    Lớp {c.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type="text"
+                value={selectedClass}
+                readOnly
+                className="px-4 py-2 text-xs font-black rounded-2xl border border-slate-200 bg-slate-50 text-slate-900 w-[140px]"
+              />
+            )}
+          </div>
+
         </div>
 
-        {/* Bottom Metadata info */}
-        <div className="pt-4 border-t border-slate-100 flex justify-between items-center text-xs font-semibold text-slate-500">
-          <span>Sơ đồ lớp học môn Tin học Trường Tiểu học Long Định</span>
-          <span>Bản quyền quản trị @Nguyễn Thanh Đồng</span>
+        {/* Right Info & Clear Button */}
+        <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 pt-3 md:pt-0 border-slate-100">
+          
+          <div className="text-xs font-bold">
+            <span className="text-slate-500">Chờ xếp chỗ: </span>
+            <span className="font-black text-amber-600">{unassignedStudents.length} HS</span>
+          </div>
+
+          <button
+            onClick={handleClearAllClassSeating}
+            className="px-4 py-2 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-black text-xs transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer shadow-2xs"
+          >
+            <span>↺</span> Xóa Chỗ Ngồi
+          </button>
+
         </div>
 
       </div>
 
-      {/* SEATING MODAL PANEL SELECTOR */}
-      {activeAssignModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-visible border border-slate-100 transform transition-all animate-fadeIn">
-            
-            <div className="bg-gradient-to-r from-amber-500 to-amber-600 p-4 text-white flex justify-between items-center rounded-t-2xl">
-              <div className="text-left">
-                <h3 className="font-extrabold text-sm uppercase">Cập nhật vị trí máy trạm</h3>
-                <p className="text-xs text-amber-100">
-                  {computers.find(c => c.id === activeAssignModal)?.name} — Lớp quản lý: {selectedClass}
+      {/* 🖼️ 3. TWO-COLUMN MAIN CANVAS (LEFT: UNASSIGNED LIST, RIGHT: PC ROOM MAP) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        {/* ================= LEFT COLUMN: HỌC SINH CHỜ NGỒI ================= */}
+        <div className="lg:col-span-4 bg-white rounded-3xl p-5 border border-slate-200 shadow-sm space-y-4 flex flex-col max-h-[750px] overflow-hidden">
+          
+          <div className="space-y-1 border-b border-slate-100 pb-3">
+            <div className="flex justify-between items-center">
+              <h3 className="font-black text-sm text-slate-900 flex items-center gap-2">
+                <span>👦</span> HỌC SINH CHỜ NGỒI ({unassignedStudents.length})
+              </h3>
+            </div>
+            <p className="text-[11px] font-bold text-slate-400 leading-snug">
+              Kéo tên học sinh vào ô máy tính bên phải để xếp chỗ.
+            </p>
+          </div>
+
+          {/* Search Unassigned Input */}
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
+            <input
+              type="text"
+              value={unassignedSearch}
+              onChange={(e) => setUnassignedSearch(e.target.value)}
+              placeholder="Tìm kiếm học sinh..."
+              className="w-full pl-9 pr-3 py-2 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:border-emerald-500"
+            />
+          </div>
+
+          {/* Scrollable Students List */}
+          <div className="flex-1 overflow-y-auto space-y-2.5 pr-1 max-h-[560px]">
+            {filteredUnassignedStudents.length > 0 ? (
+              filteredUnassignedStudents.map(st => (
+                <div
+                  key={st.id}
+                  draggable={true}
+                  onDragStart={(e) => handleStudentDragStart(e, st.id)}
+                  className="bg-slate-50 hover:bg-emerald-50/80 p-3 rounded-2xl border border-slate-200 hover:border-emerald-300 transition-all flex items-center justify-between cursor-grab active:cursor-grabbing group shadow-2xs"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl select-none">
+                      {st.gender === 'Nữ' ? '👧' : '👦'}
+                    </span>
+                    <div>
+                      <div className="font-black text-xs text-slate-900 group-hover:text-emerald-950">
+                        {st.name}
+                      </div>
+                      <div className="text-[10px] font-bold text-slate-400">
+                        MSHS: {st.code} • Tên ngắn: <span className="text-emerald-700 font-extrabold">{formatStudentNameFirstAndMiddle(st.name)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <span className="text-[10px] font-black bg-slate-200 group-hover:bg-emerald-200 group-hover:text-emerald-900 text-slate-600 px-2 py-1 rounded-lg">
+                    Kéo chỗ 🖐️
+                  </span>
+                </div>
+              ))
+            ) : unassignedStudents.length === 0 ? (
+              <div className="text-center py-12 space-y-3">
+                <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto text-2xl">
+                  ✓
+                </div>
+                <div className="font-black text-xs text-emerald-800">Tất cả học sinh đã có máy!</div>
+                <p className="text-[11px] font-bold text-slate-400 max-w-[200px] mx-auto">
+                  Toàn bộ {classStudents.length} học sinh lớp {selectedClass} đã được xếp vị trí chỗ ngồi máy tính thành công.
                 </p>
               </div>
-              <button
-                onClick={() => setActiveAssignModal(null)}
-                className="bg-black/10 hover:bg-black/20 text-white rounded-full p-1 focus:outline-none"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="p-5 space-y-4">
-              
-              {/* Quick status controls */}
-              <div className="space-y-2 text-left">
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Tình trạng vật lý thiết bị</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {(['Hoạt động', 'Đang hỏng', 'Bảo trì'] as const).map(status => {
-                    const isCurrent = computers.find(c => c.id === activeAssignModal)?.status === status;
-                    return (
-                      <button
-                        key={status}
-                        type="button"
-                        onClick={() => handleUpdateComputerStatus(activeAssignModal, status)}
-                        className={`py-1.5 px-2 text-xs font-bold rounded-lg border-2 transition ${
-                          isCurrent 
-                            ? 'bg-amber-500 border-amber-600 text-white shadow-sm' 
-                            : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                        }`}
-                      >
-                        {status}
-                      </button>
-                    );
-                  })}
-                </div>
+            ) : (
+              <div className="text-center py-8 text-slate-400 font-bold text-xs">
+                Không tìm thấy học sinh nào khớp với từ khóa "{unassignedSearch}"
               </div>
+            )}
+          </div>
 
-              {/* Assign Student dropdown list */}
-              {(() => {
-                const currentAssignedId = activeAssignModal ? (seatingChart[selectedClass]?.[activeAssignModal] || '') : '';
-                const currentAssignedStudent = currentAssignedId ? classStudents.find(s => s.id === currentAssignedId) : null;
-                const filteredClassStudents = classStudents.filter(s => {
-                  const searchLower = modalSearch.toLowerCase().trim();
-                  if (!searchLower) return true;
-                  return s.name.toLowerCase().includes(searchLower) || s.code.toLowerCase().includes(searchLower);
-                });
+        </div>
 
-                return (
-                  <div className="space-y-3.5 text-left relative">
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                      Học sinh được chia ngồi máy
-                    </label>
-                    
-                    {/* Beautiful Custom Search Dropdown Trigger box */}
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                        <Search className="h-4 w-4 text-slate-400" />
-                      </div>
-                      <input
-                        type="text"
-                        placeholder={currentAssignedStudent ? `${currentAssignedStudent.name} (${currentAssignedStudent.code})` : "🔎 Tìm nhanh tên hoặc mã số học sinh..."}
-                        value={modalSearch}
-                        onChange={(e) => {
-                          setModalSearch(e.target.value);
-                          setIsDropdownOpen(true);
-                        }}
-                        onFocus={() => setIsDropdownOpen(true)}
-                        className="w-full text-xs pl-10 pr-20 py-3 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500 focus:outline-none bg-white font-extrabold text-slate-800 cursor-text shadow-xs placeholder-slate-400 transition-all"
-                      />
-                      
-                      <div className="absolute inset-y-0 right-0 flex items-center gap-1.5 pr-3">
-                        {modalSearch && (
+        {/* ================= RIGHT COLUMN: SƠ ĐỒ PHÒNG MÁY TÍNH (DARK CANVAS) ================= */}
+        <div className="lg:col-span-8 bg-[#0b1120] rounded-3xl p-5 sm:p-6 border border-slate-800 shadow-2xl space-y-6 overflow-hidden">
+          
+          {/* Top Teacher Board Banner */}
+          <div className="w-full bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl py-3 px-4 border border-indigo-500/30 text-center shadow-inner">
+            <span className="text-xs font-black text-amber-300 uppercase tracking-widest flex items-center justify-center gap-2">
+              👨‍🏫 MÀN CHIẾU & BẢNG GIÁO VIÊN ({activeLab.name} - {activeLab.code})
+            </span>
+          </div>
+
+          {/* PC Seating Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            {computers.map(c => {
+              const pcId = c.id || `M.${c.num < 10 ? '0' + c.num : c.num}`;
+              const assignedIds = getAssignedStudentIds(currentClassSeating[pcId]);
+              const assignedStudents = assignedIds.map(id => students.find(s => s.id === id)).filter(Boolean) as Student[];
+
+              const isFull = assignedStudents.length >= 2;
+              const isDragOver = dragOverPcId === pcId;
+
+              return (
+                <div
+                  key={pcId}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setDragOverPcId(pcId);
+                  }}
+                  onDragLeave={() => setDragOverPcId(null)}
+                  onDrop={(e) => handlePcDrop(e, pcId)}
+                  className={`rounded-2xl border-2 transition-all relative flex flex-col justify-between ${cardSizeClasses[frameConfig.cardSize]} ${
+                    isDragOver ? 'border-amber-400 scale-105 bg-amber-950/40 ring-4 ring-amber-400/40 z-20' : ''
+                  } ${
+                    frameConfig.customImageUrl 
+                      ? 'border-indigo-400/80 bg-slate-950/90' 
+                      : `${activeSkin.bgGradient} ${activeSkin.borderColor} ${frameConfig.glowEffect ? activeSkin.glowShadow : ''}`
+                  }`}
+                  style={frameConfig.customImageUrl ? {
+                    backgroundImage: `url(${frameConfig.customImageUrl})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center'
+                  } : undefined}
+                >
+                  {/* PC Header Bar */}
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-mono font-black text-xs bg-slate-950/70 px-2.5 py-0.5 rounded-lg text-indigo-300 border border-indigo-500/30">
+                      🖥️ {pcId}
+                    </span>
+                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
+                      isFull 
+                        ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' 
+                        : assignedStudents.length > 0 
+                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' 
+                          : 'bg-slate-800 text-slate-400 border-slate-700'
+                    }`}>
+                      {assignedStudents.length}/2 HS
+                    </span>
+                  </div>
+
+                  {/* Student Seating Slot Content */}
+                  {assignedStudents.length > 0 ? (
+                    <div className="space-y-1.5 my-auto">
+                      {assignedStudents.map(st => (
+                        <div
+                          key={st.id}
+                          draggable={true}
+                          onDragStart={(e) => handleStudentDragStart(e, st.id, pcId)}
+                          className="bg-emerald-500/25 hover:bg-emerald-500/35 border border-emerald-400/50 text-emerald-200 rounded-xl px-2.5 py-1 flex items-center justify-between transition-all cursor-grab active:cursor-grabbing group shadow-xs"
+                        >
+                          <span className="font-black text-xs truncate max-w-[110px]" title={st.name}>
+                            {formatStudentNameFirstAndMiddle(st.name)}
+                          </span>
                           <button
-                            type="button"
-                            onClick={() => setModalSearch('')}
-                            className="text-slate-450 hover:text-slate-700 p-1 bg-slate-100 hover:bg-slate-200 rounded-full transition"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              unassignStudentFromComputer(pcId, st.id);
+                            }}
+                            className="text-emerald-400 hover:text-rose-400 p-0.5 rounded-full hover:bg-slate-900/50 transition-colors cursor-pointer"
+                            title="Xóa học sinh khỏi máy"
                           >
                             <X className="w-3 h-3" />
                           </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                          className="text-slate-400 hover:text-slate-600 p-1.5 hover:bg-slate-50 rounded-lg transition"
-                        >
-                          <ChevronDown className={`w-4 h-4 text-slate-450 transition-transform duration-200 ${isDropdownOpen ? 'transform rotate-180' : ''}`} />
-                        </button>
-                      </div>
+                        </div>
+                      ))}
+
+                      {/* Display formatted concatenated string e.g. "Văn An + Thị Bích" when 2 students seated */}
+                      {assignedStudents.length === 2 && (
+                        <div className="text-[9px] font-black text-amber-300 text-center tracking-tight truncate pt-0.5 opacity-90">
+                          {formatStudentNameFirstAndMiddle(assignedStudents[0].name)} + {formatStudentNameFirstAndMiddle(assignedStudents[1].name)}
+                        </div>
+                      )}
                     </div>
-
-                    {/* Clear selection indicators / warning */}
-                    {currentAssignedStudent && !modalSearch && !isDropdownOpen && (
-                      <div className="flex justify-between items-center bg-amber-50/80 border border-amber-200 rounded-xl p-3 shadow-xs">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xl">👤</span>
-                          <div className="text-left">
-                            <p className="text-[10px] font-black tracking-wide text-amber-500 uppercase">Đang gán máy cho</p>
-                            <p className="text-xs font-black text-amber-950">
-                              {currentAssignedStudent.name} <span className="font-mono font-bold text-amber-700">({currentAssignedStudent.code})</span>
-                            </p>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            handleAssignStudent(activeAssignModal, '');
-                            setModalSearch('');
-                          }}
-                          className="text-[10px] font-black text-rose-700 hover:text-white uppercase bg-white hover:bg-rose-600 border border-rose-200 px-3 py-1.5 rounded-lg shadow-sm transition active:scale-95"
-                        >
-                          Rút thẻ (Bỏ trống)
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Floating Dropdown Overlay */}
-                    {isDropdownOpen && (
-                      <div className="absolute z-50 w-full mt-2 bg-white border border-slate-200 rounded-xl shadow-2xl max-h-64 overflow-y-auto divide-y divide-slate-100 focus:outline-none focus:ring-0">
-                        
-                        {/* Leave empty seat option */}
-                        <div className="p-1.5 bg-slate-50/50 sticky top-0 border-b border-slate-100 z-10 backdrop-blur-md">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              handleAssignStudent(activeAssignModal, '');
-                              setIsDropdownOpen(false);
-                              setModalSearch('');
-                            }}
-                            className={`w-full text-left text-xs px-3.5 py-2.5 rounded-xl font-bold flex items-center justify-between transition-all border ${
-                              !currentAssignedId 
-                                ? 'bg-rose-50 border-rose-200 text-rose-700 shadow-xs' 
-                                : 'bg-white border-slate-200 text-slate-600 hover:text-rose-700 hover:bg-rose-50/50 hover:border-rose-150'
-                            }`}
-                          >
-                            <span className="flex items-center gap-2">
-                              <span className="text-base">❌</span>
-                              <span>Để trống máy (Rút thẻ học sinh)</span>
-                            </span>
-                            {!currentAssignedId && <Check className="w-4 h-4 text-rose-700" />}
-                          </button>
-                        </div>
-
-                        {/* Students loop list - spacious & clear rows */}
-                        <div className="p-1.5 space-y-1">
-                          {filteredClassStudents.length > 0 ? (
-                            filteredClassStudents.map(s => {
-                              const otherCompId = Object.keys(seatingChart[selectedClass] || {}).find(
-                                key => seatingChart[selectedClass][key] === s.id && key !== activeAssignModal
-                              );
-                              const otherComp = otherCompId ? computers.find(c => c.id === otherCompId) : null;
-                              const isSelected = currentAssignedId === s.id;
-
-                              return (
-                                <button
-                                  key={s.id}
-                                  type="button"
-                                  onClick={() => {
-                                    handleAssignStudent(activeAssignModal, s.id);
-                                    setIsDropdownOpen(false);
-                                    setModalSearch('');
-                                  }}
-                                  className={`w-full text-left text-xs px-3.5 py-2.5 rounded-xl font-semibold flex items-center justify-between transition border ${
-                                    isSelected 
-                                      ? 'bg-amber-500 border-amber-600 text-white font-black shadow-md' 
-                                      : 'bg-white border-transparent text-slate-800 hover:bg-amber-50/60 hover:border-amber-200'
-                                  }`}
-                                >
-                                  <div className="flex flex-col text-left space-y-0.5">
-                                    <div className="flex items-center gap-1.5">
-                                      <span className="text-sm">
-                                        {s.gender === 'Nữ' ? '👧🏻' : '👦🏻'}
-                                      </span>
-                                      <span className="font-extrabold tracking-tight">
-                                        {s.name}
-                                      </span>
-                                      <span className={`text-[10px] font-mono font-bold px-1.5 py-0.2 rounded-md ${
-                                        isSelected 
-                                          ? 'bg-amber-600/50 text-amber-50' 
-                                          : 'bg-slate-100 text-slate-500'
-                                      }`}>
-                                        {s.code}
-                                      </span>
-                                    </div>
-                                    
-                                    {otherComp && (
-                                      <span className={`text-[9px] font-bold inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-md ${
-                                        isSelected 
-                                          ? 'bg-amber-600/40 text-amber-100' 
-                                          : 'bg-amber-50 border border-amber-100 text-amber-700'
-                                      }`}>
-                                        ⚠️ Đang ngồi ở: <strong className="uppercase">{otherComp.name}</strong>
-                                      </span>
-                                    )}
-                                  </div>
-                                  
-                                  {isSelected && (
-                                    <div className="bg-white/20 p-1 rounded-full text-white">
-                                      <Check className="w-3.5 h-3.5" />
-                                    </div>
-                                  )}
-                                </button>
-                              );
-                            })
-                          ) : (
-                            <div className="py-6 text-center text-xs text-slate-400 font-medium flex flex-col items-center justify-center gap-1 bg-slate-50/50 rounded-xl m-1">
-                              <span>🔍</span>
-                              <span>Không tìm thấy học sinh nào phù hợp</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    <p className="text-[11px] text-slate-400 leading-normal">
-                      Chỉ định một học sinh trong danh sách sinh hoạt lớp <span className="font-extrabold text-slate-500">{selectedClass}</span> vào thiết bị số máy trạm này để chấm điểm chuyên cần thích ứng.
-                    </p>
-                  </div>
-                );
-              })()}
-
-              <div className="pt-2 border-t flex justify-end text-xs">
-                <button
-                  onClick={() => setActiveAssignModal(null)}
-                  className="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-4 py-2.5 rounded-xl block cursor-pointer"
-                >
-                  Xác nhận Khép Lại
-                </button>
-              </div>
-
-            </div>
-
-          </div>
-        </div>
-      )}
-
-      {/* EXQUISITE CLASSROOM PROJECTOR FULL SCREEN OVERLAY */}
-      {isFullscreen && (
-        <div className={`fixed inset-0 z-40 flex flex-col p-6 overflow-y-auto ${
-          projectorTheme === 'dark' 
-            ? 'bg-slate-950 text-slate-100' 
-            : 'bg-slate-50 text-slate-900 bg-gradient-to-b from-slate-50 to-slate-100'
-        }`}>
-          
-          {/* Projector Mode Top Control Panel Header */}
-          <div className={`flex flex-col md:flex-row justify-between items-center gap-4 mb-6 pb-4 border-b ${
-            projectorTheme === 'dark' ? 'border-slate-800' : 'border-slate-200'
-          }`}>
-            <div className="flex items-center gap-3 w-full md:w-auto">
-              <div className="bg-indigo-600 text-white p-2.5 rounded-2xl shadow-md border border-indigo-450 hidden sm:block">
-                <Tv className="w-6 h-6 animate-pulse" />
-              </div>
-              <div className="text-left">
-                <h1 className="text-lg font-black uppercase tracking-wider flex flex-wrap items-center gap-2">
-                  <span className={`${projectorTheme === 'dark' ? 'text-amber-400' : 'text-slate-800'}`}>SƠ ĐỒ PHÒNG MÁY CHUYÊN DỤNG</span>
-                  <span className="text-[9px] bg-amber-500 text-slate-950 font-black py-0.5 px-2 rounded-full tracking-normal uppercase">
-                    MÁY CHIẾU LỚP HỌC
-                  </span>
-                </h1>
-                <p className={`text-xs ${projectorTheme === 'dark' ? 'text-slate-400' : 'text-slate-550'} font-semibold`}>
-                  Lớp: <span className="font-extrabold uppercase bg-amber-400/25 text-amber-500 border border-amber-500/35 px-1.5 py-0.2 rounded">{selectedClass}</span> • Thầy giáo: <span className="font-extrabold">Nguyễn Thanh Đồng</span> (Giáo viên Tin học)
-                </p>
-              </div>
-            </div>
-
-            {/* Quick configuration tools for projector */}
-            <div className="flex flex-wrap items-center gap-3 text-xs w-full md:w-auto justify-end">
-              
-              {/* Scale Adjuster */}
-              <div className={`flex items-center gap-1.5 p-1 rounded-xl ${
-                projectorTheme === 'dark' ? 'bg-slate-900 border border-slate-800' : 'bg-slate-200/80 border border-slate-300'
-              }`}>
-                <span className={`font-black px-2 pointer-events-none text-[10px] uppercase hidden sm:inline ${
-                  projectorTheme === 'dark' ? 'text-slate-400' : 'text-slate-600'
-                }`}>Thu Phóng Chữ:</span>
-                {(['sm', 'md', 'lg', 'xl'] as const).map(size => (
-                  <button
-                    key={size}
-                    type="button"
-                    onClick={() => setScaleSize(size)}
-                    className={`px-3 py-1.5 rounded-lg font-black uppercase transition-all duration-150 cursor-pointer text-[10px] ${
-                      scaleSize === size 
-                        ? 'bg-amber-500 text-slate-950 shadow-md font-black' 
-                        : projectorTheme === 'dark' ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:bg-slate-300'
-                    }`}
-                  >
-                    {size === 'sm' ? 'Nhỏ' : size === 'md' ? 'Vừa' : size === 'lg' ? 'Lớn' : 'Cực Đại'}
-                  </button>
-                ))}
-              </div>
-
-              {/* Theme Selector */}
-              <div className={`flex items-center gap-1 p-1 rounded-xl ${
-                projectorTheme === 'dark' ? 'bg-slate-900 border border-slate-800' : 'bg-slate-200/80 border border-slate-300'
-              }`}>
-                <button
-                  type="button"
-                  onClick={() => setProjectorTheme('dark')}
-                  className={`p-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 font-black text-[10.5px] ${
-                    projectorTheme === 'dark'
-                      ? 'bg-amber-500 text-slate-950 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-900'
-                  }`}
-                  title="Chế độ Tối"
-                >
-                  <Moon className="w-3.5 h-3.5" />
-                  <span>Nền tối</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setProjectorTheme('light')}
-                  className={`p-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 font-black text-[10.5px] ${
-                    projectorTheme === 'light'
-                      ? 'bg-white text-indigo-950 shadow-md border border-slate-200'
-                      : projectorTheme === 'dark' ? 'text-slate-400 hover:text-white' : 'text-slate-600'
-                  }`}
-                  title="Chế độ Sáng"
-                >
-                  <Sun className="w-3.5 h-3.5" />
-                  <span>Nền sáng</span>
-                </button>
-              </div>
-
-              {/* Exit Projection button */}
-              <button
-                type="button"
-                onClick={toggleBrowserFullscreen}
-                className="flex items-center gap-1.5 bg-rose-600 hover:bg-rose-750 text-white font-black px-4.5 py-2.5 rounded-xl shadow-md transition-all active:scale-95 duration-150 cursor-pointer"
-              >
-                <Minimize className="w-4 h-4" />
-                <span>Thoát Trình Chiếu (ESC)</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Central Physical Classroom Layout mapping */}
-          <div className={`flex-1 flex flex-col justify-between max-w-7xl mx-auto w-full p-6 border-4 rounded-3xl transition-colors duration-200 ${
-            projectorTheme === 'dark' 
-              ? 'bg-slate-900 border-slate-800 shadow-2xl' 
-              : 'bg-white border-slate-300 shadow-xl'
-          } space-y-8 overflow-auto min-w-[1000px]`}>
-            
-            {/* Projector Header row: Teachers desk, board, entry */}
-            <div className="grid grid-cols-12 gap-5 items-center">
-              
-              {/* Teacher Desk */}
-              <div className={`col-span-3 border-2 border-dashed rounded-2xl p-4 text-center ${
-                projectorTheme === 'dark' 
-                  ? 'bg-slate-950/40 border-slate-800 text-slate-400' 
-                  : 'bg-slate-100 border-slate-200 text-slate-600'
-              }`}>
-                <div className="w-14 h-8 bg-amber-500/20 border-2 border-amber-500 rounded-lg mx-auto mb-1.5"></div>
-                <strong className="text-xs uppercase tracking-wider block font-bold">BÀN GIÁO VIÊN</strong>
-              </div>
-
-              {/* Blackboard board */}
-              <div className={`col-span-6 rounded-2xl py-4 shadow-inner border-2 text-center text-white font-black uppercase tracking-widest ${
-                projectorTheme === 'dark' 
-                  ? 'bg-emerald-950/80 border-emerald-800/60 text-emerald-200' 
-                  : 'bg-slate-800 border-slate-700 text-slate-100'
-              }`}>
-                <span className="text-sm md:text-base">MÀN CHIẾU • BẢNG LỚP HỌC</span>
-              </div>
-
-              {/* Entry doorway gate */}
-              <div className="col-span-3 flex justify-end">
-                <div className="bg-amber-500 text-slate-955 font-black text-xs py-4 px-6 rounded-2xl border-2 border-amber-600 shadow-md tracking-wider uppercase text-center">
-                  CỬA VÀO PHÒNG
-                </div>
-              </div>
-
-            </div>
-
-            {/* SEATING COLUMNS MATRIX CONTROLLER */}
-            <div className="grid grid-cols-5 gap-4 pt-4 border-t border-dashed border-slate-500/20">
-              {classroomColumns.map((col, colIndex) => (
-                <div 
-                  key={colIndex} 
-                  className={`transition-all duration-200 ${scaleConfig[scaleSize].columnSpacing} ${
-                    projectorTheme === 'dark' ? 'bg-slate-950/30' : 'bg-slate-50'
-                  } border ${
-                    projectorTheme === 'dark' ? 'border-slate-800' : 'border-slate-200'
-                  }`}
-                >
-                  <p className={`font-black uppercase tracking-wider text-center border-b pb-2 ${
-                    scaleConfig[scaleSize].colTitle
-                  } ${
-                    projectorTheme === 'dark' ? 'text-slate-400 border-slate-805' : 'text-slate-500 border-slate-200'
-                  }`}>
-                    {col.title}
-                  </p>
-                  
-                  <div className="space-y-2">
-                    {col.items.map((computer: Computer) => {
-                      const assignedStudentId = seatingChart[selectedClass]?.[computer.id];
-                      const studentObj = classStudents.find(s => s.id === assignedStudentId);
-                      const statusBg = getComputerContrastClasses(computer.status, projectorTheme === 'dark');
-
-                      const isDraggingThis = activeDraggingId === computer.id;
-                      const isDraggedOverThis = draggedOverId === computer.id;
-
-                      return (
-                        <ComputerCard3D
-                          key={computer.id}
-                          computer={computer}
-                          studentObj={studentObj}
-                          isDraggingThis={isDraggingThis}
-                          isDraggedOverThis={isDraggedOverThis}
-                          onClick={() => setActiveAssignModal(computer.id)}
-                          onAvatarClick={(e, student) => setAvatarChangeStudent(student)}
-                          onDragStart={(e) => handleDragStart(e, computer.id)}
-                          onDragEnd={handleDragEnd}
-                          onDragOver={(e) => handleDragOverCustom(e, computer.id)}
-                          onDragLeave={handleDragLeaveCustom}
-                          onDrop={(e) => handleDrop(e, computer.id)}
-                          formatStudentName={formatStudentName}
-                          isProjectorView={true}
-                          scaleSize={scaleSize}
-                        />
-                      );
-                    })}
-                  </div>
+                  ) : (
+                    <div className="my-auto py-2 text-center text-slate-500 font-bold text-[11px] border border-dashed border-slate-700/60 rounded-xl bg-slate-950/40">
+                      Kéo HS vào đây
+                    </div>
+                  )}
 
                 </div>
-              ))}
-            </div>
-
-            {/* Bottom Credits info inside screen */}
-            <div className={`pt-4 border-t border-dashed flex justify-between items-center text-[10px] font-extrabold uppercase tracking-wider ${
-              projectorTheme === 'dark' ? 'border-slate-800 text-slate-500' : 'border-slate-200 text-slate-400'
-            }`}>
-              <span>Trường Tiểu học Long Định • Phòng máy thực nghiệm</span>
-              <span>Lớp học Tin học lý thú</span>
-            </div>
-
+              );
+            })}
           </div>
 
         </div>
-      )}
 
-      {/* AVATAR CHANGE MODAL */}
-      {avatarChangeStudent && (
-        <div className="fixed inset-0 bg-slate-900/65 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl border border-slate-100 flex flex-col relative animate-in fade-in zoom-in-95 duration-200 text-left">
-            {/* Close Button */}
-            <button 
-              onClick={() => setAvatarChangeStudent(null)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 bg-slate-50 hover:bg-slate-100 p-1.5 rounded-full transition-colors cursor-pointer focus:outline-none"
-            >
-              <X className="w-4 h-4" />
-            </button>
-
-            {/* Title */}
-            <div className="border-b border-slate-100 pb-4 mb-4">
-              <h3 className="text-lg font-black text-slate-850 uppercase tracking-tight flex items-center gap-2">
-                🎨 Thay đổi Avatar học sinh
-              </h3>
-              <p className="text-xs text-slate-400 mt-1">
-                Chọn một trong các avatar cute từ Google Drive cho học sinh <strong className="text-slate-700 font-extrabold">{avatarChangeStudent.name}</strong>.
-              </p>
-            </div>
-
-            {/* Official Student ID Card with thehocsinh.png Frame */}
-            <div className="flex justify-center py-2 bg-slate-50/80 rounded-2xl border border-slate-100 p-3 mb-4 shadow-inner">
-              <StudentCard3D
-                student={avatarChangeStudent}
-                classStudents={classStudents}
-                machineName={(() => {
-                  const compId = Object.keys(seatingChart[selectedClass] || {}).find(
-                    key => seatingChart[selectedClass][key] === avatarChangeStudent.id
-                  );
-                  const comp = compId ? computers.find(c => c.id === compId) : null;
-                  return comp ? comp.name : 'Chưa xếp máy';
-                })()}
-                starCount={0}
-                size="sm"
-              />
-            </div>
-
-            {/* Category tabs */}
-            <div className="flex flex-wrap gap-1 mb-3 pb-2 border-b border-slate-100">
-              {avatarCategories.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setModalAvatarCategory(cat.id)}
-                  className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all duration-150 cursor-pointer active:scale-95 ${
-                    modalAvatarCategory === cat.id
-                      ? 'bg-amber-500 text-white shadow-sm ring-2 ring-amber-500/20'
-                      : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-150'
-                  }`}
-                >
-                  <span>{cat.icon}</span>
-                  <span>{cat.name}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Grid of Avatars */}
-            <div className="grid grid-cols-4 gap-3 max-h-[220px] overflow-y-auto p-1">
-              {(modalAvatarCategory === 'all' 
-                ? getMergedAvatars() 
-                : getMergedAvatars().filter(item => item.category === modalAvatarCategory)
-              ).map((item, idx) => {
-                const isSelected = avatarChangeStudent.avatarUrl === item.url;
-                return (
-                  <button
-                    key={idx}
-                    onClick={() => {
-                      setStudents(prev => prev.map(s => {
-                        if (s.id === avatarChangeStudent.id) {
-                          return { ...s, avatarUrl: item.url };
-                        }
-                        return s;
-                      }));
-                      showToast(`Đã đổi avatar thành công cho học sinh ${avatarChangeStudent.name}!`, 'success');
-                      setAvatarChangeStudent(null);
-                    }}
-                    className={`relative aspect-square rounded-2xl bg-slate-50 border-2 overflow-hidden hover:scale-105 hover:border-amber-400 transition-all cursor-pointer p-1.5 group flex items-center justify-center ${
-                      isSelected ? 'border-amber-500 bg-amber-50/50 ring-2 ring-amber-400/20 shadow-md' : 'border-slate-150'
-                    }`}
-                    title={item.name}
-                  >
-                    <img 
-                      src={item.url} 
-                      alt={item.name} 
-                      className="w-full h-full object-cover rounded-xl"
-                      referrerPolicy="no-referrer"
-                    />
-                    
-                    {/* Badge for avatar label */}
-                    <div className="absolute bottom-0 inset-x-0 bg-black/60 py-0.5 px-1 text-[8.5px] font-bold text-white text-center opacity-0 group-hover:opacity-100 transition-opacity truncate">
-                      {item.name}
-                    </div>
-
-                    {isSelected && (
-                      <div className="absolute top-1 right-1 bg-amber-500 text-white rounded-full p-0.5">
-                        <Check className="w-2.5 h-2.5 stroke-[4px]" />
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            {(modalAvatarCategory === 'all' 
-              ? getMergedAvatars() 
-              : getMergedAvatars().filter(item => item.category === modalAvatarCategory)
-            ).length === 0 && (
-              <div className="text-center py-8 text-slate-400 text-xs font-semibold">
-                Không tìm thấy avatar nào trong danh mục này.
-              </div>
-            )}
-
-            {/* Footer */}
-            <div className="mt-4 pt-4 border-t border-slate-150 flex justify-end">
-              <button
-                onClick={() => setAvatarChangeStudent(null)}
-                className="bg-slate-100 hover:bg-slate-250 text-slate-700 font-extrabold text-xs px-4 py-2.5 rounded-xl transition duration-150 active:scale-95 cursor-pointer"
-              >
-                Đóng
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      </div>
 
     </div>
   );

@@ -1357,6 +1357,9 @@ export default function App() {
                 setActiveAssignModal={setActiveAssignModal}
                 showToast={showToast}
                 classroomColumns={classroomColumns}
+                labs={labs}
+                classes={classes}
+                onSelectClass={setSelectedClass}
               />
             )}
 
