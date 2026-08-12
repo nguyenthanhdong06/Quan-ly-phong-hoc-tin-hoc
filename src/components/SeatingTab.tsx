@@ -741,16 +741,14 @@ export default function SeatingTab({
   return (
     <div className="space-y-5 pb-12 text-slate-800">
       
-      {/* 🌟 1. BANNER HEADER TÍM COMPACT THU GỌN THEO YÊU CẦU */}
-      <div className="relative rounded-2xl bg-gradient-to-r from-[#2a0845] via-[#4b1248] to-[#1e0538] py-3.5 px-5 text-white shadow-lg overflow-hidden border border-purple-500/30">
+      {/* 🌟 1. BANNER HEADER MÀU SẮC ĐỒNG BỘ KHU VƯỜN TRI THỨC (IMAC WARM BEIGE & EMERALD GOLD) */}
+      <div className="relative rounded-2xl border border-[#cbb89d] bg-[#fffbf0] py-3.5 px-5 text-slate-900 shadow-sm overflow-hidden">
         <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           
-          {/* Left Text Title & Single Instruction Line */}
-          <div className="space-y-0.5">
-            <h2 className="text-lg sm:text-xl font-black tracking-tight text-white flex items-center gap-2">
-              <span>🖥️</span> Sơ Đồ Lớp Học & Chỗ Ngồi Máy Tính
-            </h2>
-            <p className="text-[11px] font-bold text-purple-200/90">
+          {/* Left Single Instruction Line (Bỏ chữ 'Sơ đồ lớp học & chỗ ngồi máy tính') */}
+          <div className="flex items-center gap-2.5">
+            <span className="text-xl select-none">🖥️</span>
+            <p className="text-xs sm:text-sm font-black text-[#3d2b17]">
               👉 Kéo thả tên học sinh vào máy tính để xếp chỗ (ghép tối đa 2 HS/máy).
             </p>
           </div>
@@ -761,7 +759,7 @@ export default function SeatingTab({
             {/* Button 1: Đổi khung Card PC */}
             <button
               onClick={() => setIsFrameConfigSubViewOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 border border-indigo-400/40 cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-[#3d2b17] hover:bg-[#281c0f] text-amber-200 font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 border border-[#5c4327] cursor-pointer"
             >
               <span>🎨</span> Đổi Khung Card PC
             </button>
@@ -769,7 +767,7 @@ export default function SeatingTab({
             {/* Button 2: Xếp Tự Động */}
             <button
               onClick={handleAutoSeatClass}
-              className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs shadow-lg transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
             >
               <span>🪄</span> Xếp Tự Động
             </button>
@@ -988,33 +986,33 @@ export default function SeatingTab({
                     backgroundPosition: 'center'
                   } : undefined}
                 >
-                  {/* PC Header Bar */}
+                  {/* PC Header Bar - High Contrast Amber Badge */}
                   <div className="flex justify-between items-center mb-1.5">
-                    <span className="font-mono font-black text-[11px] bg-slate-950/70 px-2 py-0.5 rounded-md text-indigo-300 border border-indigo-500/30">
+                    <span className="font-mono font-black text-[11px] bg-amber-400 text-slate-950 px-2 py-0.5 rounded-md border border-amber-300 shadow-2xs">
                       🖥️ {pcId}
                     </span>
-                    <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full border ${
+                    <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full border shadow-2xs ${
                       isFull 
-                        ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' 
+                        ? 'bg-rose-500 text-white border-rose-400' 
                         : assignedStudents.length > 0 
-                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' 
-                          : 'bg-slate-800 text-slate-400 border-slate-700'
+                          ? 'bg-amber-300 text-slate-950 border-amber-400' 
+                          : 'bg-slate-800 text-slate-300 border-slate-700'
                     }`}>
                       {assignedStudents.length}/2 HS
                     </span>
                   </div>
 
-                  {/* Student Seating Slot Content */}
+                  {/* Student Seating Slot Content - High Contrast Neon Emerald Pill with CENTERED Student Name */}
                   {assignedStudents.length > 0 ? (
-                    <div className="space-y-1 my-auto">
+                    <div className="space-y-1 my-auto w-full text-center">
                       {assignedStudents.map(st => (
                         <div
                           key={st.id}
                           draggable={true}
                           onDragStart={(e) => handleStudentDragStart(e, st.id, pcId)}
-                          className="bg-emerald-500/25 hover:bg-emerald-500/35 border border-emerald-400/50 text-emerald-200 rounded-lg px-2 py-1 flex items-center justify-between transition-all cursor-grab active:cursor-grabbing group shadow-xs"
+                          className="bg-emerald-400 hover:bg-emerald-300 border-2 border-emerald-300 text-slate-950 rounded-lg px-2 py-1 flex items-center justify-center relative transition-all cursor-grab active:cursor-grabbing group shadow-md text-center"
                         >
-                          <span className="font-black text-[11px] truncate max-w-[100px]" title={st.name}>
+                          <span className="font-black text-xs text-slate-950 text-center truncate max-w-[100px] mx-auto drop-shadow-2xs" title={st.name}>
                             {formatStudentNameFirstAndMiddle(st.name)}
                           </span>
                           <button
@@ -1022,7 +1020,7 @@ export default function SeatingTab({
                               e.stopPropagation();
                               unassignStudentFromComputer(pcId, st.id);
                             }}
-                            className="text-emerald-400 hover:text-rose-400 p-0.5 rounded-full hover:bg-slate-900/50 transition-colors cursor-pointer"
+                            className="absolute right-1 text-slate-950/70 hover:text-rose-700 p-0.5 rounded-full hover:bg-white/60 transition-colors cursor-pointer"
                             title="Xóa học sinh khỏi máy"
                           >
                             <X className="w-3 h-3" />
@@ -1032,13 +1030,13 @@ export default function SeatingTab({
 
                       {/* Display formatted concatenated string e.g. "Văn An + Thị Bích" when 2 students seated */}
                       {assignedStudents.length === 2 && (
-                        <div className="text-[9px] font-black text-amber-300 text-center tracking-tight truncate pt-0.5 opacity-90">
+                        <div className="text-[10px] font-black text-amber-300 bg-slate-950/90 px-2 py-0.5 rounded-md border border-amber-400/60 text-center justify-center tracking-tight truncate mx-auto w-full shadow-xs">
                           {formatStudentNameFirstAndMiddle(assignedStudents[0].name)} + {formatStudentNameFirstAndMiddle(assignedStudents[1].name)}
                         </div>
                       )}
                     </div>
                   ) : (
-                    <div className="my-auto py-1.5 text-center text-slate-500 font-bold text-[10px] border border-dashed border-slate-700/60 rounded-lg bg-slate-950/40">
+                    <div className="my-auto py-1.5 text-center justify-center flex items-center text-slate-300 font-black text-[10px] border border-dashed border-slate-500/60 rounded-lg bg-slate-950/60">
                       Kéo HS vào đây
                     </div>
                   )}
