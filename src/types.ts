@@ -267,6 +267,7 @@ export interface LabIncident {
   id: string;
   labId: string;
   pcNumber: number;
+  pcId?: string;
   reporter: string;
   type: 'Hardware' | 'Software' | 'Network' | 'Other';
   issue: string;

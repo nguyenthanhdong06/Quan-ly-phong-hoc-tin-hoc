@@ -266,6 +266,7 @@ export default function LabBookingTab({
       id: `inc_${Date.now()}`,
       labId: selectedLab,
       pcNumber: selectedSeatNumber,
+      pcId: formatComputerName(selectedSeatNumber),
       reporter: incidentReporter.trim() || currentUser?.name || 'Giáo viên bộ môn',
       type: incidentType,
       issue: incidentIssue.trim(),
@@ -279,7 +280,10 @@ export default function LabBookingTab({
     safeSetLocalStorage('school_lab_incidents', updated);
     await saveSupabaseState('school_lab_incidents', updated);
 
-    showToast(`Đã gửi báo cáo sự cố Máy #${selectedSeatNumber} thành công!`, 'success');
+    // Notify real-time listeners across tabs
+    window.dispatchEvent(new Event('school_incidents_updated'));
+
+    showToast(`Đã gửi báo cáo sự cố ${formatComputerName(selectedSeatNumber)} thành công!`, 'success');
     setSelectedSeatNumber(null);
     setIncidentIssue('');
   };
@@ -289,6 +293,7 @@ export default function LabBookingTab({
     setIncidents(updated);
     safeSetLocalStorage('school_lab_incidents', updated);
     await saveSupabaseState('school_lab_incidents', updated);
+    window.dispatchEvent(new Event('school_incidents_updated'));
     showToast(`Đã cập nhật trạng thái xử lý sự cố: ${status === 'Resolved' ? 'Đã khắc phục xong' : status === 'In Progress' ? 'Đang kỹ thuật sửa' : 'Chờ xử lý'}!`, 'success');
   };
 
@@ -298,6 +303,7 @@ export default function LabBookingTab({
       setIncidents(updated);
       safeSetLocalStorage('school_lab_incidents', updated);
       await saveSupabaseState('school_lab_incidents', updated);
+      window.dispatchEvent(new Event('school_incidents_updated'));
       showToast('Đã xóa phiếu báo cáo sự cố!', 'success');
     }
   };

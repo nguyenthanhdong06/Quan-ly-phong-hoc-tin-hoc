@@ -7,10 +7,11 @@ import {
   RotateCcw, Users, Plus, LayoutGrid, CheckCircle2, UserCheck, ShieldCheck, Image as ImageIcon,
   Sliders, Move, ArrowRightLeft, Upload, Link, CheckCheck, RefreshCw, Zap, Eye, EyeOff, 
   PanelLeftClose, PanelLeftOpen, Printer, UserX, AlertCircle, MousePointerClick, Star, Award, Crown,
-  ListFilter, UserPlus, Layers, Settings, FileSpreadsheet, Armchair, Trash2, User
+  ListFilter, UserPlus, Layers, Settings, FileSpreadsheet, Armchair, Trash2, User, FileText
 } from 'lucide-react';
 import { StudentAvatar3D, formatStudentNameFirstAndMiddle } from './StudentAvatar3D';
 import { formatComputerName } from '../utils/nameFormatter';
+import { exportSeatingChartToWord } from '../utils/wordExportHelper';
 import { extractGoogleDriveFileId, convertGoogleDriveUrl } from '../utils/googleDriveImageHelper';
 import { compressImageFile } from './KnowledgeGardenTab';
 import { playButtonClickSound, playVictoryFanfareSound } from '../utils/audioEffects';
@@ -365,7 +366,13 @@ export default function LabRoomTab({
 
         if (!labMatches) return false;
 
-        // 2. PC Number/Label matching
+        // 2. Computer ID (pcId) & pcNumber matching
+        if (inc.pcId && formatComputerName(inc.pcId) === formatComputerName(pcId)) return true;
+
+        const formattedIncId = formatComputerName(inc.pcId || inc.pcNumber);
+        const formattedCellId = formatComputerName(pcId);
+        if (formattedIncId === formattedCellId) return true;
+
         const rawPcStr = String(inc.pcNumber ?? '').trim().toLowerCase();
         const digitsOnly = parseInt(rawPcStr.replace(/\D/g, ''), 10);
         
@@ -801,6 +808,27 @@ export default function LabRoomTab({
       showToast('Lỗi khi tải ảnh, vui lòng thử lại!', 'error');
     }
   };
+
+  // 📄 EXPORT SEATING CHART TO MS WORD (.DOC)
+  const handleExportWord = useCallback(() => {
+    try {
+      exportSeatingChartToWord({
+        className: selectedClass,
+        lab: activeLab,
+        classStudents,
+        attendanceSummary,
+        cellDataMap: computedCellDataMap,
+        gridRows: activeLabGrid.rows,
+        gridCols: activeLabGrid.cols,
+        gridCells: activeLabGrid.cells,
+        getStudentAttendance
+      });
+      playVictoryFanfareSound();
+      showToast(`Đã xuất sơ đồ phòng máy lớp ${selectedClass} ra file Word (.doc) thành công!`, 'success');
+    } catch (e) {
+      showToast('Lỗi khi xuất file Word, vui lòng thử lại!', 'error');
+    }
+  }, [selectedClass, activeLab, classStudents, attendanceSummary, computedCellDataMap, activeLabGrid, getStudentAttendance, showToast]);
 
   // Printable Canvas Component for Portal
   const renderPrintableCanvas = () => (
@@ -1270,6 +1298,14 @@ export default function LabRoomTab({
 
             <div className="flex items-center gap-2">
               <button
+                onClick={handleExportWord}
+                className="px-4 py-2.5 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-2 cursor-pointer border border-blue-900"
+                title="Tải sơ đồ chỗ ngồi về máy dưới dạng file Word (.doc) để chỉnh sửa và in"
+              >
+                <FileText className="w-4 h-4" /> XUẤT FILE WORD (.DOC)
+              </button>
+
+              <button
                 onClick={() => window.print()}
                 className="px-5 py-2.5 rounded-xl bg-amber-800 hover:bg-amber-900 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-2 cursor-pointer border border-amber-950"
               >
@@ -1698,6 +1734,14 @@ export default function LabRoomTab({
                 ↺ 100%
               </button>
             )}
+
+            <button
+              onClick={handleExportWord}
+              className="px-3 py-1.5 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-black text-xs shadow-xs transition-all active:scale-95 flex items-center gap-1.5 border border-blue-900 cursor-pointer ml-1"
+              title="Xuất sơ đồ chỗ ngồi ra file Word (.doc) để chỉnh sửa"
+            >
+              <FileText className="w-3.5 h-3.5" /> Xuất Word
+            </button>
 
             <button
               onClick={() => setIsPrintModalOpen(true)}
