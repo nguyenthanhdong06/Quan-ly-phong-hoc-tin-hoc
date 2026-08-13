@@ -10,7 +10,8 @@ import {
   ListFilter, UserPlus, Layers, Settings, FileSpreadsheet, Armchair, Trash2, User
 } from 'lucide-react';
 import { StudentAvatar3D, formatStudentNameFirstAndMiddle } from './StudentAvatar3D';
-import { extractGoogleDriveFileId, convertGoogleDriveUrl, compressImageFile } from './KnowledgeGardenTab';
+import { extractGoogleDriveFileId, convertGoogleDriveUrl } from '../utils/googleDriveImageHelper';
+import { compressImageFile } from './KnowledgeGardenTab';
 import { playButtonClickSound, playVictoryFanfareSound } from '../utils/audioEffects';
 import { safeSetLocalStorage } from '../utils/safeStorage';
 import { saveSupabaseState } from '../supabaseClient';

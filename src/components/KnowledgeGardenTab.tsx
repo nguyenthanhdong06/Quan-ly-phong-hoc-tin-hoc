@@ -39,43 +39,8 @@ interface KnowledgeGardenTabProps {
   showToast: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
 }
 
-/**
- * Extract Google Drive File ID from any Google Drive link variation
- */
-export const extractGoogleDriveFileId = (url: string): string | null => {
-  if (!url || typeof url !== 'string') return null;
-  const trimmed = url.trim();
-
-  // Pattern 1: /file/d/FILE_ID
-  const match1 = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-  if (match1 && match1[1] && match1[1].length >= 10) return match1[1];
-
-  // Pattern 2: id=FILE_ID
-  const match2 = trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-  if (match2 && match2[1] && match2[1].length >= 10) return match2[1];
-
-  // Pattern 3: /d/FILE_ID
-  const match3 = trimmed.match(/\/d\/([a-zA-Z0-9_-]+)/);
-  if (match3 && match3[1] && match3[1].length >= 10) return match3[1];
-
-  return null;
-};
-
-/**
- * Helper to convert Google Drive share links into direct high-res 200 OK viewable image URLs
- */
-export const convertGoogleDriveUrl = (url: string): string => {
-  if (!url || typeof url !== 'string') return '';
-  const trimmed = url.trim();
-
-  const fileId = extractGoogleDriveFileId(trimmed);
-  if (fileId) {
-    // Direct 200 OK Google FIFE Image CDN endpoint (=s1000 for crisp 1000px direct image without 302 redirects)
-    return `https://lh3.googleusercontent.com/d/${fileId}=s1000`;
-  }
-
-  return trimmed;
-};
+import { extractGoogleDriveFileId, convertGoogleDriveUrl } from '../utils/googleDriveImageHelper';
+export { extractGoogleDriveFileId, convertGoogleDriveUrl };
 
 // 7 Cấp Độ Tăng Trưởng - Cây Hoa Đào (Hỗ trợ WebP nén siêu nhẹ)
 export const GARDEN_STAGES = [

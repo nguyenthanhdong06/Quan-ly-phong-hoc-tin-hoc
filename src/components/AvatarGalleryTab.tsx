@@ -28,40 +28,12 @@ export const avatarCategories = [
   { id: 'hoa', name: 'Hoa', icon: '🌸' }
 ] as const;
 
+import { convertGoogleDriveUrl } from '../utils/googleDriveImageHelper';
+
 // Helper to convert any Google Drive view/share URL to a direct thumbnail image URL
 export function convertDriveUrlToThumbnail(rawInput: string): string {
-  const trimmed = rawInput.trim();
-  if (!trimmed) return '';
-
-  // Check file/d/ID pattern (e.g. https://drive.google.com/file/d/FILE_ID/view?usp=sharing)
-  const fileDMatch = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-  if (fileDMatch && fileDMatch[1]) {
-    return `https://drive.google.com/thumbnail?id=${fileDMatch[1]}&sz=w512`;
-  }
-
-  // Check id=ID query parameter pattern (e.g. https://drive.google.com/open?id=FILE_ID or uc?id=FILE_ID)
-  const idMatch = trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-  if (idMatch && idMatch[1]) {
-    return `https://drive.google.com/thumbnail?id=${idMatch[1]}&sz=w512`;
-  }
-
-  // Check googleusercontent /d/ID pattern
-  const userContentMatch = trimmed.match(/\/d\/([a-zA-Z0-9_-]+)/);
-  if (userContentMatch && userContentMatch[1]) {
-    return `https://drive.google.com/thumbnail?id=${userContentMatch[1]}&sz=w512`;
-  }
-
-  // If already a full URL or base64 data URL
-  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:image/')) {
-    return trimmed;
-  }
-
-  // Raw ID pattern (length >= 20)
-  if (/^[a-zA-Z0-9_-]{20,}$/.test(trimmed)) {
-    return `https://drive.google.com/thumbnail?id=${trimmed}&sz=w512`;
-  }
-
-  return trimmed;
+  if (!rawInput) return '';
+  return convertGoogleDriveUrl(rawInput, 512);
 }
 
 // LocalStorage persistence helpers for custom uploaded/pasted avatars

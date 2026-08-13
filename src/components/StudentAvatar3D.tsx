@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
+import { convertGoogleDriveUrl } from '../utils/googleDriveImageHelper';
+
 // 3D Pixel/Cartoon Avatar component for boy/girl or custom Google Drive URL
 export const StudentAvatar3D = ({ gender, size = 'w-10 h-10', name = '', avatarUrl }: { gender: string; size?: string; name?: string; avatarUrl?: string }) => {
   const [error, setError] = useState(false);
@@ -9,6 +11,10 @@ export const StudentAvatar3D = ({ gender, size = 'w-10 h-10', name = '', avatarU
   }, [avatarUrl]);
 
   const isGirl = gender === 'Nữ';
+  const fastAvatarUrl = React.useMemo(() => {
+    if (!avatarUrl) return '';
+    return convertGoogleDriveUrl(avatarUrl, 256);
+  }, [avatarUrl]);
 
   if (!avatarUrl || error) {
     return (
@@ -29,11 +35,13 @@ export const StudentAvatar3D = ({ gender, size = 'w-10 h-10', name = '', avatarU
 
   return (
     <img
-      src={avatarUrl}
+      src={fastAvatarUrl}
       alt={name || "Student Avatar"}
       referrerPolicy="no-referrer"
       onError={() => setError(true)}
       className={`${size} rounded-full object-cover border-2 border-slate-200/90 shadow-md hover:scale-105 transition-transform duration-200 shrink-0`}
+      loading="lazy"
+      decoding="async"
     />
   );
 };
