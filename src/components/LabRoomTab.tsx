@@ -1439,73 +1439,73 @@ export default function LabRoomTab({
   return (
     <div className="space-y-5 pb-12 text-slate-800">
       
-      {/* 🌟 1. BANNER HEADER WITH ACTION BUTTONS ROW (Xếp chỗ ngồi | Khung Card | Xếp Cán Bộ Lớp | Xếp Tự Động | Xóa chỗ ngồi) */}
-      <div className="relative rounded-2xl border border-[#cbb89d] bg-[#fffbf0] py-3.5 px-5 text-slate-900 shadow-xs overflow-hidden no-print">
-        <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-          
-          <div className="flex items-center gap-2.5">
-            <Monitor className="w-5 h-5 text-[#3d2b17]" />
-            <div>
-              <p className="text-xs sm:text-sm font-black text-[#3d2b17]">
-                Bấm nút <span className="text-amber-800 font-extrabold bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300">"Xếp chỗ ngồi"</span> hoặc các nút chức năng để quản lý vị trí chỗ ngồi học sinh phòng máy.
-              </p>
-            </div>
-          </div>
+      {/* 🌟 1. BANNER ACTION BUTTONS ROW (Xếp chỗ ngồi | Khung Card | Màu Nam/Nữ | Xếp Cán Bộ Lớp | Xếp Tự Động | Xóa chỗ ngồi) */}
+      <div className="relative rounded-2xl border border-[#cbb89d] bg-[#fffbf0] py-3 px-4 text-slate-900 shadow-xs no-print flex flex-wrap items-center justify-between gap-2.5">
+        
+        <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+          {/* Xếp chỗ ngồi */}
+          <button
+            onClick={() => setIsSeatingViewOpen(true)}
+            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-700 to-amber-800 hover:from-amber-800 hover:to-amber-900 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer border border-amber-900"
+            title="Mở giao diện kéo thả xếp chỗ ngồi tương tác"
+          >
+            <Armchair className="w-3.5 h-3.5 text-amber-200" />
+            <span>Xếp chỗ ngồi ({unassignedStudents.length} HS Chờ)</span>
+          </button>
 
-          {/* Action Buttons Row: Xếp chỗ ngồi | Khung card | Xếp Cán Bộ Lớp | Xếp Tự Động | Xóa chỗ ngồi */}
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
-            
-            {/* 🪑 XẾP CHỖ NGỒI (NO PULSE, MOVED HERE ALONGSIDE OTHER ACTION BUTTONS) */}
-            <button
-              onClick={() => setIsSeatingViewOpen(true)}
-              className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-700 to-amber-800 hover:from-amber-800 hover:to-amber-900 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer border border-amber-900"
-              title="Mở giao diện kéo thả xếp chỗ ngồi tương tác"
-            >
-              <Armchair className="w-3.5 h-3.5 text-amber-200" />
-              <span>Xếp chỗ ngồi ({unassignedStudents.length} HS Chờ)</span>
-            </button>
+          {/* Khung card */}
+          <button
+            onClick={() => setIsFrameConfigSubViewOpen(true)}
+            className="px-3.5 py-2 rounded-xl bg-[#3d2b17] hover:bg-[#281c0f] text-amber-200 font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 border border-[#5c4327] cursor-pointer"
+          >
+            <Palette className="w-3.5 h-3.5" />
+            <span>Khung card</span>
+          </button>
 
-            {/* Khung Card */}
-            <button
-              onClick={() => setIsFrameConfigSubViewOpen(true)}
-              className="px-3 py-1.5 rounded-xl bg-[#3d2b17] hover:bg-[#281c0f] text-amber-200 font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 border border-[#5c4327] cursor-pointer"
-            >
-              <Palette className="w-3.5 h-3.5" />
-              <span>Khung card</span>
-            </button>
+          {/* Màu Nam/Nữ (MOVED HERE ALONGSIDE OTHER ACTION BUTTONS) */}
+          <button
+            onClick={toggleGenderColors}
+            className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all border flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95 ${
+              showGenderColors 
+                ? 'bg-sky-600 hover:bg-sky-700 text-white border-sky-500'
+                : 'bg-white text-slate-800 border-[#cbb89d] hover:bg-slate-100'
+            }`}
+            title="Bật/Tắt dải màu xanh biển cho Nam và màu hồng nhạt cho Nữ"
+          >
+            <Palette className="w-3.5 h-3.5" />
+            <span>Màu Nam/Nữ: {showGenderColors ? 'BẬT' : 'TẮT'}</span>
+          </button>
 
-            {/* Xếp Cán Bộ Lớp */}
-            <button
-              onClick={handleSeatClassMonitorsHead}
-              className="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer border border-amber-700"
-              title="Ưu tiên xếp L. Trưởng và Lớp phó vào các vị trí máy đầu bàn (M.01, M.02)"
-            >
-              <Star className="w-3.5 h-3.5" />
-              <span>Xếp Cán Bộ Lớp</span>
-            </button>
+          {/* Xếp Cán Bộ Lớp */}
+          <button
+            onClick={handleSeatClassMonitorsHead}
+            className="px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer border border-amber-700"
+            title="Ưu tiên xếp L. Trưởng và Lớp phó vào các vị trí máy đầu bàn (M.01, M.02)"
+          >
+            <Star className="w-3.5 h-3.5" />
+            <span>Xếp Cán Bộ Lớp</span>
+          </button>
 
-            {/* Xếp Tự Động */}
-            <button
-              onClick={handleAutoSeatClass}
-              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Xếp Tự Động</span>
-            </button>
-
-            {/* Xóa chỗ ngồi (MOVED HERE ALONGSIDE ACTION BUTTONS) */}
-            <button
-              onClick={handleClearAllClassSeating}
-              className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer border border-rose-700"
-              title="Xóa toàn bộ chỗ ngồi đã xếp của lớp hiện tại"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Xóa chỗ ngồi</span>
-            </button>
-
-          </div>
-
+          {/* Xếp Tự Động */}
+          <button
+            onClick={handleAutoSeatClass}
+            className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Xếp Tự Động</span>
+          </button>
         </div>
+
+        {/* Xóa chỗ ngồi */}
+        <button
+          onClick={handleClearAllClassSeating}
+          className="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer border border-rose-700"
+          title="Xóa toàn bộ chỗ ngồi đã xếp của lớp hiện tại"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+          <span>Xóa chỗ ngồi</span>
+        </button>
+
       </div>
 
       {/* 🎛️ 2. CONTROL FILTER BAR */}
