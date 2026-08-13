@@ -227,27 +227,20 @@ export default function SeatingTab({
     }
   }, [attendanceData]);
 
-  useEffect(() => {
-    const handleStorageChange = () => {
-      try {
-        const saved = localStorage.getItem('school_attendance_data');
-        if (saved) setLocalAttendance(JSON.parse(saved));
-      } catch (e) {}
-    };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
-
-  // Helper to get attendance status of a student for the selected class and date
-  const getStudentAttendance = useCallback((studentId: string): 'present' | 'excused' | 'unexcused' => {
-    const classAtt = localAttendance?.[selectedDate]?.[selectedClass];
-    if (classAtt && classAtt[studentId]) {
-      return classAtt[studentId];
-    }
-    return 'present';
+  // STABLE ATTENDANCE MAP FOR CURRENT CLASS AND DATE (MEMOIZED TO ELIMINATE FLICKERING 100%)
+  const currentClassAttendanceMap = useMemo(() => {
+    return localAttendance?.[selectedDate]?.[selectedClass] || {};
   }, [localAttendance, selectedDate, selectedClass]);
 
-  // Load Incidents from localStorage to trigger Incident Glow Indicators
+  // Helper to get attendance status of a student
+  const getStudentAttendance = useCallback((studentId: string): 'present' | 'excused' | 'unexcused' => {
+    if (currentClassAttendanceMap[studentId]) {
+      return currentClassAttendanceMap[studentId];
+    }
+    return 'present';
+  }, [currentClassAttendanceMap]);
+
+  // Load Incidents from localStorage (STABLE MEMOIZED MAP TO ELIMINATE FLICKERING 100%)
   const [incidents, setIncidents] = useState<LabIncident[]>(() => {
     try {
       const saved = localStorage.getItem('school_lab_incidents');
@@ -257,16 +250,12 @@ export default function SeatingTab({
     }
   });
 
-  useEffect(() => {
-    const handleStorageChange = () => {
-      try {
-        const saved = localStorage.getItem('school_lab_incidents');
-        if (saved) setIncidents(JSON.parse(saved));
-      } catch (e) {}
-    };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+  // Fast HashMap lookup for students by ID (O(1) lookup to eliminate lag)
+  const studentsByIdMap = useMemo(() => {
+    const map = new Map<string, Student>();
+    students.forEach(s => map.set(s.id, s));
+    return map;
+  }, [students]);
 
   // Compute exact layout matrix synchronized 100% with the selected Lab from LabBookingTab!
   const activeLabGrid = useMemo(() => {
@@ -379,7 +368,7 @@ export default function SeatingTab({
     Object.entries(currentClassSeating).forEach(([pcId, valStr]) => {
       const studentIds = getAssignedStudentIds(String(valStr || ''));
       const hasMatch = studentIds.some(id => {
-        const st = students.find(s => s.id === id);
+        const st = studentsByIdMap.get(id);
         if (!st) return false;
         return st.name.toLowerCase().includes(q) || 
                st.code.toLowerCase().includes(q) || 
@@ -391,7 +380,7 @@ export default function SeatingTab({
     });
 
     return matchedPcs;
-  }, [searchStudentSeat, currentClassSeating, students, getAssignedStudentIds]);
+  }, [searchStudentSeat, currentClassSeating, studentsByIdMap, getAssignedStudentIds]);
 
   // --- 🔍 ZOOM LEVEL CONTROL STATE (80% to 140%) ---
   const [zoomLevel, setZoomLevel] = useState<number>(100);
@@ -474,7 +463,7 @@ export default function SeatingTab({
     // Check if student is marked absent
     const att = getStudentAttendance(studentId);
     if (att === 'excused' || att === 'unexcused') {
-      const st = classStudents.find(s => s.id === studentId);
+      const st = studentsByIdMap.get(studentId);
       showToast(`⚠️ Chú ý: ${st ? formatStudentNameFirstAndMiddle(st.name) : 'Học sinh'} đang được báo VẮNG MẶT hôm nay (${att === 'excused' ? 'Có phép' : 'Không phép'})!`, 'warning');
     }
 
@@ -500,9 +489,9 @@ export default function SeatingTab({
     saveSeatingState(currentSeating);
     playButtonClickSound();
 
-    const st = classStudents.find(s => s.id === studentId);
+    const st = studentsByIdMap.get(studentId);
     showToast(`Đã xếp ${st ? formatStudentNameFirstAndMiddle(st.name) : 'học sinh'} vào ${pcId}!`, 'success');
-  }, [currentClassSeating, getAssignedStudentIds, saveSeatingState, classStudents, showToast, getStudentAttendance]);
+  }, [currentClassSeating, getAssignedStudentIds, saveSeatingState, studentsByIdMap, showToast, getStudentAttendance]);
 
   // Remove a specific student from a PC
   const unassignStudentFromComputer = useCallback((pcId: string, studentId: string) => {
@@ -659,6 +648,43 @@ export default function SeatingTab({
   if (isPrintModalOpen) {
     return (
       <div className="space-y-6 text-slate-800 pb-10">
+        {/* CSS @media print style for 100% clean A4 printing without blank pages */}
+        <style>{`
+          @media print {
+            body > *:not(#print-root-wrapper),
+            .no-print,
+            header,
+            nav,
+            aside {
+              display: none !important;
+              visibility: hidden !important;
+            }
+            .printable-paper-area {
+              position: fixed !important;
+              left: 0 !important;
+              top: 0 !important;
+              width: 100vw !important;
+              height: auto !important;
+              margin: 0 !important;
+              padding: 15px !important;
+              background: white !important;
+              color: black !important;
+              box-shadow: none !important;
+              border: none !important;
+              z-index: 999999 !important;
+              visibility: visible !important;
+              display: block !important;
+            }
+            .printable-paper-area * {
+              visibility: visible !important;
+            }
+            @page {
+              size: A4 landscape;
+              margin: 8mm;
+            }
+          }
+        `}</style>
+
         {/* Top Control Bar for Print Modal */}
         <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs no-print">
           <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -673,7 +699,7 @@ export default function SeatingTab({
                 <h3 className="font-black text-sm text-slate-900 flex items-center gap-2">
                   <span>🖨️</span> XEM TRƯỚC VÀ IN SƠ ĐỒ CHỖ NGỒI PHÒNG MÁY (A4 LANDSCAPE)
                 </h3>
-                <p className="text-[11px] font-bold text-slate-600">Bản in A4 sắc nét dán lên bảng phòng máy tính cho lớp {selectedClass}</p>
+                <p className="text-[11px] font-bold text-slate-600">Trường Tiểu Học Long Định • Lớp {selectedClass}</p>
               </div>
             </div>
 
@@ -688,36 +714,31 @@ export default function SeatingTab({
           </div>
         </div>
 
-        {/* Printable A4 Container */}
-        <div className="max-w-[1050px] mx-auto bg-white p-8 border-2 border-slate-300 rounded-2xl shadow-xl text-slate-900 space-y-6 printable-paper">
+        {/* Printable A4 Container with class printable-paper-area for print styling */}
+        <div className="max-w-[1050px] mx-auto bg-white p-6 border-2 border-slate-300 rounded-2xl shadow-xl text-slate-900 space-y-4 printable-paper-area">
           
-          {/* Header School info */}
-          <div className="border-b-2 border-slate-800 pb-4 flex justify-between items-end">
+          {/* Header School info - Compact Single Line Format */}
+          <div className="border-b-2 border-slate-900 pb-3 flex justify-between items-center text-slate-900">
             <div>
-              <div className="font-black text-xs uppercase tracking-wider text-slate-500">TRƯỜNG TIỂU HỌC TÂN PHÚ</div>
-              <h2 className="font-black text-xl text-slate-900">SƠ ĐỒ PHÒNG MÁY TÍNH - LỚP {selectedClass.toUpperCase()}</h2>
-              <div className="text-xs font-bold text-slate-600">
-                {activeLab.name} ({activeLab.code}) • Tổng số máy: {activeLab.totalPCs} máy • Ngày in: {new Date().toLocaleDateString('vi-VN')}
+              <div className="font-black text-xs uppercase tracking-wider text-slate-700">TRƯỜNG TIỂU HỌC LONG ĐỊNH</div>
+              <h2 className="font-black text-lg text-slate-900 leading-tight">SƠ ĐỒ PHÒNG MÁY TÍNH - LỚP {selectedClass.toUpperCase()}</h2>
+              <div className="text-[11px] font-bold text-slate-600">
+                {activeLab.name} ({activeLab.code}) • Sĩ số: {classStudents.length} HS ({attendanceSummary.present} Có mặt, {attendanceSummary.absentTotal} Vắng)
               </div>
             </div>
-
-            <div className="text-right text-xs font-bold space-y-0.5">
-              <div>Sĩ số lớp: <span className="font-black text-slate-900">{classStudents.length} HS</span></div>
-              <div className="text-emerald-700">Có mặt: <span className="font-black">{attendanceSummary.present}</span></div>
-              {attendanceSummary.absentTotal > 0 && (
-                <div className="text-rose-700 font-black">Vắng mặt: {attendanceSummary.absentTotal} ({attendanceSummary.excused}P, {attendanceSummary.unexcused}K)</div>
-              )}
+            <div className="text-right text-[11px] font-bold text-slate-500">
+              Ngày in: {new Date().toLocaleDateString('vi-VN')}
             </div>
           </div>
 
           {/* Teacher Board Banner */}
-          <div className="bg-slate-800 text-amber-300 py-2 font-black text-center text-xs uppercase rounded tracking-widest">
+          <div className="bg-slate-800 text-amber-300 py-1.5 font-black text-center text-xs uppercase rounded tracking-widest">
             👨‍🏫 MÀN CHIẾU & BẢNG GIÁO VIÊN ({activeLab.name})
           </div>
 
           {/* Seating Grid Map Printable Table */}
           <div 
-            className="grid gap-2.5"
+            className="grid gap-2"
             style={{
               gridTemplateColumns: `repeat(${activeLabGrid.cols}, minmax(0, 1fr))`
             }}
@@ -725,7 +746,7 @@ export default function SeatingTab({
             {activeLabGrid.cells.map(tile => {
               if (tile.type === 'aisle') {
                 return (
-                  <div key={`print_aisle_${tile.row}_${tile.col}`} className="bg-slate-100 border border-dashed border-slate-300 rounded p-2 text-center text-[9px] font-bold text-slate-400 min-h-[75px] flex items-center justify-center">
+                  <div key={`print_aisle_${tile.row}_${tile.col}`} className="bg-slate-100 border border-dashed border-slate-300 rounded p-1.5 text-center text-[9px] font-bold text-slate-400 min-h-[70px] flex items-center justify-center">
                     Lối đi
                   </div>
                 );
@@ -733,11 +754,11 @@ export default function SeatingTab({
 
               const pcId = tile.label;
               const assignedIds = getAssignedStudentIds(currentClassSeating[pcId]);
-              const assignedSts = assignedIds.map(id => students.find(s => s.id === id)).filter(Boolean) as Student[];
+              const assignedSts = assignedIds.map(id => studentsByIdMap.get(id)).filter(Boolean) as Student[];
 
               return (
-                <div key={`print_pc_${pcId}`} className="border-2 border-slate-800 rounded p-2 bg-slate-50 min-h-[85px] flex flex-col justify-between text-xs">
-                  <div className="flex justify-between items-center font-bold text-[10px] border-b border-slate-300 pb-1 mb-1">
+                <div key={`print_pc_${pcId}`} className="border-2 border-slate-800 rounded p-1.5 bg-slate-50 min-h-[80px] flex flex-col justify-between text-xs">
+                  <div className="flex justify-between items-center font-bold text-[10px] border-b border-slate-300 pb-0.5 mb-1">
                     <span className="font-black text-slate-900">🖥️ {pcId}</span>
                     <span className="text-[9px] text-slate-600">{assignedSts.length}/2</span>
                   </div>
@@ -748,7 +769,7 @@ export default function SeatingTab({
                         const att = getStudentAttendance(st.id);
                         const isAbsent = att === 'excused' || att === 'unexcused';
                         return (
-                          <div key={`print_st_${st.id}`} className={`font-black text-[11px] text-center rounded px-1 py-0.5 border ${
+                          <div key={`print_st_${st.id}`} className={`font-black text-[10px] text-center rounded px-1 py-0.5 border ${
                             isAbsent ? 'bg-rose-100 border-rose-400 text-rose-900 line-through' : 'bg-emerald-100 border-emerald-400 text-emerald-950'
                           }`}>
                             {isAbsent ? `[VẮNG] ` : ''}{formatStudentNameFirstAndMiddle(st.name)}
@@ -765,7 +786,7 @@ export default function SeatingTab({
           </div>
 
           {/* Footer Signatures */}
-          <div className="pt-8 border-t border-slate-300 grid grid-cols-2 text-center text-xs font-bold">
+          <div className="pt-6 border-t border-slate-300 grid grid-cols-2 text-center text-xs font-bold">
             <div>
               <div>CÁN BỘ QUẢN LÝ PHÒNG LAB</div>
               <div className="text-[10px] text-slate-400 mt-0.5">(Ký và ghi rõ họ tên)</div>
@@ -821,8 +842,8 @@ export default function SeatingTab({
           <div className="lg:col-span-7 space-y-6">
             
             {/* Presets Card */}
-            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-              <h4 className="font-black text-sm text-slate-900 flex items-center gap-2">
+            <div className="bg-[#fffbf0] rounded-3xl p-6 border border-[#cbb89d] shadow-xs space-y-4">
+              <h4 className="font-black text-sm text-[#3d2b17] flex items-center gap-2">
                 <span>🌟</span> MẪU PRESET KHUNG CARD CÓ SẴN
               </h4>
 
@@ -843,7 +864,7 @@ export default function SeatingTab({
                       className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center gap-3 ${
                         isSelected 
                           ? 'border-emerald-500 bg-emerald-50/80 shadow-md ring-2 ring-emerald-400/30' 
-                          : 'border-slate-200 hover:border-slate-300 bg-slate-50/50'
+                          : 'border-[#cbb89d] hover:border-emerald-500 bg-white'
                       }`}
                     >
                       <span className="text-3xl">{skin.icon}</span>
@@ -858,8 +879,8 @@ export default function SeatingTab({
             </div>
 
             {/* Custom Google Drive / Computer Upload Card */}
-            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-              <h4 className="font-black text-sm text-slate-900 flex items-center gap-2">
+            <div className="bg-[#fffbf0] rounded-3xl p-6 border border-[#cbb89d] shadow-xs space-y-4">
+              <h4 className="font-black text-sm text-[#3d2b17] flex items-center gap-2">
                 <span>🌐</span> NẠP ẢNH KHUNG CARD TỪ GOOGLE DRIVE HOẶC MÁY TÍNH
               </h4>
 
@@ -879,7 +900,7 @@ export default function SeatingTab({
                     value={customDriveInput}
                     onChange={(e) => setCustomDriveInput(e.target.value)}
                     placeholder="https://drive.google.com/file/d/.../view?usp=sharing"
-                    className="flex-1 px-3.5 py-2.5 text-xs font-bold rounded-2xl border border-slate-200 bg-white focus:outline-none focus:border-emerald-500 shadow-2xs"
+                    className="flex-1 px-3.5 py-2.5 text-xs font-bold rounded-2xl border border-[#cbb89d] bg-white focus:outline-none focus:border-emerald-600 shadow-2xs"
                   />
                   <button
                     onClick={handleApplyDriveFrameImage}
@@ -891,7 +912,7 @@ export default function SeatingTab({
               </div>
 
               {/* Upload File from Computer */}
-              <div className="pt-3 border-t border-slate-100 space-y-2">
+              <div className="pt-3 border-t border-[#cbb89d] space-y-2">
                 <label className="block text-xs font-black text-slate-700">Hoặc Tải Tệp Ảnh từ Máy Tính:</label>
                 <input
                   type="file"
@@ -915,8 +936,8 @@ export default function SeatingTab({
             </div>
 
             {/* Sizing & Alignment tuning */}
-            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-              <h4 className="font-black text-sm text-slate-900 flex items-center gap-2">
+            <div className="bg-[#fffbf0] rounded-3xl p-6 border border-[#cbb89d] shadow-xs space-y-4">
+              <h4 className="font-black text-sm text-[#3d2b17] flex items-center gap-2">
                 <span>📐</span> ĐỒNG BỘ KÍCH THƯỚC CARD & SƠ ĐỒ LỚP HỌC
               </h4>
 
@@ -926,7 +947,7 @@ export default function SeatingTab({
                   <select
                     value={frameConfig.cardSize}
                     onChange={(e) => setFrameConfig(prev => ({ ...prev, cardSize: e.target.value as any }))}
-                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 font-black text-slate-800 focus:outline-none cursor-pointer"
+                    className="w-full px-3.5 py-2 rounded-xl border border-[#cbb89d] bg-white font-black text-slate-800 focus:outline-none cursor-pointer"
                   >
                     <option value="sm">Nhỏ (Gọn gàng)</option>
                     <option value="md">Vừa (Chuẩn đẹp)</option>
@@ -1014,7 +1035,7 @@ export default function SeatingTab({
     <div className="space-y-5 pb-12 text-slate-800">
       
       {/* 🌟 1. BANNER HEADER MÀU SẮC ĐỒNG BỘ KHU VƯỜN TRI THỨC (IMAC WARM BEIGE & EMERALD GOLD) */}
-      <div className="relative rounded-2xl border border-[#cbb89d] bg-[#fffbf0] py-3.5 px-5 text-slate-900 shadow-sm overflow-hidden no-print">
+      <div className="relative rounded-2xl border border-[#cbb89d] bg-[#fffbf0] py-3.5 px-5 text-slate-900 shadow-xs overflow-hidden no-print">
         <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           
           {/* Left Single Instruction Line */}
@@ -1027,7 +1048,7 @@ export default function SeatingTab({
               {selectedStudentForAssign && (
                 <div className="text-xs font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300 inline-flex items-center gap-1 mt-1 animate-pulse">
                   <MousePointerClick className="w-3.5 h-3.5 text-emerald-700" />
-                  ĐANG CHỌN: {classStudents.find(s => s.id === selectedStudentForAssign)?.name} — Nhấp vào bất kỳ ô máy nào bên dưới để xếp!
+                  ĐANG CHỌN: {studentsByIdMap.get(selectedStudentForAssign)?.name} — Nhấp vào bất kỳ ô máy nào bên dưới để xếp!
                   <button onClick={() => setSelectedStudentForAssign(null)} className="ml-2 text-rose-600 underline cursor-pointer">Hủy</button>
                 </div>
               )}
@@ -1059,7 +1080,7 @@ export default function SeatingTab({
       </div>
 
       {/* 🎛️ 2. CONTROL FILTER BAR & ATTENDANCE SUMMARY & QUICK FINDER */}
-      <div className="bg-[#fffbf0] rounded-2xl p-3.5 sm:p-4 border border-[#cbb89d] shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 no-print">
+      <div className="bg-[#fffbf0] rounded-2xl p-3.5 sm:p-4 border border-[#cbb89d] shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 no-print">
         
         {/* Selectors, Attendance Summary & Quick Student Finder Input */}
         <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
@@ -1178,12 +1199,12 @@ export default function SeatingTab({
 
       </div>
 
-      {/* 🖼️ 3. MAIN ROOM CANVAS GRID */}
+      {/* 🖼️ 3. MAIN ROOM CANVAS GRID (MATCHING KNOWLEDGE GARDEN TABLE & PANEL BEAUTY) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         
         {/* ================= LEFT COLUMN: HỌC SINH CHỜ NGỒI ================= */}
         {isUnassignedPanelVisible && (
-          <div className="lg:col-span-4 bg-[#fffbf0] rounded-2xl p-4 border border-[#cbb89d] shadow-sm space-y-3 flex flex-col max-h-[720px] overflow-hidden no-print">
+          <div className="lg:col-span-4 bg-[#fffbf0] rounded-2xl p-4 border border-[#cbb89d] shadow-xs space-y-3 flex flex-col max-h-[720px] overflow-hidden no-print">
             
             <div className="space-y-0.5 border-b border-[#cbb89d] pb-2.5">
               <div className="flex justify-between items-center">
@@ -1302,7 +1323,7 @@ export default function SeatingTab({
 
         {/* ================= RIGHT COLUMN: SƠ ĐỒ PHÒNG MÁY TÍNH (NỀN SÁNG VÀNG KEM iMAC) ================= */}
         <div 
-          className={`${isUnassignedPanelVisible ? 'lg:col-span-8' : 'lg:col-span-12'} bg-[#fbf7ee] rounded-2xl p-4 sm:p-5 border border-[#cbb89d] shadow-sm space-y-4 transition-all duration-300`}
+          className={`${isUnassignedPanelVisible ? 'lg:col-span-8' : 'lg:col-span-12'} bg-[#fbf7ee] rounded-2xl p-4 sm:p-5 border border-[#cbb89d] shadow-xs space-y-4 transition-all duration-300`}
         >
           
           {/* Top Canvas Toolbar with Teacher Screen Board & Zoom / Print Controls */}
@@ -1393,7 +1414,7 @@ export default function SeatingTab({
                 const pcId = tile.label;
                 const pcNum = tile.pcNum;
                 const assignedIds = getAssignedStudentIds(currentClassSeating[pcId]);
-                const assignedStudents = assignedIds.map(id => students.find(s => s.id === id)).filter(Boolean) as Student[];
+                const assignedStudents = assignedIds.map(id => studentsByIdMap.get(id)).filter(Boolean) as Student[];
 
                 const isFull = assignedStudents.length >= 2;
                 const hasOne = assignedStudents.length === 1;
