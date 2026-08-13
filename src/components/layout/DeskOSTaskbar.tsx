@@ -44,7 +44,6 @@ const APP_ICONS: Record<string, { label: string; icon: React.ElementType }> = {
   evaluation: { label: 'Đánh giá', icon: Star },
   emulation: { label: 'Thi đua', icon: Trophy },
   'knowledge-garden': { label: 'Vườn tri thức', icon: Sprout },
-  seating: { label: 'Sơ đồ máy', icon: Monitor },
   timetable: { label: 'Thời khóa biểu', icon: Calendar },
   'lab-booking': { label: 'Đăng ký phòng máy', icon: CalendarCheck },
   resources: { label: 'Kho tài nguyên', icon: FolderOpen },

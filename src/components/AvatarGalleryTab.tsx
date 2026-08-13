@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Student, ClassItem } from '../types';
 import { Image, User, Check, RotateCcw, Sparkles, UploadCloud, Link as LinkIcon, X, Plus, Trash2, FolderPlus, Search } from 'lucide-react';
 import { saveSupabaseState } from '../supabaseClient';
-import { StudentAvatar3D } from './SeatingTab';
+import { StudentAvatar3D } from './StudentAvatar3D';
 
 interface AvatarGalleryTabProps {
   students: Student[];

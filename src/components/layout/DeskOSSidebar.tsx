@@ -98,7 +98,6 @@ export const DeskOSSidebar: React.FC<DeskOSSidebarProps> = ({
     { id: 'evaluation', label: 'Đánh giá Tiết học', icon: Star, color: 'bg-[#fbcfe8] text-[#be185d] border-[#f472b6]' },
     { id: 'emulation', label: 'Thi đua Phòng máy', icon: Trophy, color: 'bg-[#fef08a] text-[#854d0e] border-[#fde047]' },
     { id: 'knowledge-garden', label: 'Khu Vườn Tri Thức', icon: Sprout, color: 'bg-[#dcfce7] text-[#15803d] border-[#86efac]' },
-    { id: 'seating', label: 'Sơ đồ Máy tính', icon: Monitor, color: 'bg-[#ccfbf1] text-[#0f766e] border-[#99f6e4]' },
     { id: 'timetable', label: 'Thời khóa biểu', icon: Calendar, color: 'bg-[#bfdbfe] text-[#1d4ed8] border-[#93c5fd]' },
     { id: 'lab-booking', label: 'Đăng ký Phòng máy', icon: CalendarCheck, color: 'bg-[#c7d2fe] text-[#3730a3] border-[#a5b4fc]' },
     { id: 'resources', label: 'Kho tài nguyên Giáo án', icon: FolderOpen, color: 'bg-[#fed7aa] text-[#c2410c] border-[#fdba74]' },

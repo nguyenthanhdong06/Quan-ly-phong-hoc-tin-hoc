@@ -1,6 +1,6 @@
 import React from 'react';
 import { Student } from '../types';
-import { StudentAvatar3D } from './SeatingTab';
+import { StudentAvatar3D } from './StudentAvatar3D';
 import { formatSmartStudentName } from '../utils/nameFormatter';
 
 interface StudentCard3DProps {
