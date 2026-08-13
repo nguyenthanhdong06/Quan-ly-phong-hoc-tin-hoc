@@ -1322,13 +1322,6 @@ export default function LabRoomTab({
               >
                 <ArrowLeft className="w-4 h-4 text-slate-700" /> Quay Về Sơ Đồ Phòng Lab
               </button>
-              <div>
-                <h3 className="font-black text-sm text-slate-900 flex items-center gap-2">
-                  <Printer className="w-4 h-4 text-amber-800" />
-                  XEM TRƯỚC VÀ IN SƠ ĐỒ CHỖ NGỒI PHÒNG LAB (A4 LANDSCAPE)
-                </h3>
-                <p className="text-[11px] font-bold text-slate-600">Trường Tiểu Học Long Định • Lớp {selectedClass}</p>
-              </div>
             </div>
 
             <div className="flex items-center gap-2">
