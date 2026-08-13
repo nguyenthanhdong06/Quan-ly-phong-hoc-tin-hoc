@@ -85,3 +85,24 @@ export function formatSmartStudentName(student: Student | null | undefined, clas
       : (currentParsed.middleAndFirst || currentTrimmed);
   }
 }
+
+/**
+ * Standardized Computer Naming Formatter:
+ * Unifies all computer names across the application into a single standard format: "Máy 01", "Máy 02", "Máy 10"...
+ */
+export function formatComputerName(val: number | string | null | undefined): string {
+  if (val === undefined || val === null || val === '') return 'Máy 01';
+  const str = String(val).trim();
+
+  // Extract digits from input (e.g. "1" -> 1, "01" -> 1, "M.01" -> 1, "Máy #1" -> 1, "Máy 1" -> 1, "Máy số 01" -> 1)
+  const numMatch = str.match(/\d+/);
+  if (numMatch) {
+    const num = parseInt(numMatch[0], 10);
+    const formattedNum = num < 10 ? `0${num}` : `${num}`;
+    return `Máy ${formattedNum}`;
+  }
+
+  if (str.startsWith('Máy ')) return str;
+  return `Máy ${str}`;
+}
+

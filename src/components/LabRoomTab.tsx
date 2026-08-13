@@ -10,13 +10,14 @@ import {
   ListFilter, UserPlus, Layers, Settings, FileSpreadsheet, Armchair, Trash2, User
 } from 'lucide-react';
 import { StudentAvatar3D, formatStudentNameFirstAndMiddle } from './StudentAvatar3D';
+import { formatComputerName } from '../utils/nameFormatter';
 import { extractGoogleDriveFileId, convertGoogleDriveUrl } from '../utils/googleDriveImageHelper';
 import { compressImageFile } from './KnowledgeGardenTab';
 import { playButtonClickSound, playVictoryFanfareSound } from '../utils/audioEffects';
 import { safeSetLocalStorage } from '../utils/safeStorage';
 import { saveSupabaseState } from '../supabaseClient';
 
-// Helper to generate default lab matrix layout (Rows x Cols) with labels M.01, M.02...
+// Helper to generate default lab matrix layout (Rows x Cols) with labels Máy 01, Máy 02...
 export const generateDefaultLabLayout = (rows: number = 5, cols: number = 8) => {
   const layout: Record<string, { type: 'pc' | 'aisle' | 'desk'; label?: string; pcNumber?: number }> = {};
   let pcCounter = 1;
@@ -24,11 +25,10 @@ export const generateDefaultLabLayout = (rows: number = 5, cols: number = 8) => 
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const key = `${r}_${c}`;
-      const pcNumStr = pcCounter < 10 ? `0${pcCounter}` : `${pcCounter}`;
       layout[key] = { 
         type: 'pc', 
         pcNumber: pcCounter, 
-        label: `M.${pcNumStr}` 
+        label: formatComputerName(pcCounter)
       };
       pcCounter++;
     }
@@ -280,8 +280,7 @@ export default function LabRoomTab({
         const tile = layoutObj[key] || { type: 'pc' };
         if (tile.type === 'pc') {
           const num = tile.pcNumber || pCounter;
-          const pcNumStr = num < 10 ? `0${num}` : `${num}`;
-          const pcLabel = tile.label || tile.pcLabel || `M.${pcNumStr}`;
+          const pcLabel = formatComputerName(tile.label || tile.pcLabel || num);
           cells.push({ row: r, col: c, type: 'pc', label: pcLabel, pcNum: num });
           pcList.push({ id: pcLabel, label: pcLabel, pcNum: num });
           pCounter++;
@@ -650,8 +649,8 @@ export default function LabRoomTab({
     }
 
     const currentSeating = { ...currentClassSeating };
-    const pcHead1 = availablePcs[0]?.id || 'M.01';
-    const pcHead2 = availablePcs[1]?.id || 'M.02';
+    const pcHead1 = availablePcs[0]?.id || formatComputerName(1);
+    const pcHead2 = availablePcs[1]?.id || formatComputerName(2);
 
     if (lopTruong) {
       Object.keys(currentSeating).forEach(k => {
@@ -845,7 +844,7 @@ export default function LabRoomTab({
           return (
             <div key={`print_pc_${pcId}`} className="border-2 border-slate-900 rounded p-1.5 bg-slate-50 min-h-[80px] flex flex-col justify-between text-xs">
               <div className="flex justify-between items-center font-bold text-[10px] border-b border-slate-400 pb-0.5 mb-1">
-                <span className="font-black text-slate-900">🖥️ {pcId}</span>
+                <span className="font-black text-slate-900">🖥️ {formatComputerName(pcId)}</span>
                 <span className="text-[9px] text-slate-700">{assignedSts.length}/2</span>
               </div>
 
@@ -1144,7 +1143,7 @@ export default function LabRoomTab({
                           ? 'bg-emerald-600 text-white border-emerald-400'
                           : 'bg-[#dfccb0] text-[#3d2b17] border-[#cbb89d]'
                       }`}>
-                        🖥️ {pcId}
+                        🖥️ {formatComputerName(pcId)}
                       </span>
                       <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full border bg-slate-200 text-slate-600">
                         {assignedStudents.length}/2 HS
@@ -1469,7 +1468,7 @@ export default function LabRoomTab({
               >
                 <div className="flex justify-between items-center mb-3">
                   <span className="font-mono font-black text-xs bg-emerald-600 text-white px-2.5 py-1 rounded-lg border border-emerald-400 shadow-2xs">
-                    🖥️ M.01
+                    🖥️ Máy 01
                   </span>
                   <span className="text-[10px] font-black bg-emerald-500 text-white px-2 py-0.5 rounded-full border border-emerald-400">
                     2/2 HS
@@ -1800,7 +1799,7 @@ export default function LabRoomTab({
                         ? 'bg-emerald-600 text-white border-emerald-400'
                         : 'bg-[#dfccb0] text-[#3d2b17] border-[#cbb89d]'
                     }`}>
-                      🖥️ {pcId}
+                      🖥️ {formatComputerName(pcId)}
                     </span>
 
                     {targetIncident ? (

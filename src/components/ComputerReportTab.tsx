@@ -72,6 +72,8 @@ interface SavedReport {
   namKy: string;
 }
 
+import { formatComputerName } from '../utils/nameFormatter';
+
 const DEVICE_OPTIONS = [
   'Máy tính',
   'Màn hình',
@@ -91,7 +93,7 @@ const DEVICE_OPTIONS = [
 
 const LOCATION_OPTIONS = [
   'Máy Giáo viên',
-  ...Array.from({ length: 35 }, (_, i) => `Máy số ${(i + 1).toString().padStart(2, '0')}`),
+  ...Array.from({ length: 36 }, (_, i) => formatComputerName(i + 1)),
   'Bàn giáo viên',
   'Tủ thiết bị',
 ];
@@ -113,11 +115,11 @@ const DEFAULT_ASSETS: AssetRow[] = [
 ];
 
 const DEFAULT_BROKEN: BrokenDetailRow[] = [
-  { id: 'b-1', stt: 1, thietBi: 'Bàn phím', viTri: 'Máy số 05', hienTrang: 'Liệt nhiều phím, không sử dụng được', mucDo: 'Cần thay mới' },
-  { id: 'b-2', stt: 2, thietBi: 'Chuột', viTri: 'Máy số 12', hienTrang: 'Không nhận tín hiệu', mucDo: 'Cần thay mới' },
-  { id: 'b-3', stt: 3, thietBi: 'Máy tính', viTri: 'Máy số 18', hienTrang: 'Không khởi động', mucDo: 'Cần kiểm tra' },
-  { id: 'b-4', stt: 4, thietBi: 'Màn hình', viTri: 'Máy số 03', hienTrang: 'Màn hình nhấp nháy', mucDo: 'Cần sửa chữa' },
-  { id: 'b-5', stt: 5, thietBi: 'Tai nghe', viTri: 'Máy số 07', hienTrang: 'Mất âm thanh', mucDo: 'Cần thay mới' },
+  { id: 'b-1', stt: 1, thietBi: 'Bàn phím', viTri: 'Máy 05', hienTrang: 'Liệt nhiều phím, không sử dụng được', mucDo: 'Cần thay mới' },
+  { id: 'b-2', stt: 2, thietBi: 'Chuột', viTri: 'Máy 12', hienTrang: 'Không nhận tín hiệu', mucDo: 'Cần thay mới' },
+  { id: 'b-3', stt: 3, thietBi: 'Máy tính', viTri: 'Máy 18', hienTrang: 'Không khởi động', mucDo: 'Cần kiểm tra' },
+  { id: 'b-4', stt: 4, thietBi: 'Màn hình', viTri: 'Máy 03', hienTrang: 'Màn hình nhấp nháy', mucDo: 'Cần sửa chữa' },
+  { id: 'b-5', stt: 5, thietBi: 'Tai nghe', viTri: 'Máy 07', hienTrang: 'Mất âm thanh', mucDo: 'Cần thay mới' },
 ];
 
 const DEFAULT_ADDITIONS: AdditionRow[] = [

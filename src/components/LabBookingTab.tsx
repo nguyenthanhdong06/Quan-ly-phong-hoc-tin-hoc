@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { safeSetLocalStorage } from '../utils/safeStorage';
 import { saveSupabaseState } from '../supabaseClient';
+import { formatComputerName } from '../utils/nameFormatter';
 
 interface LabBookingTabProps {
   members: Member[];
@@ -53,7 +54,7 @@ export const getTodayDDMMYYYY = (): string => {
   return `${dd}-${mm}-${yyyy}`;
 };
 
-// Hàm khởi tạo ma trận sơ đồ phòng lab mặc định (Rows x Cols) với nhãn M.01, M.02...
+// Hàm khởi tạo ma trận sơ đồ phòng lab mặc định (Rows x Cols) với nhãn Máy 01, Máy 02...
 export const generateDefaultLabLayout = (rows: number = 6, cols: number = 6) => {
   const layout: Record<string, { type: 'pc' | 'aisle' | 'desk'; label?: string; pcNumber?: number }> = {};
   let pcCounter = 1;
@@ -61,11 +62,10 @@ export const generateDefaultLabLayout = (rows: number = 6, cols: number = 6) => 
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const key = `${r}_${c}`;
-      const pcNumStr = pcCounter < 10 ? `0${pcCounter}` : `${pcCounter}`;
       layout[key] = { 
         type: 'pc', 
         pcNumber: pcCounter, 
-        label: `M.${pcNumStr}` 
+        label: formatComputerName(pcCounter) 
       };
       pcCounter++;
     }
@@ -413,7 +413,7 @@ export default function LabBookingTab({
     }
   };
 
-  // Đánh lại số thứ tự và nhãn máy liên tục (M.01, M.02...)
+  // Đánh lại số thứ tự và nhãn máy liên tục (Máy 01, Máy 02...)
   const recalculatePcLabels = (rows: number, cols: number, layoutObj: Record<string, any>) => {
     let counter = 1;
     const newLayout: Record<string, any> = {};
@@ -423,11 +423,10 @@ export default function LabBookingTab({
         const key = `${r}_${c}`;
         const tile = layoutObj[key] || { type: 'pc' };
         if (tile.type === 'pc') {
-          const pcNumStr = counter < 10 ? `0${counter}` : `${counter}`;
           newLayout[key] = {
             ...tile,
             pcNumber: counter,
-            label: tile.label && tile.label.startsWith('M.') ? tile.label : `M.${pcNumStr}`
+            label: formatComputerName(counter)
           };
           counter++;
         } else {
@@ -1322,7 +1321,7 @@ export default function LabBookingTab({
                   <span className="text-slate-700">Số máy đã chọn:</span>
                   {selectedSeatNumber ? (
                     <span className="bg-indigo-700 text-white px-3.5 py-1 rounded-xl font-mono font-black shadow-2xs">
-                      Máy #{selectedSeatNumber}
+                      {formatComputerName(selectedSeatNumber)}
                     </span>
                   ) : (
                     <span className="text-rose-600 italic font-bold">Chưa chọn máy trên sơ đồ</span>
@@ -1474,7 +1473,7 @@ export default function LabBookingTab({
                         className="w-full px-4 py-2.5 rounded-2xl border border-slate-300 font-semibold text-xs text-slate-800 bg-white focus:ring-2 focus:ring-indigo-600 outline-none shadow-2xs cursor-pointer"
                       >
                         {Array.from({ length: currentLabObj.totalPCs }).map((_, i) => (
-                          <option key={i + 1} value={i + 1}>Máy #{i + 1}</option>
+                          <option key={i + 1} value={i + 1}>{formatComputerName(i + 1)}</option>
                         ))}
                       </select>
                     </div>
@@ -1647,7 +1646,7 @@ export default function LabBookingTab({
                     <option value="All">Tất cả thiết bị</option>
                     <option value="lab">🏢 Toàn bộ phòng máy</option>
                     {Array.from({ length: currentLabObj.totalPCs }).map((_, i) => (
-                      <option key={i + 1} value={i + 1}>💻 Máy #{i + 1}</option>
+                      <option key={i + 1} value={i + 1}>💻 {formatComputerName(i + 1)}</option>
                     ))}
                   </select>
                 </div>
@@ -1680,7 +1679,7 @@ export default function LabBookingTab({
                               {log.type === 'Repair' ? '🛠️ Sửa chữa' : log.type === 'Replacement' ? '🔄 Thay linh kiện' : log.type === 'Upgrade' ? '🚀 Nâng cấp' : log.type === 'Maintenance' ? '🧹 Bảo trì' : '💻 Phần mềm'}
                             </span>
                             <span className="bg-slate-800 text-white text-[10px] font-black px-2.5 py-0.5 rounded-md font-mono">
-                              {log.pcLabel || (log.pcNumber ? `Máy #${log.pcNumber}` : 'Toàn phòng')}
+                              {formatComputerName(log.pcLabel || log.pcNumber || 'Toàn phòng')}
                             </span>
                             <span className="text-[11px] font-bold text-slate-500">
                               📅 {formatDateDDMMYYYY(log.date)}
@@ -2266,11 +2265,10 @@ export default function LabBookingTab({
                         filteredIncidents.map(i => {
                           const targetLab = labs.find(l => l.id === i.labId || l.code === i.labId || l.name === i.labId);
                           const labDisplayName = targetLab ? targetLab.name : i.labId;
-                          const pcNumStr = typeof i.pcNumber === 'number' && i.pcNumber < 10 ? `0${i.pcNumber}` : String(i.pcNumber);
                           return (
                             <tr key={i.id} className="hover:bg-[#fffbf0]/80 transition border-b border-slate-200">
                               <td className="py-3.5 px-4 font-black text-slate-900 whitespace-nowrap">
-                                {labDisplayName} - Máy #{pcNumStr}
+                                {labDisplayName} - {formatComputerName(i.pcNumber)}
                               </td>
                               <td className="py-3.5 px-4 font-extrabold text-slate-800 whitespace-nowrap">{i.type}</td>
                               <td className="py-3.5 px-4 text-slate-700 whitespace-nowrap font-medium">{i.issue}</td>
