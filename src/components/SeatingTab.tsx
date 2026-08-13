@@ -5,7 +5,7 @@ import {
   Maximize, Minimize, Tv, ZoomIn, ZoomOut, Sun, Moon, ArrowLeft, Palette, Sparkles, 
   RotateCcw, Users, Plus, LayoutGrid, CheckCircle2, UserCheck, ShieldCheck, Image as ImageIcon,
   Sliders, Move, ArrowRightLeft, Upload, Link, CheckCheck, RefreshCw, Zap, Eye, EyeOff, 
-  PanelLeftClose, PanelLeftOpen, Printer, UserX, AlertCircle
+  PanelLeftClose, PanelLeftOpen, Printer, UserX, AlertCircle, MousePointerClick
 } from 'lucide-react';
 import { extractGoogleDriveFileId, convertGoogleDriveUrl, compressImageFile } from './KnowledgeGardenTab';
 import { playButtonClickSound, playVictoryFanfareSound } from '../utils/audioEffects';
@@ -349,6 +349,9 @@ export default function SeatingTab({
   // Toggle Left Unassigned Students Panel Visibility
   const [isUnassignedPanelVisible, setIsUnassignedPanelVisible] = useState<boolean>(true);
 
+  // 🖱️ 1-CLICK QUICK SELECTION ASSIGNMENT MODE (BỔ SUNG THAO TÁC NHẤP CHỌN THAY CHO KÉO THẢ DỄ DÀNG 100%)
+  const [selectedStudentForAssign, setSelectedStudentForAssign] = useState<string | null>(null);
+
   // Search input for unassigned left column
   const [unassignedSearch, setUnassignedSearch] = useState('');
   const filteredUnassignedStudents = useMemo(() => {
@@ -428,12 +431,13 @@ export default function SeatingTab({
     } catch (e) {}
   }, [frameConfig]);
 
-  // --- INLINE SUB-VIEW STATE (100% WINDOW TAKEOVER) ---
+  // --- INLINE SUB-VIEW STATES (100% WINDOW TAKEOVER) ---
   const [isFrameConfigSubViewOpen, setIsFrameConfigSubViewOpen] = useState(false);
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
   // Drag and Drop States
-  const [draggedStudentId, setDraggedStudentId] = useState<string | null>(null);
-  const [draggedSourcePcId, setDraggedSourcePcId] = useState<string | null>(null);
+  const [draggedStudentIdState, setDraggedStudentIdState] = useState<string | null>(null);
+  const [draggedSourcePcIdState, setDraggedSourcePcIdState] = useState<string | null>(null);
   const [dragOverPcId, setDragOverPcId] = useState<string | null>(null);
 
   // Card Size Tailwind mappings
@@ -568,33 +572,56 @@ export default function SeatingTab({
     showToast(`🪄 Đã xếp tự động chỗ ngồi cho ${classStudents.length} học sinh lớp ${selectedClass} (ưu tiên học sinh có mặt)!`, 'success');
   };
 
-  // Drag handlers
+  // --- CROSS-BROWSER 100% RELIABLE DRAG AND DROP HANDLERS ---
   const handleStudentDragStart = useCallback((e: React.DragEvent, studentId: string, sourcePcId: string | null = null) => {
-    e.dataTransfer.setData('application/json', JSON.stringify({ studentId, sourcePcId }));
-    setDraggedStudentId(studentId);
-    setDraggedSourcePcId(sourcePcId);
+    const payload = JSON.stringify({ studentId, sourcePcId });
+    e.dataTransfer.setData('text/plain', payload);
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggedStudentIdState(studentId);
+    setDraggedSourcePcIdState(sourcePcId);
   }, []);
+
+  const handlePcDragOver = useCallback((e: React.DragEvent, pcId: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverPcId !== pcId) {
+      setDragOverPcId(pcId);
+    }
+  }, [dragOverPcId]);
 
   const handlePcDrop = useCallback((e: React.DragEvent, targetPcId: string) => {
     e.preventDefault();
     setDragOverPcId(null);
-    const dataRaw = e.dataTransfer.getData('application/json');
-    if (!dataRaw) return;
+    
+    let studentId = draggedStudentIdState;
+    let sourcePcId = draggedSourcePcIdState;
 
     try {
-      const { studentId, sourcePcId } = JSON.parse(dataRaw);
-      if (!studentId) return;
-
-      if (sourcePcId === targetPcId) return;
-
-      assignStudentToComputer(targetPcId, studentId);
+      const dataRaw = e.dataTransfer.getData('text/plain');
+      if (dataRaw) {
+        const parsed = JSON.parse(dataRaw);
+        if (parsed.studentId) {
+          studentId = parsed.studentId;
+          sourcePcId = parsed.sourcePcId;
+        }
+      }
     } catch (err) {}
-  }, [assignStudentToComputer]);
 
-  // 🖨️ PRINT SEATING MAP HANDLER
-  const handlePrintSeatingMap = () => {
-    window.print();
-  };
+    if (!studentId) return;
+    if (sourcePcId === targetPcId) return;
+
+    assignStudentToComputer(targetPcId, studentId);
+    setDraggedStudentIdState(null);
+    setDraggedSourcePcIdState(null);
+  }, [assignStudentToComputer, draggedStudentIdState, draggedSourcePcIdState]);
+
+  // Handle 1-Click Computer Select Assign
+  const handlePcCardClick = useCallback((pcId: string) => {
+    if (selectedStudentForAssign) {
+      assignStudentToComputer(pcId, selectedStudentForAssign);
+      setSelectedStudentForAssign(null);
+    }
+  }, [selectedStudentForAssign, assignStudentToComputer]);
 
   // Custom Image URL Upload for PC Frame (Google Drive link or Computer file upload)
   const [customDriveInput, setCustomDriveInput] = useState('');
@@ -625,6 +652,134 @@ export default function SeatingTab({
       showToast('Lỗi khi tải ảnh, vui lòng thử lại!', 'error');
     }
   };
+
+  // =========================================================================
+  // 🖨️ DEDICATED PRINT PREVIEW MODAL (FULL A4 PREVIEW ON SCREEN & PRINT PDF 100%)
+  // =========================================================================
+  if (isPrintModalOpen) {
+    return (
+      <div className="space-y-6 text-slate-800 pb-10">
+        {/* Top Control Bar for Print Modal */}
+        <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs no-print">
+          <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setIsPrintModalOpen(false)}
+                className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-[#cbb89d] font-black text-xs transition-all flex items-center gap-1.5 shadow-2xs active:scale-95 cursor-pointer"
+              >
+                <ArrowLeft className="w-4 h-4 text-slate-700" /> Quay Về Sơ Đồ Phòng Máy
+              </button>
+              <div>
+                <h3 className="font-black text-sm text-slate-900 flex items-center gap-2">
+                  <span>🖨️</span> XEM TRƯỚC VÀ IN SƠ ĐỒ CHỖ NGỒI PHÒNG MÁY (A4 LANDSCAPE)
+                </h3>
+                <p className="text-[11px] font-bold text-slate-600">Bản in A4 sắc nét dán lên bảng phòng máy tính cho lớp {selectedClass}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => window.print()}
+                className="px-5 py-2.5 rounded-xl bg-amber-800 hover:bg-amber-900 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-2 cursor-pointer border border-amber-950"
+              >
+                <Printer className="w-4 h-4" /> 🖨️ XÁC NHẬN IN NGAY / XUẤT FILE PDF
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Printable A4 Container */}
+        <div className="max-w-[1050px] mx-auto bg-white p-8 border-2 border-slate-300 rounded-2xl shadow-xl text-slate-900 space-y-6 printable-paper">
+          
+          {/* Header School info */}
+          <div className="border-b-2 border-slate-800 pb-4 flex justify-between items-end">
+            <div>
+              <div className="font-black text-xs uppercase tracking-wider text-slate-500">TRƯỜNG TIỂU HỌC TÂN PHÚ</div>
+              <h2 className="font-black text-xl text-slate-900">SƠ ĐỒ PHÒNG MÁY TÍNH - LỚP {selectedClass.toUpperCase()}</h2>
+              <div className="text-xs font-bold text-slate-600">
+                {activeLab.name} ({activeLab.code}) • Tổng số máy: {activeLab.totalPCs} máy • Ngày in: {new Date().toLocaleDateString('vi-VN')}
+              </div>
+            </div>
+
+            <div className="text-right text-xs font-bold space-y-0.5">
+              <div>Sĩ số lớp: <span className="font-black text-slate-900">{classStudents.length} HS</span></div>
+              <div className="text-emerald-700">Có mặt: <span className="font-black">{attendanceSummary.present}</span></div>
+              {attendanceSummary.absentTotal > 0 && (
+                <div className="text-rose-700 font-black">Vắng mặt: {attendanceSummary.absentTotal} ({attendanceSummary.excused}P, {attendanceSummary.unexcused}K)</div>
+              )}
+            </div>
+          </div>
+
+          {/* Teacher Board Banner */}
+          <div className="bg-slate-800 text-amber-300 py-2 font-black text-center text-xs uppercase rounded tracking-widest">
+            👨‍🏫 MÀN CHIẾU & BẢNG GIÁO VIÊN ({activeLab.name})
+          </div>
+
+          {/* Seating Grid Map Printable Table */}
+          <div 
+            className="grid gap-2.5"
+            style={{
+              gridTemplateColumns: `repeat(${activeLabGrid.cols}, minmax(0, 1fr))`
+            }}
+          >
+            {activeLabGrid.cells.map(tile => {
+              if (tile.type === 'aisle') {
+                return (
+                  <div key={`print_aisle_${tile.row}_${tile.col}`} className="bg-slate-100 border border-dashed border-slate-300 rounded p-2 text-center text-[9px] font-bold text-slate-400 min-h-[75px] flex items-center justify-center">
+                    Lối đi
+                  </div>
+                );
+              }
+
+              const pcId = tile.label;
+              const assignedIds = getAssignedStudentIds(currentClassSeating[pcId]);
+              const assignedSts = assignedIds.map(id => students.find(s => s.id === id)).filter(Boolean) as Student[];
+
+              return (
+                <div key={`print_pc_${pcId}`} className="border-2 border-slate-800 rounded p-2 bg-slate-50 min-h-[85px] flex flex-col justify-between text-xs">
+                  <div className="flex justify-between items-center font-bold text-[10px] border-b border-slate-300 pb-1 mb-1">
+                    <span className="font-black text-slate-900">🖥️ {pcId}</span>
+                    <span className="text-[9px] text-slate-600">{assignedSts.length}/2</span>
+                  </div>
+
+                  {assignedSts.length > 0 ? (
+                    <div className="space-y-1 my-auto">
+                      {assignedSts.map(st => {
+                        const att = getStudentAttendance(st.id);
+                        const isAbsent = att === 'excused' || att === 'unexcused';
+                        return (
+                          <div key={`print_st_${st.id}`} className={`font-black text-[11px] text-center rounded px-1 py-0.5 border ${
+                            isAbsent ? 'bg-rose-100 border-rose-400 text-rose-900 line-through' : 'bg-emerald-100 border-emerald-400 text-emerald-950'
+                          }`}>
+                            {isAbsent ? `[VẮNG] ` : ''}{formatStudentNameFirstAndMiddle(st.name)}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-[9px] text-slate-400 italic text-center my-auto">Chưa xếp</div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Footer Signatures */}
+          <div className="pt-8 border-t border-slate-300 grid grid-cols-2 text-center text-xs font-bold">
+            <div>
+              <div>CÁN BỘ QUẢN LÝ PHÒNG LAB</div>
+              <div className="text-[10px] text-slate-400 mt-0.5">(Ký và ghi rõ họ tên)</div>
+            </div>
+            <div>
+              <div>GIÁO VIÊN BỘ MÔN TIN HỌC</div>
+              <div className="text-[10px] text-slate-400 mt-0.5">(Ký và ghi rõ họ tên)</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    );
+  }
 
   // =========================================================================
   // 🎨 INLINE SUB-VIEW: ĐỔI KHUNG CARD PC (100% FULL WINDOW TAKEOVER)
@@ -858,30 +1013,6 @@ export default function SeatingTab({
   return (
     <div className="space-y-5 pb-12 text-slate-800">
       
-      {/* CSS @media print style for clean A4 printing */}
-      <style>{`
-        @media print {
-          body * {
-            visibility: hidden;
-          }
-          #printable-room-map, #printable-room-map * {
-            visibility: visible;
-          }
-          #printable-room-map {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            background: white !important;
-            color: black !important;
-            padding: 10px;
-          }
-          .no-print {
-            display: none !important;
-          }
-        }
-      `}</style>
-
       {/* 🌟 1. BANNER HEADER MÀU SẮC ĐỒNG BỘ KHU VƯỜN TRI THỨC (IMAC WARM BEIGE & EMERALD GOLD) */}
       <div className="relative rounded-2xl border border-[#cbb89d] bg-[#fffbf0] py-3.5 px-5 text-slate-900 shadow-sm overflow-hidden no-print">
         <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
@@ -889,9 +1020,18 @@ export default function SeatingTab({
           {/* Left Single Instruction Line */}
           <div className="flex items-center gap-2.5">
             <span className="text-xl select-none">🖥️</span>
-            <p className="text-xs sm:text-sm font-black text-[#3d2b17]">
-              👉 Kéo thả tên học sinh vào máy tính để xếp chỗ (ghép tối đa 2 HS/máy).
-            </p>
+            <div>
+              <p className="text-xs sm:text-sm font-black text-[#3d2b17]">
+                👉 Kéo thả tên học sinh HOẶC nhấp chọn tên học sinh rồi nhấp ô máy để xếp chỗ (ghép tối đa 2 HS/máy).
+              </p>
+              {selectedStudentForAssign && (
+                <div className="text-xs font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300 inline-flex items-center gap-1 mt-1 animate-pulse">
+                  <MousePointerClick className="w-3.5 h-3.5 text-emerald-700" />
+                  ĐANG CHỌN: {classStudents.find(s => s.id === selectedStudentForAssign)?.name} — Nhấp vào bất kỳ ô máy nào bên dưới để xếp!
+                  <button onClick={() => setSelectedStudentForAssign(null)} className="ml-2 text-rose-600 underline cursor-pointer">Hủy</button>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Right Action Buttons */}
@@ -1059,7 +1199,7 @@ export default function SeatingTab({
                 </button>
               </div>
               <p className="text-[10px] font-bold text-slate-500 leading-snug">
-                Kéo tên học sinh vào ô máy tính bên phải để xếp chỗ.
+                Kéo HOẶC nhấp chọn học sinh để xếp vào ô máy tính.
               </p>
             </div>
 
@@ -1081,16 +1221,27 @@ export default function SeatingTab({
                 filteredUnassignedStudents.map(st => {
                   const att = getStudentAttendance(st.id);
                   const isAbsent = att === 'excused' || att === 'unexcused';
+                  const isSelectedForAssign = selectedStudentForAssign === st.id;
 
                   return (
                     <div
                       key={st.id}
                       draggable={true}
                       onDragStart={(e) => handleStudentDragStart(e, st.id)}
-                      className={`p-2.5 rounded-xl border transition-all flex items-center justify-between cursor-grab active:cursor-grabbing group shadow-2xs ${
-                        isAbsent 
-                          ? 'bg-rose-50 border-rose-300 hover:bg-rose-100/80' 
-                          : 'bg-white hover:bg-emerald-50 border-[#cbb89d] hover:border-emerald-500'
+                      onClick={() => {
+                        if (isSelectedForAssign) {
+                          setSelectedStudentForAssign(null);
+                        } else {
+                          setSelectedStudentForAssign(st.id);
+                          showToast(`👉 Đang chọn ${formatStudentNameFirstAndMiddle(st.name)}! Nhấp vào bất kỳ ô máy tính nào bên phải để xếp chỗ.`, 'info');
+                        }
+                      }}
+                      className={`p-2.5 rounded-xl border transition-all flex items-center justify-between cursor-pointer group shadow-2xs ${
+                        isSelectedForAssign 
+                          ? 'bg-emerald-100 border-2 border-emerald-600 ring-2 ring-emerald-400/50 scale-[1.02] z-10' 
+                          : isAbsent 
+                            ? 'bg-rose-50 border-rose-300 hover:bg-rose-100/80' 
+                            : 'bg-white hover:bg-emerald-50 border-[#cbb89d] hover:border-emerald-500'
                       }`}
                     >
                       <div className="flex items-center gap-2.5">
@@ -1117,12 +1268,14 @@ export default function SeatingTab({
                         </div>
                       </div>
 
-                      <span className={`text-[9px] font-black px-2 py-0.5 rounded-md border ${
-                        isAbsent 
-                          ? 'bg-rose-200 text-rose-900 border-rose-300' 
-                          : 'bg-amber-100 text-amber-900 border-amber-200 group-hover:bg-emerald-200 group-hover:text-emerald-900'
+                      <span className={`text-[9px] font-black px-2 py-1 rounded-md border flex items-center gap-1 ${
+                        isSelectedForAssign 
+                          ? 'bg-emerald-600 text-white border-emerald-700 animate-pulse'
+                          : isAbsent 
+                            ? 'bg-rose-200 text-rose-900 border-rose-300' 
+                            : 'bg-amber-100 text-amber-900 border-amber-200 group-hover:bg-emerald-200 group-hover:text-emerald-900'
                       }`}>
-                        Kéo chỗ 🖐️
+                        {isSelectedForAssign ? '✓ Đang chọn' : 'Xếp máy 👆'}
                       </span>
                     </div>
                   );
@@ -1149,7 +1302,6 @@ export default function SeatingTab({
 
         {/* ================= RIGHT COLUMN: SƠ ĐỒ PHÒNG MÁY TÍNH (NỀN SÁNG VÀNG KEM iMAC) ================= */}
         <div 
-          id="printable-room-map"
           className={`${isUnassignedPanelVisible ? 'lg:col-span-8' : 'lg:col-span-12'} bg-[#fbf7ee] rounded-2xl p-4 sm:p-5 border border-[#cbb89d] shadow-sm space-y-4 transition-all duration-300`}
         >
           
@@ -1198,11 +1350,11 @@ export default function SeatingTab({
                 </button>
               )}
 
-              {/* 🖨️ Print Button */}
+              {/* 🖨️ Open Print Preview Modal Button */}
               <button
-                onClick={handlePrintSeatingMap}
+                onClick={() => setIsPrintModalOpen(true)}
                 className="px-3 py-1.5 rounded-xl bg-amber-800 hover:bg-amber-900 text-amber-100 font-black text-xs shadow-xs transition-all active:scale-95 flex items-center gap-1.5 border border-amber-950 cursor-pointer ml-1"
-                title="In sơ đồ chỗ ngồi ra PDF hoặc giấy A4"
+                title="Mở xem trước và in sơ đồ chỗ ngồi A4"
               >
                 <Printer className="w-3.5 h-3.5" /> In Sơ Đồ
               </button>
@@ -1278,13 +1430,13 @@ export default function SeatingTab({
                 return (
                   <div
                     key={`pc_${pcId}`}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      setDragOverPcId(pcId);
-                    }}
+                    onClick={() => handlePcCardClick(pcId)}
+                    onDragOver={(e) => handlePcDragOver(e, pcId)}
                     onDragLeave={() => setDragOverPcId(null)}
                     onDrop={(e) => handlePcDrop(e, pcId)}
-                    className={`rounded-xl border-2 transition-all relative flex flex-col justify-between ${cardSizeClasses[frameConfig.cardSize]} ${
+                    className={`rounded-xl border-2 transition-all relative flex flex-col justify-between cursor-pointer ${cardSizeClasses[frameConfig.cardSize]} ${
+                      selectedStudentForAssign && !isFull ? 'ring-2 ring-emerald-500 hover:scale-105 hover:bg-emerald-100' : ''
+                    } ${
                       isDragOver ? 'border-amber-500 scale-105 bg-amber-100 ring-4 ring-amber-400/50 z-20' : ''
                     } ${
                       frameConfig.customImageUrl 
@@ -1386,7 +1538,7 @@ export default function SeatingTab({
                       </div>
                     ) : (
                       <div className="my-auto py-1.5 text-center justify-center flex items-center text-amber-900/60 font-bold text-[10px] border border-dashed border-amber-300/80 rounded-lg bg-amber-50/50">
-                        Kéo HS vào đây
+                        {selectedStudentForAssign ? '👆 Nhấp để xếp vào máy này' : 'Kéo HOẶC nhấp HS để xếp'}
                       </div>
                     )}
 
