@@ -925,8 +925,21 @@ export default function LabRoomTab({
 
           return (
             <div key={`print_pc_${pcId}`} className="border-2 border-slate-900 rounded p-1 bg-slate-50 min-h-[60px] flex flex-col justify-between text-xs">
-              <div className="flex justify-between items-center font-bold text-[10px] border-b border-slate-400 pb-0.5 mb-0.5">
-                <span className="font-black text-slate-900">🖥️ {formatComputerName(pcId)}</span>
+              <div className="flex justify-between items-center font-bold text-[10px] border-b border-slate-400 pb-0.5 mb-0.5 w-full gap-1">
+                <span className="font-black text-slate-900 whitespace-nowrap shrink-0">🖥️ {formatComputerName(pcId)}</span>
+                {cellData.monitorRole === 'L. Trưởng' ? (
+                  <span className="text-[7.5px] font-black bg-amber-300 text-slate-950 px-1 rounded border border-amber-600 whitespace-nowrap shrink-0 ml-auto">
+                    🌟 L. TRƯỞNG
+                  </span>
+                ) : cellData.monitorRole === 'Lớp phó' ? (
+                  <span className="text-[7.5px] font-black bg-sky-300 text-slate-950 px-1 rounded border border-sky-600 whitespace-nowrap shrink-0 ml-auto">
+                    ⭐ LỚP PHÓ
+                  </span>
+                ) : cellData.monitorRole === 'Tổ trưởng' ? (
+                  <span className="text-[7.5px] font-black bg-purple-300 text-slate-950 px-1 rounded border border-purple-600 whitespace-nowrap shrink-0 ml-auto">
+                    🔰 TỔ TRƯỞNG
+                  </span>
+                ) : null}
               </div>
 
               {assignedSts.length > 0 ? (
@@ -1218,8 +1231,8 @@ export default function LabRoomTab({
                       isDragOver ? 'border-amber-500 scale-105 bg-amber-100 ring-4 ring-amber-400/50 z-20' : borderStyleClass
                     }`}
                   >
-                    <div className="flex justify-between items-center mb-1.5">
-                      <span className={`font-mono font-black text-[11px] px-2 py-0.5 rounded-md border shadow-2xs ${
+                    <div className="flex justify-between items-center mb-1.5 w-full gap-1">
+                      <span className={`font-mono font-black text-[11px] px-2 py-0.5 rounded-md border shadow-2xs whitespace-nowrap shrink-0 ${
                         assignedStudents.length > 0
                           ? 'bg-emerald-600 text-white border-emerald-400'
                           : 'bg-[#dfccb0] text-[#3d2b17] border-[#cbb89d]'
@@ -1228,15 +1241,15 @@ export default function LabRoomTab({
                       </span>
 
                       {monitorRole === 'L. Trưởng' ? (
-                        <span className="text-[8.5px] sm:text-[9px] font-black bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded-full border border-amber-500 shadow-md animate-pulse whitespace-nowrap shrink-0 inline-flex items-center gap-0.5">
+                        <span className="text-[8.5px] sm:text-[9px] font-black bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded-full border border-amber-500 shadow-md animate-pulse whitespace-nowrap shrink-0 ml-auto inline-flex items-center gap-0.5">
                           🌟 L. TRƯỞNG
                         </span>
                       ) : monitorRole === 'Lớp phó' ? (
-                        <span className="text-[8.5px] sm:text-[9px] font-black bg-sky-400 text-slate-950 px-1.5 py-0.5 rounded-full border border-sky-500 shadow-md whitespace-nowrap shrink-0 inline-flex items-center gap-0.5">
+                        <span className="text-[8.5px] sm:text-[9px] font-black bg-sky-400 text-slate-950 px-1.5 py-0.5 rounded-full border border-sky-500 shadow-md whitespace-nowrap shrink-0 ml-auto inline-flex items-center gap-0.5">
                           ⭐ LỚP PHÓ
                         </span>
                       ) : monitorRole === 'Tổ trưởng' ? (
-                        <span className="text-[8.5px] sm:text-[9px] font-black bg-purple-400 text-slate-950 px-1.5 py-0.5 rounded-full border border-purple-500 shadow-md whitespace-nowrap shrink-0 inline-flex items-center gap-0.5">
+                        <span className="text-[8.5px] sm:text-[9px] font-black bg-purple-400 text-slate-950 px-1.5 py-0.5 rounded-full border border-purple-500 shadow-md whitespace-nowrap shrink-0 ml-auto inline-flex items-center gap-0.5">
                           🔰 TỔ TRƯỞNG
                         </span>
                       ) : null}
@@ -1904,8 +1917,8 @@ export default function LabRoomTab({
                     backgroundPosition: 'center'
                   } : undefined}
                 >
-                  <div className="flex justify-between items-center mb-1.5">
-                    <span className={`font-mono font-black text-[11px] px-2 py-0.5 rounded-md border shadow-2xs ${
+                  <div className="flex justify-between items-center mb-1.5 w-full gap-1">
+                    <span className={`font-mono font-black text-[11px] px-2 py-0.5 rounded-md border shadow-2xs whitespace-nowrap shrink-0 ${
                       assignedStudents.length > 0
                         ? 'bg-emerald-600 text-white border-emerald-400'
                         : 'bg-[#dfccb0] text-[#3d2b17] border-[#cbb89d]'
@@ -1914,23 +1927,23 @@ export default function LabRoomTab({
                     </span>
 
                     {monitorRole === 'L. Trưởng' ? (
-                      <span className="text-[8.5px] sm:text-[9px] font-black bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded-full border border-amber-500 shadow-md animate-pulse whitespace-nowrap shrink-0 inline-flex items-center gap-0.5">
+                      <span className="text-[8.5px] sm:text-[9px] font-black bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded-full border border-amber-500 shadow-md animate-pulse whitespace-nowrap shrink-0 ml-auto inline-flex items-center gap-0.5">
                         🌟 L. TRƯỞNG
                       </span>
                     ) : monitorRole === 'Lớp phó' ? (
-                      <span className="text-[8.5px] sm:text-[9px] font-black bg-sky-400 text-slate-950 px-1.5 py-0.5 rounded-full border border-sky-500 shadow-md whitespace-nowrap shrink-0 inline-flex items-center gap-0.5">
+                      <span className="text-[8.5px] sm:text-[9px] font-black bg-sky-400 text-slate-950 px-1.5 py-0.5 rounded-full border border-sky-500 shadow-md whitespace-nowrap shrink-0 ml-auto inline-flex items-center gap-0.5">
                         ⭐ LỚP PHÓ
                       </span>
                     ) : monitorRole === 'Tổ trưởng' ? (
-                      <span className="text-[8.5px] sm:text-[9px] font-black bg-purple-400 text-slate-950 px-1.5 py-0.5 rounded-full border border-purple-500 shadow-md whitespace-nowrap shrink-0 inline-flex items-center gap-0.5">
+                      <span className="text-[8.5px] sm:text-[9px] font-black bg-purple-400 text-slate-950 px-1.5 py-0.5 rounded-full border border-purple-500 shadow-md whitespace-nowrap shrink-0 ml-auto inline-flex items-center gap-0.5">
                         🔰 TỔ TRƯỞNG
                       </span>
                     ) : targetIncident ? (
-                      <span className="text-[8.5px] sm:text-[9px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded-full border border-rose-400 animate-pulse whitespace-nowrap shrink-0 inline-flex items-center gap-0.5" title={targetIncident.issue}>
+                      <span className="text-[8.5px] sm:text-[9px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded-full border border-rose-400 animate-pulse whitespace-nowrap shrink-0 ml-auto inline-flex items-center gap-0.5" title={targetIncident.issue}>
                         HỎNG
                       </span>
                     ) : hasAbsentStudent ? (
-                      <span className="text-[8.5px] sm:text-[9px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded-full border border-rose-400 whitespace-nowrap shrink-0 inline-flex items-center gap-0.5" title="Có học sinh báo vắng mặt hôm nay">
+                      <span className="text-[8.5px] sm:text-[9px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded-full border border-rose-400 whitespace-nowrap shrink-0 ml-auto inline-flex items-center gap-0.5" title="Có học sinh báo vắng mặt hôm nay">
                         CÓ VẮNG
                       </span>
                     ) : null}
