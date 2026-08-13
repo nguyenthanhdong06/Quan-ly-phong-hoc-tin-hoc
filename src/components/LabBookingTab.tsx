@@ -2186,48 +2186,52 @@ export default function LabBookingTab({
                           </td>
                         </tr>
                       ) : (
-                        filteredBookings.map(b => (
-                          <tr key={b.id} className="hover:bg-[#fffbf0]/80 transition border-b border-slate-200">
-                            <td className="py-3.5 px-4 font-black text-slate-900 whitespace-nowrap">{b.teacherName}</td>
-                            <td className="py-3.5 px-4 font-extrabold text-slate-800 whitespace-nowrap">{b.className} ({b.studentCount} HS)</td>
-                            <td className="py-3.5 px-4 whitespace-nowrap">
-                              <span className="bg-indigo-100 text-indigo-900 font-mono font-black text-[10px] px-2.5 py-0.5 rounded-md border border-indigo-200">
-                                {b.labId}
-                              </span>
-                            </td>
-                            <td className="py-3.5 px-4 text-slate-700 whitespace-nowrap font-medium">{b.subject}</td>
-                            <td className="py-3.5 px-4 whitespace-nowrap">
-                              <span className={`text-[10px] font-black px-3 py-0.5 rounded-full ${
-                                b.status === 'Approved' ? 'bg-emerald-100 text-emerald-950 border border-emerald-300' : 'bg-rose-100 text-rose-950 border border-rose-300'
-                              }`}>
-                                {b.status === 'Approved' ? 'Đã duyệt' : 'Từ chối'}
-                              </span>
-                            </td>
-                            <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                              <div className="flex items-center justify-center gap-1.5">
-                                <button
-                                  onClick={() => handleUpdateBookingStatus(b.id, 'Approved')}
-                                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[11px] px-3 py-1 rounded-xl shadow-2xs transition cursor-pointer active:scale-95"
-                                >
-                                  Duyệt
-                                </button>
-                                <button
-                                  onClick={() => handleUpdateBookingStatus(b.id, 'Rejected')}
-                                  className="bg-amber-600 hover:bg-amber-700 text-white font-black text-[11px] px-3 py-1 rounded-xl shadow-2xs transition cursor-pointer active:scale-95"
-                                >
-                                  Từ chối
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteBooking(b.id)}
-                                  className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 p-1.5 rounded-xl border border-rose-200 transition cursor-pointer active:scale-95"
-                                  title="Xóa phiếu"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))
+                        filteredBookings.map(b => {
+                          const targetLab = labs.find(l => l.id === b.labId || l.code === b.labId || l.name === b.labId);
+                          const labDisplayName = targetLab ? `${targetLab.name} (${targetLab.code})` : b.labId;
+                          return (
+                            <tr key={b.id} className="hover:bg-[#fffbf0]/80 transition border-b border-slate-200">
+                              <td className="py-3.5 px-4 font-black text-slate-900 whitespace-nowrap">{b.teacherName}</td>
+                              <td className="py-3.5 px-4 font-extrabold text-slate-800 whitespace-nowrap">{b.className} ({b.studentCount} HS)</td>
+                              <td className="py-3.5 px-4 whitespace-nowrap">
+                                <span className="bg-indigo-100 text-indigo-900 font-mono font-black text-[10px] px-2.5 py-0.5 rounded-md border border-indigo-200">
+                                  {labDisplayName}
+                                </span>
+                              </td>
+                              <td className="py-3.5 px-4 text-slate-700 whitespace-nowrap font-medium">{b.subject}</td>
+                              <td className="py-3.5 px-4 whitespace-nowrap">
+                                <span className={`text-[10px] font-black px-3 py-0.5 rounded-full ${
+                                  b.status === 'Approved' ? 'bg-emerald-100 text-emerald-950 border border-emerald-300' : 'bg-rose-100 text-rose-950 border border-rose-300'
+                                }`}>
+                                  {b.status === 'Approved' ? 'Đã duyệt' : 'Từ chối'}
+                                </span>
+                              </td>
+                              <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                                <div className="flex items-center justify-center gap-1.5">
+                                  <button
+                                    onClick={() => handleUpdateBookingStatus(b.id, 'Approved')}
+                                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[11px] px-3 py-1 rounded-xl shadow-2xs transition cursor-pointer active:scale-95"
+                                  >
+                                    Duyệt
+                                  </button>
+                                  <button
+                                    onClick={() => handleUpdateBookingStatus(b.id, 'Rejected')}
+                                    className="bg-amber-600 hover:bg-amber-700 text-white font-black text-[11px] px-3 py-1 rounded-xl shadow-2xs transition cursor-pointer active:scale-95"
+                                  >
+                                    Từ chối
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteBooking(b.id)}
+                                    className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 p-1.5 rounded-xl border border-rose-200 transition cursor-pointer active:scale-95"
+                                    title="Xóa phiếu"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
                       )}
                     </tbody>
                   </table>
@@ -2259,46 +2263,51 @@ export default function LabBookingTab({
                           </td>
                         </tr>
                       ) : (
-                        filteredIncidents.map(i => (
-                          <tr key={i.id} className="hover:bg-[#fffbf0]/80 transition border-b border-slate-200">
-                            <td className="py-3.5 px-4 font-black text-slate-900 whitespace-nowrap">
-                              {i.labId} - Máy #{i.pcNumber}
-                            </td>
-                            <td className="py-3.5 px-4 font-extrabold text-slate-800 whitespace-nowrap">{i.type}</td>
-                            <td className="py-3.5 px-4 text-slate-700 whitespace-nowrap font-medium">{i.issue}</td>
-                            <td className="py-3.5 px-4 whitespace-nowrap">
-                              <span className={`text-[10px] font-black px-3 py-0.5 rounded-full ${
-                                i.status === 'Resolved' ? 'bg-emerald-100 text-emerald-950 border border-emerald-300' :
-                                i.status === 'In Progress' ? 'bg-amber-100 text-amber-950 border border-amber-300' : 'bg-rose-100 text-rose-950 border border-rose-300'
-                              }`}>
-                                {i.status === 'Resolved' ? 'Đã khắc phục' : i.status === 'In Progress' ? 'Đang sửa' : 'Chờ xử lý'}
-                              </span>
-                            </td>
-                            <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                              <div className="flex items-center justify-center gap-1.5">
-                                <button
-                                  onClick={() => handleUpdateIncidentStatus(i.id, 'In Progress')}
-                                  className="bg-amber-600 hover:bg-amber-700 text-white font-black text-[11px] px-3 py-1 rounded-xl shadow-2xs transition cursor-pointer active:scale-95"
-                                >
-                                  Đang sửa
-                                </button>
-                                <button
-                                  onClick={() => handleUpdateIncidentStatus(i.id, 'Resolved')}
-                                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[11px] px-3 py-1 rounded-xl shadow-2xs transition cursor-pointer active:scale-95"
-                                >
-                                  Đã xong
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteIncident(i.id)}
-                                  className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 p-1.5 rounded-xl border border-rose-200 transition cursor-pointer active:scale-95"
-                                  title="Xóa báo cáo"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))
+                        filteredIncidents.map(i => {
+                          const targetLab = labs.find(l => l.id === i.labId || l.code === i.labId || l.name === i.labId);
+                          const labDisplayName = targetLab ? targetLab.name : i.labId;
+                          const pcNumStr = typeof i.pcNumber === 'number' && i.pcNumber < 10 ? `0${i.pcNumber}` : String(i.pcNumber);
+                          return (
+                            <tr key={i.id} className="hover:bg-[#fffbf0]/80 transition border-b border-slate-200">
+                              <td className="py-3.5 px-4 font-black text-slate-900 whitespace-nowrap">
+                                {labDisplayName} - Máy #{pcNumStr}
+                              </td>
+                              <td className="py-3.5 px-4 font-extrabold text-slate-800 whitespace-nowrap">{i.type}</td>
+                              <td className="py-3.5 px-4 text-slate-700 whitespace-nowrap font-medium">{i.issue}</td>
+                              <td className="py-3.5 px-4 whitespace-nowrap">
+                                <span className={`text-[10px] font-black px-3 py-0.5 rounded-full ${
+                                  i.status === 'Resolved' ? 'bg-emerald-100 text-emerald-950 border border-emerald-300' :
+                                  i.status === 'In Progress' ? 'bg-amber-100 text-amber-950 border border-amber-300' : 'bg-rose-100 text-rose-950 border border-rose-300'
+                                }`}>
+                                  {i.status === 'Resolved' ? 'Đã khắc phục' : i.status === 'In Progress' ? 'Đang sửa' : 'Chờ xử lý'}
+                                </span>
+                              </td>
+                              <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                                <div className="flex items-center justify-center gap-1.5">
+                                  <button
+                                    onClick={() => handleUpdateIncidentStatus(i.id, 'In Progress')}
+                                    className="bg-amber-600 hover:bg-amber-700 text-white font-black text-[11px] px-3 py-1 rounded-xl shadow-2xs transition cursor-pointer active:scale-95"
+                                  >
+                                    Đang sửa
+                                  </button>
+                                  <button
+                                    onClick={() => handleUpdateIncidentStatus(i.id, 'Resolved')}
+                                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[11px] px-3 py-1 rounded-xl shadow-2xs transition cursor-pointer active:scale-95"
+                                  >
+                                    Đã xong
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteIncident(i.id)}
+                                    className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 p-1.5 rounded-xl border border-rose-200 transition cursor-pointer active:scale-95"
+                                    title="Xóa báo cáo"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
                       )}
                     </tbody>
                   </table>

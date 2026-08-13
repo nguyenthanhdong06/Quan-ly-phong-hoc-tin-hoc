@@ -140,7 +140,7 @@ export default function LabRoomTab({
   // Selected Lab State (default to Lab 01 P.201)
   const [selectedLabId, setSelectedLabId] = useState<string>(labs[0]?.id || 'lab1');
   const activeLab = useMemo(() => {
-    return labs.find(l => l.id === selectedLabId) || labs[0];
+    return labs.find(l => l.id === selectedLabId || l.code === selectedLabId || l.name === selectedLabId) || labs[0];
   }, [labs, selectedLabId]);
 
   // Realtime Sync Attendance Data State
@@ -165,8 +165,8 @@ export default function LabRoomTab({
     return 'present';
   }, [currentClassAttendanceMap]);
 
-  // Load Incidents from localStorage
-  const [incidents] = useState<LabIncident[]>(() => {
+  // 🔔 Real-time Incidents Sync from LocalStorage / Windows events
+  const [incidents, setIncidents] = useState<LabIncident[]>(() => {
     try {
       const saved = localStorage.getItem('school_lab_incidents');
       return saved ? JSON.parse(saved) : [];
@@ -174,6 +174,22 @@ export default function LabRoomTab({
       return [];
     }
   });
+
+  useEffect(() => {
+    const handleSyncIncidents = () => {
+      try {
+        const saved = localStorage.getItem('school_lab_incidents');
+        if (saved) setIncidents(JSON.parse(saved));
+      } catch (e) {}
+    };
+
+    window.addEventListener('storage', handleSyncIncidents);
+    window.addEventListener('school_incidents_updated', handleSyncIncidents);
+    return () => {
+      window.removeEventListener('storage', handleSyncIncidents);
+      window.removeEventListener('school_incidents_updated', handleSyncIncidents);
+    };
+  }, []);
 
   // --- CLASS MONITOR ROLE STATE (L. TRƯỞNG / LỚP PHÓ / TỔ TRƯỞNG) ---
   const [studentDuties, setStudentDuties] = useState<{ [studentId: string]: string }>(() => {
@@ -308,7 +324,7 @@ export default function LabRoomTab({
     return seatingVal.split(/[,+;]/).map(s => s.trim()).filter(Boolean);
   }, []);
 
-  // --- MEMOIZED CELL DATA MAP FOR MAXIMUM PERFORMANCE ---
+  // --- MEMOIZED CELL DATA MAP FOR MAXIMUM PERFORMANCE & ACCURATE INCIDENT MATCHING ---
   const computedCellDataMap = useMemo(() => {
     const map: Record<string, {
       assignedStudents: Student[];
@@ -335,11 +351,31 @@ export default function LabRoomTab({
         if (role && !monitorRole) monitorRole = role;
       });
 
-      const targetInc = incidents.find(inc => 
-        inc.labId === selectedLabId && 
-        (inc.pcNumber === pcNum || pcId.includes(String(inc.pcNumber))) && 
-        inc.status !== 'Resolved'
-      ) || null;
+      // 🔍 ACCURATE INCIDENT MATCHING ACROSS LAB IDS & PC NUMBER/ID FORMATS
+      const targetInc = incidents.find(inc => {
+        if (inc.status === 'Resolved') return false;
+
+        // 1. Lab ID matching (direct ID match OR active lab match)
+        const labMatches = 
+          !inc.labId || 
+          inc.labId === selectedLabId || 
+          inc.labId === activeLab.id || 
+          inc.labId === activeLab.code ||
+          inc.labId === activeLab.name ||
+          labs.findIndex(l => l.id === inc.labId) === labs.findIndex(l => l.id === selectedLabId);
+
+        if (!labMatches) return false;
+
+        // 2. PC Number/Label matching
+        const rawPcStr = String(inc.pcNumber ?? '').trim().toLowerCase();
+        const digitsOnly = parseInt(rawPcStr.replace(/\D/g, ''), 10);
+        
+        if (!isNaN(digitsOnly) && digitsOnly === pcNum) return true;
+        if (rawPcStr && pcId.toLowerCase().includes(rawPcStr)) return true;
+        if (rawPcStr && rawPcStr.includes(String(pcNum))) return true;
+
+        return false;
+      }) || null;
 
       map[pcId] = {
         assignedStudents: assignedSts,
@@ -352,7 +388,7 @@ export default function LabRoomTab({
     });
 
     return map;
-  }, [activeLabGrid.pcList, currentClassSeating, getAssignedStudentIds, studentsByIdMap, getStudentAttendance, getStudentMonitorRole, incidents, selectedLabId]);
+  }, [activeLabGrid.pcList, currentClassSeating, getAssignedStudentIds, studentsByIdMap, getStudentAttendance, getStudentMonitorRole, incidents, selectedLabId, activeLab, labs]);
 
   const assignedStudentIdsList = useMemo(() => {
     const assigned = new Set<string>();
@@ -457,6 +493,19 @@ export default function LabRoomTab({
   const [draggedSourcePcIdState, setDraggedSourcePcIdState] = useState<string | null>(null);
   const [dragOverPcId, setDragOverPcId] = useState<string | null>(null);
 
+  // 🖨️ Document.body Portal Container for 100% Perfect A4 Printing (Zero Blank Pages)
+  const [printPortalContainer, setPrintPortalContainer] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    let el = document.getElementById('lab-print-portal');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'lab-print-portal';
+      document.body.appendChild(el);
+    }
+    setPrintPortalContainer(el);
+  }, []);
+
   const cardSizeClasses = {
     sm: 'p-2 min-h-[90px]',
     md: 'p-3 min-h-[110px]',
@@ -550,7 +599,7 @@ export default function LabRoomTab({
     showToast(`Đã tráo vị trí ngồi giữa ${st1 ? formatStudentNameFirstAndMiddle(st1.name) : 'HS1'} (${sourcePcId}) và ${st2 ? formatStudentNameFirstAndMiddle(st2.name) : 'HS2'} (${targetPcId})!`, 'success');
   }, [currentClassSeating, getAssignedStudentIds, saveSeatingState, studentsByIdMap, showToast]);
 
-  // Remove a specific student from a PC
+  // ❌ 100% RELIABLE STUDENT REMOVAL FROM COMPUTER
   const unassignStudentFromComputer = useCallback((pcId: string, studentId: string) => {
     const currentSeating = { ...currentClassSeating };
     const targetPCHs = getAssignedStudentIds(currentSeating[pcId]).filter(id => id !== studentId);
@@ -561,7 +610,7 @@ export default function LabRoomTab({
     }
     saveSeatingState(currentSeating);
     playButtonClickSound();
-    showToast('Đã gỡ học sinh khỏi vị trí máy!', 'info');
+    showToast('Đã xóa học sinh khỏi vị trí máy!', 'info');
   }, [currentClassSeating, getAssignedStudentIds, saveSeatingState, showToast]);
 
   // Clear all seating for selected class
@@ -730,7 +779,7 @@ export default function LabRoomTab({
 
   const handleApplyDriveFrameImage = () => {
     if (!customDriveInput.trim()) return;
-    const processedUrl = convertGoogleDriveUrl(customDriveInput);
+    const processedUrl = convertGoogleDriveUrl(customDriveInput, 1000);
     setFrameConfig(prev => ({
       ...prev,
       customImageUrl: processedUrl
@@ -753,6 +802,91 @@ export default function LabRoomTab({
       showToast('Lỗi khi tải ảnh, vui lòng thử lại!', 'error');
     }
   };
+
+  // Printable Canvas Component for Portal
+  const renderPrintableCanvas = () => (
+    <div className="printable-a4-canvas bg-white p-6 border-2 border-slate-900 text-slate-900 space-y-4 max-w-[1050px] mx-auto">
+      <div className="border-b-2 border-slate-900 pb-3 flex justify-between items-center text-slate-900">
+        <div>
+          <div className="font-black text-xs uppercase tracking-wider text-slate-800">TRƯỜNG TIỂU HỌC LONG ĐỊNH</div>
+          <h2 className="font-black text-lg text-slate-900 leading-tight">SƠ ĐỒ PHÒNG MÁY TÍNH - LỚP {selectedClass.toUpperCase()}</h2>
+          <div className="text-[11px] font-bold text-slate-700">
+            {activeLab.name} ({activeLab.code}) • Sĩ số: {classStudents.length} HS ({attendanceSummary.present} Có mặt, {attendanceSummary.absentTotal} Vắng)
+          </div>
+        </div>
+        <div className="text-right text-[11px] font-bold text-slate-600">
+          Ngày in: {new Date().toLocaleDateString('vi-VN')}
+        </div>
+      </div>
+
+      <div className="bg-slate-900 text-amber-300 py-1.5 font-black text-center text-xs uppercase rounded tracking-widest flex items-center justify-center gap-2">
+        <span>MÀN CHIẾU & BẢNG GIÁO VIÊN ({activeLab.name})</span>
+      </div>
+
+      <div 
+        className="grid gap-2"
+        style={{
+          gridTemplateColumns: `repeat(${activeLabGrid.cols}, minmax(0, 1fr))`
+        }}
+      >
+        {activeLabGrid.cells.map(tile => {
+          if (tile.type === 'aisle') {
+            return (
+              <div key={`print_aisle_${tile.row}_${tile.col}`} className="bg-slate-100 border border-dashed border-slate-300 rounded p-1.5 text-center text-[9px] font-bold text-slate-400 min-h-[70px] flex items-center justify-center">
+                Lối đi
+              </div>
+            );
+          }
+
+          const pcId = tile.label;
+          const cellData = computedCellDataMap[pcId] || { assignedStudents: [] };
+          const assignedSts = cellData.assignedStudents;
+
+          return (
+            <div key={`print_pc_${pcId}`} className="border-2 border-slate-900 rounded p-1.5 bg-slate-50 min-h-[80px] flex flex-col justify-between text-xs">
+              <div className="flex justify-between items-center font-bold text-[10px] border-b border-slate-400 pb-0.5 mb-1">
+                <span className="font-black text-slate-900">🖥️ {pcId}</span>
+                <span className="text-[9px] text-slate-700">{assignedSts.length}/2</span>
+              </div>
+
+              {assignedSts.length > 0 ? (
+                <div className="space-y-1 my-auto">
+                  {assignedSts.map(st => {
+                    const att = getStudentAttendance(st.id);
+                    const isAbsent = att === 'excused' || att === 'unexcused';
+                    const monitorRole = getStudentMonitorRole(st);
+
+                    return (
+                      <div key={`print_st_${st.id}`} className={`font-black text-[10px] text-center rounded px-1 py-0.5 border flex items-center justify-center gap-1 ${
+                        isAbsent ? 'bg-rose-100 border-rose-400 text-rose-900 line-through' : 'bg-emerald-100 border-emerald-400 text-emerald-950'
+                      }`}>
+                        {monitorRole === 'L. Trưởng' && <span className="text-[9px]">🌟</span>}
+                        {monitorRole === 'Lớp phó' && <span className="text-[9px]">⭐</span>}
+                        <span>{isAbsent ? `[VẮNG] ` : ''}{formatStudentNameFirstAndMiddle(st.name)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-[9px] text-slate-400 italic text-center my-auto">Chưa xếp</div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="pt-6 border-t border-slate-400 grid grid-cols-2 text-center text-xs font-bold">
+        <div>
+          <div>CÁN BỘ QUẢN LÝ PHÒNG LAB</div>
+          <div className="text-[10px] text-slate-500 mt-0.5">(Ký và ghi rõ họ tên)</div>
+        </div>
+        <div>
+          <div>GIÁO VIÊN BỘ MÔN TIN HỌC</div>
+          <div className="text-[10px] text-slate-500 mt-0.5">(Ký và ghi rõ họ tên)</div>
+        </div>
+      </div>
+    </div>
+  );
 
   // =========================================================================
   // 🪑 1. INLINE SUB-VIEW: XẾP CHỖ NGỒI (FULL WINDOW INTERACTIVE CANVAS MATCHING Screenshot 2026-08-13 160505.png)
@@ -1040,14 +1174,17 @@ export default function LabRoomTab({
                                 <span>{formatStudentNameFirstAndMiddle(st.name)}</span>
                               </span>
                               <button
-                                onMouseDown={(e) => {
+                                onClick={(e) => {
                                   e.stopPropagation();
                                   e.preventDefault();
                                   unassignStudentFromComputer(pcId, st.id);
                                 }}
-                                className="absolute right-1 text-slate-900/60 hover:text-rose-800 hover:bg-white/80 p-0.5 rounded-full cursor-pointer"
+                                onMouseDown={(e) => e.stopPropagation()}
+                                onTouchStart={(e) => e.stopPropagation()}
+                                className="absolute right-1 top-1/2 -translate-y-1/2 text-slate-900/70 hover:text-white hover:bg-rose-600 p-1 rounded-full cursor-pointer z-30 transition-all shadow-2xs border border-transparent hover:border-rose-700"
+                                title="Xóa học sinh khỏi máy"
                               >
-                                <X className="w-3.5 h-3.5" />
+                                <X className="w-3.5 h-3.5 stroke-[2.5]" />
                               </button>
                             </div>
                           );
@@ -1072,14 +1209,17 @@ export default function LabRoomTab({
   }
 
   // =========================================================================
-  // 🖨️ 2. DEDICATED PRINT PREVIEW (PORTAL FOR 100% PERFECT A4 PRINTING)
+  // 🖨️ 2. DEDICATED PRINT PREVIEW WITH DOCUMENT.BODY PORTAL (100% PERFECT A4 PRINTING)
   // =========================================================================
   if (isPrintModalOpen) {
     return (
       <div className="space-y-6 text-slate-800 pb-10">
         <style>{`
           @media print {
-            body > * {
+            #root {
+              display: none !important;
+            }
+            body > *:not(#lab-print-portal) {
               display: none !important;
             }
             #lab-print-portal {
@@ -1092,7 +1232,7 @@ export default function LabRoomTab({
               background: white !important;
               color: black !important;
               margin: 0 !important;
-              padding: 10mm !important;
+              padding: 8mm !important;
             }
             #lab-print-portal * {
               visibility: visible !important;
@@ -1103,6 +1243,12 @@ export default function LabRoomTab({
             }
           }
         `}</style>
+
+        {/* Portal to document.body for zero blank pages when printing */}
+        {printPortalContainer && createPortal(
+          renderPrintableCanvas(),
+          printPortalContainer
+        )}
 
         {/* Top Control Bar (Screen only) */}
         <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs no-print">
@@ -1135,86 +1281,8 @@ export default function LabRoomTab({
         </div>
 
         {/* Screen Preview Container */}
-        <div className="max-w-[1050px] mx-auto bg-white p-6 border-2 border-slate-300 rounded-2xl shadow-xl text-slate-900 space-y-4">
-          <div className="border-b-2 border-slate-900 pb-3 flex justify-between items-center text-slate-900">
-            <div>
-              <div className="font-black text-xs uppercase tracking-wider text-slate-700">TRƯỜNG TIỂU HỌC LONG ĐỊNH</div>
-              <h2 className="font-black text-lg text-slate-900 leading-tight">SƠ ĐỒ PHÒNG MÁY TÍNH - LỚP {selectedClass.toUpperCase()}</h2>
-              <div className="text-[11px] font-bold text-slate-600">
-                {activeLab.name} ({activeLab.code}) • Sĩ số: {classStudents.length} HS ({attendanceSummary.present} Có mặt, {attendanceSummary.absentTotal} Vắng)
-              </div>
-            </div>
-            <div className="text-right text-[11px] font-bold text-slate-500">
-              Ngày in: {new Date().toLocaleDateString('vi-VN')}
-            </div>
-          </div>
-
-          <div className="bg-slate-800 text-amber-300 py-1.5 font-black text-center text-xs uppercase rounded tracking-widest flex items-center justify-center gap-2">
-            <span>MÀN CHIẾU & BẢNG GIÁO VIÊN ({activeLab.name})</span>
-          </div>
-
-          <div 
-            className="grid gap-2"
-            style={{
-              gridTemplateColumns: `repeat(${activeLabGrid.cols}, minmax(0, 1fr))`
-            }}
-          >
-            {activeLabGrid.cells.map(tile => {
-              if (tile.type === 'aisle') {
-                return (
-                  <div key={`print_aisle_${tile.row}_${tile.col}`} className="bg-slate-100 border border-dashed border-slate-300 rounded p-1.5 text-center text-[9px] font-bold text-slate-400 min-h-[70px] flex items-center justify-center">
-                    Lối đi
-                  </div>
-                );
-              }
-
-              const pcId = tile.label;
-              const cellData = computedCellDataMap[pcId] || { assignedStudents: [] };
-              const assignedSts = cellData.assignedStudents;
-
-              return (
-                <div key={`print_pc_${pcId}`} className="border-2 border-slate-800 rounded p-1.5 bg-slate-50 min-h-[80px] flex flex-col justify-between text-xs">
-                  <div className="flex justify-between items-center font-bold text-[10px] border-b border-slate-300 pb-0.5 mb-1">
-                    <span className="font-black text-slate-900">🖥️ {pcId}</span>
-                    <span className="text-[9px] text-slate-600">{assignedSts.length}/2</span>
-                  </div>
-
-                  {assignedSts.length > 0 ? (
-                    <div className="space-y-1 my-auto">
-                      {assignedSts.map(st => {
-                        const att = getStudentAttendance(st.id);
-                        const isAbsent = att === 'excused' || att === 'unexcused';
-                        const monitorRole = getStudentMonitorRole(st);
-
-                        return (
-                          <div key={`print_st_${st.id}`} className={`font-black text-[10px] text-center rounded px-1 py-0.5 border flex items-center justify-center gap-1 ${
-                            isAbsent ? 'bg-rose-100 border-rose-400 text-rose-900 line-through' : 'bg-emerald-100 border-emerald-400 text-emerald-950'
-                          }`}>
-                            {monitorRole === 'L. Trưởng' && <span className="text-[9px]">🌟</span>}
-                            {monitorRole === 'Lớp phó' && <span className="text-[9px]">⭐</span>}
-                            <span>{isAbsent ? `[VẮNG] ` : ''}{formatStudentNameFirstAndMiddle(st.name)}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="text-[9px] text-slate-400 italic text-center my-auto">Chưa xếp</div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="pt-6 border-t border-slate-300 grid grid-cols-2 text-center text-xs font-bold">
-            <div>
-              <div>CÁN BỘ QUẢN LÝ PHÒNG LAB</div>
-              <div className="text-[10px] text-slate-400 mt-0.5">(Ký và ghi rõ họ tên)</div>
-            </div>
-            <div>
-              <div>GIÁO VIÊN BỘ MÔN TIN HỌC</div>
-              <div className="text-[10px] text-slate-400 mt-0.5">(Ký và ghi rõ họ tên)</div>
-            </div>
-          </div>
+        <div className="no-print">
+          {renderPrintableCanvas()}
         </div>
       </div>
     );
@@ -1689,7 +1757,7 @@ export default function LabRoomTab({
 
               let borderStyleClass = 'border-[#cbb89d] bg-[#fffbf0]';
               if (targetIncident) {
-                borderStyleClass = 'border-rose-500 bg-rose-100/90 ring-4 ring-rose-400 text-rose-950 z-20';
+                borderStyleClass = 'border-rose-500 bg-rose-100/90 ring-4 ring-rose-400 text-rose-950 z-20 shadow-[0_0_20px_rgba(244,63,94,0.7)]';
               } else if (showAbsentOnlyFilter && hasAbsentStudent) {
                 borderStyleClass = 'border-rose-500 bg-rose-50 ring-4 ring-rose-500 text-rose-950 z-30 shadow-[0_0_25px_rgba(244,63,94,0.8)]';
               } else if (isSearchMatch) {
@@ -1736,7 +1804,7 @@ export default function LabRoomTab({
                     </span>
 
                     {targetIncident ? (
-                      <span className="text-[9px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded-full border border-rose-400" title={targetIncident.issue}>
+                      <span className="text-[9px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded-full border border-rose-400 animate-pulse" title={targetIncident.issue}>
                         HỎNG
                       </span>
                     ) : monitorRole === 'L. Trưởng' ? (
@@ -1808,15 +1876,17 @@ export default function LabRoomTab({
                             </span>
 
                             <button
-                              onMouseDown={(e) => {
+                              onClick={(e) => {
                                 e.stopPropagation();
                                 e.preventDefault();
                                 unassignStudentFromComputer(pcId, st.id);
                               }}
-                              className="absolute right-1 text-slate-900/60 hover:text-rose-800 hover:bg-white/80 p-0.5 rounded-full cursor-pointer"
+                              onMouseDown={(e) => e.stopPropagation()}
+                              onTouchStart={(e) => e.stopPropagation()}
+                              className="absolute right-1 top-1/2 -translate-y-1/2 text-slate-900/70 hover:text-white hover:bg-rose-600 p-1 rounded-full cursor-pointer z-30 transition-all shadow-2xs border border-transparent hover:border-rose-700"
                               title="Xóa học sinh khỏi máy"
                             >
-                              <X className="w-3.5 h-3.5" />
+                              <X className="w-3.5 h-3.5 stroke-[2.5]" />
                             </button>
                           </div>
                         );
