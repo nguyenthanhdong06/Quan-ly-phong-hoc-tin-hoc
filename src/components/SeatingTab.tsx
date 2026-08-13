@@ -250,7 +250,7 @@ export default function SeatingTab({
     }
   });
 
-  // --- 🌟 CLASS MONITOR / CADRE ROLE STATE (LỚP TRƯỞNG / LỚP PHÓ / TỔ TRƯỞNG) ---
+  // --- 🌟 CLASS MONITOR / CADRE ROLE STATE (L. TRƯỞNG / LỚP PHÓ / TỔ TRƯỞNG) ---
   const [studentDuties, setStudentDuties] = useState<{ [studentId: string]: string }>(() => {
     try {
       const saved = localStorage.getItem('school_student_duties_v1');
@@ -274,20 +274,27 @@ export default function SeatingTab({
     } catch (e) {}
   }, [studentDuties]);
 
-  // Helper to get Monitor Duty Role of a Student
-  const getStudentMonitorRole = useCallback((st: Student): 'Lớp trưởng' | 'Lớp phó' | 'Tổ trưởng' | null => {
+  // Helper to get Monitor Duty Role of a Student (RENAMED Lớp trưởng -> L. Trưởng)
+  const getStudentMonitorRole = useCallback((st: Student): 'L. Trưởng' | 'Lớp phó' | 'Tổ trưởng' | null => {
     if (!st) return null;
-    if (studentDuties[st.id]) return studentDuties[st.id] as any;
-    if (st.duty) return st.duty as any;
+    if (studentDuties[st.id]) {
+      const role = studentDuties[st.id];
+      if (role === 'Lớp trưởng' || role === 'L. Trưởng') return 'L. Trưởng';
+      return role as any;
+    }
+    if (st.duty) {
+      if (st.duty === 'Lớp trưởng' || st.duty === 'L. Trưởng') return 'L. Trưởng';
+      return st.duty as any;
+    }
 
     const str = `${st.notes || ''} ${st.name}`.toLowerCase();
-    if (str.includes('lớp trưởng') || str.includes('(lt)')) return 'Lớp trưởng';
+    if (str.includes('l. trưởng') || str.includes('lớp trưởng') || str.includes('(lt)')) return 'L. Trưởng';
     if (str.includes('lớp phó') || str.includes('(lp)')) return 'Lớp phó';
     if (str.includes('tổ trưởng') || str.includes('(tt)')) return 'Tổ trưởng';
     return null;
   }, [studentDuties]);
 
-  // --- 🎨 GENDER COLOR CUSTOMIZATION STATE (NAM/NỮ COLORED PILLS TOGGLE) ---
+  // --- 🎨 GENDER COLOR CUSTOMIZATION STATE (NAM XANH / NỮ HỒNG TOGGLE) ---
   const [showGenderColors, setShowGenderColors] = useState<boolean>(() => {
     try {
       const saved = localStorage.getItem('school_show_gender_colors_v1');
@@ -315,7 +322,7 @@ export default function SeatingTab({
     return map;
   }, [students]);
 
-  // Compute exact layout matrix synchronized 100% with the selected Lab from LabBookingTab!
+  // --- ⚡ PURE NEW COMPUTER ROOM ALGORITHM (ISOLATED LAB GRID + SEATING CHART DICTIONARY) ---
   const activeLabGrid = useMemo(() => {
     const rows = activeLab?.gridRows || 5;
     const cols = activeLab?.gridCols || 8;
@@ -384,7 +391,7 @@ export default function SeatingTab({
     const map: Record<string, {
       assignedStudents: Student[];
       hasAbsentStudent: boolean;
-      monitorRole: 'Lớp trưởng' | 'Lớp phó' | 'Tổ trưởng' | null;
+      monitorRole: 'L. Trưởng' | 'Lớp phó' | 'Tổ trưởng' | null;
       targetIncident: LabIncident | null;
       isFull: boolean;
       hasOne: boolean;
@@ -397,7 +404,7 @@ export default function SeatingTab({
       const assignedSts = assignedIds.map(id => studentsByIdMap.get(id)).filter(Boolean) as Student[];
 
       let hasAbsent = false;
-      let monitorRole: 'Lớp trưởng' | 'Lớp phó' | 'Tổ trưởng' | null = null;
+      let monitorRole: 'L. Trưởng' | 'Lớp phó' | 'Tổ trưởng' | null = null;
 
       assignedSts.forEach(s => {
         const att = getStudentAttendance(s.id);
@@ -541,7 +548,7 @@ export default function SeatingTab({
     xl: 'p-4.5 min-h-[150px]'
   };
 
-  // --- SEATING ASSIGNMENT MUTATION HANDLERS (OPTIMIZED 0MS INSTANT LATENCY) ---
+  // --- ⚡ SEATING ASSIGNMENT MUTATION HANDLERS (PURE DICTIONARY UPDATE, ZERO LEGACY INTERFERENCE) ---
   const saveSeatingState = useCallback((newClassSeating: { [pcId: string]: string }) => {
     const updatedChart: SeatingChart = {
       ...seatingChart,
@@ -622,7 +629,7 @@ export default function SeatingTab({
     showToast(`Đã xóa toàn bộ chỗ ngồi của lớp ${selectedClass}!`, 'info');
   };
 
-  // 🌟 QUICK HEAD-OF-ROW SEATING FOR CLASS MONITORS (LỚP TRƯỜNG & LỚP PHÓ NGỒI ĐẦU BÀN M.01, M.02...)
+  // 🌟 QUICK HEAD-OF-ROW SEATING FOR CLASS MONITORS (L. TRƯỞNG & LỚP PHÓ NGỒI ĐẦU BÀN M.01, M.02...)
   const handleSeatClassMonitorsHead = () => {
     if (classStudents.length === 0) {
       showToast('Lớp học chưa có học sinh nào!', 'warning');
@@ -630,13 +637,13 @@ export default function SeatingTab({
     }
 
     // Find or Auto-designate Class Monitors
-    let lopTruong = classStudents.find(s => getStudentMonitorRole(s) === 'Lớp trưởng');
+    let lopTruong = classStudents.find(s => getStudentMonitorRole(s) === 'L. Trưởng');
     let lopPho = classStudents.find(s => getStudentMonitorRole(s) === 'Lớp phó');
 
     // Auto fallback if no student has monitor role set yet
     if (!lopTruong && classStudents[0]) {
       lopTruong = classStudents[0];
-      saveStudentDuty(lopTruong.id, 'Lớp trưởng');
+      saveStudentDuty(lopTruong.id, 'L. Trưởng');
     }
     if (!lopPho && classStudents[1]) {
       lopPho = classStudents[1];
@@ -655,7 +662,7 @@ export default function SeatingTab({
     const pcHead1 = availablePcs[0]?.id || 'M.01';
     const pcHead2 = availablePcs[1]?.id || 'M.02';
 
-    // Assign Lớp trưởng to M.01
+    // Assign L. Trưởng to M.01
     if (lopTruong) {
       // Remove from old seat
       Object.keys(currentSeating).forEach(k => {
@@ -679,7 +686,7 @@ export default function SeatingTab({
 
     saveSeatingState(currentSeating);
     playVictoryFanfareSound();
-    showToast(`🌟 Đã tự động xếp Lớp trưởng (${lopTruong ? formatStudentNameFirstAndMiddle(lopTruong.name) : ''}) vào máy ${pcHead1} và Lớp phó (${lopPho ? formatStudentNameFirstAndMiddle(lopPho.name) : ''}) vào máy ${pcHead2} đầu bàn!`, 'success');
+    showToast(`🌟 Đã tự động xếp L. Trưởng (${lopTruong ? formatStudentNameFirstAndMiddle(lopTruong.name) : ''}) vào máy ${pcHead1} và Lớp phó (${lopPho ? formatStudentNameFirstAndMiddle(lopPho.name) : ''}) vào máy ${pcHead2} đầu bàn!`, 'success');
   };
 
   // Auto seating algorithm (🪄 Xếp Tự Động - Ưu tiên học sinh CÓ MẶT)
@@ -938,7 +945,7 @@ export default function SeatingTab({
                           <div key={`print_st_${st.id}`} className={`font-black text-[10px] text-center rounded px-1 py-0.5 border flex items-center justify-center gap-1 ${
                             isAbsent ? 'bg-rose-100 border-rose-400 text-rose-900 line-through' : 'bg-emerald-100 border-emerald-400 text-emerald-950'
                           }`}>
-                            {monitorRole === 'Lớp trưởng' && <span className="text-[9px]" title="Lớp trưởng">🌟</span>}
+                            {monitorRole === 'L. Trưởng' && <span className="text-[9px]" title="L. Trưởng">🌟</span>}
                             {monitorRole === 'Lớp phó' && <span className="text-[9px]" title="Lớp phó">⭐</span>}
                             {monitorRole === 'Tổ trưởng' && <span className="text-[9px]" title="Tổ trưởng">🎖️</span>}
                             <span>{isAbsent ? `[VẮNG] ` : ''}{formatStudentNameFirstAndMiddle(st.name)}</span>
@@ -1235,7 +1242,7 @@ export default function SeatingTab({
             <button
               onClick={handleSeatClassMonitorsHead}
               className="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer border border-amber-700"
-              title="Ưu tiên xếp Lớp trưởng và Lớp phó vào các vị trí máy đầu bàn (M.01, M.02) để Giáo viên dễ quản lý"
+              title="Ưu tiên xếp L. Trưởng và Lớp phó vào các vị trí máy đầu bàn (M.01, M.02) để Giáo viên dễ quản lý"
             >
               <span>🌟</span> Xếp Cán Bộ Lớp
             </button>
@@ -1470,20 +1477,20 @@ export default function SeatingTab({
                           <div className="font-black text-xs text-slate-900 group-hover:text-emerald-950 flex flex-wrap items-center gap-1.5">
                             <span>{st.name}</span>
                             
-                            {/* 🌟 CLASS MONITOR ROLE BADGES */}
-                            {monitorRole === 'Lớp trưởng' && (
-                              <span className="text-[9px] font-black bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded border border-amber-500 flex items-center gap-0.5 shadow-2xs" title="Lớp trưởng">
-                                🌟 LT
+                            {/* 🌟 CLASS MONITOR ROLE BADGES (RENAMED L. TRƯỞNG) */}
+                            {monitorRole === 'L. Trưởng' && (
+                              <span className="text-[9px] font-black bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded border border-amber-500 flex items-center gap-0.5 shadow-2xs" title="L. Trưởng">
+                                🌟 L. TRƯỞNG
                               </span>
                             )}
                             {monitorRole === 'Lớp phó' && (
                               <span className="text-[9px] font-black bg-sky-400 text-slate-950 px-1.5 py-0.5 rounded border border-sky-500 flex items-center gap-0.5 shadow-2xs" title="Lớp phó">
-                                ⭐ LP
+                                ⭐ LỚP PHÓ
                               </span>
                             )}
                             {monitorRole === 'Tổ trưởng' && (
                               <span className="text-[9px] font-black bg-purple-400 text-slate-950 px-1.5 py-0.5 rounded border border-purple-500 flex items-center gap-0.5 shadow-2xs" title="Tổ trưởng">
-                                🎖️ TT
+                                🎖️ TỔ TRƯỞNG
                               </span>
                             )}
 
@@ -1505,13 +1512,13 @@ export default function SeatingTab({
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  saveStudentDuty(st.id, monitorRole === 'Lớp trưởng' ? null : 'Lớp trưởng');
-                                  showToast(`Đã ${monitorRole === 'Lớp trưởng' ? 'gỡ' : 'đặt'} ${formatStudentNameFirstAndMiddle(st.name)} làm Lớp Trưởng!`, 'info');
+                                  saveStudentDuty(st.id, monitorRole === 'L. Trưởng' ? null : 'L. Trưởng');
+                                  showToast(`Đã ${monitorRole === 'L. Trưởng' ? 'gỡ' : 'đặt'} ${formatStudentNameFirstAndMiddle(st.name)} làm L. Trưởng!`, 'info');
                                 }}
-                                className={`px-1 rounded border cursor-pointer font-black ${monitorRole === 'Lớp trưởng' ? 'bg-amber-500 text-white border-amber-600' : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-amber-100'}`}
-                                title="Gán/Hủy Lớp trưởng"
+                                className={`px-1 rounded border cursor-pointer font-black ${monitorRole === 'L. Trưởng' ? 'bg-amber-500 text-white border-amber-600' : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-amber-100'}`}
+                                title="Gán/Hủy L. Trưởng"
                               >
-                                🌟 LT
+                                🌟 L.Trưởng
                               </button>
                               <button
                                 onClick={(e) => {
@@ -1522,7 +1529,7 @@ export default function SeatingTab({
                                 className={`px-1 rounded border cursor-pointer font-black ${monitorRole === 'Lớp phó' ? 'bg-sky-500 text-white border-sky-600' : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-sky-100'}`}
                                 title="Gán/Hủy Lớp phó"
                               >
-                                ⭐ LP
+                                ⭐ L.Phó
                               </button>
                             </div>
                           </div>
@@ -1670,7 +1677,7 @@ export default function SeatingTab({
                 const monitorRole = cellData.monitorRole;
                 const targetIncident = cellData.targetIncident;
 
-                // 🌟 DYNAMIC BORDER STYLE: GOLD FOR LỚP TRƯỞNG, SKY FOR LỚP PHÓ, PURPLE FOR TỔ TRƯỞNG
+                // 🌟 DYNAMIC BORDER STYLE: GOLD FOR L. TRƯỞNG, SKY FOR LỚP PHÓ, PURPLE FOR TỔ TRƯỞNG
                 let borderStyleClass = 'border-[#cbb89d] bg-[#fffbf0]';
                 if (targetIncident) {
                   borderStyleClass = 'border-rose-500 bg-rose-100/90 ring-4 ring-rose-400 animate-pulse text-rose-950 z-20';
@@ -1678,7 +1685,7 @@ export default function SeatingTab({
                   borderStyleClass = 'border-rose-500 bg-rose-50 ring-4 ring-rose-500 animate-bounce text-rose-950 z-30 shadow-[0_0_25px_rgba(244,63,94,0.8)]';
                 } else if (isSearchMatch) {
                   borderStyleClass = 'border-amber-400 bg-amber-100/90 ring-4 ring-amber-400 animate-pulse scale-105 shadow-[0_0_25px_rgba(245,158,11,0.8)] z-30';
-                } else if (monitorRole === 'Lớp trưởng') {
+                } else if (monitorRole === 'L. Trưởng') {
                   borderStyleClass = 'border-amber-400 bg-amber-50/80 ring-4 ring-amber-400/80 shadow-[0_0_20px_rgba(245,158,11,0.6)] z-10';
                 } else if (monitorRole === 'Lớp phó') {
                   borderStyleClass = 'border-sky-400 bg-sky-50/80 ring-4 ring-sky-400/80 shadow-[0_0_20px_rgba(56,189,248,0.6)] z-10';
@@ -1727,9 +1734,9 @@ export default function SeatingTab({
                         <span className="text-[9px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded-full border border-rose-400 animate-bounce" title={targetIncident.issue}>
                           ⚠️ HỎNG
                         </span>
-                      ) : monitorRole === 'Lớp trưởng' ? (
+                      ) : monitorRole === 'L. Trưởng' ? (
                         <span className="text-[9px] font-black bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full border border-amber-500 shadow-2xs animate-pulse">
-                          🌟 LỚP TRƯỞNG
+                          🌟 L. TRƯỞNG
                         </span>
                       ) : monitorRole === 'Lớp phó' ? (
                         <span className="text-[9px] font-black bg-sky-400 text-slate-950 px-2 py-0.5 rounded-full border border-sky-500 shadow-2xs">
@@ -1791,7 +1798,7 @@ export default function SeatingTab({
                               className={`rounded-lg px-2.5 py-1 flex items-center justify-between relative transition-all cursor-grab active:cursor-grabbing group text-center shadow-2xs border ${pillBgStyle}`}
                             >
                               <span className="font-black text-xs text-center truncate mx-auto flex items-center justify-center gap-1" title={st.name}>
-                                {role === 'Lớp trưởng' && <span className="text-[10px]" title="Lớp trưởng">🌟</span>}
+                                {role === 'L. Trưởng' && <span className="text-[10px]" title="L. Trưởng">🌟</span>}
                                 {role === 'Lớp phó' && <span className="text-[10px]" title="Lớp phó">⭐</span>}
                                 {role === 'Tổ trưởng' && <span className="text-[10px]" title="Tổ trưởng">🎖️</span>}
                                 {isUnexcused && <span className="text-[9px] font-black bg-slate-950/70 px-1 rounded text-rose-200">🚫 K</span>}
