@@ -18,6 +18,7 @@ export interface Student {
   classId: string;
   notes?: string;
   avatarUrl?: string;
+  duty?: string; // 'Lớp trưởng' | 'Lớp phó' | 'Tổ trưởng'
 }
 
 export interface Computer {
