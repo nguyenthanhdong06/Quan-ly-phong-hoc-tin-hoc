@@ -6,7 +6,7 @@ import {
   RotateCcw, Users, Plus, LayoutGrid, CheckCircle2, UserCheck, ShieldCheck, Image as ImageIcon,
   Sliders, Move, ArrowRightLeft, Upload, Link, CheckCheck, RefreshCw, Zap, Eye, EyeOff, 
   PanelLeftClose, PanelLeftOpen, Printer, UserX, AlertCircle, MousePointerClick, Star, Award, Crown,
-  ListFilter, UserPlus, Layers, Settings, FileSpreadsheet
+  ListFilter, UserPlus, Layers, Settings, FileSpreadsheet, Armchair
 } from 'lucide-react';
 import { StudentAvatar3D, formatStudentNameFirstAndMiddle } from './StudentAvatar3D';
 import { extractGoogleDriveFileId, convertGoogleDriveUrl, compressImageFile } from './KnowledgeGardenTab';
@@ -249,7 +249,7 @@ export default function LabRoomTab({
     return map;
   }, [students]);
 
-  // --- ⚡ LAB ROOM MATRIX GENERATION (GRID ROWS x COLS SYNCED WITH LAB LAYOUT) ---
+  // --- ⚡ LAB ROOM MATRIX GENERATION ---
   const activeLabGrid = useMemo(() => {
     const rows = activeLab?.gridRows || 5;
     const cols = activeLab?.gridCols || 8;
@@ -369,7 +369,7 @@ export default function LabRoomTab({
     return classStudents.filter(s => !assignedStudentIdsList.includes(s.id));
   }, [classStudents, assignedStudentIdsList]);
 
-  // Toggle Left Unassigned Panel
+  // Toggle Left Unassigned Panel (Inside Seating Sub-View)
   const [isUnassignedPanelVisible, setIsUnassignedPanelVisible] = useState<boolean>(true);
 
   // 1-Click Quick Assign Selection
@@ -450,8 +450,8 @@ export default function LabRoomTab({
     } catch (e) {}
   }, [frameConfig]);
 
-  // --- INLINE SUB-VIEW STATES (100% FULL WINDOW TAKEOVER) ---
-  const [isListModalOpen, setIsListModalOpen] = useState(false);
+  // --- 🚀 INLINE SUB-VIEW STATES (100% FULL WINDOW TAKEOVER WITH RETURN BUTTONS) ---
+  const [isSeatingViewOpen, setIsSeatingViewOpen] = useState(false); // 🪑 XẾP CHỖ NGỒI SUB-VIEW (Screenshot 2026-08-13 160505.png)
   const [isFrameConfigSubViewOpen, setIsFrameConfigSubViewOpen] = useState(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
@@ -467,15 +467,17 @@ export default function LabRoomTab({
     xl: 'p-4.5 min-h-[150px]'
   };
 
-  // --- SEATING MUTATION SAVE HANDLER ---
+  // --- ⚡ INSTANT SEATING MUTATION SAVE HANDLER (0ms UI RESPONSE + ASYNC DB SAVE) ---
   const saveSeatingState = useCallback((newClassSeating: { [pcId: string]: string }) => {
     const updatedChart: SeatingChart = {
       ...seatingChart,
       [selectedClass]: newClassSeating
     };
 
+    // 1. Instant React UI update with 0ms delay!
     setSeatingChart(updatedChart);
 
+    // 2. Non-blocking Async persistence in background
     setTimeout(() => {
       try {
         localStorage.setItem('school_seating_chart', JSON.stringify(updatedChart));
@@ -519,7 +521,7 @@ export default function LabRoomTab({
     showToast(`Đã xếp ${st ? formatStudentNameFirstAndMiddle(st.name) : 'học sinh'} vào ${pcId}!`, 'success');
   }, [currentClassSeating, getAssignedStudentIds, saveSeatingState, studentsByIdMap, showToast, getStudentAttendance]);
 
-  // 🔄 SWAP MACHINE SEATING OR MOVE STUDENTS BETWEEN MACHINES
+  // 🔄 INSTANT SWAP MACHINE SEATING OR MOVE STUDENTS BETWEEN MACHINES
   const swapOrMoveStudentsBetweenPCs = useCallback((sourcePcId: string, targetPcId: string, draggedStId: string) => {
     const currentSeating = { ...currentClassSeating };
     const sourceIds = getAssignedStudentIds(currentSeating[sourcePcId]);
@@ -763,143 +765,318 @@ export default function LabRoomTab({
   };
 
   // =========================================================================
-  // 📋 1. INLINE SUB-VIEW: DANH SÁCH XẾP MÁY HỌC SINH (100% FULL WINDOW TAKEOVER)
+  // 🪑 1. INLINE SUB-VIEW: XẾP CHỖ NGỒI (FULL WINDOW INTERACTIVE CANVAS MATCHING Screenshot 2026-08-13 160505.png)
   // =========================================================================
-  if (isListModalOpen) {
+  if (isSeatingViewOpen) {
     return (
-      <div className="space-y-6 text-slate-800 pb-10">
-        {/* Header Bar */}
+      <div className="space-y-5 text-slate-800 pb-12">
+        {/* Top Control Bar for Seating View */}
         <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs">
           <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex items-center gap-3">
               <button
-                onClick={() => setIsListModalOpen(false)}
+                onClick={() => setIsSeatingViewOpen(false)}
                 className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-[#cbb89d] font-black text-xs transition-all flex items-center gap-1.5 shadow-2xs active:scale-95 cursor-pointer"
               >
-                <ArrowLeft className="w-4 h-4 text-slate-700" /> Quay Về Sơ Đồ Phòng Lab
+                <ArrowLeft className="w-4 h-4 text-slate-700" /> Quay Về Sơ Đồ Chính
               </button>
               <div>
                 <h3 className="font-black text-sm text-slate-900 flex items-center gap-2">
-                  <span>📋</span> DANH SÁCH HỌC SINH & VỊ TRÍ XẾP MÁY TÍNH (LỚP {selectedClass.toUpperCase()})
+                  <span>🪑</span> CHỨC NĂNG KÉO THẢ XẾP CHỖ NGỒI HỌC SINH (LỚP {selectedClass.toUpperCase()})
                 </h3>
-                <p className="text-[11px] font-bold text-slate-600">Chọn vị trí máy cho học sinh trực tiếp từ bảng danh sách sĩ số lớp</p>
+                <p className="text-[11px] font-bold text-slate-600">Kéo thả học sinh từ bảng danh sách chờ hoặc tráo đổi ghế giữa các máy tính</p>
               </div>
             </div>
 
-            <button
-              onClick={() => setIsListModalOpen(false)}
-              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-2xs transition-all active:scale-95 cursor-pointer"
+            {/* Quick Actions in Header */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleSeatClassMonitorsHead}
+                className="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer border border-amber-700"
+              >
+                <span>🌟</span> Xếp Cán Bộ Lớp
+              </button>
+
+              <button
+                onClick={handleAutoSeatClass}
+                className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+              >
+                <span>🪄</span> Xếp Tự Động
+              </button>
+
+              <button
+                onClick={handleClearAllClassSeating}
+                className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-black text-xs transition-all active:scale-95 flex items-center gap-1 cursor-pointer"
+              >
+                <span>↺</span> Xóa Chỗ Ngồi
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Dual Panel Layout matching Screenshot 2026-08-13 160505.png */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+          
+          {/* LEFT PANEL: HỌC SINH CHỜ NGỒI (CONTAINING THE TOGGLE BUTTON INSIDE AS REQUESTED) */}
+          {isUnassignedPanelVisible && (
+            <div className="lg:col-span-4 bg-[#fffbf0] rounded-2xl p-4 border border-[#cbb89d] shadow-xs space-y-3 flex flex-col max-h-[720px] overflow-hidden">
+              
+              <div className="space-y-0.5 border-b border-[#cbb89d] pb-2.5">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-black text-xs text-[#3d2b17] flex items-center gap-1.5">
+                    <span>👦</span> HỌC SINH CHỜ NGỒI ({unassignedStudents.length})
+                  </h3>
+                  {/* ◀ Ẩn BUTTON INSIDE UNASSIGNED PANEL AS REQUESTED */}
+                  <button
+                    onClick={() => setIsUnassignedPanelVisible(false)}
+                    className="px-2 py-0.5 rounded-md bg-amber-100 hover:bg-amber-200 text-[#3d2b17] border border-amber-300 font-black text-[10px] cursor-pointer shadow-2xs flex items-center gap-1"
+                    title="Ẩn bảng chờ để mở rộng sơ đồ máy"
+                  >
+                    <span>◀ Ẩn</span>
+                  </button>
+                </div>
+                <p className="text-[10px] font-bold text-slate-500 leading-snug">
+                  Kéo HOẶC nhấp chọn học sinh để xếp vào ô máy tính.
+                </p>
+              </div>
+
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
+                <input
+                  type="text"
+                  value={unassignedSearch}
+                  onChange={(e) => setUnassignedSearch(e.target.value)}
+                  placeholder="Tìm kiếm học sinh..."
+                  className="w-full pl-9 pr-3 py-1.5 text-xs font-bold rounded-xl border border-[#cbb89d] bg-white focus:outline-none focus:border-emerald-600"
+                />
+              </div>
+
+              <div className="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[540px]">
+                {filteredUnassignedStudents.length > 0 ? (
+                  filteredUnassignedStudents.map(st => {
+                    const att = getStudentAttendance(st.id);
+                    const isAbsent = att === 'excused' || att === 'unexcused';
+                    const isSelectedForAssign = selectedStudentForAssign === st.id;
+                    const monitorRole = getStudentMonitorRole(st);
+
+                    return (
+                      <div
+                        key={st.id}
+                        draggable={true}
+                        onDragStart={(e) => handleStudentDragStart(e, st.id)}
+                        onClick={() => {
+                          if (isSelectedForAssign) {
+                            setSelectedStudentForAssign(null);
+                          } else {
+                            setSelectedStudentForAssign(st.id);
+                            showToast(`👉 Đang chọn ${formatStudentNameFirstAndMiddle(st.name)}! Nhấp vào bất kỳ ô máy tính nào bên phải để xếp.`, 'info');
+                          }
+                        }}
+                        className={`p-2.5 rounded-xl border transition-all flex items-center justify-between cursor-pointer group shadow-2xs ${
+                          isSelectedForAssign 
+                            ? 'bg-emerald-100 border-2 border-emerald-600 ring-2 ring-emerald-400/50 scale-[1.02] z-10' 
+                            : isAbsent 
+                              ? 'bg-rose-50 border-rose-300 hover:bg-rose-100/80' 
+                              : 'bg-white hover:bg-emerald-50 border-[#cbb89d] hover:border-emerald-500'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-lg select-none">
+                            {st.gender === 'Nữ' ? '👧' : '👦'}
+                          </span>
+                          <div>
+                            <div className="font-black text-xs text-slate-900 group-hover:text-emerald-950 flex flex-wrap items-center gap-1.5">
+                              <span>{st.name}</span>
+                              
+                              {monitorRole === 'L. Trưởng' && (
+                                <span className="text-[9px] font-black bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded border border-amber-500 flex items-center gap-0.5 shadow-2xs">
+                                  🌟 L. TRƯỜNG
+                                </span>
+                              )}
+                              {monitorRole === 'Lớp phó' && (
+                                <span className="text-[9px] font-black bg-sky-400 text-slate-950 px-1.5 py-0.5 rounded border border-sky-500 flex items-center gap-0.5 shadow-2xs">
+                                  ⭐ LỚP PHÓ
+                                </span>
+                              )}
+                              {monitorRole === 'Tổ trưởng' && (
+                                <span className="text-[9px] font-black bg-purple-400 text-slate-950 px-1.5 py-0.5 rounded border border-purple-500 flex items-center gap-0.5 shadow-2xs">
+                                  🎖️ TỔ TRƯỞNG
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[10px] font-bold text-slate-400 flex items-center gap-2 mt-0.5">
+                              <span>MSHS: {st.code}</span>
+                              <div className="flex items-center gap-1 text-[9px]">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    saveStudentDuty(st.id, monitorRole === 'L. Trưởng' ? null : 'L. Trưởng');
+                                  }}
+                                  className={`px-1 rounded border cursor-pointer font-black ${monitorRole === 'L. Trưởng' ? 'bg-amber-500 text-white border-amber-600' : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-amber-100'}`}
+                                >
+                                  🌟 L.Trưởng
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    saveStudentDuty(st.id, monitorRole === 'Lớp phó' ? null : 'Lớp phó');
+                                  }}
+                                  className={`px-1 rounded border cursor-pointer font-black ${monitorRole === 'Lớp phó' ? 'bg-sky-500 text-white border-sky-600' : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-sky-100'}`}
+                                >
+                                  ⭐ L.Phó
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <span className={`text-[9px] font-black px-2 py-1 rounded-md border flex items-center gap-1 ${
+                          isSelectedForAssign 
+                            ? 'bg-emerald-600 text-white border-emerald-700 animate-pulse'
+                            : isAbsent 
+                              ? 'bg-rose-200 text-rose-900 border-rose-300' 
+                              : 'bg-amber-100 text-amber-900 border-amber-200 group-hover:bg-emerald-200 group-hover:text-emerald-900'
+                        }`}>
+                          {isSelectedForAssign ? '✓ Đang chọn' : 'Xếp máy 👆'}
+                        </span>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="text-center py-10 font-bold text-xs text-emerald-800">
+                    ✓ Tất cả học sinh đã có máy!
+                  </div>
+                )}
+              </div>
+
+            </div>
+          )}
+
+          {/* RIGHT PANEL: INTERACTIVE ROOM SEATING MAP */}
+          <div className={`${isUnassignedPanelVisible ? 'lg:col-span-8' : 'lg:col-span-12'} bg-[#fbf7ee] rounded-2xl p-4 sm:p-5 border border-[#cbb89d] shadow-xs space-y-4`}>
+            
+            {/* Header Màn chiếu bảng giáo viên */}
+            <div className="flex justify-between items-center bg-[#dfccb0] p-2.5 rounded-xl border border-[#cbb89d]">
+              <span className="text-xs font-black text-[#3d2b17] uppercase tracking-widest flex items-center gap-2">
+                👨‍🏫 MÀN CHIẾU & BẢNG GIÁO VIÊN ({activeLab.name} - {activeLab.code})
+              </span>
+
+              {!isUnassignedPanelVisible && (
+                <button
+                  onClick={() => setIsUnassignedPanelVisible(true)}
+                  className="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-2xs transition-all cursor-pointer flex items-center gap-1"
+                >
+                  ▶ Hiện Bảng CHỜ ({unassignedStudents.length} HS)
+                </button>
+              )}
+            </div>
+
+            {/* Room Matrix Grid */}
+            <div 
+              className="grid gap-3"
+              style={{
+                gridTemplateColumns: `repeat(${activeLabGrid.cols}, minmax(0, 1fr))`
+              }}
             >
-              ✓ Hoàn Tất & Quay Về Sơ Đồ
-            </button>
-          </div>
-        </div>
-
-        {/* Student Roster Table View */}
-        <div className="bg-[#fffbf0] rounded-3xl p-6 border border-[#cbb89d] shadow-xs space-y-4">
-          <div className="flex justify-between items-center pb-3 border-b border-[#cbb89d]">
-            <div className="font-black text-sm text-[#3d2b17] flex items-center gap-2">
-              <span>👥</span> SĨ SỐ {classStudents.length} HỌC SINH — LỚP {selectedClass}
-            </div>
-            <div className="text-xs font-bold text-slate-500">
-              Đã có máy: <span className="text-emerald-700 font-black">{assignedStudentIdsList.length}</span> | Chưa xếp: <span className="text-amber-700 font-black">{unassignedStudents.length}</span>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="bg-[#dfccb0] text-[#3d2b17] font-black uppercase text-[10px] tracking-wider border-b border-[#cbb89d]">
-                  <th className="p-3 rounded-tl-xl">STT</th>
-                  <th className="p-3">MSHS</th>
-                  <th className="p-3">Họ và Tên</th>
-                  <th className="p-3 text-center">Giới tính</th>
-                  <th className="p-3 text-center">Chức vụ</th>
-                  <th className="p-3 text-center">Điểm danh</th>
-                  <th className="p-3 text-center">Máy Tính Đã Xếp</th>
-                  <th className="p-3 text-right rounded-tr-xl">Thao tác Xếp Máy</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#cbb89d]/40 font-bold text-slate-800">
-                {classStudents.map((st, idx) => {
-                  const att = getStudentAttendance(st.id);
-                  const monitorRole = getStudentMonitorRole(st);
-
-                  // Find which PC this student is assigned to
-                  let assignedPcId = '';
-                  Object.entries(currentClassSeating).forEach(([pcId, valStr]) => {
-                    if (getAssignedStudentIds(String(valStr || '')).includes(st.id)) {
-                      assignedPcId = pcId;
-                    }
-                  });
-
+              {activeLabGrid.cells.map(tile => {
+                if (tile.type === 'aisle') {
                   return (
-                    <tr key={st.id} className="hover:bg-amber-50/70 transition-colors">
-                      <td className="p-3 font-mono text-slate-500">{idx + 1}</td>
-                      <td className="p-3 font-mono text-slate-600">{st.code}</td>
-                      <td className="p-3 font-black text-slate-900 flex items-center gap-2">
-                        <span>{st.gender === 'Nữ' ? '👧' : '👦'}</span>
-                        <span>{st.name}</span>
-                        <span className="text-[10px] text-slate-400 font-normal">({formatStudentNameFirstAndMiddle(st.name)})</span>
-                      </td>
-                      <td className="p-3 text-center">{st.gender}</td>
-                      <td className="p-3 text-center">
-                        {monitorRole === 'L. Trưởng' && <span className="bg-amber-400 text-slate-950 px-2 py-0.5 rounded text-[10px] font-black">🌟 L. TRƯỞNG</span>}
-                        {monitorRole === 'Lớp phó' && <span className="bg-sky-400 text-slate-950 px-2 py-0.5 rounded text-[10px] font-black">⭐ LỚP PHÓ</span>}
-                        {monitorRole === 'Tổ trưởng' && <span className="bg-purple-400 text-slate-950 px-2 py-0.5 rounded text-[10px] font-black">🎖️ TỔ TRƯỞNG</span>}
-                        {!monitorRole && <span className="text-slate-400 font-normal">-</span>}
-                      </td>
-                      <td className="p-3 text-center">
-                        {att === 'present' && <span className="text-emerald-700 font-black">🟢 Có mặt</span>}
-                        {att === 'excused' && <span className="text-amber-700 font-black">📝 Vắng (P)</span>}
-                        {att === 'unexcused' && <span className="text-rose-700 font-black">🚫 Vắng (K)</span>}
-                      </td>
-                      <td className="p-3 text-center">
-                        {assignedPcId ? (
-                          <span className="bg-emerald-600 text-white font-mono font-black px-2.5 py-1 rounded-lg text-xs shadow-2xs">
-                            🖥️ {assignedPcId}
-                          </span>
-                        ) : (
-                          <span className="text-amber-800 bg-amber-100 px-2 py-0.5 rounded text-[11px] font-black border border-amber-300">
-                            Chưa xếp
-                          </span>
-                        )}
-                      </td>
-                      <td className="p-3 text-right">
-                        <select
-                          value={assignedPcId}
-                          onChange={(e) => {
-                            const newPcId = e.target.value;
-                            if (newPcId) {
-                              assignStudentToComputer(newPcId, st.id);
-                            } else if (assignedPcId) {
-                              unassignStudentFromComputer(assignedPcId, st.id);
-                            }
-                          }}
-                          className="px-2.5 py-1.5 text-xs font-black rounded-xl border border-[#cbb89d] bg-white text-slate-900 focus:outline-none cursor-pointer"
-                        >
-                          <option value="">-- Chọn ô máy --</option>
-                          {activeLabGrid.pcList.map(pc => {
-                            const cellData = computedCellDataMap[pc.id] || { assignedStudents: [] };
-                            const count = cellData.assignedStudents.length;
-                            const isCurrent = assignedPcId === pc.id;
-                            const isFull = count >= 2 && !isCurrent;
-                            return (
-                              <option key={pc.id} value={pc.id} disabled={isFull}>
-                                {pc.id} ({count}/2 HS) {isFull ? '- ĐỦ' : ''}
-                              </option>
-                            );
-                          })}
-                        </select>
-                      </td>
-                    </tr>
+                    <div key={`aisle_${tile.row}_${tile.col}`} className="bg-amber-100/40 border border-amber-200/50 rounded-xl p-2 flex items-center justify-center min-h-[90px] select-none">
+                      <span className="text-[10px] font-black text-amber-800/40 uppercase tracking-wider">Lối đi</span>
+                    </div>
                   );
-                })}
-              </tbody>
-            </table>
+                }
+
+                const pcId = tile.label;
+                const cellData = computedCellDataMap[pcId] || { assignedStudents: [] };
+                const assignedStudents = cellData.assignedStudents;
+                const isFull = cellData.isFull;
+                const isDragOver = dragOverPcId === pcId;
+                const monitorRole = cellData.monitorRole;
+
+                let borderStyleClass = 'border-[#cbb89d] bg-[#fffbf0]';
+                if (monitorRole === 'L. Trưởng') {
+                  borderStyleClass = 'border-amber-400 bg-amber-50/80 ring-4 ring-amber-400/80 shadow-[0_0_20px_rgba(245,158,11,0.6)] z-10';
+                } else if (monitorRole === 'Lớp phó') {
+                  borderStyleClass = 'border-sky-400 bg-sky-50/80 ring-4 ring-sky-400/80 shadow-[0_0_20px_rgba(56,189,248,0.6)] z-10';
+                } else if (isFull) {
+                  borderStyleClass = 'border-emerald-500 ring-2 ring-emerald-400/40 bg-emerald-50/60';
+                }
+
+                return (
+                  <div
+                    key={`pc_${pcId}`}
+                    onClick={() => handlePcCardClick(pcId)}
+                    onDragOver={(e) => handlePcDragOver(e, pcId)}
+                    onDragLeave={() => setDragOverPcId(null)}
+                    onDrop={(e) => handlePcDrop(e, pcId)}
+                    className={`rounded-xl border-2 transition-all relative flex flex-col justify-between cursor-pointer ${cardSizeClasses[frameConfig.cardSize]} ${
+                      isDragOver ? 'border-amber-500 scale-105 bg-amber-100 ring-4 ring-amber-400/50 z-20' : borderStyleClass
+                    }`}
+                  >
+                    <div className="flex justify-between items-center mb-1.5">
+                      <span className={`font-mono font-black text-[11px] px-2 py-0.5 rounded-md border shadow-2xs ${
+                        assignedStudents.length > 0
+                          ? 'bg-emerald-600 text-white border-emerald-400'
+                          : 'bg-[#dfccb0] text-[#3d2b17] border-[#cbb89d]'
+                      }`}>
+                        🖥️ {pcId}
+                      </span>
+                      <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full border bg-slate-200 text-slate-600">
+                        {assignedStudents.length}/2 HS
+                      </span>
+                    </div>
+
+                    {assignedStudents.length > 0 ? (
+                      <div className="space-y-1.5 my-auto w-full text-center">
+                        {assignedStudents.map(st => {
+                          const role = getStudentMonitorRole(st);
+                          let pillBgStyle = 'bg-emerald-400 text-slate-950 border-emerald-300';
+                          if (showGenderColors) {
+                            if (st.gender === 'Nữ') pillBgStyle = 'bg-pink-300 text-slate-950 border-pink-200';
+                            else pillBgStyle = 'bg-sky-400 text-slate-950 border-sky-300';
+                          }
+
+                          return (
+                            <div
+                              key={st.id}
+                              draggable={true}
+                              onDragStart={(e) => handleStudentDragStart(e, st.id, pcId)}
+                              className={`rounded-lg px-2.5 py-1 flex items-center justify-between relative transition-all cursor-grab active:cursor-grabbing text-center shadow-2xs border ${pillBgStyle}`}
+                            >
+                              <span className="font-black text-xs text-center truncate mx-auto flex items-center justify-center gap-1">
+                                {role === 'L. Trưởng' && <span className="text-[10px]">🌟</span>}
+                                {role === 'Lớp phó' && <span className="text-[10px]">⭐</span>}
+                                <span>{formatStudentNameFirstAndMiddle(st.name)}</span>
+                              </span>
+                              <button
+                                onMouseDown={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  unassignStudentFromComputer(pcId, st.id);
+                                }}
+                                className="absolute right-1 text-slate-900/60 hover:text-rose-800 hover:bg-white/80 p-0.5 rounded-full cursor-pointer"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="my-auto py-1.5 text-center justify-center flex items-center text-[#5c4327]/60 font-bold text-[10px] border border-dashed border-[#cbb89d] rounded-lg bg-white/40">
+                        {selectedStudentForAssign ? '👆 Nhấp để xếp máy' : 'Kéo HOẶC nhấp xếp'}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
           </div>
 
         </div>
+
       </div>
     );
   }
@@ -946,7 +1123,6 @@ export default function LabRoomTab({
           }
         `}</style>
 
-        {/* Top Control Bar */}
         <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs no-print">
           <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex items-center gap-3">
@@ -975,7 +1151,6 @@ export default function LabRoomTab({
           </div>
         </div>
 
-        {/* Printable A4 Container */}
         <div className="max-w-[1050px] mx-auto bg-white p-6 border-2 border-slate-300 rounded-2xl shadow-xl text-slate-900 space-y-4 printable-paper-area">
           <div className="border-b-2 border-slate-900 pb-3 flex justify-between items-center text-slate-900">
             <div>
@@ -1277,7 +1452,7 @@ export default function LabRoomTab({
   }
 
   // =========================================================================
-  // 🖥️ MAIN VIEW: PHÒNG LAB & SƠ ĐỒ CHỖ NGỒI MÁY TÍNH
+  // 🖥️ MAIN VIEW: MAIN ROOM CANVAS GRID (100% FULL WIDTH - NO UNASSIGNED PANEL OUTSIDE)
   // =========================================================================
   return (
     <div className="space-y-5 pb-12 text-slate-800">
@@ -1287,31 +1462,23 @@ export default function LabRoomTab({
         <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           
           <div className="flex items-center gap-2.5">
-            <span className="text-xl select-none">🖥️</span>
+            <span className="text-xl select-none">🧪</span>
             <div>
               <p className="text-xs sm:text-sm font-black text-[#3d2b17]">
-                👉 Kéo thả tên học sinh HOẶC nhấp chọn tên học sinh rồi nhấp ô máy để xếp chỗ (ghép tối đa 2 HS/máy).
+                👉 Bấm nút <span className="text-amber-800 font-extrabold bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300">"🪑 Xếp Chỗ Ngồi"</span> hoặc các nút thao tác bên dưới để quản lý vị trí ngồi học sinh phòng máy.
               </p>
-              {selectedStudentForAssign && (
-                <div className="text-xs font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300 inline-flex items-center gap-1 mt-1 animate-pulse">
-                  <MousePointerClick className="w-3.5 h-3.5 text-emerald-700" />
-                  ĐANG CHỌN: {studentsByIdMap.get(selectedStudentForAssign)?.name} — Nhấp vào bất kỳ ô máy nào bên dưới để xếp!
-                  <button onClick={() => setSelectedStudentForAssign(null)} className="ml-2 text-rose-600 underline cursor-pointer">Hủy</button>
-                </div>
-              )}
             </div>
           </div>
 
           {/* Right Action Buttons */}
           <div className="flex flex-wrap items-center gap-2 shrink-0">
             
-            {/* 📋 Dedicated Student Roster List Modal Button */}
+            {/* Khung Card */}
             <button
-              onClick={() => setIsListModalOpen(true)}
-              className="px-3 py-1.5 rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer border border-indigo-800"
-              title="Xem bảng danh sách sĩ số lớp và xếp vị trí máy trực tiếp"
+              onClick={() => setIsFrameConfigSubViewOpen(true)}
+              className="px-3 py-1.5 rounded-xl bg-[#3d2b17] hover:bg-[#281c0f] text-amber-200 font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 border border-[#5c4327] cursor-pointer"
             >
-              <span>📋</span> Danh Sách Xếp Máy
+              <span>🎨</span> Khung Card
             </button>
 
             {/* 🌟 Xếp Cán Bộ Lớp */}
@@ -1321,14 +1488,6 @@ export default function LabRoomTab({
               title="Ưu tiên xếp L. Trưởng và Lớp phó vào các vị trí máy đầu bàn (M.01, M.02) để Giáo viên dễ quản lý"
             >
               <span>🌟</span> Xếp Cán Bộ Lớp
-            </button>
-
-            {/* Khung Card */}
-            <button
-              onClick={() => setIsFrameConfigSubViewOpen(true)}
-              className="px-3 py-1.5 rounded-xl bg-[#3d2b17] hover:bg-[#281c0f] text-amber-200 font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 border border-[#5c4327] cursor-pointer"
-            >
-              <span>🎨</span> Khung Card
             </button>
 
             {/* Xếp Tự Động */}
@@ -1344,7 +1503,7 @@ export default function LabRoomTab({
         </div>
       </div>
 
-      {/* 🎛️ 2. CONTROL FILTER BAR & ATTENDANCE SUMMARY & QUICK FINDER */}
+      {/* 🎛️ 2. CONTROL FILTER BAR (CONTAINING THE NEW '🪑 XẾP CHỖ NGỒI' BUTTON) */}
       <div className="bg-[#fffbf0] rounded-2xl p-3.5 sm:p-4 border border-[#cbb89d] shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 no-print">
         
         <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
@@ -1364,6 +1523,16 @@ export default function LabRoomTab({
               ))}
             </select>
           </div>
+
+          {/* 🪑 NEW PROMINENT 'XẾP CHỖ NGỒI' BUTTON RIGHT IN THE FILTER BAR */}
+          <button
+            onClick={() => setIsSeatingViewOpen(true)}
+            className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-2 cursor-pointer border border-amber-800 animate-pulse"
+            title="Mở giao diện kéo thả xếp chỗ ngồi tương tác"
+          >
+            <Armchair className="w-4 h-4 text-amber-200" />
+            <span>🪑 Xếp Chỗ Ngồi ({unassignedStudents.length} HS Chờ)</span>
+          </button>
 
           {/* Attendance Summary */}
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-[#cbb89d] text-xs font-black text-[#3d2b17] shadow-2xs">
@@ -1434,33 +1603,9 @@ export default function LabRoomTab({
             </button>
           )}
 
-          <button
-            onClick={() => setIsUnassignedPanelVisible(!isUnassignedPanelVisible)}
-            className={`px-3 py-1.5 rounded-xl font-black text-xs transition-all border flex items-center gap-1.5 cursor-pointer ${
-              isUnassignedPanelVisible
-                ? 'bg-amber-100/70 text-amber-900 border-amber-300 hover:bg-amber-200/80'
-                : 'bg-emerald-600 text-white border-emerald-500 hover:bg-emerald-700 shadow-xs'
-            }`}
-          >
-            {isUnassignedPanelVisible ? (
-              <>
-                <PanelLeftClose className="w-3.5 h-3.5" /> Ẩn Bảng CHỜ
-              </>
-            ) : (
-              <>
-                <PanelLeftOpen className="w-3.5 h-3.5" /> ▶ Hiện Bảng CHỜ ({unassignedStudents.length} HS)
-              </>
-            )}
-          </button>
-
         </div>
 
         <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-2.5 sm:pt-0 border-[#cbb89d]">
-          <div className="text-xs font-bold">
-            <span className="text-slate-600">Chờ xếp chỗ: </span>
-            <span className="font-black text-amber-700">{unassignedStudents.length} HS</span>
-          </div>
-
           <button
             onClick={handleClearAllClassSeating}
             className="px-3.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-black text-xs transition-all active:scale-95 flex items-center gap-1 cursor-pointer shadow-2xs"
@@ -1471,435 +1616,255 @@ export default function LabRoomTab({
 
       </div>
 
-      {/* 🖼️ 3. MAIN ROOM CANVAS GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+      {/* 🖼️ 3. MAIN ROOM CANVAS GRID (100% FULL WIDTH ON MAIN SCREEN - NO UNASSIGNED PANEL OUTSIDE) */}
+      <div className="w-full bg-[#fbf7ee] rounded-2xl p-4 sm:p-5 border border-[#cbb89d] shadow-xs space-y-4">
         
-        {/* ================= LEFT COLUMN: HỌC SINH CHỜ NGỒI ================= */}
-        {isUnassignedPanelVisible && (
-          <div className="lg:col-span-4 bg-[#fffbf0] rounded-2xl p-4 border border-[#cbb89d] shadow-xs space-y-3 flex flex-col max-h-[720px] overflow-hidden no-print">
-            
-            <div className="space-y-0.5 border-b border-[#cbb89d] pb-2.5">
-              <div className="flex justify-between items-center">
-                <h3 className="font-black text-xs text-[#3d2b17] flex items-center gap-1.5">
-                  <span>👦</span> HỌC SINH CHỜ NGỒI ({unassignedStudents.length})
-                </h3>
-                <button
-                  onClick={() => setIsUnassignedPanelVisible(false)}
-                  className="text-[10px] font-black text-slate-500 hover:text-slate-800 cursor-pointer"
-                  title="Ẩn bảng chờ để mở rộng sơ đồ"
-                >
-                  ◀ Ẩn
-                </button>
-              </div>
-              <p className="text-[10px] font-bold text-slate-500 leading-snug">
-                Kéo HOẶC nhấp chọn học sinh để xếp vào ô máy tính.
-              </p>
-            </div>
-
-            <div className="relative">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
-              <input
-                type="text"
-                value={unassignedSearch}
-                onChange={(e) => setUnassignedSearch(e.target.value)}
-                placeholder="Tìm kiếm học sinh..."
-                className="w-full pl-9 pr-3 py-1.5 text-xs font-bold rounded-xl border border-[#cbb89d] bg-white focus:outline-none focus:border-emerald-600"
-              />
-            </div>
-
-            <div className="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[540px]">
-              {filteredUnassignedStudents.length > 0 ? (
-                filteredUnassignedStudents.map(st => {
-                  const att = getStudentAttendance(st.id);
-                  const isAbsent = att === 'excused' || att === 'unexcused';
-                  const isSelectedForAssign = selectedStudentForAssign === st.id;
-                  const monitorRole = getStudentMonitorRole(st);
-
-                  return (
-                    <div
-                      key={st.id}
-                      draggable={true}
-                      onDragStart={(e) => handleStudentDragStart(e, st.id)}
-                      onClick={() => {
-                        if (isSelectedForAssign) {
-                          setSelectedStudentForAssign(null);
-                        } else {
-                          setSelectedStudentForAssign(st.id);
-                          showToast(`👉 Đang chọn ${formatStudentNameFirstAndMiddle(st.name)}! Nhấp vào bất kỳ ô máy tính nào bên phải để xếp.`, 'info');
-                        }
-                      }}
-                      className={`p-2.5 rounded-xl border transition-all flex items-center justify-between cursor-pointer group shadow-2xs ${
-                        isSelectedForAssign 
-                          ? 'bg-emerald-100 border-2 border-emerald-600 ring-2 ring-emerald-400/50 scale-[1.02] z-10' 
-                          : isAbsent 
-                            ? 'bg-rose-50 border-rose-300 hover:bg-rose-100/80' 
-                            : 'bg-white hover:bg-emerald-50 border-[#cbb89d] hover:border-emerald-500'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <span className="text-lg select-none">
-                          {st.gender === 'Nữ' ? '👧' : '👦'}
-                        </span>
-                        <div>
-                          <div className="font-black text-xs text-slate-900 group-hover:text-emerald-950 flex flex-wrap items-center gap-1.5">
-                            <span>{st.name}</span>
-                            
-                            {monitorRole === 'L. Trưởng' && (
-                              <span className="text-[9px] font-black bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded border border-amber-500 flex items-center gap-0.5 shadow-2xs">
-                                🌟 L. TRƯỞNG
-                              </span>
-                            )}
-                            {monitorRole === 'Lớp phó' && (
-                              <span className="text-[9px] font-black bg-sky-400 text-slate-950 px-1.5 py-0.5 rounded border border-sky-500 flex items-center gap-0.5 shadow-2xs">
-                                ⭐ LỚP PHÓ
-                              </span>
-                            )}
-                            {monitorRole === 'Tổ trưởng' && (
-                              <span className="text-[9px] font-black bg-purple-400 text-slate-950 px-1.5 py-0.5 rounded border border-purple-500 flex items-center gap-0.5 shadow-2xs">
-                                🎖️ TỔ TRƯỞNG
-                              </span>
-                            )}
-
-                            {att === 'unexcused' && (
-                              <span className="text-[9px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded border border-rose-500">
-                                🚫 VẮNG (K)
-                              </span>
-                            )}
-                            {att === 'excused' && (
-                              <span className="text-[9px] font-black bg-amber-600 text-white px-1.5 py-0.5 rounded border border-amber-500">
-                                📝 VẮNG (P)
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-[10px] font-bold text-slate-400 flex items-center gap-2 mt-0.5">
-                            <span>MSHS: {st.code}</span>
-                            <div className="flex items-center gap-1 text-[9px]">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  saveStudentDuty(st.id, monitorRole === 'L. Trưởng' ? null : 'L. Trưởng');
-                                  showToast(`Đã ${monitorRole === 'L. Trưởng' ? 'gỡ' : 'đặt'} ${formatStudentNameFirstAndMiddle(st.name)} làm L. Trưởng!`, 'info');
-                                }}
-                                className={`px-1 rounded border cursor-pointer font-black ${monitorRole === 'L. Trưởng' ? 'bg-amber-500 text-white border-amber-600' : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-amber-100'}`}
-                                title="Gán/Hủy L. Trưởng"
-                              >
-                                🌟 L.Trưởng
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  saveStudentDuty(st.id, monitorRole === 'Lớp phó' ? null : 'Lớp phó');
-                                  showToast(`Đã ${monitorRole === 'Lớp phó' ? 'gỡ' : 'đặt'} ${formatStudentNameFirstAndMiddle(st.name)} làm Lớp Phó!`, 'info');
-                                }}
-                                className={`px-1 rounded border cursor-pointer font-black ${monitorRole === 'Lớp phó' ? 'bg-sky-500 text-white border-sky-600' : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-sky-100'}`}
-                                title="Gán/Hủy Lớp phó"
-                              >
-                                ⭐ L.Phó
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <span className={`text-[9px] font-black px-2 py-1 rounded-md border flex items-center gap-1 ${
-                        isSelectedForAssign 
-                          ? 'bg-emerald-600 text-white border-emerald-700 animate-pulse'
-                          : isAbsent 
-                            ? 'bg-rose-200 text-rose-900 border-rose-300' 
-                            : 'bg-amber-100 text-amber-900 border-amber-200 group-hover:bg-emerald-200 group-hover:text-emerald-900'
-                      }`}>
-                        {isSelectedForAssign ? '✓ Đang chọn' : 'Xếp máy 👆'}
-                      </span>
-                    </div>
-                  );
-                })
-              ) : unassignedStudents.length === 0 ? (
-                <div className="text-center py-10 space-y-2">
-                  <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto text-xl">
-                    ✓
-                  </div>
-                  <div className="font-black text-xs text-emerald-800">Tất cả học sinh đã có máy!</div>
-                  <p className="text-[10px] font-bold text-slate-400 max-w-[180px] mx-auto">
-                    Toàn bộ học sinh lớp {selectedClass} đã được xếp vị trí chỗ ngồi.
-                  </p>
-                </div>
-              ) : (
-                <div className="text-center py-8 text-slate-400 font-bold text-xs">
-                  Không tìm thấy học sinh nào khớp từ khóa
-                </div>
-              )}
-            </div>
-
-          </div>
-        )}
-
-        {/* ================= RIGHT COLUMN: SƠ ĐỒ PHÒNG LAB (NỀN SÁNG VÀNG KEM iMAC) ================= */}
-        <div 
-          className={`${isUnassignedPanelVisible ? 'lg:col-span-8' : 'lg:col-span-12'} bg-[#fbf7ee] rounded-2xl p-4 sm:p-5 border border-[#cbb89d] shadow-xs space-y-4 transition-all duration-300`}
-        >
+        {/* Top Canvas Toolbar */}
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-3 bg-[#dfccb0] p-2.5 rounded-xl border border-[#cbb89d]">
           
-          {/* Top Canvas Toolbar */}
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-3 bg-[#dfccb0] p-2.5 rounded-xl border border-[#cbb89d]">
-            
-            <span className="text-xs font-black text-[#3d2b17] uppercase tracking-widest flex items-center gap-2 mx-auto sm:mx-0">
-              👨‍🏫 MÀN CHIẾU & BẢNG GIÁO VIÊN ({activeLab.name} - {activeLab.code})
+          <span className="text-xs font-black text-[#3d2b17] uppercase tracking-widest flex items-center gap-2 mx-auto sm:mx-0">
+            👨‍🏫 MÀN CHIẾU & BẢNG GIÁO VIÊN ({activeLab.name} - {activeLab.code})
+          </span>
+
+          <div className="flex items-center gap-2 no-print">
+            <button
+              onClick={handleZoomOut}
+              disabled={zoomLevel <= 70}
+              className="p-1.5 rounded-lg bg-white hover:bg-amber-50 text-slate-800 border border-[#cbb89d] text-xs font-black shadow-2xs disabled:opacity-40 cursor-pointer"
+              title="Thu nhỏ sơ đồ (-10%)"
+            >
+              <ZoomOut className="w-3.5 h-3.5" />
+            </button>
+
+            <span className="text-[11px] font-black text-[#3d2b17] min-w-[42px] text-center select-none">
+              {zoomLevel}%
             </span>
 
-            <div className="flex items-center gap-2 no-print">
+            <button
+              onClick={handleZoomIn}
+              disabled={zoomLevel >= 140}
+              className="p-1.5 rounded-lg bg-white hover:bg-amber-50 text-slate-800 border border-[#cbb89d] text-xs font-black shadow-2xs disabled:opacity-40 cursor-pointer"
+              title="Phóng to sơ đồ (+10%)"
+            >
+              <ZoomIn className="w-3.5 h-3.5" />
+            </button>
+
+            {zoomLevel !== 100 && (
               <button
-                onClick={handleZoomOut}
-                disabled={zoomLevel <= 70}
-                className="p-1.5 rounded-lg bg-white hover:bg-amber-50 text-slate-800 border border-[#cbb89d] text-xs font-black shadow-2xs disabled:opacity-40 cursor-pointer"
-                title="Thu nhỏ sơ đồ (-10%)"
+                onClick={handleZoomReset}
+                className="px-2 py-1 rounded-lg bg-white hover:bg-amber-50 text-[10px] font-black text-slate-700 border border-[#cbb89d] cursor-pointer"
               >
-                <ZoomOut className="w-3.5 h-3.5" />
+                ↺ 100%
               </button>
+            )}
 
-              <span className="text-[11px] font-black text-[#3d2b17] min-w-[42px] text-center select-none">
-                {zoomLevel}%
-              </span>
-
-              <button
-                onClick={handleZoomIn}
-                disabled={zoomLevel >= 140}
-                className="p-1.5 rounded-lg bg-white hover:bg-amber-50 text-slate-800 border border-[#cbb89d] text-xs font-black shadow-2xs disabled:opacity-40 cursor-pointer"
-                title="Phóng to sơ đồ (+10%)"
-              >
-                <ZoomIn className="w-3.5 h-3.5" />
-              </button>
-
-              {zoomLevel !== 100 && (
-                <button
-                  onClick={handleZoomReset}
-                  className="px-2 py-1 rounded-lg bg-white hover:bg-amber-50 text-[10px] font-black text-slate-700 border border-[#cbb89d] cursor-pointer"
-                >
-                  ↺ 100%
-                </button>
-              )}
-
-              <button
-                onClick={() => setIsPrintModalOpen(true)}
-                className="px-3 py-1.5 rounded-xl bg-amber-800 hover:bg-amber-900 text-amber-100 font-black text-xs shadow-xs transition-all active:scale-95 flex items-center gap-1.5 border border-amber-950 cursor-pointer ml-1"
-                title="Mở xem trước và in sơ đồ chỗ ngồi A4"
-              >
-                <Printer className="w-3.5 h-3.5" /> In Sơ Đồ
-              </button>
-            </div>
-
+            <button
+              onClick={() => setIsPrintModalOpen(true)}
+              className="px-3 py-1.5 rounded-xl bg-amber-800 hover:bg-amber-900 text-amber-100 font-black text-xs shadow-xs transition-all active:scale-95 flex items-center gap-1.5 border border-amber-950 cursor-pointer ml-1"
+              title="Mở xem trước và in sơ đồ chỗ ngồi A4"
+            >
+              <Printer className="w-3.5 h-3.5" /> In Sơ Đồ
+            </button>
           </div>
 
-          {/* Room Matrix Grid */}
+        </div>
+
+        {/* Room Matrix Grid */}
+        <div 
+          className="transition-transform duration-200 origin-top"
+          style={{
+            zoom: `${zoomLevel}%`
+          }}
+        >
           <div 
-            className="transition-transform duration-200 origin-top"
+            className="grid gap-3"
             style={{
-              zoom: `${zoomLevel}%`
+              gridTemplateColumns: `repeat(${activeLabGrid.cols}, minmax(0, 1fr))`
             }}
           >
-            <div 
-              className="grid gap-3"
-              style={{
-                gridTemplateColumns: `repeat(${activeLabGrid.cols}, minmax(0, 1fr))`
-              }}
-            >
-              {activeLabGrid.cells.map(tile => {
-                if (tile.type === 'aisle') {
-                  return (
-                    <div 
-                      key={`aisle_${tile.row}_${tile.col}`}
-                      className="bg-amber-100/40 border border-amber-200/50 rounded-xl p-2 flex items-center justify-center min-h-[90px] select-none"
-                    >
-                      <span className="text-[10px] font-black text-amber-800/40 uppercase tracking-wider">Lối đi</span>
-                    </div>
-                  );
-                }
-
-                const pcId = tile.label;
-                const cellData = computedCellDataMap[pcId] || {
-                  assignedStudents: [],
-                  hasAbsentStudent: false,
-                  monitorRole: null,
-                  targetIncident: null,
-                  isFull: false,
-                  hasOne: false
-                };
-
-                const assignedStudents = cellData.assignedStudents;
-                const isFull = cellData.isFull;
-                const hasOne = cellData.hasOne;
-                const isDragOver = dragOverPcId === pcId;
-                const isSearchMatch = matchingPcIdsForSearch.has(pcId);
-                const hasAbsentStudent = cellData.hasAbsentStudent;
-                const monitorRole = cellData.monitorRole;
-                const targetIncident = cellData.targetIncident;
-
-                let borderStyleClass = 'border-[#cbb89d] bg-[#fffbf0]';
-                if (targetIncident) {
-                  borderStyleClass = 'border-rose-500 bg-rose-100/90 ring-4 ring-rose-400 animate-pulse text-rose-950 z-20';
-                } else if (showAbsentOnlyFilter && hasAbsentStudent) {
-                  borderStyleClass = 'border-rose-500 bg-rose-50 ring-4 ring-rose-500 animate-bounce text-rose-950 z-30 shadow-[0_0_25px_rgba(244,63,94,0.8)]';
-                } else if (isSearchMatch) {
-                  borderStyleClass = 'border-amber-400 bg-amber-100/90 ring-4 ring-amber-400 animate-pulse scale-105 shadow-[0_0_25px_rgba(245,158,11,0.8)] z-30';
-                } else if (monitorRole === 'L. Trưởng') {
-                  borderStyleClass = 'border-amber-400 bg-amber-50/80 ring-4 ring-amber-400/80 shadow-[0_0_20px_rgba(245,158,11,0.6)] z-10';
-                } else if (monitorRole === 'Lớp phó') {
-                  borderStyleClass = 'border-sky-400 bg-sky-50/80 ring-4 ring-sky-400/80 shadow-[0_0_20px_rgba(56,189,248,0.6)] z-10';
-                } else if (monitorRole === 'Tổ trưởng') {
-                  borderStyleClass = 'border-purple-400 bg-purple-50/80 ring-4 ring-purple-400/80 shadow-[0_0_20px_rgba(192,132,252,0.6)] z-10';
-                } else if (isFull) {
-                  borderStyleClass = 'border-emerald-500 ring-2 ring-emerald-400/40 bg-emerald-50/60 shadow-[0_0_12px_rgba(16,185,129,0.3)]';
-                } else if (hasOne) {
-                  borderStyleClass = 'border-amber-500 ring-2 ring-amber-400/40 bg-amber-50/60 shadow-[0_0_12px_rgba(245,158,11,0.3)]';
-                }
-
+            {activeLabGrid.cells.map(tile => {
+              if (tile.type === 'aisle') {
                 return (
-                  <div
-                    key={`pc_${pcId}`}
-                    onClick={() => handlePcCardClick(pcId)}
-                    onDragOver={(e) => handlePcDragOver(e, pcId)}
-                    onDragLeave={() => setDragOverPcId(null)}
-                    onDrop={(e) => handlePcDrop(e, pcId)}
-                    className={`rounded-xl border-2 transition-all relative flex flex-col justify-between cursor-pointer ${cardSizeClasses[frameConfig.cardSize]} ${
-                      selectedStudentForAssign && !isFull ? 'ring-2 ring-emerald-500 hover:scale-105 hover:bg-emerald-100' : ''
-                    } ${
-                      isDragOver ? 'border-amber-500 scale-105 bg-amber-100 ring-4 ring-amber-400/50 z-20' : ''
-                    } ${
-                      frameConfig.customImageUrl 
-                        ? 'border-indigo-400/80 bg-slate-950/90' 
-                        : `${borderStyleClass} ${frameConfig.glowEffect && !targetIncident && !isSearchMatch && !monitorRole ? activeSkin.glowShadow : ''}`
-                    }`}
-                    style={frameConfig.customImageUrl ? {
-                      backgroundImage: `url(${frameConfig.customImageUrl})`,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center'
-                    } : undefined}
+                  <div 
+                    key={`aisle_${tile.row}_${tile.col}`}
+                    className="bg-amber-100/40 border border-amber-200/50 rounded-xl p-2 flex items-center justify-center min-h-[90px] select-none"
                   >
-                    {/* PC Header Bar */}
-                    <div className="flex justify-between items-center mb-1.5">
-                      <span className={`font-mono font-black text-[11px] px-2 py-0.5 rounded-md border shadow-2xs ${
-                        assignedStudents.length > 0
-                          ? 'bg-emerald-600 text-white border-emerald-400'
-                          : 'bg-[#dfccb0] text-[#3d2b17] border-[#cbb89d]'
-                      }`}>
-                        🖥️ {pcId}
-                      </span>
-
-                      {targetIncident ? (
-                        <span className="text-[9px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded-full border border-rose-400 animate-bounce" title={targetIncident.issue}>
-                          ⚠️ HỎNG
-                        </span>
-                      ) : monitorRole === 'L. Trưởng' ? (
-                        <span className="text-[9px] font-black bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full border border-amber-500 shadow-2xs animate-pulse">
-                          🌟 L. TRƯỞNG
-                        </span>
-                      ) : monitorRole === 'Lớp phó' ? (
-                        <span className="text-[9px] font-black bg-sky-400 text-slate-950 px-2 py-0.5 rounded-full border border-sky-500 shadow-2xs">
-                          ⭐ LỚP PHÓ
-                        </span>
-                      ) : hasAbsentStudent ? (
-                        <span className="text-[9px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded-full border border-rose-400 animate-pulse" title="Có học sinh báo vắng mặt hôm nay">
-                          🔴 CÓ VẮNG
-                        </span>
-                      ) : (
-                        <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full border shadow-2xs ${
-                          isFull 
-                            ? 'bg-emerald-500 text-white border-emerald-400' 
-                            : assignedStudents.length > 0 
-                              ? 'bg-amber-500 text-white border-amber-400' 
-                              : 'bg-slate-200 text-slate-600 border-slate-300'
-                        }`}>
-                          {assignedStudents.length}/2 HS
-                        </span>
-                      )}
-                    </div>
-
-                    {targetIncident && (
-                      <div className="text-[9px] font-black text-rose-900 bg-rose-200 px-1 py-0.5 rounded text-center truncate mb-1 border border-rose-300">
-                        {targetIncident.type}: {targetIncident.issue}
-                      </div>
-                    )}
-
-                    {/* Student List in Machine */}
-                    {assignedStudents.length > 0 ? (
-                      <div className="space-y-1.5 my-auto w-full text-center">
-                        {assignedStudents.map(st => {
-                          const att = getStudentAttendance(st.id);
-                          const isUnexcused = att === 'unexcused';
-                          const isExcused = att === 'excused';
-                          const isAbsent = isUnexcused || isExcused;
-                          const role = getStudentMonitorRole(st);
-
-                          let pillBgStyle = 'bg-emerald-400 text-slate-950 border-emerald-300';
-                          if (isUnexcused) {
-                            pillBgStyle = 'bg-rose-600 text-white border-rose-400 animate-pulse';
-                          } else if (isExcused) {
-                            pillBgStyle = 'bg-amber-600 text-white border-amber-400';
-                          } else if (showGenderColors) {
-                            if (st.gender === 'Nữ') {
-                              pillBgStyle = 'bg-pink-300 text-slate-950 border-pink-200 shadow-2xs';
-                            } else {
-                              pillBgStyle = 'bg-sky-400 text-slate-950 border-sky-300 shadow-2xs';
-                            }
-                          }
-
-                          return (
-                            <div
-                              key={st.id}
-                              draggable={true}
-                              onDragStart={(e) => handleStudentDragStart(e, st.id, pcId)}
-                              className={`rounded-lg px-2.5 py-1 flex items-center justify-between relative transition-all cursor-grab active:cursor-grabbing group text-center shadow-2xs border ${pillBgStyle}`}
-                            >
-                              <span className="font-black text-xs text-center truncate mx-auto flex items-center justify-center gap-1" title={st.name}>
-                                {role === 'L. Trưởng' && <span className="text-[10px]" title="L. Trưởng">🌟</span>}
-                                {role === 'Lớp phó' && <span className="text-[10px]" title="Lớp phó">⭐</span>}
-                                {role === 'Tổ trưởng' && <span className="text-[10px]" title="Tổ trưởng">🎖️</span>}
-                                {isUnexcused && <span className="text-[9px] font-black bg-slate-950/70 px-1 rounded text-rose-200">🚫 K</span>}
-                                {isExcused && <span className="text-[9px] font-black bg-slate-950/70 px-1 rounded text-amber-200">📝 P</span>}
-                                <span className={isAbsent ? 'line-through opacity-90' : ''}>{formatStudentNameFirstAndMiddle(st.name)}</span>
-                              </span>
-
-                              {/* Instant 1-Click Delete Fix */}
-                              <button
-                                onMouseDown={(e) => {
-                                  e.stopPropagation();
-                                  e.preventDefault();
-                                  unassignStudentFromComputer(pcId, st.id);
-                                }}
-                                onTouchStart={(e) => {
-                                  e.stopPropagation();
-                                  e.preventDefault();
-                                  unassignStudentFromComputer(pcId, st.id);
-                                }}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  e.preventDefault();
-                                }}
-                                className="absolute right-1 text-slate-900/60 hover:text-rose-800 hover:bg-white/80 p-0.5 rounded-full transition-all cursor-pointer shrink-0"
-                                title="Xóa học sinh khỏi máy"
-                              >
-                                <X className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          );
-                        })}
-
-                        {assignedStudents.length === 2 && (
-                          <div className="text-[10px] font-black text-[#3d2b17] bg-[#dfccb0]/90 px-2 py-0.5 rounded-md border border-[#cbb89d] text-center justify-center tracking-tight truncate mx-auto w-full">
-                            {formatStudentNameFirstAndMiddle(assignedStudents[0].name)} + {formatStudentNameFirstAndMiddle(assignedStudents[1].name)}
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="my-auto py-1.5 text-center justify-center flex items-center text-[#5c4327]/60 font-bold text-[10px] border border-dashed border-[#cbb89d] rounded-lg bg-white/40">
-                        {selectedStudentForAssign ? '👆 Nhấp để xếp máy' : 'Kéo HOẶC nhấp xếp'}
-                      </div>
-                    )}
-
+                    <span className="text-[10px] font-black text-amber-800/40 uppercase tracking-wider">Lối đi</span>
                   </div>
                 );
-              })}
-            </div>
-          </div>
+              }
 
+              const pcId = tile.label;
+              const cellData = computedCellDataMap[pcId] || {
+                assignedStudents: [],
+                hasAbsentStudent: false,
+                monitorRole: null,
+                targetIncident: null,
+                isFull: false,
+                hasOne: false
+              };
+
+              const assignedStudents = cellData.assignedStudents;
+              const isFull = cellData.isFull;
+              const hasOne = cellData.hasOne;
+              const isDragOver = dragOverPcId === pcId;
+              const isSearchMatch = matchingPcIdsForSearch.has(pcId);
+              const hasAbsentStudent = cellData.hasAbsentStudent;
+              const monitorRole = cellData.monitorRole;
+              const targetIncident = cellData.targetIncident;
+
+              let borderStyleClass = 'border-[#cbb89d] bg-[#fffbf0]';
+              if (targetIncident) {
+                borderStyleClass = 'border-rose-500 bg-rose-100/90 ring-4 ring-rose-400 animate-pulse text-rose-950 z-20';
+              } else if (showAbsentOnlyFilter && hasAbsentStudent) {
+                borderStyleClass = 'border-rose-500 bg-rose-50 ring-4 ring-rose-500 animate-bounce text-rose-950 z-30 shadow-[0_0_25px_rgba(244,63,94,0.8)]';
+              } else if (isSearchMatch) {
+                borderStyleClass = 'border-amber-400 bg-amber-100/90 ring-4 ring-amber-400 animate-pulse scale-105 shadow-[0_0_25px_rgba(245,158,11,0.8)] z-30';
+              } else if (monitorRole === 'L. Trưởng') {
+                borderStyleClass = 'border-amber-400 bg-amber-50/80 ring-4 ring-amber-400/80 shadow-[0_0_20px_rgba(245,158,11,0.6)] z-10';
+              } else if (monitorRole === 'Lớp phó') {
+                borderStyleClass = 'border-sky-400 bg-sky-50/80 ring-4 ring-sky-400/80 shadow-[0_0_20px_rgba(56,189,248,0.6)] z-10';
+              } else if (monitorRole === 'Tổ trưởng') {
+                borderStyleClass = 'border-purple-400 bg-purple-50/80 ring-4 ring-purple-400/80 shadow-[0_0_20px_rgba(192,132,252,0.6)] z-10';
+              } else if (isFull) {
+                borderStyleClass = 'border-emerald-500 ring-2 ring-emerald-400/40 bg-emerald-50/60 shadow-[0_0_12px_rgba(16,185,129,0.3)]';
+              } else if (hasOne) {
+                borderStyleClass = 'border-amber-500 ring-2 ring-amber-400/40 bg-amber-50/60 shadow-[0_0_12px_rgba(245,158,11,0.3)]';
+              }
+
+              return (
+                <div
+                  key={`pc_${pcId}`}
+                  onClick={() => handlePcCardClick(pcId)}
+                  onDragOver={(e) => handlePcDragOver(e, pcId)}
+                  onDragLeave={() => setDragOverPcId(null)}
+                  onDrop={(e) => handlePcDrop(e, pcId)}
+                  className={`rounded-xl border-2 transition-all relative flex flex-col justify-between cursor-pointer ${cardSizeClasses[frameConfig.cardSize]} ${
+                    isDragOver ? 'border-amber-500 scale-105 bg-amber-100 ring-4 ring-amber-400/50 z-20' : borderStyleClass
+                  } ${
+                    frameConfig.customImageUrl 
+                      ? 'border-indigo-400/80 bg-slate-950/90' 
+                      : `${borderStyleClass} ${frameConfig.glowEffect && !targetIncident && !isSearchMatch && !monitorRole ? activeSkin.glowShadow : ''}`
+                  }`}
+                  style={frameConfig.customImageUrl ? {
+                    backgroundImage: `url(${frameConfig.customImageUrl})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center'
+                  } : undefined}
+                >
+                  <div className="flex justify-between items-center mb-1.5">
+                    <span className={`font-mono font-black text-[11px] px-2 py-0.5 rounded-md border shadow-2xs ${
+                      assignedStudents.length > 0
+                        ? 'bg-emerald-600 text-white border-emerald-400'
+                        : 'bg-[#dfccb0] text-[#3d2b17] border-[#cbb89d]'
+                    }`}>
+                      🖥️ {pcId}
+                    </span>
+
+                    {targetIncident ? (
+                      <span className="text-[9px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded-full border border-rose-400 animate-bounce" title={targetIncident.issue}>
+                        ⚠️ HỎNG
+                      </span>
+                    ) : monitorRole === 'L. Trưởng' ? (
+                      <span className="text-[9px] font-black bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full border border-amber-500 shadow-2xs animate-pulse">
+                        🌟 L. TRƯỞNG
+                      </span>
+                    ) : monitorRole === 'Lớp phó' ? (
+                      <span className="text-[9px] font-black bg-sky-400 text-slate-950 px-2 py-0.5 rounded-full border border-sky-500 shadow-2xs">
+                        ⭐ LỚP PHÓ
+                      </span>
+                    ) : hasAbsentStudent ? (
+                      <span className="text-[9px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded-full border border-rose-400 animate-pulse" title="Có học sinh báo vắng mặt hôm nay">
+                        🔴 CÓ VẮNG
+                      </span>
+                    ) : (
+                      <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full border shadow-2xs ${
+                        isFull 
+                          ? 'bg-emerald-500 text-white border-emerald-400' 
+                          : assignedStudents.length > 0 
+                            ? 'bg-amber-500 text-white border-amber-400' 
+                            : 'bg-slate-200 text-slate-600 border-slate-300'
+                      }`}>
+                        {assignedStudents.length}/2 HS
+                      </span>
+                    )}
+                  </div>
+
+                  {targetIncident && (
+                    <div className="text-[9px] font-black text-rose-900 bg-rose-200 px-1 py-0.5 rounded text-center truncate mb-1 border border-rose-300">
+                      {targetIncident.type}: {targetIncident.issue}
+                    </div>
+                  )}
+
+                  {assignedStudents.length > 0 ? (
+                    <div className="space-y-1.5 my-auto w-full text-center">
+                      {assignedStudents.map(st => {
+                        const att = getStudentAttendance(st.id);
+                        const isUnexcused = att === 'unexcused';
+                        const isExcused = att === 'excused';
+                        const isAbsent = isUnexcused || isExcused;
+                        const role = getStudentMonitorRole(st);
+
+                        let pillBgStyle = 'bg-emerald-400 text-slate-950 border-emerald-300';
+                        if (isUnexcused) {
+                          pillBgStyle = 'bg-rose-600 text-white border-rose-400 animate-pulse';
+                        } else if (isExcused) {
+                          pillBgStyle = 'bg-amber-600 text-white border-amber-400';
+                        } else if (showGenderColors) {
+                          if (st.gender === 'Nữ') {
+                            pillBgStyle = 'bg-pink-300 text-slate-950 border-pink-200 shadow-2xs';
+                          } else {
+                            pillBgStyle = 'bg-sky-400 text-slate-950 border-sky-300 shadow-2xs';
+                          }
+                        }
+
+                        return (
+                          <div
+                            key={st.id}
+                            draggable={true}
+                            onDragStart={(e) => handleStudentDragStart(e, st.id, pcId)}
+                            className={`rounded-lg px-2.5 py-1 flex items-center justify-between relative transition-all cursor-grab active:cursor-grabbing group text-center shadow-2xs border ${pillBgStyle}`}
+                          >
+                            <span className="font-black text-xs text-center truncate mx-auto flex items-center justify-center gap-1" title={st.name}>
+                              {role === 'L. Trưởng' && <span className="text-[10px]" title="L. Trưởng">🌟</span>}
+                              {role === 'Lớp phó' && <span className="text-[10px]" title="Lớp phó">⭐</span>}
+                              {role === 'Tổ trưởng' && <span className="text-[10px]" title="Tổ trưởng">🎖️</span>}
+                              {isUnexcused && <span className="text-[9px] font-black bg-slate-950/70 px-1 rounded text-rose-200">🚫 K</span>}
+                              {isExcused && <span className="text-[9px] font-black bg-slate-950/70 px-1 rounded text-amber-200">📝 P</span>}
+                              <span className={isAbsent ? 'line-through opacity-90' : ''}>{formatStudentNameFirstAndMiddle(st.name)}</span>
+                            </span>
+
+                            <button
+                              onMouseDown={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                unassignStudentFromComputer(pcId, st.id);
+                              }}
+                              className="absolute right-1 text-slate-900/60 hover:text-rose-800 hover:bg-white/80 p-0.5 rounded-full cursor-pointer"
+                              title="Xóa học sinh khỏi máy"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        );
+                      })}
+
+                      {assignedStudents.length === 2 && (
+                        <div className="text-[10px] font-black text-[#3d2b17] bg-[#dfccb0]/90 px-2 py-0.5 rounded-md border border-[#cbb89d] text-center justify-center tracking-tight truncate mx-auto w-full">
+                          {formatStudentNameFirstAndMiddle(assignedStudents[0].name)} + {formatStudentNameFirstAndMiddle(assignedStudents[1].name)}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="my-auto py-1.5 text-center justify-center flex items-center text-[#5c4327]/60 font-bold text-[10px] border border-dashed border-[#cbb89d] rounded-lg bg-white/40">
+                      Bấm "🪑 Xếp Chỗ Ngồi" để xếp
+                    </div>
+                  )}
+
+                </div>
+              );
+            })}
+          </div>
         </div>
 
       </div>
