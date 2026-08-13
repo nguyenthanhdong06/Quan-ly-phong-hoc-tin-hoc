@@ -844,7 +844,7 @@ export default function LabRoomTab({
         </div>
       </div>
 
-      <div className="bg-slate-900 text-amber-300 py-1.5 font-black text-center text-xs uppercase rounded tracking-widest flex items-center justify-center gap-2">
+      <div className="bg-amber-100/70 text-amber-950 border border-amber-300 py-1.5 font-black text-center text-xs uppercase rounded-xl tracking-widest flex items-center justify-center gap-2">
         <span>MÀN CHIẾU & BẢNG GIÁO VIÊN ({activeLab.name})</span>
       </div>
 

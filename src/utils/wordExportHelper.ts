@@ -85,14 +85,15 @@ export function exportSeatingChartToWord({
           margin-bottom: 15px;
         }
         .screen-banner {
-          background-color: #1e293b;
-          color: #fde047;
+          background-color: #fef3c7;
+          color: #78350f;
           font-weight: bold;
           text-align: center;
           padding: 6px;
           font-size: 10pt;
-          border: 1px solid #000;
+          border: 1px solid #d97706;
           margin-bottom: 10px;
+          border-radius: 4px;
         }
         .grid-table {
           width: 100%;
