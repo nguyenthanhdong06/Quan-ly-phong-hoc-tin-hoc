@@ -11,6 +11,7 @@ export interface ExportWordSeatingChartOptions {
   gridCols: number;
   gridCells: Array<{ row: number; col: number; type: 'pc' | 'aisle' | 'desk'; label: string; pcNum: number }>;
   getStudentAttendance: (id: string) => 'present' | 'excused' | 'unexcused';
+  hideAisles?: boolean;
 }
 
 export function exportSeatingChartToWord({
@@ -22,11 +23,23 @@ export function exportSeatingChartToWord({
   gridRows,
   gridCols,
   gridCells,
-  getStudentAttendance
+  getStudentAttendance,
+  hideAisles = true
 }: ExportWordSeatingChartOptions) {
   const dateStr = new Date().toLocaleDateString('vi-VN');
 
-  // Construct MS Word HTML document with MSO page orientation LANDSCAPE (Khổ giấy ngang)
+  // 1. Identify columns containing at least 1 PC
+  const pcColsSet = new Set<number>();
+  gridCells.forEach(cell => {
+    if (cell.type === 'pc') pcColsSet.add(cell.col);
+  });
+
+  const shouldHideAisles = hideAisles !== false && pcColsSet.size > 0;
+  const sortedCols = shouldHideAisles
+    ? Array.from(pcColsSet).sort((a, b) => a - b)
+    : Array.from({ length: gridCols }, (_, i) => i);
+
+  // Construct MS Word HTML document with MSO page orientation LANDSCAPE (A4 Ngang 1 trang)
   let htmlContent = `
     <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
     <head>
@@ -44,7 +57,7 @@ export function exportSeatingChartToWord({
       <style>
         @page Section1 {
           size: 29.7cm 21.0cm;
-          margin: 1.0cm 1.0cm 1.0cm 1.0cm;
+          margin: 0.8cm 0.8cm 0.8cm 0.8cm;
           mso-page-orientation: landscape;
         }
         div.Section1 {
@@ -52,12 +65,12 @@ export function exportSeatingChartToWord({
         }
         @page {
           size: A4 landscape;
-          margin: 1cm 1cm 1cm 1cm;
+          margin: 0.8cm;
           mso-page-orientation: landscape;
         }
         body {
           font-family: 'Times New Roman', Times, serif;
-          font-size: 11pt;
+          font-size: 10pt;
           color: #000000;
           margin: 0;
           padding: 0;
@@ -65,66 +78,67 @@ export function exportSeatingChartToWord({
         table {
           border-collapse: collapse;
           width: 100%;
+          table-layout: fixed;
         }
         .header-table td {
-          padding: 4px;
+          padding: 2px 4px;
           vertical-align: top;
         }
         .title {
-          font-size: 16pt;
+          font-size: 14pt;
           font-weight: bold;
           text-align: center;
-          margin-top: 10px;
-          margin-bottom: 5px;
+          margin-top: 4px;
+          margin-bottom: 3px;
           text-transform: uppercase;
         }
         .sub-title {
-          font-size: 11pt;
+          font-size: 10pt;
           font-weight: bold;
           text-align: center;
-          margin-bottom: 15px;
+          margin-bottom: 8px;
         }
         .screen-banner {
           background-color: #fef3c7;
           color: #78350f;
           font-weight: bold;
           text-align: center;
-          padding: 6px;
-          font-size: 10pt;
+          padding: 4px;
+          font-size: 9.5pt;
           border: 1px solid #d97706;
-          margin-bottom: 10px;
+          margin-bottom: 8px;
           border-radius: 4px;
         }
         .grid-table {
           width: 100%;
           border: 1px solid #000;
-          margin-bottom: 15px;
+          margin-bottom: 8px;
         }
         .grid-table td {
           border: 1px solid #000;
-          padding: 4px;
+          padding: 3px;
           vertical-align: top;
-          height: 65px;
+          height: 52px;
         }
         .pc-box {
           background-color: #f8fafc;
         }
         .pc-header {
           font-weight: bold;
-          font-size: 9pt;
+          font-size: 8.5pt;
           border-bottom: 1px solid #94a3b8;
           padding-bottom: 2px;
-          margin-bottom: 4px;
+          margin-bottom: 3px;
         }
         .student-pill {
           background-color: #d1fae5;
           border: 1px solid #10b981;
-          font-size: 9pt;
+          font-size: 8.5pt;
           font-weight: bold;
-          padding: 3px;
+          padding: 2px;
           text-align: center;
-          margin-bottom: 3px;
-          border-radius: 4px;
+          margin-bottom: 2px;
+          border-radius: 3px;
         }
         .student-absent {
           background-color: #ffe4e6;
@@ -133,17 +147,20 @@ export function exportSeatingChartToWord({
           text-decoration: line-through;
         }
         .aisle-box {
-          background-color: #f1f5f9;
+          background-color: #f8fafc;
+          border: 1px dashed #cbd5e1;
           color: #94a3b8;
           text-align: center;
-          font-size: 8pt;
+          font-size: 7.5pt;
           font-weight: bold;
           vertical-align: middle !important;
+          height: 35px;
         }
         .footer-table td {
           text-align: center;
           font-weight: bold;
-          padding-top: 25px;
+          padding-top: 12px;
+          font-size: 9.5pt;
         }
       </style>
     </head>
@@ -174,10 +191,10 @@ export function exportSeatingChartToWord({
         <table class="grid-table">
   `;
 
-  // Render Rows & Columns
+  // Render Rows & Compact Columns (omit empty aisle columns)
   for (let r = 0; r < gridRows; r++) {
     htmlContent += '<tr>';
-    for (let c = 0; c < gridCols; c++) {
+    for (const c of sortedCols) {
       const tile = gridCells.find(cell => cell.row === r && cell.col === c);
       if (!tile || tile.type === 'aisle') {
         htmlContent += `<td class="aisle-box">Lối đi</td>`;
@@ -209,7 +226,7 @@ export function exportSeatingChartToWord({
           }
         });
       } else {
-        htmlContent += `<div style="font-size: 8pt; color: #94a3b8; font-style: italic; text-align: center; margin-top: 15px;">Chưa xếp</div>`;
+        htmlContent += `<div style="font-size: 7.5pt; color: #94a3b8; font-style: italic; text-align: center; margin-top: 10px;">Chưa xếp</div>`;
       }
 
       htmlContent += `</td>`;

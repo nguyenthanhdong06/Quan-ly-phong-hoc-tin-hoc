@@ -256,6 +256,9 @@ export default function LabRoomTab({
     });
   };
 
+  // State to toggle hiding empty aisle columns for 1-page A4 print optimization
+  const [hideAislesPrint, setHideAislesPrint] = useState<boolean>(true);
+
   // Fast HashMap lookup for students by ID
   const studentsByIdMap = useMemo(() => {
     const map = new Map<string, Student>();
@@ -293,6 +296,43 @@ export default function LabRoomTab({
 
     return { rows, cols, cells, pcList };
   }, [activeLab]);
+
+  // Columns containing at least 1 PC (for 1-page A4 aisle hiding compaction)
+  const pcColumnIndices = useMemo(() => {
+    const colsWithPc = new Set<number>();
+    activeLabGrid.cells.forEach(c => {
+      if (c.type === 'pc') colsWithPc.add(c.col);
+    });
+    return colsWithPc;
+  }, [activeLabGrid.cells]);
+
+  // Printable cells & column count based on hideAislesPrint
+  const printableGridData = useMemo(() => {
+    if (!hideAislesPrint || pcColumnIndices.size === 0) {
+      return {
+        cols: activeLabGrid.cols,
+        cells: activeLabGrid.cells
+      };
+    }
+
+    const sortedColIndices: number[] = Array.from(pcColumnIndices).map(n => Number(n)).sort((a, b) => a - b);
+    const colRemap = new Map<number, number>();
+    sortedColIndices.forEach((oldColIndex: number, newIndex: number) => {
+      colRemap.set(oldColIndex, newIndex);
+    });
+
+    const filteredCells = activeLabGrid.cells
+      .filter(cell => pcColumnIndices.has(cell.col))
+      .map(cell => ({
+        ...cell,
+        col: colRemap.get(cell.col) ?? cell.col
+      }));
+
+    return {
+      cols: sortedColIndices.length,
+      cells: filteredCells
+    };
+  }, [hideAislesPrint, pcColumnIndices, activeLabGrid]);
 
   // Students of current selected class
   const classStudents = useMemo(() => {
@@ -819,14 +859,15 @@ export default function LabRoomTab({
         gridRows: activeLabGrid.rows,
         gridCols: activeLabGrid.cols,
         gridCells: activeLabGrid.cells,
-        getStudentAttendance
+        getStudentAttendance,
+        hideAisles: hideAislesPrint
       });
       playVictoryFanfareSound();
       showToast(`Đã xuất sơ đồ phòng máy lớp ${selectedClass} ra file Word (.doc) thành công!`, 'success');
     } catch (e) {
       showToast('Lỗi khi xuất file Word, vui lòng thử lại!', 'error');
     }
-  }, [selectedClass, activeLab, classStudents, attendanceSummary, computedCellDataMap, activeLabGrid, getStudentAttendance, showToast]);
+  }, [selectedClass, activeLab, classStudents, attendanceSummary, computedCellDataMap, activeLabGrid, getStudentAttendance, hideAislesPrint, showToast]);
 
   // Printable Canvas Component for Portal
   const renderPrintableCanvas = () => (
@@ -849,15 +890,15 @@ export default function LabRoomTab({
       </div>
 
       <div 
-        className="grid gap-2"
+        className="grid gap-1.5"
         style={{
-          gridTemplateColumns: `repeat(${activeLabGrid.cols}, minmax(0, 1fr))`
+          gridTemplateColumns: `repeat(${printableGridData.cols}, minmax(0, 1fr))`
         }}
       >
-        {activeLabGrid.cells.map(tile => {
+        {printableGridData.cells.map(tile => {
           if (tile.type === 'aisle') {
             return (
-              <div key={`print_aisle_${tile.row}_${tile.col}`} className="bg-slate-100 border border-dashed border-slate-300 rounded p-1.5 text-center text-[9px] font-bold text-slate-400 min-h-[70px] flex items-center justify-center">
+              <div key={`print_aisle_${tile.row}_${tile.col}`} className="bg-slate-100/60 border border-dashed border-slate-300 rounded p-1 text-center text-[8px] font-bold text-slate-400 min-h-[45px] flex items-center justify-center">
                 Lối đi
               </div>
             );
@@ -868,31 +909,31 @@ export default function LabRoomTab({
           const assignedSts = cellData.assignedStudents;
 
           return (
-            <div key={`print_pc_${pcId}`} className="border-2 border-slate-900 rounded p-1.5 bg-slate-50 min-h-[80px] flex flex-col justify-between text-xs">
-              <div className="flex justify-between items-center font-bold text-[10px] border-b border-slate-400 pb-0.5 mb-1">
+            <div key={`print_pc_${pcId}`} className="border-2 border-slate-900 rounded p-1 bg-slate-50 min-h-[60px] flex flex-col justify-between text-xs">
+              <div className="flex justify-between items-center font-bold text-[10px] border-b border-slate-400 pb-0.5 mb-0.5">
                 <span className="font-black text-slate-900">🖥️ {formatComputerName(pcId)}</span>
               </div>
 
               {assignedSts.length > 0 ? (
-                <div className="space-y-1 my-auto">
+                <div className="space-y-0.5 my-auto">
                   {assignedSts.map(st => {
                     const att = getStudentAttendance(st.id);
                     const isAbsent = att === 'excused' || att === 'unexcused';
                     const monitorRole = getStudentMonitorRole(st);
 
                     return (
-                      <div key={`print_st_${st.id}`} className={`font-black text-[10px] text-center rounded px-1 py-0.5 border flex items-center justify-center gap-1 ${
+                      <div key={`print_st_${st.id}`} className={`font-black text-[9.5px] text-center rounded px-1 py-0.5 border flex items-center justify-center gap-0.5 ${
                         isAbsent ? 'bg-rose-100 border-rose-400 text-rose-900 line-through' : 'bg-emerald-100 border-emerald-400 text-emerald-950'
                       }`}>
-                        {monitorRole === 'L. Trưởng' && <span className="text-[9px]">🌟</span>}
-                        {monitorRole === 'Lớp phó' && <span className="text-[9px]">⭐</span>}
+                        {monitorRole === 'L. Trưởng' && <span className="text-[8px]">🌟</span>}
+                        {monitorRole === 'Lớp phó' && <span className="text-[8px]">⭐</span>}
                         <span>{isAbsent ? `[VẮNG] ` : ''}{formatStudentNameFirstAndMiddle(st.name)}</span>
                       </div>
                     );
                   })}
                 </div>
               ) : (
-                <div className="text-[9px] text-slate-400 italic text-center my-auto">Chưa xếp</div>
+                <div className="text-[8.5px] text-slate-400 italic text-center my-auto">Chưa xếp</div>
               )}
             </div>
           );
@@ -1291,6 +1332,19 @@ export default function LabRoomTab({
             </div>
 
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => setHideAislesPrint(!hideAislesPrint)}
+                className={`px-3.5 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-md border ${
+                  hideAislesPrint 
+                    ? 'bg-emerald-700 hover:bg-emerald-800 text-white border-emerald-900' 
+                    : 'bg-white hover:bg-slate-100 text-slate-700 border-[#cbb89d]'
+                }`}
+                title="Bật/Tắt thu gọn lối đi để tối ưu toàn bộ ma trận máy tính trong 1 trang A4 duy nhất"
+              >
+                <Sliders className="w-4 h-4" /> 
+                {hideAislesPrint ? '🟢 Đã Ẩn Lối Đi (Tối Ưu 1 Trang A4)' : '⚪ Hiện Lối Đi Đầy Đủ'}
+              </button>
+
               <button
                 onClick={handleExportWord}
                 className="px-4 py-2.5 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-2 cursor-pointer border border-blue-900"
