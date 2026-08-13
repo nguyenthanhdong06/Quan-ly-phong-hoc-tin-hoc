@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Student, Computer, SeatingChart, LabInfo, ClassItem, LabIncident, AttendanceData } from '../types';
 import { 
@@ -532,10 +532,18 @@ export default function LabRoomTab({
   const [isFrameConfigSubViewOpen, setIsFrameConfigSubViewOpen] = useState(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
-  // Drag & Drop States for Student Moves and Machine Swaps
+  // Drag & Drop States & Performance Refs for Instant 60FPS Reactivity
   const [draggedStudentIdState, setDraggedStudentIdState] = useState<string | null>(null);
   const [draggedSourcePcIdState, setDraggedSourcePcIdState] = useState<string | null>(null);
   const [dragOverPcId, setDragOverPcId] = useState<string | null>(null);
+  const dragOverPcIdRef = useRef<string | null>(null);
+
+  const seatingChartRef = useRef(seatingChart);
+  useEffect(() => {
+    seatingChartRef.current = seatingChart;
+  }, [seatingChart]);
+
+  const supabaseDebounceTimerRef = useRef<any>(null);
 
   // 🖨️ Document.body Portal Container for 100% Perfect A4 Printing (Zero Blank Pages)
   const [printPortalContainer, setPrintPortalContainer] = useState<HTMLElement | null>(null);
@@ -557,26 +565,35 @@ export default function LabRoomTab({
     xl: 'p-4.5 min-h-[150px]'
   };
 
-  // --- ⚡ INSTANT SEATING MUTATION SAVE HANDLER ---
+  // --- ⚡ INSTANT 60FPS ZERO-LAG SEATING MUTATION SAVE HANDLER ---
   const saveSeatingState = useCallback((newClassSeating: { [pcId: string]: string }) => {
     const updatedChart: SeatingChart = {
-      ...seatingChart,
+      ...seatingChartRef.current,
       [selectedClass]: newClassSeating
     };
 
+    // 1. INSTANT REACT STATE UPDATE (0ms)
     setSeatingChart(updatedChart);
 
-    setTimeout(() => {
+    // 2. INSTANT LOCAL STORAGE WRITE (~0.1ms)
+    try {
+      localStorage.setItem('school_seating_chart', JSON.stringify(updatedChart));
+    } catch (e) {}
+
+    // 3. DEBOUNCED BACKGROUND SUPABASE SYNC (1500ms - Never blocks UI frames)
+    if (supabaseDebounceTimerRef.current) {
+      clearTimeout(supabaseDebounceTimerRef.current);
+    }
+    supabaseDebounceTimerRef.current = setTimeout(() => {
       try {
-        localStorage.setItem('school_seating_chart', JSON.stringify(updatedChart));
         saveSupabaseState('school_seating_chart', updatedChart);
       } catch (e) {}
-    }, 0);
-  }, [seatingChart, selectedClass, setSeatingChart]);
+    }, 1500);
+  }, [selectedClass, setSeatingChart]);
 
   // Assign student to computer
   const assignStudentToComputer = useCallback((pcId: string, studentId: string) => {
-    const currentSeating = { ...currentClassSeating };
+    const currentSeating = { ...(seatingChartRef.current[selectedClass] || {}) };
 
     const att = getStudentAttendance(studentId);
     if (att === 'excused' || att === 'unexcused') {
@@ -606,11 +623,11 @@ export default function LabRoomTab({
 
     const st = studentsByIdMap.get(studentId);
     showToast(`Đã xếp ${st ? formatStudentNameFirstAndMiddle(st.name) : 'học sinh'} vào ${pcId}!`, 'success');
-  }, [currentClassSeating, getAssignedStudentIds, saveSeatingState, studentsByIdMap, showToast, getStudentAttendance]);
+  }, [selectedClass, getAssignedStudentIds, saveSeatingState, studentsByIdMap, showToast, getStudentAttendance]);
 
   // SWAP MACHINE SEATING OR MOVE STUDENTS BETWEEN MACHINES
   const swapOrMoveStudentsBetweenPCs = useCallback((sourcePcId: string, targetPcId: string, draggedStId: string) => {
-    const currentSeating = { ...currentClassSeating };
+    const currentSeating = { ...(seatingChartRef.current[selectedClass] || {}) };
     const sourceIds = getAssignedStudentIds(currentSeating[sourcePcId]);
     const targetIds = getAssignedStudentIds(currentSeating[targetPcId]);
 
@@ -641,11 +658,11 @@ export default function LabRoomTab({
     const st1 = studentsByIdMap.get(draggedStId);
     const st2 = studentsByIdMap.get(swappedTargetStId);
     showToast(`Đã tráo vị trí ngồi giữa ${st1 ? formatStudentNameFirstAndMiddle(st1.name) : 'HS1'} (${sourcePcId}) và ${st2 ? formatStudentNameFirstAndMiddle(st2.name) : 'HS2'} (${targetPcId})!`, 'success');
-  }, [currentClassSeating, getAssignedStudentIds, saveSeatingState, studentsByIdMap, showToast]);
+  }, [selectedClass, getAssignedStudentIds, saveSeatingState, studentsByIdMap, showToast]);
 
-  // ❌ 100% RELIABLE STUDENT REMOVAL FROM COMPUTER
+  // ❌ 100% RELIABLE & INSTANT STUDENT REMOVAL FROM COMPUTER
   const unassignStudentFromComputer = useCallback((pcId: string, studentId: string) => {
-    const currentSeating = { ...currentClassSeating };
+    const currentSeating = { ...(seatingChartRef.current[selectedClass] || {}) };
     const targetPCHs = getAssignedStudentIds(currentSeating[pcId]).filter(id => id !== studentId);
     if (targetPCHs.length > 0) {
       currentSeating[pcId] = targetPCHs.join(',');
@@ -655,7 +672,7 @@ export default function LabRoomTab({
     saveSeatingState(currentSeating);
     playButtonClickSound();
     showToast('Đã xóa học sinh khỏi vị trí máy!', 'info');
-  }, [currentClassSeating, getAssignedStudentIds, saveSeatingState, showToast]);
+  }, [selectedClass, getAssignedStudentIds, saveSeatingState, showToast]);
 
   // Clear all seating for selected class
   const handleClearAllClassSeating = () => {
@@ -774,13 +791,17 @@ export default function LabRoomTab({
   const handlePcDragOver = useCallback((e: React.DragEvent, pcId: string) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    if (dragOverPcId !== pcId) {
-      setDragOverPcId(pcId);
+    if (dragOverPcIdRef.current !== pcId) {
+      dragOverPcIdRef.current = pcId;
+      requestAnimationFrame(() => {
+        setDragOverPcId(pcId);
+      });
     }
-  }, [dragOverPcId]);
+  }, []);
 
   const handlePcDrop = useCallback((e: React.DragEvent, targetPcId: string) => {
     e.preventDefault();
+    dragOverPcIdRef.current = null;
     setDragOverPcId(null);
 
     let studentId = draggedStudentIdState;
