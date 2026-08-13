@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Student, Computer, SeatingChart, LabInfo, ClassItem, LabIncident, AttendanceData } from '../types';
 import { 
   Monitor, X, Wrench, AlertTriangle, PenTool, Clipboard, Search, Check, ChevronDown, 
@@ -6,7 +7,7 @@ import {
   RotateCcw, Users, Plus, LayoutGrid, CheckCircle2, UserCheck, ShieldCheck, Image as ImageIcon,
   Sliders, Move, ArrowRightLeft, Upload, Link, CheckCheck, RefreshCw, Zap, Eye, EyeOff, 
   PanelLeftClose, PanelLeftOpen, Printer, UserX, AlertCircle, MousePointerClick, Star, Award, Crown,
-  ListFilter, UserPlus, Layers, Settings, FileSpreadsheet, Armchair
+  ListFilter, UserPlus, Layers, Settings, FileSpreadsheet, Armchair, Trash2, User
 } from 'lucide-react';
 import { StudentAvatar3D, formatStudentNameFirstAndMiddle } from './StudentAvatar3D';
 import { extractGoogleDriveFileId, convertGoogleDriveUrl, compressImageFile } from './KnowledgeGardenTab';
@@ -38,7 +39,6 @@ export const generateDefaultLabLayout = (rows: number = 5, cols: number = 8) => 
 export interface FrameSkin {
   id: string;
   name: string;
-  icon: string;
   bgGradient: string;
   borderColor: string;
   textColor: string;
@@ -52,7 +52,6 @@ export const PRESET_FRAME_SKINS: FrameSkin[] = [
   {
     id: 'imac-classic',
     name: 'iMac Classic Cream (Mặc Định)',
-    icon: '🍏',
     bgGradient: 'bg-[#fffbf0]',
     borderColor: 'border-[#cbb89d] hover:border-emerald-500',
     textColor: 'text-slate-900',
@@ -64,7 +63,6 @@ export const PRESET_FRAME_SKINS: FrameSkin[] = [
   {
     id: 'modern-slate',
     name: 'Modern Slate Dark',
-    icon: '🖥️',
     bgGradient: 'bg-slate-900/90',
     borderColor: 'border-indigo-500/50 hover:border-indigo-400',
     textColor: 'text-slate-100',
@@ -76,7 +74,6 @@ export const PRESET_FRAME_SKINS: FrameSkin[] = [
   {
     id: 'cyber-neon',
     name: 'Cyberpunk Neon Glow',
-    icon: '⚡',
     bgGradient: 'bg-black/95',
     borderColor: 'border-cyan-400 hover:border-fuchsia-400',
     textColor: 'text-cyan-200',
@@ -88,7 +85,6 @@ export const PRESET_FRAME_SKINS: FrameSkin[] = [
   {
     id: 'emerald-glass',
     name: 'Emerald Glassmorphism',
-    icon: '💎',
     bgGradient: 'bg-emerald-950/80 backdrop-blur-md',
     borderColor: 'border-emerald-400/60 hover:border-emerald-300',
     textColor: 'text-emerald-100',
@@ -178,7 +174,7 @@ export default function LabRoomTab({
     }
   });
 
-  // --- 🌟 CLASS MONITOR ROLE STATE (L. TRƯỞNG / LỚP PHÓ / TỔ TRƯỞNG) ---
+  // --- CLASS MONITOR ROLE STATE (L. TRƯỞNG / LỚP PHÓ / TỔ TRƯỞNG) ---
   const [studentDuties, setStudentDuties] = useState<{ [studentId: string]: string }>(() => {
     try {
       const saved = localStorage.getItem('school_student_duties_v1');
@@ -221,7 +217,7 @@ export default function LabRoomTab({
     return null;
   }, [studentDuties]);
 
-  // --- 🎨 GENDER COLOR CUSTOMIZATION STATE (NAM XANH / NỮ HỒNG TOGGLE) ---
+  // --- GENDER COLOR CUSTOMIZATION STATE (NAM XANH / NỮ HỒNG TOGGLE) ---
   const [showGenderColors, setShowGenderColors] = useState<boolean>(() => {
     try {
       const saved = localStorage.getItem('school_show_gender_colors_v1');
@@ -237,7 +233,7 @@ export default function LabRoomTab({
       try {
         localStorage.setItem('school_show_gender_colors_v1', JSON.stringify(nextVal));
       } catch (e) {}
-      showToast(nextVal ? '🎨 Đã BẬT dải màu Nam (Xanh biển) / Nữ (Hồng nhạt)!' : '🎨 Đã TẮT màu Nam/Nữ, quay về màu Emerald mặc định!', 'info');
+      showToast(nextVal ? 'Đã BẬT dải màu Nam (Xanh biển) / Nữ (Hồng nhạt)!' : 'Đã TẮT màu Nam/Nữ, quay về màu Emerald mặc định!', 'info');
       return nextVal;
     });
   };
@@ -249,7 +245,7 @@ export default function LabRoomTab({
     return map;
   }, [students]);
 
-  // --- ⚡ LAB ROOM MATRIX GENERATION ---
+  // --- LAB ROOM MATRIX GENERATION ---
   const activeLabGrid = useMemo(() => {
     const rows = activeLab?.gridRows || 5;
     const cols = activeLab?.gridCols || 8;
@@ -311,7 +307,7 @@ export default function LabRoomTab({
     return seatingVal.split(/[,+;]/).map(s => s.trim()).filter(Boolean);
   }, []);
 
-  // --- ⚡ MEMOIZED CELL DATA MAP FOR MAXIMUM PERFORMANCE ---
+  // --- MEMOIZED CELL DATA MAP FOR MAXIMUM PERFORMANCE ---
   const computedCellDataMap = useMemo(() => {
     const map: Record<string, {
       assignedStudents: Student[];
@@ -450,8 +446,8 @@ export default function LabRoomTab({
     } catch (e) {}
   }, [frameConfig]);
 
-  // --- 🚀 INLINE SUB-VIEW STATES (100% FULL WINDOW TAKEOVER WITH RETURN BUTTONS) ---
-  const [isSeatingViewOpen, setIsSeatingViewOpen] = useState(false); // 🪑 XẾP CHỖ NGỒI SUB-VIEW (Screenshot 2026-08-13 160505.png)
+  // --- 🚀 INLINE SUB-VIEW STATES ---
+  const [isSeatingViewOpen, setIsSeatingViewOpen] = useState(false);
   const [isFrameConfigSubViewOpen, setIsFrameConfigSubViewOpen] = useState(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
@@ -467,17 +463,15 @@ export default function LabRoomTab({
     xl: 'p-4.5 min-h-[150px]'
   };
 
-  // --- ⚡ INSTANT SEATING MUTATION SAVE HANDLER (0ms UI RESPONSE + ASYNC DB SAVE) ---
+  // --- ⚡ INSTANT SEATING MUTATION SAVE HANDLER ---
   const saveSeatingState = useCallback((newClassSeating: { [pcId: string]: string }) => {
     const updatedChart: SeatingChart = {
       ...seatingChart,
       [selectedClass]: newClassSeating
     };
 
-    // 1. Instant React UI update with 0ms delay!
     setSeatingChart(updatedChart);
 
-    // 2. Non-blocking Async persistence in background
     setTimeout(() => {
       try {
         localStorage.setItem('school_seating_chart', JSON.stringify(updatedChart));
@@ -493,10 +487,9 @@ export default function LabRoomTab({
     const att = getStudentAttendance(studentId);
     if (att === 'excused' || att === 'unexcused') {
       const st = studentsByIdMap.get(studentId);
-      showToast(`⚠️ Chú ý: ${st ? formatStudentNameFirstAndMiddle(st.name) : 'Học sinh'} đang được báo VẮNG MẶT hôm nay (${att === 'excused' ? 'Có phép' : 'Không phép'})!`, 'warning');
+      showToast(`Chú ý: ${st ? formatStudentNameFirstAndMiddle(st.name) : 'Học sinh'} đang được báo VẮNG MẶT hôm nay (${att === 'excused' ? 'Có phép' : 'Không phép'})!`, 'warning');
     }
 
-    // First remove student from any other PC in this class
     Object.keys(currentSeating).forEach(key => {
       const ids = getAssignedStudentIds(currentSeating[key]).filter(id => id !== studentId);
       if (ids.length > 0) {
@@ -521,13 +514,12 @@ export default function LabRoomTab({
     showToast(`Đã xếp ${st ? formatStudentNameFirstAndMiddle(st.name) : 'học sinh'} vào ${pcId}!`, 'success');
   }, [currentClassSeating, getAssignedStudentIds, saveSeatingState, studentsByIdMap, showToast, getStudentAttendance]);
 
-  // 🔄 INSTANT SWAP MACHINE SEATING OR MOVE STUDENTS BETWEEN MACHINES
+  // SWAP MACHINE SEATING OR MOVE STUDENTS BETWEEN MACHINES
   const swapOrMoveStudentsBetweenPCs = useCallback((sourcePcId: string, targetPcId: string, draggedStId: string) => {
     const currentSeating = { ...currentClassSeating };
     const sourceIds = getAssignedStudentIds(currentSeating[sourcePcId]);
     const targetIds = getAssignedStudentIds(currentSeating[targetPcId]);
 
-    // Case 1: Target PC has space (< 2 HS) -> Move student to Target PC
     if (targetIds.length < 2) {
       const newSourceIds = sourceIds.filter(id => id !== draggedStId);
       const newTargetIds = [...targetIds, draggedStId];
@@ -542,7 +534,6 @@ export default function LabRoomTab({
       return;
     }
 
-    // Case 2: Target PC is FULL (2 HS) -> SWAP seats between the dragged student and the 1st student of Target PC!
     const swappedTargetStId = targetIds[0];
     const newSourceIds = sourceIds.map(id => id === draggedStId ? swappedTargetStId : id);
     const newTargetIds = targetIds.map(id => id === swappedTargetStId ? draggedStId : id);
@@ -555,7 +546,7 @@ export default function LabRoomTab({
 
     const st1 = studentsByIdMap.get(draggedStId);
     const st2 = studentsByIdMap.get(swappedTargetStId);
-    showToast(`🔄 Đã tráo vị trí ngồi giữa ${st1 ? formatStudentNameFirstAndMiddle(st1.name) : 'HS1'} (${sourcePcId}) và ${st2 ? formatStudentNameFirstAndMiddle(st2.name) : 'HS2'} (${targetPcId})!`, 'success');
+    showToast(`Đã tráo vị trí ngồi giữa ${st1 ? formatStudentNameFirstAndMiddle(st1.name) : 'HS1'} (${sourcePcId}) và ${st2 ? formatStudentNameFirstAndMiddle(st2.name) : 'HS2'} (${targetPcId})!`, 'success');
   }, [currentClassSeating, getAssignedStudentIds, saveSeatingState, studentsByIdMap, showToast]);
 
   // Remove a specific student from a PC
@@ -583,7 +574,7 @@ export default function LabRoomTab({
     showToast(`Đã xóa toàn bộ chỗ ngồi của lớp ${selectedClass}!`, 'info');
   };
 
-  // 🌟 QUICK HEAD-OF-ROW SEATING FOR CLASS MONITORS (L. TRƯỞNG & LỚP PHÓ NGỒI ĐẦU BÀN M.01, M.02...)
+  // QUICK HEAD-OF-ROW SEATING FOR CLASS MONITORS
   const handleSeatClassMonitorsHead = () => {
     if (classStudents.length === 0) {
       showToast('Lớp học chưa có học sinh nào!', 'warning');
@@ -632,7 +623,7 @@ export default function LabRoomTab({
 
     saveSeatingState(currentSeating);
     playVictoryFanfareSound();
-    showToast(`🌟 Đã tự động xếp L. Trưởng (${lopTruong ? formatStudentNameFirstAndMiddle(lopTruong.name) : ''}) vào máy ${pcHead1} và Lớp phó (${lopPho ? formatStudentNameFirstAndMiddle(lopPho.name) : ''}) vào máy ${pcHead2} đầu bàn!`, 'success');
+    showToast(`Đã tự động xếp L. Trưởng (${lopTruong ? formatStudentNameFirstAndMiddle(lopTruong.name) : ''}) vào máy ${pcHead1} và Lớp phó (${lopPho ? formatStudentNameFirstAndMiddle(lopPho.name) : ''}) vào máy ${pcHead2} đầu bàn!`, 'success');
   };
 
   // Auto seating algorithm
@@ -674,10 +665,10 @@ export default function LabRoomTab({
 
     saveSeatingState(newSeating);
     playVictoryFanfareSound();
-    showToast(`🪄 Đã xếp tự động chỗ ngồi cho ${classStudents.length} học sinh lớp ${selectedClass} (ưu tiên học sinh có mặt)!`, 'success');
+    showToast(`Đã xếp tự động chỗ ngồi cho ${classStudents.length} học sinh lớp ${selectedClass} (ưu tiên học sinh có mặt)!`, 'success');
   };
 
-  // --- DRAG AND DROP HANDLERS WITH SWAP SUPPORT ---
+  // DRAG AND DROP HANDLERS
   const handleStudentDragStart = useCallback((e: React.DragEvent, studentId: string, sourcePcId: string | null = null) => {
     const payload = JSON.stringify({ studentId, sourcePcId });
     e.dataTransfer.setData('text/plain', payload);
@@ -716,10 +707,8 @@ export default function LabRoomTab({
     if (sourcePcId === targetPcId) return;
 
     if (sourcePcId) {
-      // Swapping or moving between 2 PCs
       swapOrMoveStudentsBetweenPCs(sourcePcId, targetPcId, studentId);
     } else {
-      // Assigning from unassigned left list
       assignStudentToComputer(targetPcId, studentId);
     }
 
@@ -734,7 +723,7 @@ export default function LabRoomTab({
     }
   }, [selectedStudentForAssign, assignStudentToComputer]);
 
-  // Custom Image Upload for PC Frame (Google Drive or Local Upload)
+  // Custom Image Upload for PC Frame
   const [customDriveInput, setCustomDriveInput] = useState('');
   const driveFileId = useMemo(() => extractGoogleDriveFileId(customDriveInput), [customDriveInput]);
 
@@ -782,7 +771,8 @@ export default function LabRoomTab({
               </button>
               <div>
                 <h3 className="font-black text-sm text-slate-900 flex items-center gap-2">
-                  <span>🪑</span> CHỨC NĂNG KÉO THẢ XẾP CHỖ NGỒI HỌC SINH (LỚP {selectedClass.toUpperCase()})
+                  <Armchair className="w-4 h-4 text-amber-800" />
+                  CHỨC NĂNG KÉO THẢ XẾP CHỖ NGỒI HỌC SINH (LỚP {selectedClass.toUpperCase()})
                 </h3>
                 <p className="text-[11px] font-bold text-slate-600">Kéo thả học sinh từ bảng danh sách chờ hoặc tráo đổi ghế giữa các máy tính</p>
               </div>
@@ -794,39 +784,39 @@ export default function LabRoomTab({
                 onClick={handleSeatClassMonitorsHead}
                 className="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer border border-amber-700"
               >
-                <span>🌟</span> Xếp Cán Bộ Lớp
+                <Star className="w-3.5 h-3.5" /> Xếp Cán Bộ Lớp
               </button>
 
               <button
                 onClick={handleAutoSeatClass}
                 className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
               >
-                <span>🪄</span> Xếp Tự Động
+                <Sparkles className="w-3.5 h-3.5" /> Xếp Tự Động
               </button>
 
               <button
                 onClick={handleClearAllClassSeating}
                 className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-black text-xs transition-all active:scale-95 flex items-center gap-1 cursor-pointer"
               >
-                <span>↺</span> Xóa Chỗ Ngồi
+                <RotateCcw className="w-3.5 h-3.5" /> Xóa Chỗ Ngồi
               </button>
             </div>
           </div>
         </div>
 
-        {/* Dual Panel Layout matching Screenshot 2026-08-13 160505.png */}
+        {/* Dual Panel Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           
-          {/* LEFT PANEL: HỌC SINH CHỜ NGỒI (CONTAINING THE TOGGLE BUTTON INSIDE AS REQUESTED) */}
+          {/* LEFT PANEL: HỌC SINH CHỜ NGỒI */}
           {isUnassignedPanelVisible && (
             <div className="lg:col-span-4 bg-[#fffbf0] rounded-2xl p-4 border border-[#cbb89d] shadow-xs space-y-3 flex flex-col max-h-[720px] overflow-hidden">
               
               <div className="space-y-0.5 border-b border-[#cbb89d] pb-2.5">
                 <div className="flex justify-between items-center">
                   <h3 className="font-black text-xs text-[#3d2b17] flex items-center gap-1.5">
-                    <span>👦</span> HỌC SINH CHỜ NGỒI ({unassignedStudents.length})
+                    <User className="w-4 h-4 text-amber-800" />
+                    HỌC SINH CHỜ NGỒI ({unassignedStudents.length})
                   </h3>
-                  {/* ◀ Ẩn BUTTON INSIDE UNASSIGNED PANEL AS REQUESTED */}
                   <button
                     onClick={() => setIsUnassignedPanelVisible(false)}
                     className="px-2 py-0.5 rounded-md bg-amber-100 hover:bg-amber-200 text-[#3d2b17] border border-amber-300 font-black text-[10px] cursor-pointer shadow-2xs flex items-center gap-1"
@@ -869,7 +859,7 @@ export default function LabRoomTab({
                             setSelectedStudentForAssign(null);
                           } else {
                             setSelectedStudentForAssign(st.id);
-                            showToast(`👉 Đang chọn ${formatStudentNameFirstAndMiddle(st.name)}! Nhấp vào bất kỳ ô máy tính nào bên phải để xếp.`, 'info');
+                            showToast(`Đang chọn ${formatStudentNameFirstAndMiddle(st.name)}! Nhấp vào bất kỳ ô máy tính nào bên phải để xếp.`, 'info');
                           }
                         }}
                         className={`p-2.5 rounded-xl border transition-all flex items-center justify-between cursor-pointer group shadow-2xs ${
@@ -881,26 +871,24 @@ export default function LabRoomTab({
                         }`}
                       >
                         <div className="flex items-center gap-2.5">
-                          <span className="text-lg select-none">
-                            {st.gender === 'Nữ' ? '👧' : '👦'}
-                          </span>
+                          <StudentAvatar3D gender={st.gender} size="w-8 h-8" name={st.name} avatarUrl={st.avatarUrl} />
                           <div>
                             <div className="font-black text-xs text-slate-900 group-hover:text-emerald-950 flex flex-wrap items-center gap-1.5">
                               <span>{st.name}</span>
                               
                               {monitorRole === 'L. Trưởng' && (
                                 <span className="text-[9px] font-black bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded border border-amber-500 flex items-center gap-0.5 shadow-2xs">
-                                  🌟 L. TRƯỜNG
+                                  L. TRƯỞNG
                                 </span>
                               )}
                               {monitorRole === 'Lớp phó' && (
                                 <span className="text-[9px] font-black bg-sky-400 text-slate-950 px-1.5 py-0.5 rounded border border-sky-500 flex items-center gap-0.5 shadow-2xs">
-                                  ⭐ LỚP PHÓ
+                                  LỚP PHÓ
                                 </span>
                               )}
                               {monitorRole === 'Tổ trưởng' && (
                                 <span className="text-[9px] font-black bg-purple-400 text-slate-950 px-1.5 py-0.5 rounded border border-purple-500 flex items-center gap-0.5 shadow-2xs">
-                                  🎖️ TỔ TRƯỞNG
+                                  TỔ TRƯỞNG
                                 </span>
                               )}
                             </div>
@@ -914,7 +902,7 @@ export default function LabRoomTab({
                                   }}
                                   className={`px-1 rounded border cursor-pointer font-black ${monitorRole === 'L. Trưởng' ? 'bg-amber-500 text-white border-amber-600' : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-amber-100'}`}
                                 >
-                                  🌟 L.Trưởng
+                                  L.Trưởng
                                 </button>
                                 <button
                                   onClick={(e) => {
@@ -923,7 +911,7 @@ export default function LabRoomTab({
                                   }}
                                   className={`px-1 rounded border cursor-pointer font-black ${monitorRole === 'Lớp phó' ? 'bg-sky-500 text-white border-sky-600' : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-sky-100'}`}
                                 >
-                                  ⭐ L.Phó
+                                  L.Phó
                                 </button>
                               </div>
                             </div>
@@ -958,7 +946,8 @@ export default function LabRoomTab({
             {/* Header Màn chiếu bảng giáo viên */}
             <div className="flex justify-between items-center bg-[#dfccb0] p-2.5 rounded-xl border border-[#cbb89d]">
               <span className="text-xs font-black text-[#3d2b17] uppercase tracking-widest flex items-center gap-2">
-                👨‍🏫 MÀN CHIẾU & BẢNG GIÁO VIÊN ({activeLab.name} - {activeLab.code})
+                <Tv className="w-4 h-4 text-amber-800" />
+                MÀN CHIẾU & BẢNG GIÁO VIÊN ({activeLab.name} - {activeLab.code})
               </span>
 
               {!isUnassignedPanelVisible && (
@@ -1045,8 +1034,8 @@ export default function LabRoomTab({
                               className={`rounded-lg px-2.5 py-1 flex items-center justify-between relative transition-all cursor-grab active:cursor-grabbing text-center shadow-2xs border ${pillBgStyle}`}
                             >
                               <span className="font-black text-xs text-center truncate mx-auto flex items-center justify-center gap-1">
-                                {role === 'L. Trưởng' && <span className="text-[10px]">🌟</span>}
-                                {role === 'Lớp phó' && <span className="text-[10px]">⭐</span>}
+                                {role === 'L. Trưởng' && <Star className="w-3 h-3 text-amber-950 fill-amber-300" />}
+                                {role === 'Lớp phó' && <Award className="w-3 h-3 text-sky-950" />}
                                 <span>{formatStudentNameFirstAndMiddle(st.name)}</span>
                               </span>
                               <button
@@ -1082,47 +1071,39 @@ export default function LabRoomTab({
   }
 
   // =========================================================================
-  // 🖨️ 2. DEDICATED PRINT PREVIEW MODAL (FULL A4 PREVIEW ON SCREEN & PRINT PDF 100%)
+  // 🖨️ 2. DEDICATED PRINT PREVIEW (PORTAL FOR 100% PERFECT A4 PRINTING)
   // =========================================================================
   if (isPrintModalOpen) {
     return (
       <div className="space-y-6 text-slate-800 pb-10">
         <style>{`
           @media print {
-            body > *:not(#print-root-wrapper),
-            .no-print,
-            header,
-            nav,
-            aside {
+            body > * {
               display: none !important;
-              visibility: hidden !important;
             }
-            .printable-paper-area {
-              position: fixed !important;
+            #lab-print-portal {
+              display: block !important;
+              visibility: visible !important;
+              position: absolute !important;
               left: 0 !important;
               top: 0 !important;
-              width: 100vw !important;
-              height: auto !important;
-              margin: 0 !important;
-              padding: 15px !important;
+              width: 100% !important;
               background: white !important;
               color: black !important;
-              box-shadow: none !important;
-              border: none !important;
-              z-index: 999999 !important;
-              visibility: visible !important;
-              display: block !important;
+              margin: 0 !important;
+              padding: 10mm !important;
             }
-            .printable-paper-area * {
+            #lab-print-portal * {
               visibility: visible !important;
             }
             @page {
               size: A4 landscape;
-              margin: 8mm;
+              margin: 5mm;
             }
           }
         `}</style>
 
+        {/* Top Control Bar (Screen only) */}
         <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs no-print">
           <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex items-center gap-3">
@@ -1134,7 +1115,8 @@ export default function LabRoomTab({
               </button>
               <div>
                 <h3 className="font-black text-sm text-slate-900 flex items-center gap-2">
-                  <span>🖨️</span> XEM TRƯỚC VÀ IN SƠ ĐỒ CHỖ NGỒI PHÒNG LAB (A4 LANDSCAPE)
+                  <Printer className="w-4 h-4 text-amber-800" />
+                  XEM TRƯỚC VÀ IN SƠ ĐỒ CHỖ NGỒI PHÒNG LAB (A4 LANDSCAPE)
                 </h3>
                 <p className="text-[11px] font-bold text-slate-600">Trường Tiểu Học Long Định • Lớp {selectedClass}</p>
               </div>
@@ -1145,13 +1127,14 @@ export default function LabRoomTab({
                 onClick={() => window.print()}
                 className="px-5 py-2.5 rounded-xl bg-amber-800 hover:bg-amber-900 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-2 cursor-pointer border border-amber-950"
               >
-                <Printer className="w-4 h-4" /> 🖨️ XÁC NHẬN IN NGAY / XUẤT FILE PDF
+                <Printer className="w-4 h-4" /> XÁC NHẬN IN NGAY / XUẤT FILE PDF
               </button>
             </div>
           </div>
         </div>
 
-        <div className="max-w-[1050px] mx-auto bg-white p-6 border-2 border-slate-300 rounded-2xl shadow-xl text-slate-900 space-y-4 printable-paper-area">
+        {/* Screen Preview Container */}
+        <div className="max-w-[1050px] mx-auto bg-white p-6 border-2 border-slate-300 rounded-2xl shadow-xl text-slate-900 space-y-4">
           <div className="border-b-2 border-slate-900 pb-3 flex justify-between items-center text-slate-900">
             <div>
               <div className="font-black text-xs uppercase tracking-wider text-slate-700">TRƯỜNG TIỂU HỌC LONG ĐỊNH</div>
@@ -1166,7 +1149,7 @@ export default function LabRoomTab({
           </div>
 
           <div className="bg-slate-800 text-amber-300 py-1.5 font-black text-center text-xs uppercase rounded tracking-widest flex items-center justify-center gap-2">
-            <span>👨‍🏫 MÀN CHIẾU & BẢNG GIÁO VIÊN ({activeLab.name})</span>
+            <span>MÀN CHIẾU & BẢNG GIÁO VIÊN ({activeLab.name})</span>
           </div>
 
           <div 
@@ -1208,7 +1191,6 @@ export default function LabRoomTab({
                           }`}>
                             {monitorRole === 'L. Trưởng' && <span className="text-[9px]">🌟</span>}
                             {monitorRole === 'Lớp phó' && <span className="text-[9px]">⭐</span>}
-                            {monitorRole === 'Tổ trưởng' && <span className="text-[9px]">🎖️</span>}
                             <span>{isAbsent ? `[VẮNG] ` : ''}{formatStudentNameFirstAndMiddle(st.name)}</span>
                           </div>
                         );
@@ -1238,7 +1220,7 @@ export default function LabRoomTab({
   }
 
   // =========================================================================
-  // 🎨 3. INLINE SUB-VIEW: ĐỔI KHUNG CARD PC (100% FULL WINDOW TAKEOVER)
+  // 🎨 3. INLINE SUB-VIEW: ĐỔI KHUNG CARD PC
   // =========================================================================
   if (isFrameConfigSubViewOpen) {
     return (
@@ -1254,7 +1236,8 @@ export default function LabRoomTab({
               </button>
               <div>
                 <h3 className="font-black text-sm text-slate-900 flex items-center gap-2">
-                  <span>🎨</span> THIẾT LẬP & ĐỔI KHUNG CARD PC PHÒNG LAB
+                  <Palette className="w-4 h-4 text-amber-800" />
+                  THIẾT LẬP & ĐỔI KHUNG CARD PC PHÒNG LAB
                 </h3>
                 <p className="text-[11px] font-bold text-slate-600">Tùy biến viền card PC, màu sắc, hình nền từ Google Drive hoặc máy tính</p>
               </div>
@@ -1273,7 +1256,7 @@ export default function LabRoomTab({
           <div className="lg:col-span-7 space-y-6">
             <div className="bg-[#fffbf0] rounded-3xl p-6 border border-[#cbb89d] shadow-xs space-y-4">
               <h4 className="font-black text-sm text-[#3d2b17] flex items-center gap-2">
-                <span>🌟</span> MẪU PRESET KHUNG CARD CÓ SẴN
+                <Star className="w-4 h-4 text-amber-600" /> MẪU PRESET KHUNG CARD CÓ SẴN
               </h4>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1296,7 +1279,6 @@ export default function LabRoomTab({
                           : 'border-[#cbb89d] hover:border-emerald-500 bg-white'
                       }`}
                     >
-                      <span className="text-3xl">{skin.icon}</span>
                       <div>
                         <div className="font-black text-xs text-slate-900">{skin.name}</div>
                         <div className="text-[10px] font-bold text-slate-400 mt-0.5">Click để chọn ngay</div>
@@ -1309,7 +1291,7 @@ export default function LabRoomTab({
 
             <div className="bg-[#fffbf0] rounded-3xl p-6 border border-[#cbb89d] shadow-xs space-y-4">
               <h4 className="font-black text-sm text-[#3d2b17] flex items-center gap-2">
-                <span>🌐</span> NẠP ẢNH KHUNG CARD TỪ GOOGLE DRIVE HOẶC MÁY TÍNH
+                <ImageIcon className="w-4 h-4 text-amber-600" /> NẠP ẢNH KHUNG CARD TỪ GOOGLE DRIVE HOẶC MÁY TÍNH
               </h4>
 
               <div className="space-y-2">
@@ -1317,7 +1299,7 @@ export default function LabRoomTab({
                   <label className="block text-xs font-black text-slate-700">Dán Link Google Drive:</label>
                   {driveFileId && (
                     <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                      🟢 Drive OK
+                      Drive OK
                     </span>
                   )}
                 </div>
@@ -1350,7 +1332,7 @@ export default function LabRoomTab({
 
               {frameConfig.customImageUrl && (
                 <div className="pt-2 flex items-center justify-between bg-emerald-50 p-3 rounded-2xl border border-emerald-200">
-                  <span className="text-xs font-bold text-emerald-900">✨ Đang dùng Ảnh Khung Tùy Chỉnh!</span>
+                  <span className="text-xs font-bold text-emerald-900">Đang dùng Ảnh Khung Tùy Chỉnh!</span>
                   <button
                     onClick={() => setFrameConfig(prev => ({ ...prev, customImageUrl: undefined }))}
                     className="text-xs font-black text-rose-600 hover:underline cursor-pointer"
@@ -1363,7 +1345,7 @@ export default function LabRoomTab({
 
             <div className="bg-[#fffbf0] rounded-3xl p-6 border border-[#cbb89d] shadow-xs space-y-4">
               <h4 className="font-black text-sm text-[#3d2b17] flex items-center gap-2">
-                <span>📐</span> ĐỒNG BỘ KÍCH THƯỚC CARD & SƠ ĐỒ LỚP HỌC
+                <Sliders className="w-4 h-4 text-amber-600" /> ĐỒNG BỘ KÍCH THƯỚC CARD & SƠ ĐỒ LỚP HỌC
               </h4>
 
               <div className="grid grid-cols-2 gap-4 text-xs font-bold">
@@ -1391,7 +1373,7 @@ export default function LabRoomTab({
                         : 'bg-slate-100 text-slate-600 border-slate-200'
                     }`}
                   >
-                    {frameConfig.glowEffect ? '✨ Bật Phát Sáng' : 'Tắt Phát Sáng'}
+                    {frameConfig.glowEffect ? 'Bật Phát Sáng' : 'Tắt Phát Sáng'}
                   </button>
                 </div>
               </div>
@@ -1401,7 +1383,7 @@ export default function LabRoomTab({
           <div className="lg:col-span-5 space-y-4">
             <div className="bg-[#fffbf0] rounded-3xl p-6 border border-[#cbb89d] text-slate-900 space-y-4 shadow-md sticky top-4">
               <h4 className="font-black text-xs text-[#3d2b17] uppercase tracking-wider flex items-center gap-2">
-                <span>👁️</span> XEM TRƯỚC HIỂN THỊ KHUNG CARD PC
+                <Eye className="w-4 h-4 text-amber-600" /> XEM TRƯỚC HIỂN THỊ KHUNG CARD PC
               </h4>
 
               <div 
@@ -1428,13 +1410,13 @@ export default function LabRoomTab({
                 <div className="space-y-1.5 text-center">
                   <div className="bg-emerald-400 border-2 border-emerald-300 text-slate-950 rounded-xl px-3 py-1.5 flex items-center justify-center relative shadow-md">
                     <span className="font-black text-xs text-center mx-auto flex items-center gap-1">
-                      <span>🌟</span> Văn An
+                      <span>Văn An</span>
                     </span>
                     <span className="absolute right-2 text-[10px] opacity-70">×</span>
                   </div>
                   <div className="bg-emerald-400 border-2 border-emerald-300 text-slate-950 rounded-xl px-3 py-1.5 flex items-center justify-center relative shadow-md">
                     <span className="font-black text-xs text-center mx-auto flex items-center gap-1">
-                      <span>⭐</span> Thị Bích
+                      <span>Thị Bích</span>
                     </span>
                     <span className="absolute right-2 text-[10px] opacity-70">×</span>
                   </div>
@@ -1457,37 +1439,49 @@ export default function LabRoomTab({
   return (
     <div className="space-y-5 pb-12 text-slate-800">
       
-      {/* 🌟 1. BANNER HEADER MÀU SẮC ĐỒNG BỘ KHU VƯỜN TRI THỨC (IMAC WARM BEIGE & EMERALD GOLD) */}
+      {/* 🌟 1. BANNER HEADER WITH ACTION BUTTONS ROW (Xếp chỗ ngồi | Khung Card | Xếp Cán Bộ Lớp | Xếp Tự Động | Xóa chỗ ngồi) */}
       <div className="relative rounded-2xl border border-[#cbb89d] bg-[#fffbf0] py-3.5 px-5 text-slate-900 shadow-xs overflow-hidden no-print">
         <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           
           <div className="flex items-center gap-2.5">
-            <span className="text-xl select-none">🧪</span>
+            <Monitor className="w-5 h-5 text-[#3d2b17]" />
             <div>
               <p className="text-xs sm:text-sm font-black text-[#3d2b17]">
-                👉 Bấm nút <span className="text-amber-800 font-extrabold bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300">"🪑 Xếp Chỗ Ngồi"</span> hoặc các nút thao tác bên dưới để quản lý vị trí ngồi học sinh phòng máy.
+                Bấm nút <span className="text-amber-800 font-extrabold bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300">"Xếp chỗ ngồi"</span> hoặc các nút chức năng để quản lý vị trí chỗ ngồi học sinh phòng máy.
               </p>
             </div>
           </div>
 
-          {/* Right Action Buttons */}
+          {/* Action Buttons Row: Xếp chỗ ngồi | Khung card | Xếp Cán Bộ Lớp | Xếp Tự Động | Xóa chỗ ngồi */}
           <div className="flex flex-wrap items-center gap-2 shrink-0">
             
+            {/* 🪑 XẾP CHỖ NGỒI (NO PULSE, MOVED HERE ALONGSIDE OTHER ACTION BUTTONS) */}
+            <button
+              onClick={() => setIsSeatingViewOpen(true)}
+              className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-700 to-amber-800 hover:from-amber-800 hover:to-amber-900 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer border border-amber-900"
+              title="Mở giao diện kéo thả xếp chỗ ngồi tương tác"
+            >
+              <Armchair className="w-3.5 h-3.5 text-amber-200" />
+              <span>Xếp chỗ ngồi ({unassignedStudents.length} HS Chờ)</span>
+            </button>
+
             {/* Khung Card */}
             <button
               onClick={() => setIsFrameConfigSubViewOpen(true)}
               className="px-3 py-1.5 rounded-xl bg-[#3d2b17] hover:bg-[#281c0f] text-amber-200 font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 border border-[#5c4327] cursor-pointer"
             >
-              <span>🎨</span> Khung Card
+              <Palette className="w-3.5 h-3.5" />
+              <span>Khung card</span>
             </button>
 
-            {/* 🌟 Xếp Cán Bộ Lớp */}
+            {/* Xếp Cán Bộ Lớp */}
             <button
               onClick={handleSeatClassMonitorsHead}
               className="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer border border-amber-700"
-              title="Ưu tiên xếp L. Trưởng và Lớp phó vào các vị trí máy đầu bàn (M.01, M.02) để Giáo viên dễ quản lý"
+              title="Ưu tiên xếp L. Trưởng và Lớp phó vào các vị trí máy đầu bàn (M.01, M.02)"
             >
-              <span>🌟</span> Xếp Cán Bộ Lớp
+              <Star className="w-3.5 h-3.5" />
+              <span>Xếp Cán Bộ Lớp</span>
             </button>
 
             {/* Xếp Tự Động */}
@@ -1495,7 +1489,18 @@ export default function LabRoomTab({
               onClick={handleAutoSeatClass}
               className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
             >
-              <span>🪄</span> Xếp Tự Động
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Xếp Tự Động</span>
+            </button>
+
+            {/* Xóa chỗ ngồi (MOVED HERE ALONGSIDE ACTION BUTTONS) */}
+            <button
+              onClick={handleClearAllClassSeating}
+              className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer border border-rose-700"
+              title="Xóa toàn bộ chỗ ngồi đã xếp của lớp hiện tại"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Xóa chỗ ngồi</span>
             </button>
 
           </div>
@@ -1503,7 +1508,7 @@ export default function LabRoomTab({
         </div>
       </div>
 
-      {/* 🎛️ 2. CONTROL FILTER BAR (CONTAINING THE NEW '🪑 XẾP CHỖ NGỒI' BUTTON) */}
+      {/* 🎛️ 2. CONTROL FILTER BAR */}
       <div className="bg-[#fffbf0] rounded-2xl p-3.5 sm:p-4 border border-[#cbb89d] shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 no-print">
         
         <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
@@ -1524,23 +1529,13 @@ export default function LabRoomTab({
             </select>
           </div>
 
-          {/* 🪑 NEW PROMINENT 'XẾP CHỖ NGỒI' BUTTON RIGHT IN THE FILTER BAR */}
-          <button
-            onClick={() => setIsSeatingViewOpen(true)}
-            className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-2 cursor-pointer border border-amber-800 animate-pulse"
-            title="Mở giao diện kéo thả xếp chỗ ngồi tương tác"
-          >
-            <Armchair className="w-4 h-4 text-amber-200" />
-            <span>🪑 Xếp Chỗ Ngồi ({unassignedStudents.length} HS Chờ)</span>
-          </button>
-
           {/* Attendance Summary */}
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-[#cbb89d] text-xs font-black text-[#3d2b17] shadow-2xs">
-            <span>📋 Điểm danh:</span>
-            <span className="text-emerald-700">🟢 {attendanceSummary.present} Có mặt</span>
+            <span>Điểm danh:</span>
+            <span className="text-emerald-700 font-bold">Có mặt: {attendanceSummary.present}</span>
             {attendanceSummary.absentTotal > 0 ? (
               <span className="text-rose-700 font-black flex items-center gap-0.5">
-                | 🔴 {attendanceSummary.absentTotal} Vắng
+                | Vắng: {attendanceSummary.absentTotal}
                 {attendanceSummary.excused > 0 && <span className="text-amber-700"> ({attendanceSummary.excused}P)</span>}
                 {attendanceSummary.unexcused > 0 && <span className="text-rose-700"> ({attendanceSummary.unexcused}K)</span>}
               </span>
@@ -1554,13 +1549,13 @@ export default function LabRoomTab({
             onClick={toggleGenderColors}
             className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all border flex items-center gap-1.5 cursor-pointer shadow-2xs ${
               showGenderColors 
-                ? 'bg-gradient-to-r from-sky-500 to-pink-500 text-white border-sky-400 shadow-xs'
+                ? 'bg-sky-600 text-white border-sky-500 shadow-xs'
                 : 'bg-white text-slate-700 border-[#cbb89d] hover:bg-slate-50'
             }`}
             title="Bật/Tắt dải màu xanh biển cho Nam và màu hồng nhạt cho Nữ"
           >
             <Palette className="w-3.5 h-3.5" />
-            <span>Màu Nam/Nữ: {showGenderColors ? '👦🏼👧🏻 BẬT' : 'TẮT'}</span>
+            <span>Màu Nam/Nữ: {showGenderColors ? 'BẬT' : 'TẮT'}</span>
           </button>
 
           {/* Quick Student Finder */}
@@ -1570,7 +1565,7 @@ export default function LabRoomTab({
               type="text"
               value={searchStudentSeat}
               onChange={(e) => setSearchStudentSeat(e.target.value)}
-              placeholder="🔍 Tìm vị trí chỗ ngồi HS..."
+              placeholder="Tìm vị trí chỗ ngồi HS..."
               className="w-full pl-9 pr-7 py-1.5 text-xs font-black rounded-xl border border-amber-300 bg-amber-50/80 text-amber-950 focus:outline-none focus:border-amber-500 shadow-2xs placeholder:text-amber-700/60"
             />
             {searchStudentSeat && (
@@ -1584,8 +1579,8 @@ export default function LabRoomTab({
           </div>
 
           {searchStudentSeat && (
-            <span className="text-[11px] font-black text-amber-900 bg-amber-200/90 px-2.5 py-1 rounded-lg border border-amber-400 animate-pulse">
-              ✨ {matchingPcIdsForSearch.size} ô máy khớp!
+            <span className="text-[11px] font-black text-amber-900 bg-amber-200/90 px-2.5 py-1 rounded-lg border border-amber-400">
+              {matchingPcIdsForSearch.size} ô máy khớp!
             </span>
           )}
 
@@ -1594,36 +1589,28 @@ export default function LabRoomTab({
               onClick={() => setShowAbsentOnlyFilter(!showAbsentOnlyFilter)}
               className={`px-3 py-1.5 rounded-xl font-black text-xs transition-all border flex items-center gap-1.5 cursor-pointer ${
                 showAbsentOnlyFilter
-                  ? 'bg-rose-600 text-white border-rose-500 shadow-xs animate-pulse'
+                  ? 'bg-rose-600 text-white border-rose-500 shadow-xs'
                   : 'bg-rose-50 text-rose-800 border-rose-200 hover:bg-rose-100'
               }`}
             >
               <UserX className="w-3.5 h-3.5" />
-              {showAbsentOnlyFilter ? 'Showing Absent' : `🔴 Lọc ${attendanceSummary.absentTotal} HS Vắng`}
+              {showAbsentOnlyFilter ? 'Hiển thị vắng' : `Lọc ${attendanceSummary.absentTotal} HS Vắng`}
             </button>
           )}
 
         </div>
 
-        <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-2.5 sm:pt-0 border-[#cbb89d]">
-          <button
-            onClick={handleClearAllClassSeating}
-            className="px-3.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-black text-xs transition-all active:scale-95 flex items-center gap-1 cursor-pointer shadow-2xs"
-          >
-            <span>↺</span> Xóa Chỗ Ngồi
-          </button>
-        </div>
-
       </div>
 
-      {/* 🖼️ 3. MAIN ROOM CANVAS GRID (100% FULL WIDTH ON MAIN SCREEN - NO UNASSIGNED PANEL OUTSIDE) */}
+      {/* 🖼️ 3. MAIN ROOM CANVAS GRID (100% FULL WIDTH ON MAIN SCREEN) */}
       <div className="w-full bg-[#fbf7ee] rounded-2xl p-4 sm:p-5 border border-[#cbb89d] shadow-xs space-y-4">
         
         {/* Top Canvas Toolbar */}
         <div className="flex flex-col sm:flex-row justify-between items-center gap-3 bg-[#dfccb0] p-2.5 rounded-xl border border-[#cbb89d]">
           
           <span className="text-xs font-black text-[#3d2b17] uppercase tracking-widest flex items-center gap-2 mx-auto sm:mx-0">
-            👨‍🏫 MÀN CHIẾU & BẢNG GIÁO VIÊN ({activeLab.name} - {activeLab.code})
+            <Tv className="w-4 h-4 text-amber-800" />
+            MÀN CHIẾU & BẢNG GIÁO VIÊN ({activeLab.name} - {activeLab.code})
           </span>
 
           <div className="flex items-center gap-2 no-print">
@@ -1715,11 +1702,11 @@ export default function LabRoomTab({
 
               let borderStyleClass = 'border-[#cbb89d] bg-[#fffbf0]';
               if (targetIncident) {
-                borderStyleClass = 'border-rose-500 bg-rose-100/90 ring-4 ring-rose-400 animate-pulse text-rose-950 z-20';
+                borderStyleClass = 'border-rose-500 bg-rose-100/90 ring-4 ring-rose-400 text-rose-950 z-20';
               } else if (showAbsentOnlyFilter && hasAbsentStudent) {
-                borderStyleClass = 'border-rose-500 bg-rose-50 ring-4 ring-rose-500 animate-bounce text-rose-950 z-30 shadow-[0_0_25px_rgba(244,63,94,0.8)]';
+                borderStyleClass = 'border-rose-500 bg-rose-50 ring-4 ring-rose-500 text-rose-950 z-30 shadow-[0_0_25px_rgba(244,63,94,0.8)]';
               } else if (isSearchMatch) {
-                borderStyleClass = 'border-amber-400 bg-amber-100/90 ring-4 ring-amber-400 animate-pulse scale-105 shadow-[0_0_25px_rgba(245,158,11,0.8)] z-30';
+                borderStyleClass = 'border-amber-400 bg-amber-100/90 ring-4 ring-amber-400 scale-105 shadow-[0_0_25px_rgba(245,158,11,0.8)] z-30';
               } else if (monitorRole === 'L. Trưởng') {
                 borderStyleClass = 'border-amber-400 bg-amber-50/80 ring-4 ring-amber-400/80 shadow-[0_0_20px_rgba(245,158,11,0.6)] z-10';
               } else if (monitorRole === 'Lớp phó') {
@@ -1762,20 +1749,20 @@ export default function LabRoomTab({
                     </span>
 
                     {targetIncident ? (
-                      <span className="text-[9px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded-full border border-rose-400 animate-bounce" title={targetIncident.issue}>
-                        ⚠️ HỎNG
+                      <span className="text-[9px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded-full border border-rose-400" title={targetIncident.issue}>
+                        HỎNG
                       </span>
                     ) : monitorRole === 'L. Trưởng' ? (
-                      <span className="text-[9px] font-black bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full border border-amber-500 shadow-2xs animate-pulse">
-                        🌟 L. TRƯỞNG
+                      <span className="text-[9px] font-black bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full border border-amber-500 shadow-2xs">
+                        L. TRƯỞNG
                       </span>
                     ) : monitorRole === 'Lớp phó' ? (
                       <span className="text-[9px] font-black bg-sky-400 text-slate-950 px-2 py-0.5 rounded-full border border-sky-500 shadow-2xs">
-                        ⭐ LỚP PHÓ
+                        LỚP PHÓ
                       </span>
                     ) : hasAbsentStudent ? (
-                      <span className="text-[9px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded-full border border-rose-400 animate-pulse" title="Có học sinh báo vắng mặt hôm nay">
-                        🔴 CÓ VẮNG
+                      <span className="text-[9px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded-full border border-rose-400" title="Có học sinh báo vắng mặt hôm nay">
+                        CÓ VẮNG
                       </span>
                     ) : (
                       <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full border shadow-2xs ${
@@ -1807,7 +1794,7 @@ export default function LabRoomTab({
 
                         let pillBgStyle = 'bg-emerald-400 text-slate-950 border-emerald-300';
                         if (isUnexcused) {
-                          pillBgStyle = 'bg-rose-600 text-white border-rose-400 animate-pulse';
+                          pillBgStyle = 'bg-rose-600 text-white border-rose-400';
                         } else if (isExcused) {
                           pillBgStyle = 'bg-amber-600 text-white border-amber-400';
                         } else if (showGenderColors) {
@@ -1826,11 +1813,10 @@ export default function LabRoomTab({
                             className={`rounded-lg px-2.5 py-1 flex items-center justify-between relative transition-all cursor-grab active:cursor-grabbing group text-center shadow-2xs border ${pillBgStyle}`}
                           >
                             <span className="font-black text-xs text-center truncate mx-auto flex items-center justify-center gap-1" title={st.name}>
-                              {role === 'L. Trưởng' && <span className="text-[10px]" title="L. Trưởng">🌟</span>}
-                              {role === 'Lớp phó' && <span className="text-[10px]" title="Lớp phó">⭐</span>}
-                              {role === 'Tổ trưởng' && <span className="text-[10px]" title="Tổ trưởng">🎖️</span>}
-                              {isUnexcused && <span className="text-[9px] font-black bg-slate-950/70 px-1 rounded text-rose-200">🚫 K</span>}
-                              {isExcused && <span className="text-[9px] font-black bg-slate-950/70 px-1 rounded text-amber-200">📝 P</span>}
+                              {role === 'L. Trưởng' && <Star className="w-3 h-3 text-amber-950 fill-amber-300" />}
+                              {role === 'Lớp phó' && <Award className="w-3 h-3 text-sky-950" />}
+                              {isUnexcused && <span className="text-[9px] font-black bg-slate-950/70 px-1 rounded text-rose-200">K</span>}
+                              {isExcused && <span className="text-[9px] font-black bg-slate-950/70 px-1 rounded text-amber-200">P</span>}
                               <span className={isAbsent ? 'line-through opacity-90' : ''}>{formatStudentNameFirstAndMiddle(st.name)}</span>
                             </span>
 
@@ -1857,7 +1843,7 @@ export default function LabRoomTab({
                     </div>
                   ) : (
                     <div className="my-auto py-1.5 text-center justify-center flex items-center text-[#5c4327]/60 font-bold text-[10px] border border-dashed border-[#cbb89d] rounded-lg bg-white/40">
-                      Bấm "🪑 Xếp Chỗ Ngồi" để xếp
+                      Bấm "Xếp chỗ ngồi" để xếp
                     </div>
                   )}
 

@@ -26,6 +26,7 @@ const TAB_METADATA: Record<string, { label: string; icon: React.ElementType }> =
   emulation: { label: 'Thi đua Phòng máy', icon: Trophy },
   'knowledge-garden': { label: 'Khu Vườn Tri Thức', icon: Sprout },
   seating: { label: 'Sơ đồ Máy tính', icon: Monitor },
+  'lab-room': { label: 'Phòng Lab', icon: Monitor },
   timetable: { label: 'Thời khóa biểu', icon: Calendar },
   'lab-booking': { label: 'Đăng ký & Quản lý Phòng máy', icon: CalendarCheck },
   resources: { label: 'Kho tài nguyên Giáo án', icon: FolderOpen },
@@ -50,7 +51,7 @@ export const DeskOSMacWindow: React.FC<DeskOSMacWindowProps> = ({
   children,
 }) => {
   const [isMaximized, setIsMaximized] = useState(false);
-  const currentTabInfo = TAB_METADATA[activeTab] || { label: 'Ứng dụng', icon: Home };
+  const currentTabInfo = TAB_METADATA[activeTab] || { label: 'Phòng Lab', icon: Monitor };
   const TabIcon = currentTabInfo.icon;
 
   if (isMinimized) return null;
