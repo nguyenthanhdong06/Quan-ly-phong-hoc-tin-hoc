@@ -1544,20 +1544,6 @@ export default function LabRoomTab({
             )}
           </div>
 
-          {/* Gender Color Toggle */}
-          <button
-            onClick={toggleGenderColors}
-            className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all border flex items-center gap-1.5 cursor-pointer shadow-2xs ${
-              showGenderColors 
-                ? 'bg-sky-600 text-white border-sky-500 shadow-xs'
-                : 'bg-white text-slate-700 border-[#cbb89d] hover:bg-slate-50'
-            }`}
-            title="Bật/Tắt dải màu xanh biển cho Nam và màu hồng nhạt cho Nữ"
-          >
-            <Palette className="w-3.5 h-3.5" />
-            <span>Màu Nam/Nữ: {showGenderColors ? 'BẬT' : 'TẮT'}</span>
-          </button>
-
           {/* Quick Student Finder */}
           <div className="relative flex-1 min-w-[180px] max-w-[260px]">
             <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-amber-700" />
