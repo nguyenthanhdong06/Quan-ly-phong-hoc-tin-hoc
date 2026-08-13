@@ -1228,15 +1228,15 @@ export default function LabRoomTab({
                       </span>
 
                       {monitorRole === 'L. Trưởng' ? (
-                        <span className="text-[9px] font-black bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full border border-amber-500 shadow-md animate-pulse">
+                        <span className="text-[8.5px] sm:text-[9px] font-black bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded-full border border-amber-500 shadow-md animate-pulse whitespace-nowrap shrink-0 inline-flex items-center gap-0.5">
                           🌟 L. TRƯỞNG
                         </span>
                       ) : monitorRole === 'Lớp phó' ? (
-                        <span className="text-[9px] font-black bg-sky-400 text-slate-950 px-2 py-0.5 rounded-full border border-sky-500 shadow-md">
+                        <span className="text-[8.5px] sm:text-[9px] font-black bg-sky-400 text-slate-950 px-1.5 py-0.5 rounded-full border border-sky-500 shadow-md whitespace-nowrap shrink-0 inline-flex items-center gap-0.5">
                           ⭐ LỚP PHÓ
                         </span>
                       ) : monitorRole === 'Tổ trưởng' ? (
-                        <span className="text-[9px] font-black bg-purple-400 text-slate-950 px-2 py-0.5 rounded-full border border-purple-500 shadow-md">
+                        <span className="text-[8.5px] sm:text-[9px] font-black bg-purple-400 text-slate-950 px-1.5 py-0.5 rounded-full border border-purple-500 shadow-md whitespace-nowrap shrink-0 inline-flex items-center gap-0.5">
                           🔰 TỔ TRƯỞNG
                         </span>
                       ) : null}
@@ -1914,23 +1914,23 @@ export default function LabRoomTab({
                     </span>
 
                     {monitorRole === 'L. Trưởng' ? (
-                      <span className="text-[9px] font-black bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full border border-amber-500 shadow-md animate-pulse">
+                      <span className="text-[8.5px] sm:text-[9px] font-black bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded-full border border-amber-500 shadow-md animate-pulse whitespace-nowrap shrink-0 inline-flex items-center gap-0.5">
                         🌟 L. TRƯỞNG
                       </span>
                     ) : monitorRole === 'Lớp phó' ? (
-                      <span className="text-[9px] font-black bg-sky-400 text-slate-950 px-2 py-0.5 rounded-full border border-sky-500 shadow-md">
+                      <span className="text-[8.5px] sm:text-[9px] font-black bg-sky-400 text-slate-950 px-1.5 py-0.5 rounded-full border border-sky-500 shadow-md whitespace-nowrap shrink-0 inline-flex items-center gap-0.5">
                         ⭐ LỚP PHÓ
                       </span>
                     ) : monitorRole === 'Tổ trưởng' ? (
-                      <span className="text-[9px] font-black bg-purple-400 text-slate-950 px-2 py-0.5 rounded-full border border-purple-500 shadow-md">
+                      <span className="text-[8.5px] sm:text-[9px] font-black bg-purple-400 text-slate-950 px-1.5 py-0.5 rounded-full border border-purple-500 shadow-md whitespace-nowrap shrink-0 inline-flex items-center gap-0.5">
                         🔰 TỔ TRƯỞNG
                       </span>
                     ) : targetIncident ? (
-                      <span className="text-[9px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded-full border border-rose-400 animate-pulse" title={targetIncident.issue}>
+                      <span className="text-[8.5px] sm:text-[9px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded-full border border-rose-400 animate-pulse whitespace-nowrap shrink-0 inline-flex items-center gap-0.5" title={targetIncident.issue}>
                         HỎNG
                       </span>
                     ) : hasAbsentStudent ? (
-                      <span className="text-[9px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded-full border border-rose-400" title="Có học sinh báo vắng mặt hôm nay">
+                      <span className="text-[8.5px] sm:text-[9px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded-full border border-rose-400 whitespace-nowrap shrink-0 inline-flex items-center gap-0.5" title="Có học sinh báo vắng mặt hôm nay">
                         CÓ VẮNG
                       </span>
                     ) : null}
