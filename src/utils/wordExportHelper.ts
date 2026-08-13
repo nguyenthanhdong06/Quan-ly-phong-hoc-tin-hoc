@@ -26,7 +26,7 @@ export function exportSeatingChartToWord({
 }: ExportWordSeatingChartOptions) {
   const dateStr = new Date().toLocaleDateString('vi-VN');
 
-  // Construct MS Word HTML document with MSO page orientation landscape
+  // Construct MS Word HTML document with MSO page orientation LANDSCAPE (Khổ giấy ngang)
   let htmlContent = `
     <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
     <head>
@@ -42,6 +42,14 @@ export function exportSeatingChartToWord({
       </xml>
       <![endif]-->
       <style>
+        @page Section1 {
+          size: 29.7cm 21.0cm;
+          margin: 1.0cm 1.0cm 1.0cm 1.0cm;
+          mso-page-orientation: landscape;
+        }
+        div.Section1 {
+          page: Section1;
+        }
         @page {
           size: A4 landscape;
           margin: 1cm 1cm 1cm 1cm;
@@ -139,29 +147,30 @@ export function exportSeatingChartToWord({
       </style>
     </head>
     <body>
-      <table class="header-table">
-        <tr>
-          <td style="width: 55%;">
-            <b>TRƯỜNG TIỂU HỌC LONG ĐỊNH</b><br>
-            <i>Bộ Môn Tin Học • Quản Lý Phòng Lab</i>
-          </td>
-          <td style="width: 45%; text-align: right;">
-            <b>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</b><br>
-            <i>Độc lập - Tự do - Hạnh phúc</i><br>
-            <small>Ngày xuất: ${dateStr}</small>
-          </td>
-        </tr>
-      </table>
+      <div class="Section1">
+        <table class="header-table">
+          <tr>
+            <td style="width: 55%;">
+              <b>TRƯỜNG TIỂU HỌC LONG ĐỊNH</b><br>
+              <i>Bộ Môn Tin Học • Quản Lý Phòng Lab</i>
+            </td>
+            <td style="width: 45%; text-align: right;">
+              <b>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</b><br>
+              <i>Độc lập - Tự do - Hạnh phúc</i><br>
+              <small>Ngày xuất: ${dateStr}</small>
+            </td>
+          </tr>
+        </table>
 
-      <div class="title">SƠ ĐỒ PHÒNG MÁY TÍNH - LỚP ${className.toUpperCase()}</div>
-      <div class="sub-title">
-        ${lab.name} (${lab.code}) &bull; Sĩ số: ${classStudents.length} học sinh 
-        (${attendanceSummary.present} có mặt, ${attendanceSummary.absentTotal} vắng)
-      </div>
+        <div class="title">SƠ ĐỒ PHÒNG MÁY TÍNH - LỚP ${className.toUpperCase()}</div>
+        <div class="sub-title">
+          ${lab.name} (${lab.code}) &bull; Sĩ số: ${classStudents.length} học sinh 
+          (${attendanceSummary.present} có mặt, ${attendanceSummary.absentTotal} vắng)
+        </div>
 
-      <div class="screen-banner">MÀN CHIẾU & BẢNG GIÁO VIÊN (${lab.name.toUpperCase()})</div>
+        <div class="screen-banner">MÀN CHIẾU & BẢNG GIÁO VIÊN (${lab.name.toUpperCase()})</div>
 
-      <table class="grid-table">
+        <table class="grid-table">
   `;
 
   // Render Rows & Columns
@@ -180,7 +189,7 @@ export function exportSeatingChartToWord({
       const assignedSts = cellData.assignedStudents || [];
 
       htmlContent += `<td class="pc-box">`;
-      htmlContent += `<div class="pc-header">🖥️ ${formattedPcName} <span style="float: right; font-size: 8pt; color: #475569;">${assignedSts.length}/2 HS</span></div>`;
+      htmlContent += `<div class="pc-header">🖥️ ${formattedPcName}</div>`;
 
       if (assignedSts.length > 0) {
         assignedSts.forEach(st => {
@@ -208,20 +217,21 @@ export function exportSeatingChartToWord({
   }
 
   htmlContent += `
-      </table>
+        </table>
 
-      <table class="footer-table">
-        <tr>
-          <td style="width: 50%;">
-            CÁN BỘ QUẢN LÝ PHÒNG LAB<br>
-            <small style="font-weight: normal; color: #64748b;">(Ký và ghi rõ họ tên)</small>
-          </td>
-          <td style="width: 50%;">
-            GIÁO VIÊN BỘ MÔN TIN HỌC<br>
-            <small style="font-weight: normal; color: #64748b;">(Ký và ghi rõ họ tên)</small>
-          </td>
-        </tr>
-      </table>
+        <table class="footer-table">
+          <tr>
+            <td style="width: 50%;">
+              CÁN BỘ QUẢN LÝ PHÒNG LAB<br>
+              <small style="font-weight: normal; color: #64748b;">(Ký và ghi rõ họ tên)</small>
+            </td>
+            <td style="width: 50%;">
+              GIÁO VIÊN BỘ MÔN TIN HỌC<br>
+              <small style="font-weight: normal; color: #64748b;">(Ký và ghi rõ họ tên)</small>
+            </td>
+          </tr>
+        </table>
+      </div>
     </body>
     </html>
   `;

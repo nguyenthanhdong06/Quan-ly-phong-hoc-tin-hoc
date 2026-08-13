@@ -366,19 +366,17 @@ export default function LabRoomTab({
 
         if (!labMatches) return false;
 
-        // 2. Computer ID (pcId) & pcNumber matching
-        if (inc.pcId && formatComputerName(inc.pcId) === formatComputerName(pcId)) return true;
-
-        const formattedIncId = formatComputerName(inc.pcId || inc.pcNumber);
-        const formattedCellId = formatComputerName(pcId);
-        if (formattedIncId === formattedCellId) return true;
-
-        const rawPcStr = String(inc.pcNumber ?? '').trim().toLowerCase();
-        const digitsOnly = parseInt(rawPcStr.replace(/\D/g, ''), 10);
+        // 2. Computer ID (pcId) & Exact Numeric pcNumber matching ONLY (NO SUBSTRING INCLUDES)
+        const incFormattedId = formatComputerName(inc.pcId || inc.pcNumber);
+        const cellFormattedId = formatComputerName(pcId);
         
-        if (!isNaN(digitsOnly) && digitsOnly === pcNum) return true;
-        if (rawPcStr && pcId.toLowerCase().includes(rawPcStr)) return true;
-        if (rawPcStr && rawPcStr.includes(String(pcNum))) return true;
+        if (incFormattedId === cellFormattedId) return true;
+
+        const incNum = typeof inc.pcNumber === 'number' 
+          ? inc.pcNumber 
+          : parseInt(String(inc.pcNumber || '').replace(/\D/g, ''), 10);
+
+        if (!isNaN(incNum) && incNum > 0 && incNum === pcNum) return true;
 
         return false;
       }) || null;
@@ -873,7 +871,6 @@ export default function LabRoomTab({
             <div key={`print_pc_${pcId}`} className="border-2 border-slate-900 rounded p-1.5 bg-slate-50 min-h-[80px] flex flex-col justify-between text-xs">
               <div className="flex justify-between items-center font-bold text-[10px] border-b border-slate-400 pb-0.5 mb-1">
                 <span className="font-black text-slate-900">🖥️ {formatComputerName(pcId)}</span>
-                <span className="text-[9px] text-slate-700">{assignedSts.length}/2</span>
               </div>
 
               {assignedSts.length > 0 ? (
@@ -1172,9 +1169,6 @@ export default function LabRoomTab({
                           : 'bg-[#dfccb0] text-[#3d2b17] border-[#cbb89d]'
                       }`}>
                         🖥️ {formatComputerName(pcId)}
-                      </span>
-                      <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full border bg-slate-200 text-slate-600">
-                        {assignedStudents.length}/2 HS
                       </span>
                     </div>
 
@@ -1505,9 +1499,6 @@ export default function LabRoomTab({
                 <div className="flex justify-between items-center mb-3">
                   <span className="font-mono font-black text-xs bg-emerald-600 text-white px-2.5 py-1 rounded-lg border border-emerald-400 shadow-2xs">
                     🖥️ Máy 01
-                  </span>
-                  <span className="text-[10px] font-black bg-emerald-500 text-white px-2 py-0.5 rounded-full border border-emerald-400">
-                    2/2 HS
                   </span>
                 </div>
 
@@ -1862,17 +1853,7 @@ export default function LabRoomTab({
                       <span className="text-[9px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded-full border border-rose-400" title="Có học sinh báo vắng mặt hôm nay">
                         CÓ VẮNG
                       </span>
-                    ) : (
-                      <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full border shadow-2xs ${
-                        isFull 
-                          ? 'bg-emerald-500 text-white border-emerald-400' 
-                          : assignedStudents.length > 0 
-                            ? 'bg-amber-500 text-white border-amber-400' 
-                            : 'bg-slate-200 text-slate-600 border-slate-300'
-                      }`}>
-                        {assignedStudents.length}/2 HS
-                      </span>
-                    )}
+                    ) : null}
                   </div>
 
                   {targetIncident && (
