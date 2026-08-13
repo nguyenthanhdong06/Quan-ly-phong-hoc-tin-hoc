@@ -22,6 +22,7 @@ import ClassesTab from './components/ClassesTab';
 import AttendanceTab from './components/AttendanceTab';
 import EvaluationTab from './components/EvaluationTab';
 import EmulationTab from './components/EmulationTab';
+import LabRoomTab from './components/LabRoomTab';
 import ResourcesTab from './components/ResourcesTab';
 import { AvatarGalleryTab, loadCustomAvatars } from './components/AvatarGalleryTab';
 import AdminTab from './components/AdminTab';
@@ -220,7 +221,7 @@ export default function App() {
     return localStorage.getItem('group_system_open') !== 'false';
   });
 
-  const isTeachingGroupActive = isTeachingGroupOpen || ['students', 'classes-management', 'attendance', 'evaluation', 'timetable'].includes(activeTab);
+  const isTeachingGroupActive = isTeachingGroupOpen || ['students', 'classes-management', 'attendance', 'evaluation', 'lab-room', 'timetable'].includes(activeTab);
   const isLearningGroupActive = isLearningGroupOpen || ['interactive-games', 'personal-questions', 'emulation', 'resources', 'avatar-gallery'].includes(activeTab);
   const isSystemGroupActive = isSystemGroupOpen || ['admin', 'computer-report'].includes(activeTab);
   const isDashboardActive = activeTab === 'dashboard' && !isTeachingGroupActive && !isLearningGroupActive && !isSystemGroupActive;
@@ -1340,6 +1341,24 @@ export default function App() {
                 classes={classes}
                 onSelectClass={setSelectedClass}
                 showToast={showToast}
+              />
+            )}
+
+            {activeTab === 'lab-room' && hasAdminOrTeacherAccess && (
+              <LabRoomTab
+                selectedClass={selectedClass}
+                computers={computers}
+                setComputers={setComputers}
+                students={students}
+                setStudents={setStudents}
+                seatingChart={seatingChart}
+                setSeatingChart={setSeatingChart}
+                showToast={showToast}
+                labs={labs}
+                classes={classes}
+                onSelectClass={setSelectedClass}
+                attendanceData={attendanceData}
+                selectedDate={selectedDate}
               />
             )}
 
