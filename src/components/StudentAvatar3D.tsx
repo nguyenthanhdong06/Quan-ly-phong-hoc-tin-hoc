@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { convertGoogleDriveUrl } from '../utils/googleDriveImageHelper';
 
 // 3D Pixel/Cartoon Avatar component for boy/girl or custom Google Drive URL
-export const StudentAvatar3D = ({ gender, size = 'w-10 h-10', name = '', avatarUrl }: { gender: string; size?: string; name?: string; avatarUrl?: string }) => {
+export const StudentAvatar3D = React.memo(({ gender, size = 'w-10 h-10', name = '', avatarUrl }: { gender: string; size?: string; name?: string; avatarUrl?: string }) => {
   const [error, setError] = useState(false);
 
   useEffect(() => {
@@ -44,7 +44,7 @@ export const StudentAvatar3D = ({ gender, size = 'w-10 h-10', name = '', avatarU
       decoding="async"
     />
   );
-};
+});
 
 export const formatStudentNameFirstAndMiddle = (name: string): string => {
   if (!name || typeof name !== 'string') return '';

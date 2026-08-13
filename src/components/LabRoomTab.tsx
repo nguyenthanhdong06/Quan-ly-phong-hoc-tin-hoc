@@ -779,24 +779,19 @@ export default function LabRoomTab({
     showToast(`Đã xếp tự động chỗ ngồi cho ${classStudents.length} học sinh lớp ${selectedClass} (ưu tiên học sinh có mặt)!`, 'success');
   };
 
-  // DRAG AND DROP HANDLERS
+  // DRAG AND DROP HANDLERS (0ms Instant Reactivity via dragPayloadRef)
+  const dragPayloadRef = useRef<{ studentId: string; sourcePcId: string | null } | null>(null);
+
   const handleStudentDragStart = useCallback((e: React.DragEvent, studentId: string, sourcePcId: string | null = null) => {
     const payload = JSON.stringify({ studentId, sourcePcId });
     e.dataTransfer.setData('text/plain', payload);
     e.dataTransfer.effectAllowed = 'move';
-    setDraggedStudentIdState(studentId);
-    setDraggedSourcePcIdState(sourcePcId);
+    dragPayloadRef.current = { studentId, sourcePcId };
   }, []);
 
   const handlePcDragOver = useCallback((e: React.DragEvent, pcId: string) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    if (dragOverPcIdRef.current !== pcId) {
-      dragOverPcIdRef.current = pcId;
-      requestAnimationFrame(() => {
-        setDragOverPcId(pcId);
-      });
-    }
   }, []);
 
   const handlePcDrop = useCallback((e: React.DragEvent, targetPcId: string) => {
@@ -804,8 +799,8 @@ export default function LabRoomTab({
     dragOverPcIdRef.current = null;
     setDragOverPcId(null);
 
-    let studentId = draggedStudentIdState;
-    let sourcePcId = draggedSourcePcIdState;
+    let studentId = dragPayloadRef.current?.studentId;
+    let sourcePcId = dragPayloadRef.current?.sourcePcId;
 
     try {
       const dataRaw = e.dataTransfer.getData('text/plain');
@@ -818,6 +813,8 @@ export default function LabRoomTab({
       }
     } catch (err) {}
 
+    dragPayloadRef.current = null;
+
     if (!studentId) return;
     if (sourcePcId === targetPcId) return;
 
@@ -826,10 +823,7 @@ export default function LabRoomTab({
     } else {
       assignStudentToComputer(targetPcId, studentId);
     }
-
-    setDraggedStudentIdState(null);
-    setDraggedSourcePcIdState(null);
-  }, [assignStudentToComputer, swapOrMoveStudentsBetweenPCs, draggedStudentIdState, draggedSourcePcIdState]);
+  }, [assignStudentToComputer, swapOrMoveStudentsBetweenPCs]);
 
   const handlePcCardClick = useCallback((pcId: string) => {
     if (selectedStudentForAssign) {
@@ -1232,6 +1226,20 @@ export default function LabRoomTab({
                       }`}>
                         🖥️ {formatComputerName(pcId)}
                       </span>
+
+                      {monitorRole === 'L. Trưởng' ? (
+                        <span className="text-[9px] font-black bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full border border-amber-500 shadow-md animate-pulse">
+                          🌟 L. TRƯỞNG
+                        </span>
+                      ) : monitorRole === 'Lớp phó' ? (
+                        <span className="text-[9px] font-black bg-sky-400 text-slate-950 px-2 py-0.5 rounded-full border border-sky-500 shadow-md">
+                          ⭐ LỚP PHÓ
+                        </span>
+                      ) : monitorRole === 'Tổ trưởng' ? (
+                        <span className="text-[9px] font-black bg-purple-400 text-slate-950 px-2 py-0.5 rounded-full border border-purple-500 shadow-md">
+                          🔰 TỔ TRƯỞNG
+                        </span>
+                      ) : null}
                     </div>
 
                     {assignedStudents.length > 0 ? (
@@ -1905,17 +1913,21 @@ export default function LabRoomTab({
                       🖥️ {formatComputerName(pcId)}
                     </span>
 
-                    {targetIncident ? (
-                      <span className="text-[9px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded-full border border-rose-400 animate-pulse" title={targetIncident.issue}>
-                        HỎNG
-                      </span>
-                    ) : monitorRole === 'L. Trưởng' ? (
-                      <span className="text-[9px] font-black bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full border border-amber-500 shadow-2xs">
-                        L. TRƯỞNG
+                    {monitorRole === 'L. Trưởng' ? (
+                      <span className="text-[9px] font-black bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full border border-amber-500 shadow-md animate-pulse">
+                        🌟 L. TRƯỞNG
                       </span>
                     ) : monitorRole === 'Lớp phó' ? (
-                      <span className="text-[9px] font-black bg-sky-400 text-slate-950 px-2 py-0.5 rounded-full border border-sky-500 shadow-2xs">
-                        LỚP PHÓ
+                      <span className="text-[9px] font-black bg-sky-400 text-slate-950 px-2 py-0.5 rounded-full border border-sky-500 shadow-md">
+                        ⭐ LỚP PHÓ
+                      </span>
+                    ) : monitorRole === 'Tổ trưởng' ? (
+                      <span className="text-[9px] font-black bg-purple-400 text-slate-950 px-2 py-0.5 rounded-full border border-purple-500 shadow-md">
+                        🔰 TỔ TRƯỞNG
+                      </span>
+                    ) : targetIncident ? (
+                      <span className="text-[9px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded-full border border-rose-400 animate-pulse" title={targetIncident.issue}>
+                        HỎNG
                       </span>
                     ) : hasAbsentStudent ? (
                       <span className="text-[9px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded-full border border-rose-400" title="Có học sinh báo vắng mặt hôm nay">
