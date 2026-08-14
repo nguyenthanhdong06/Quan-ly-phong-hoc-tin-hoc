@@ -291,6 +291,24 @@ export default function StudentsTab({
   return (
     <div className="space-y-6">
 
+      {/* 🌟 DESKOS IMAC WARM BEIGE CARD HEADER STRIP */}
+      <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs">
+        <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <div className="text-left">
+            <h2 className="text-sm sm:text-base font-black text-[#3d2b17] uppercase tracking-wider flex items-center gap-2">
+              <span>👥</span> QUẢN LÝ HỌC SINH LỚP: <span className="text-emerald-800 font-black bg-white/90 px-2.5 py-0.5 rounded-lg border border-[#cbb89d]">{selectedClass}</span>
+            </h2>
+            <p className="text-[11px] font-bold text-[#5c4327] mt-1">Quản lý danh sách học sinh, bóc tách nạp nhanh từ Excel và cấp huy hiệu cán bộ lớp</p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-black bg-white/90 text-emerald-900 px-3.5 py-1.5 rounded-xl border border-[#cbb89d] shadow-2xs">
+              Sĩ số: {classStudents.length} học sinh
+            </span>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Left Column forms */}

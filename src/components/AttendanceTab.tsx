@@ -1,6 +1,6 @@
 import React from 'react';
 import { Student, AttendanceData } from '../types';
-import { Check, ClipboardCheck, Calendar, UserCheck, AlertTriangle, AlertCircle, Search, X, Sparkles } from 'lucide-react';
+import { Check, ClipboardCheck, Calendar, UserCheck, AlertTriangle, AlertCircle, Search, X, Sparkles, CheckCircle, Save } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface AttendanceTabProps {
@@ -116,52 +116,51 @@ export default function AttendanceTab({
   return (
     <div className="space-y-6">
 
-      {/* Control panel for choosing Date & quick actions */}
-      <div className="bg-white p-4 sm:px-5 sm:py-3.5 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-        
-        <div className="text-left">
-          <h2 className="text-base sm:text-lg font-black text-slate-800 flex items-center gap-2">
-            Sổ điểm danh Lớp: <span className="text-amber-600 font-black">{selectedClass}</span>
-          </h2>
-          <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-            <Calendar className="w-3.5 h-3.5 text-slate-400" />
-            Thời gian: <strong>{systemDateText}</strong>
-          </p>
-        </div>
-
-        {/* Date Selector & Save block */}
-        <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
-          <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-xs font-semibold">
-            <span className="text-slate-500 whitespace-nowrap font-bold">Chọn ngày dạy:</span>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => {
-                if (e.target.value) setSelectedDate(e.target.value);
-              }}
-              className="bg-transparent border-none text-slate-800 font-extrabold focus:outline-none focus:ring-0 cursor-pointer"
-            />
+      {/* 🌟 DESKOS IMAC WARM BEIGE CARD HEADER STRIP */}
+      <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs">
+        <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+          <div className="text-left">
+            <h2 className="text-sm sm:text-base font-black text-[#3d2b17] uppercase tracking-wider flex items-center gap-2">
+              <span>📋</span> SỔ ĐIỂM DANH HỌC SINH LỚP: <span className="text-emerald-800 font-black bg-white/90 px-2.5 py-0.5 rounded-lg border border-[#cbb89d]">{selectedClass}</span>
+            </h2>
+            <p className="text-[11px] font-bold text-[#5c4327] flex items-center gap-1 mt-1">
+              <Calendar className="w-3.5 h-3.5 text-amber-800" />
+              Thời gian: <strong>{systemDateText}</strong>
+            </p>
           </div>
 
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleSetAllPresent}
-            className="flex-1 md:flex-none bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold text-xs px-3.5 py-2 rounded-xl transition cursor-pointer flex items-center justify-center gap-1 shadow-xs"
-          >
-            <Check className="w-3.5 h-3.5 text-emerald-600" /> Đánh dấu có mặt tất cả
-          </motion.button>
-          
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleSave}
-            className="flex-1 md:flex-none bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-md transition cursor-pointer flex items-center justify-center gap-1.5"
-          >
-            💾 Khóa Sổ / Lưu kết quả
-          </motion.button>
-        </div>
+          {/* Date Selector & Save block */}
+          <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+            <div className="flex items-center gap-2 bg-white/90 border border-[#cbb89d] px-3 py-1.5 rounded-xl text-xs font-semibold">
+              <span className="text-slate-700 whitespace-nowrap font-bold">Chọn ngày dạy:</span>
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => {
+                  if (e.target.value) setSelectedDate(e.target.value);
+                }}
+                className="bg-transparent border-none text-slate-900 font-extrabold focus:outline-none focus:ring-0 cursor-pointer"
+              />
+            </div>
 
+            <button
+              onClick={handleSetAllPresent}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs py-2 px-3.5 rounded-xl border border-emerald-500 transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95"
+              title="Đánh dấu tất cả học sinh trong lớp là Có Mặt"
+            >
+              <CheckCircle className="w-4 h-4 text-emerald-100" />
+              Tất Cả Có Mặt
+            </button>
+
+            <button
+              onClick={handleSave}
+              className="bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs py-2 px-3.5 rounded-xl border border-amber-500 transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95"
+            >
+              <Save className="w-4 h-4 text-amber-100" />
+              Lưu Sổ
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Statistics board with smooth number bumps */}
@@ -469,20 +468,22 @@ export default function AttendanceTab({
                             Có Phép (P)
                           </motion.button>
 
-                          {/* Unexcused Button */}
+                          {/* Unexcused Button (LÀM NỔI BẬT ĐẶC BIỆT KHI ĐƯỢC CHỌN VÀ KHÔNG CHỌN - HẾT MỜ CHỮ) */}
                           <motion.button
                             type="button"
-                            whileHover={{ scale: 1.02 }}
+                            whileHover={{ scale: 1.03 }}
                             whileTap={{ scale: 0.95 }}
                             onClick={() => handleSetState(s.id, 'unexcused')}
-                            className={`flex-1 text-center py-1.5 px-2 rounded-lg text-[10.5px] font-black tracking-wide transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                            className={`flex-1 text-center py-1.5 px-2 rounded-lg text-[10.5px] font-black tracking-wide transition-all flex items-center justify-center gap-1 cursor-pointer select-none ${
                               currentStatus === 'unexcused' 
-                                ? 'bg-rose-600 text-white shadow-md shadow-rose-600/20 ring-1 ring-rose-500' 
-                                : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
+                                ? 'bg-gradient-to-r from-rose-600 to-red-600 text-white shadow-lg shadow-rose-600/40 ring-2 ring-rose-400 border border-rose-500 animate-pulse' 
+                                : 'bg-rose-50/90 text-rose-900 hover:text-rose-950 hover:bg-rose-100 border border-rose-200 font-black'
                             }`}
                           >
-                            <X className={`w-3.5 h-3.5 ${currentStatus === 'unexcused' ? 'text-white' : 'text-slate-400'}`} />
-                            Không Phép (KP)
+                            <X className={`w-3.5 h-3.5 ${currentStatus === 'unexcused' ? 'text-white font-black' : 'text-rose-600 font-black'}`} />
+                            <span className={currentStatus === 'unexcused' ? 'text-white font-black drop-shadow-xs' : 'text-rose-900 font-black'}>
+                              Không Phép (KP)
+                            </span>
                           </motion.button>
 
                         </div>

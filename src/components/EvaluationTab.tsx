@@ -306,43 +306,41 @@ export default function EvaluationTab({
   return (
     <div className="space-y-6">
 
-      {/* Header controls select Date & Save blocks (2 separate items) */}
-      <div className="bg-white p-4 sm:px-5 sm:py-3.5 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
-        
-        <div className="text-left">
-          <h2 className="text-base sm:text-lg font-black text-slate-800 flex items-center gap-2">
-            Sổ Đánh giá & Chấm Điểm Sao: <span className="text-amber-600 font-black">{selectedClass}</span>
-          </h2>
-          <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-            <Calendar className="w-3.5 h-3.5 text-slate-400" />
-            Ngày chấm điểm: <strong>{systemDateText}</strong>
-          </p>
-        </div>
-
-        {/* Date & Save controls - 2 separate nicely styled boxes */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
-          {/* 1. Date Selector Block */}
-          <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl text-xs font-semibold w-full sm:w-auto">
-            <span className="text-slate-500 font-bold whitespace-nowrap text-left text-xs">Ngày chấm:</span>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => {
-                if (e.target.value) setSelectedDate(e.target.value);
-              }}
-              className="bg-transparent border-none text-slate-800 font-extrabold focus:outline-none focus:ring-0 cursor-pointer"
-            />
+      {/* 🌟 DESKOS IMAC WARM BEIGE CARD HEADER STRIP */}
+      <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs">
+        <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="text-left">
+            <h2 className="text-sm sm:text-base font-black text-[#3d2b17] uppercase tracking-wider flex items-center gap-2">
+              <span>⭐</span> SỔ ĐÁNH GIÁ & CHẤM ĐIỂM SAO LỚP: <span className="text-emerald-800 font-black bg-white/90 px-2.5 py-0.5 rounded-lg border border-[#cbb89d]">{selectedClass}</span>
+            </h2>
+            <p className="text-[11px] font-bold text-[#5c4327] flex items-center gap-1 mt-1">
+              <Calendar className="w-3.5 h-3.5 text-amber-800" />
+              Ngày chấm điểm: <strong>{systemDateText}</strong>
+            </p>
           </div>
 
-          {/* 2. Save Button Block */}
-          <button
-            onClick={handleSave}
-            className="bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs py-2.5 px-5 rounded-xl border border-amber-600 hover:border-amber-700 transition shadow-sm cursor-pointer flex items-center justify-center gap-1.5 w-full sm:w-auto"
-          >
-            💾 Khóa Sổ & Lưu
-          </button>
-        </div>
+          {/* Date & Save controls */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+            <div className="flex items-center gap-2 bg-white/90 border border-[#cbb89d] px-3.5 py-1.5 rounded-xl text-xs font-semibold w-full sm:w-auto">
+              <span className="text-slate-700 font-bold whitespace-nowrap text-left text-xs">Ngày chấm:</span>
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => {
+                  if (e.target.value) setSelectedDate(e.target.value);
+                }}
+                className="bg-transparent border-none text-slate-900 font-extrabold focus:outline-none focus:ring-0 cursor-pointer"
+              />
+            </div>
 
+            <button
+              onClick={handleSave}
+              className="bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs py-2 px-4 rounded-xl border border-amber-500 transition shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 w-full sm:w-auto active:scale-95"
+            >
+              💾 Khóa Sổ & Lưu
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Student Search and quick info bar - Positioned wonderfully at the head of student list */}
