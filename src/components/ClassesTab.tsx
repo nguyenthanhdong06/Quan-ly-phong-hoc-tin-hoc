@@ -31,6 +31,7 @@ export default function ClassesTab({
   const [classNameInput, setClassNameInput] = useState('');
   const [classGradeIdInput, setClassGradeIdInput] = useState<number | ''>('');
   const [classTeacherInput, setClassTeacherInput] = useState('');
+  const [classTeacherPhoneInput, setClassTeacherPhoneInput] = useState('');
   const [editingClass, setEditingClass] = useState<ClassItem | null>(null);
 
   // Cascade delete control modal/state
@@ -121,11 +122,18 @@ export default function ClassesTab({
       return;
     }
 
+    const phoneClean = classTeacherPhoneInput.trim().replace(/\D/g, '');
+    if (classTeacherPhoneInput.trim() && phoneClean.length !== 10) {
+      showToast(`⚠️ SĐT Zalo GVCN không hợp lệ! Số điện thoại Zalo hợp lệ phải gồm đúng 10 chữ số (Thầy/Cô đang gõ ${phoneClean.length} số).`, 'error');
+      return;
+    }
+
     const newC: ClassItem = {
       id: classIdClean,
       name: classNameInput.trim(),
       gradeId: Number(classGradeIdInput),
-      teacher: classTeacherInput.trim()
+      teacher: classTeacherInput.trim(),
+      teacherPhone: classTeacherPhoneInput.trim()
     };
 
     setClasses(prev => [...prev, newC]);
@@ -133,6 +141,7 @@ export default function ClassesTab({
     setClassNameInput('');
     setClassGradeIdInput('');
     setClassTeacherInput('');
+    setClassTeacherPhoneInput('');
     showToast(`Đã thêm lớp ${newC.name} thành công!`);
   };
 
@@ -144,6 +153,12 @@ export default function ClassesTab({
     e.preventDefault();
     if (!editingClass || !editingClass.name.trim() || !editingClass.teacher.trim()) {
       showToast('Họ tên giáo viên và tên lớp không được để trống!', 'error');
+      return;
+    }
+
+    const phoneClean = (editingClass.teacherPhone || '').trim().replace(/\D/g, '');
+    if (editingClass.teacherPhone && editingClass.teacherPhone.trim() && phoneClean.length !== 10) {
+      showToast(`⚠️ SĐT Zalo GVCN không hợp lệ! Số điện thoại Zalo hợp lệ phải gồm đúng 10 chữ số (Hiện tại đang gõ ${phoneClean.length} số).`, 'error');
       return;
     }
 
@@ -263,6 +278,27 @@ export default function ClassesTab({
                   className="w-full text-xs border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none"
                   required
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1 flex justify-between items-center">
+                  <span>SĐT Zalo GVCN</span>
+                  {classTeacherPhoneInput.trim() && (
+                    <span className={`text-[10px] font-extrabold ${classTeacherPhoneInput.trim().replace(/\D/g, '').length === 10 ? 'text-emerald-600' : 'text-rose-500'}`}>
+                      {classTeacherPhoneInput.trim().replace(/\D/g, '').length === 10 ? '✓ Hợp lệ (10 số)' : `⚠️ ${classTeacherPhoneInput.trim().replace(/\D/g, '').length}/10 số`}
+                    </span>
+                  )}
+                </label>
+                <input
+                  type="tel"
+                  value={classTeacherPhoneInput}
+                  onChange={(e) => setClassTeacherPhoneInput(e.target.value)}
+                  placeholder="Ví dụ: 0912345678..."
+                  className="w-full text-xs border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                />
+                <p className="text-[10px] text-slate-400 mt-1">
+                  💡 Nhập đúng 10 chữ số để tự động mở Zalo chat với GVCN khi báo cáo.
+                </p>
               </div>
 
               <button
@@ -398,7 +434,7 @@ export default function ClassesTab({
               {editingClass && (
                 <form onSubmit={handleUpdateClass} className="p-4 bg-orange-50 rounded-2xl border border-orange-200 space-y-3">
                   <span className="text-xs font-black text-orange-850 block uppercase">ĐANG EDIT LỚP: {editingClass.id}</span>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
                     <div>
                       <label className="block text-[10px] font-bold text-slate-500 mb-1">Tên lớp hiển thị</label>
                       <input
@@ -417,6 +453,23 @@ export default function ClassesTab({
                         onChange={(e) => setEditingClass({ ...editingClass, teacher: e.target.value })}
                         className="w-full text-xs border border-slate-200 rounded-lg p-2 bg-white"
                         required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 mb-1 flex justify-between items-center">
+                        <span>SĐT Zalo GVCN</span>
+                        {editingClass.teacherPhone && editingClass.teacherPhone.trim() && (
+                          <span className={`text-[9px] font-extrabold ${editingClass.teacherPhone.trim().replace(/\D/g, '').length === 10 ? 'text-emerald-600' : 'text-rose-500'}`}>
+                            {editingClass.teacherPhone.trim().replace(/\D/g, '').length === 10 ? '✓ Đủ 10 số' : `⚠️ ${editingClass.teacherPhone.trim().replace(/\D/g, '').length}/10 số`}
+                          </span>
+                        )}
+                      </label>
+                      <input
+                        type="tel"
+                        value={editingClass.teacherPhone || ''}
+                        onChange={(e) => setEditingClass({ ...editingClass, teacherPhone: e.target.value })}
+                        placeholder="Ví dụ: 0912345678"
+                        className="w-full text-xs border border-slate-200 rounded-lg p-2 bg-white"
                       />
                     </div>
                     <div>
@@ -546,6 +599,9 @@ export default function ClassesTab({
                                         <div className="mt-2.5 space-y-1.5 text-xs text-slate-500 font-semibold text-left">
                                           <p className="flex items-center gap-1 text-slate-600">
                                             👤 Chủ nhiệm: <strong className="text-slate-800 font-extrabold">{c.teacher}</strong>
+                                          </p>
+                                          <p className="flex items-center gap-1 text-sky-700">
+                                            📱 SĐT Zalo: <strong className="text-sky-900 font-extrabold">{c.teacherPhone || 'Chưa có'}</strong>
                                           </p>
                                           <p className="flex items-center gap-1 text-emerald-700">
                                             📊 Sĩ số: <strong className="text-emerald-800 font-black">{classStsCount} học sinh/ {femaleCount} Nữ</strong>

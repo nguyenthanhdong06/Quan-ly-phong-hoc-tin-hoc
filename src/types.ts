@@ -8,6 +8,7 @@ export interface ClassItem {
   name: string;
   gradeId: number;
   teacher: string;
+  teacherPhone?: string;
 }
 
 export interface Student {

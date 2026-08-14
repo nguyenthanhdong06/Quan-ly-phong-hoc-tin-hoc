@@ -1295,6 +1295,8 @@ export default function App() {
                 setAttendanceData={setAttendanceData}
                 showToast={showToast}
                 systemDateText={systemDateText}
+                classes={classes}
+                setClasses={setClasses}
               />
             )}
 
