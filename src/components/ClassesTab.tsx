@@ -284,17 +284,6 @@ export default function ClassesTab({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">Giáo viên bộ môn phụ trách</label>
-                <input
-                  type="text"
-                  value={classSubjectTeacherInput}
-                  onChange={(e) => setClassSubjectTeacherInput(e.target.value)}
-                  placeholder="Ví dụ: Thầy Thanh Đồng (Tin học), Cô Thu Trang (Anh văn)..."
-                  className="w-full text-xs border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1 flex justify-between items-center">
                   <span>SĐT Zalo GVCN</span>
                   {classTeacherPhoneInput.trim() && (
@@ -313,6 +302,17 @@ export default function ClassesTab({
                 <p className="text-[10px] text-slate-400 mt-1">
                   💡 Nhập đúng 10 chữ số để tự động mở Zalo chat với GVCN khi báo cáo.
                 </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">Giáo viên bộ môn phụ trách</label>
+                <input
+                  type="text"
+                  value={classSubjectTeacherInput}
+                  onChange={(e) => setClassSubjectTeacherInput(e.target.value)}
+                  placeholder="Ví dụ: Thầy Thanh Đồng (Tin học), Cô Thu Trang (Anh văn)..."
+                  className="w-full text-xs border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                />
               </div>
 
               <button
@@ -470,16 +470,6 @@ export default function ClassesTab({
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-500 mb-1">GV Bộ môn phụ trách</label>
-                      <input
-                        type="text"
-                        value={editingClass.subjectTeacher || ''}
-                        onChange={(e) => setEditingClass({ ...editingClass, subjectTeacher: e.target.value })}
-                        placeholder="Ví dụ: Tin học..."
-                        className="w-full text-xs border border-slate-200 rounded-lg p-2 bg-white"
-                      />
-                    </div>
-                    <div>
                       <label className="block text-[10px] font-bold text-slate-500 mb-1 flex justify-between items-center">
                         <span>SĐT Zalo GVCN</span>
                         {editingClass.teacherPhone && editingClass.teacherPhone.trim() && (
@@ -493,6 +483,16 @@ export default function ClassesTab({
                         value={editingClass.teacherPhone || ''}
                         onChange={(e) => setEditingClass({ ...editingClass, teacherPhone: e.target.value })}
                         placeholder="Ví dụ: 0912345678"
+                        className="w-full text-xs border border-slate-200 rounded-lg p-2 bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 mb-1">GV Bộ môn phụ trách</label>
+                      <input
+                        type="text"
+                        value={editingClass.subjectTeacher || ''}
+                        onChange={(e) => setEditingClass({ ...editingClass, subjectTeacher: e.target.value })}
+                        placeholder="Ví dụ: Tin học..."
                         className="w-full text-xs border border-slate-200 rounded-lg p-2 bg-white"
                       />
                     </div>
@@ -624,11 +624,11 @@ export default function ClassesTab({
                                           <p className="flex items-center gap-1 text-slate-600">
                                             👤 Chủ nhiệm: <strong className="text-slate-800 font-extrabold">{c.teacher}</strong>
                                           </p>
-                                          <p className="flex items-center gap-1 text-indigo-700">
-                                            🎓 GV Bộ môn: <strong className="text-indigo-900 font-extrabold">{c.subjectTeacher || 'Chưa phân công'}</strong>
-                                          </p>
                                           <p className="flex items-center gap-1 text-sky-700">
                                             📱 SĐT Zalo: <strong className="text-sky-900 font-extrabold">{c.teacherPhone || 'Chưa có'}</strong>
+                                          </p>
+                                          <p className="flex items-center gap-1 text-indigo-700">
+                                            🎓 GV Bộ môn: <strong className="text-indigo-900 font-extrabold">{c.subjectTeacher || 'Chưa phân công'}</strong>
                                           </p>
                                           <p className="flex items-center gap-1 text-emerald-700">
                                             📊 Sĩ số: <strong className="text-emerald-800 font-black">{classStsCount} học sinh/ {femaleCount} Nữ</strong>
