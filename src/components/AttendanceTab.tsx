@@ -38,6 +38,20 @@ export default function AttendanceTab({
   const [reportTemplate, setReportTemplate] = React.useState<'zalo' | 'sms' | 'full'>('zalo');
   const [customMessageText, setCustomMessageText] = React.useState('');
 
+  // 📱 Homeroom Teacher (GVCN) Zalo Phone state (persisted per class)
+  const [gvcnPhone, setGvcnPhone] = React.useState<string>(() => {
+    return localStorage.getItem(`zalo_phone_${selectedClass}`) || '';
+  });
+
+  React.useEffect(() => {
+    setGvcnPhone(localStorage.getItem(`zalo_phone_${selectedClass}`) || '');
+  }, [selectedClass]);
+
+  const handlePhoneChange = (val: string) => {
+    setGvcnPhone(val);
+    localStorage.setItem(`zalo_phone_${selectedClass}`, val);
+  };
+
   // Reset search term when class changes for perfect UX
   React.useEffect(() => {
     setSearchTerm('');
@@ -753,11 +767,25 @@ export default function AttendanceTab({
               </button>
             </div>
 
+            {/* GVCN Zalo Phone Number Configuration Box */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-sky-50/90 p-3 rounded-2xl border border-sky-200 text-left">
+              <label className="text-xs font-black text-sky-950 flex items-center gap-1.5 whitespace-nowrap">
+                <span>📱</span> SĐT Zalo GVCN Lớp {selectedClass}:
+              </label>
+              <input
+                type="tel"
+                value={gvcnPhone}
+                onChange={(e) => handlePhoneChange(e.target.value)}
+                placeholder="Nhập SĐT Zalo (Ví dụ: 0912345678)..."
+                className="w-full sm:w-64 text-xs font-bold px-3 py-1.5 rounded-xl border border-sky-300 bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-800"
+              />
+            </div>
+
             {/* Live Preview Textarea */}
             <div className="space-y-1.5 text-left">
               <label className="block text-xs font-black text-slate-700">Xem trước & Chỉnh sửa nội dung tin nhắn gửi GVCN:</label>
               <textarea
-                rows={9}
+                rows={8}
                 value={customMessageText}
                 onChange={(e) => setCustomMessageText(e.target.value)}
                 className="w-full p-3.5 text-xs font-mono font-bold rounded-2xl border border-[#cbb89d] bg-white focus:outline-none focus:border-sky-600 shadow-inner leading-relaxed text-slate-800"
@@ -785,21 +813,36 @@ export default function AttendanceTab({
                 <span>📋</span> Sao Chép Nội Dung
               </button>
 
-              <a
-                href="https://zalo.me/"
-                target="_blank"
-                rel="noreferrer"
+              <button
+                type="button"
                 onClick={() => {
+                  const cleanPhone = gvcnPhone.trim().replace(/\D/g, '');
+                  let zaloUrl = 'https://zalo.me/';
+                  if (cleanPhone) {
+                    zaloUrl = `https://zalo.me/${cleanPhone}`;
+                  }
+
                   navigator.clipboard.writeText(customMessageText);
-                  showToast('Đã sao chép tin nhắn & Mở trang Zalo!', 'success');
+                  window.open(zaloUrl, '_blank');
+
+                  if (cleanPhone) {
+                    showToast(`Đã sao chép tin nhắn & Kích hoạt Zalo chat trực tiếp với GVCN SĐT ${cleanPhone}!`, 'success');
+                  } else {
+                    showToast('Đã sao chép tin nhắn & Kích hoạt ứng dụng Zalo trên máy!', 'success');
+                  }
                 }}
-                className="px-4.5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-black text-xs transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95 no-underline"
+                className="px-4.5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-black text-xs transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95 border border-sky-500"
+                title="Kích hoạt ứng dụng Zalo & mở cửa sổ chat trực tiếp với số Zalo GVCN"
               >
-                <span>💬</span> Mở Zalo Web
-              </a>
+                <span>💬</span> Mở Zalo
+              </button>
 
               <a
-                href={`sms:?body=${encodeURIComponent(customMessageText)}`}
+                href={
+                  gvcnPhone.trim().replace(/\D/g, '') 
+                    ? `sms:${gvcnPhone.trim().replace(/\D/g, '')}?body=${encodeURIComponent(customMessageText)}` 
+                    : `sms:?body=${encodeURIComponent(customMessageText)}`
+                }
                 onClick={() => {
                   navigator.clipboard.writeText(customMessageText);
                   showToast('Đã sao chép & Kích hoạt ứng dụng Tin nhắn SMS!', 'success');
