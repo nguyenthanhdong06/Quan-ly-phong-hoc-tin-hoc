@@ -20,7 +20,8 @@ import {
   Filter,
   ArrowLeft,
   Edit3,
-  ExternalLink
+  ExternalLink,
+  UploadCloud
 } from 'lucide-react';
 import { Student, ClassItem, GardenStudentData, GardenReward, WaterLog, CustomSeedSet } from '../types';
 import { triggerStarsConfetti } from '../utils/confetti';
@@ -40,7 +41,8 @@ interface KnowledgeGardenTabProps {
 }
 
 import { extractGoogleDriveFileId, convertGoogleDriveUrl, getGoogleDriveFallbackUrls } from '../utils/googleDriveImageHelper';
-export { extractGoogleDriveFileId, convertGoogleDriveUrl, getGoogleDriveFallbackUrls };
+import { compressImageToWebP } from '../utils/imageCompressor';
+export { extractGoogleDriveFileId, convertGoogleDriveUrl, getGoogleDriveFallbackUrls, compressImageToWebP };
 
 // 7 Cấp Độ Tăng Trưởng - Cây Hoa Đào (Hỗ trợ WebP nén siêu nhẹ)
 export const GARDEN_STAGES = [
@@ -646,16 +648,40 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     if (!file) return;
 
     try {
-      showToast(`Đang tối ưu ảnh Level ${level}...`, 'info');
-      const compressedDataUrl = await compressImageFile(file, 600, 0.75);
+      showToast(`Đang nén & tối ưu ảnh Level ${level} sang chuẩn WebP...`, 'info');
+      const compressedDataUrl = await compressImageToWebP(file, 600, 0.8);
       setSeedSetLevels(prev => ({
         ...prev,
         [level]: compressedDataUrl
       }));
-      showToast(`Đã tải & tối ưu ảnh Level ${level} thành công!`, 'success');
-    } catch (err) {
-      showToast('Lỗi khi đọc tệp ảnh, vui lòng thử lại!', 'error');
+      showToast(`✨ Đã nạp & nén WebP siêu nhẹ thành công cho Level ${level}!`, 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Lỗi khi đọc tệp ảnh từ máy tính, vui lòng thử lại!', 'error');
     }
+  };
+
+  // Nạp hàng loạt 7 tệp ảnh cùng lúc từ Máy tính (Auto nén WebP)
+  const handleBatchFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []) as File[];
+    if (files.length === 0) return;
+
+    const sortedFiles = files.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+    showToast(`Đang tự động nén WebP hàng loạt ${sortedFiles.length} tệp ảnh...`, 'info');
+
+    const updatedLevels = { ...seedSetLevels };
+    let count = 0;
+
+    for (let i = 0; i < Math.min(7, sortedFiles.length); i++) {
+      try {
+        const file = sortedFiles[i];
+        const webpUrl = await compressImageToWebP(file, 600, 0.8);
+        updatedLevels[(i + 1) as keyof typeof updatedLevels] = webpUrl;
+        count++;
+      } catch (err) {}
+    }
+
+    setSeedSetLevels(updatedLevels);
+    showToast(`🎉 Tuyệt vời! Đã tự động nén WebP & gán ${count} ảnh cấp độ từ máy tính!`, 'success');
   };
 
   // Export Class Garden TXT Report
@@ -774,16 +800,32 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
 
         {/* Form Body */}
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
-          {/* Name Input */}
-          <div className="space-y-1.5">
-            <label className="block text-xs font-black text-slate-700 uppercase tracking-wider">TÊN BỘ HẠT GIỐNG:</label>
-            <input
-              type="text"
-              value={seedSetName}
-              onChange={(e) => setSeedSetName(e.target.value)}
-              placeholder="VD: Cây Táo Thần 7 Màu"
-              className="w-full px-4 py-3 text-xs font-bold rounded-2xl border border-slate-300 bg-slate-50/50 focus:outline-none focus:border-emerald-500 focus:bg-white transition-all shadow-2xs"
-            />
+          {/* Name Input & Batch Upload */}
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end">
+            <div className="sm:col-span-8 space-y-1.5">
+              <label className="block text-xs font-black text-slate-700 uppercase tracking-wider">TÊN BỘ HẠT GIỐNG:</label>
+              <input
+                type="text"
+                value={seedSetName}
+                onChange={(e) => setSeedSetName(e.target.value)}
+                placeholder="VD: Cây Táo Thần 7 Màu"
+                className="w-full px-4 py-3 text-xs font-bold rounded-2xl border border-slate-300 bg-slate-50/50 focus:outline-none focus:border-emerald-500 focus:bg-white transition-all shadow-2xs"
+              />
+            </div>
+
+            <div className="sm:col-span-4">
+              <label className="relative flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-300 font-black text-xs transition-all shadow-2xs cursor-pointer active:scale-95">
+                <UploadCloud className="w-4 h-4 text-sky-600" />
+                <span>📂 Chọn 7 Tệp Máy Tính (Auto WebP)</span>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handleBatchFileUpload}
+                  className="hidden"
+                />
+              </label>
+            </div>
           </div>
 
           {/* 7 Level Cards Grid */}
@@ -852,7 +894,10 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
 
                     {/* File Input */}
                     <div>
-                      <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">Hoặc Chọn Tệp từ Máy Tính:</label>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase mb-1 flex items-center gap-1">
+                        <UploadCloud className="w-3 h-3 text-emerald-600" />
+                        <span>Tải ảnh từ Máy Tính (Auto nén WebP):</span>
+                      </label>
                       <input
                         type="file"
                         accept="image/*"
