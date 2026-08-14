@@ -445,7 +445,7 @@ export default function StudentsTab({
 
             <h3 className="font-black text-xs sm:text-sm text-[#3d2b17] tracking-wider uppercase flex items-center gap-2">
               <UserPlus className="w-4 h-4 text-emerald-700" />
-              <span>CHỨC NĂNG THÊM HỌC SINH VÀO LỚP {selectedClass} (INLINE VIEW 100%)</span>
+              <span>CHỨC NĂNG THÊM HỌC SINH VÀO LỚP {selectedClass}</span>
             </h3>
           </div>
 

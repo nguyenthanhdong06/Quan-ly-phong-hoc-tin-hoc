@@ -232,7 +232,7 @@ export default function ClassesTab({
             </button>
 
             <h3 className="font-black text-xs sm:text-sm text-[#3d2b17] tracking-wider uppercase flex items-center gap-2">
-              <span>⚙️</span> CHỨC NĂNG THÊM KHỐI, LỚP HỌC MỚI (INLINE VIEW 100%)
+              <span>⚙️</span> CHỨC NĂNG THÊM KHỐI, LỚP HỌC MỚI
             </h3>
           </div>
 
