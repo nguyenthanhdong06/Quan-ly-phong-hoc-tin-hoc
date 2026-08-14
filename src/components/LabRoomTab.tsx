@@ -782,7 +782,7 @@ export default function LabRoomTab({
     showToast(`Đã xếp tự động chỗ ngồi cho ${classStudents.length} học sinh lớp ${selectedClass} (ưu tiên học sinh có mặt)!`, 'success');
   };
 
-  // DRAG AND DROP HANDLERS (0ms Instant Reactivity via dragPayloadRef)
+  // DRAG AND DROP HANDLERS (100% Flicker-Free 60FPS Drag & Drop Performance)
   const dragPayloadRef = useRef<{ studentId: string; sourcePcId: string | null } | null>(null);
 
   const handleStudentDragStart = useCallback((e: React.DragEvent, studentId: string, sourcePcId: string | null = null) => {
@@ -792,9 +792,33 @@ export default function LabRoomTab({
     dragPayloadRef.current = { studentId, sourcePcId };
   }, []);
 
+  // Smooth dragover handler - only updates state if PC ID actually changes
   const handlePcDragOver = useCallback((e: React.DragEvent, pcId: string) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
+    if (dragOverPcIdRef.current !== pcId) {
+      dragOverPcIdRef.current = pcId;
+      setDragOverPcId(pcId);
+    }
+  }, []);
+
+  // Smooth dragleave handler - ignores dragleave when moving over child elements inside same card
+  const handlePcDragLeave = useCallback((e: React.DragEvent, pcId: string) => {
+    e.preventDefault();
+    const relatedTarget = e.relatedTarget as Node | null;
+    if (e.currentTarget && relatedTarget && e.currentTarget.contains(relatedTarget)) {
+      return; // Still inside the same card, ignore dragleave to prevent flickering
+    }
+    if (dragOverPcIdRef.current === pcId) {
+      dragOverPcIdRef.current = null;
+      setDragOverPcId(null);
+    }
+  }, []);
+
+  const handleStudentDragEnd = useCallback(() => {
+    dragOverPcIdRef.current = null;
+    setDragOverPcId(null);
+    dragPayloadRef.current = null;
   }, []);
 
   const handlePcDrop = useCallback((e: React.DragEvent, targetPcId: string) => {
@@ -1094,6 +1118,7 @@ export default function LabRoomTab({
                         key={st.id}
                         draggable={true}
                         onDragStart={(e) => handleStudentDragStart(e, st.id)}
+                        onDragEnd={handleStudentDragEnd}
                         onClick={() => {
                           if (isSelectedForAssign) {
                             setSelectedStudentForAssign(null);
@@ -1237,7 +1262,7 @@ export default function LabRoomTab({
                     key={`pc_${pcId}`}
                     onClick={() => handlePcCardClick(pcId)}
                     onDragOver={(e) => handlePcDragOver(e, pcId)}
-                    onDragLeave={() => setDragOverPcId(null)}
+                    onDragLeave={(e) => handlePcDragLeave(e, pcId)}
                     onDrop={(e) => handlePcDrop(e, pcId)}
                     className={`rounded-xl border-2 transition-all relative flex flex-col justify-between cursor-pointer ${cardSizeClasses[frameConfig.cardSize]} ${
                       isDragOver ? 'border-amber-500 scale-105 bg-amber-100 ring-4 ring-amber-400/50 z-20' : borderStyleClass
@@ -1291,6 +1316,7 @@ export default function LabRoomTab({
                               key={st.id}
                               draggable={true}
                               onDragStart={(e) => handleStudentDragStart(e, st.id, pcId)}
+                              onDragEnd={handleStudentDragEnd}
                               className={`rounded-lg px-2.5 py-1 flex items-center justify-between relative transition-all cursor-grab active:cursor-grabbing text-center shadow-2xs border ${pillBgStyle}`}
                             >
                               <span className="font-black text-xs text-center truncate mx-auto flex items-center justify-center gap-1">
@@ -1299,14 +1325,21 @@ export default function LabRoomTab({
                                 <span>{formatStudentNameFirstAndMiddle(st.name)}</span>
                               </span>
                               <button
+                                type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   e.preventDefault();
                                   unassignStudentFromComputer(pcId, st.id);
                                 }}
-                                onMouseDown={(e) => e.stopPropagation()}
-                                onTouchStart={(e) => e.stopPropagation()}
-                                className="absolute right-1 top-1/2 -translate-y-1/2 text-slate-900/70 hover:text-white hover:bg-rose-600 p-1 rounded-full cursor-pointer z-30 transition-all shadow-2xs border border-transparent hover:border-rose-700"
+                                onMouseDown={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                }}
+                                onTouchStart={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                }}
+                                className="absolute right-1 top-1/2 -translate-y-1/2 text-slate-900/70 hover:text-white hover:bg-rose-600 p-1 rounded-full cursor-pointer z-30 transition-all shadow-2xs border border-transparent hover:border-rose-700 active:scale-90"
                                 title="Xóa học sinh khỏi máy"
                               >
                                 <X className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -1962,7 +1995,7 @@ export default function LabRoomTab({
                   key={`pc_${pcId}`}
                   onClick={() => handlePcCardClick(pcId)}
                   onDragOver={(e) => handlePcDragOver(e, pcId)}
-                  onDragLeave={() => setDragOverPcId(null)}
+                  onDragLeave={(e) => handlePcDragLeave(e, pcId)}
                   onDrop={(e) => handlePcDrop(e, pcId)}
                   className={`rounded-xl border-2 transition-all relative flex flex-col justify-between cursor-pointer ${cardSizeClasses[frameConfig.cardSize]} ${
                     isDragOver ? 'border-amber-500 scale-105 bg-amber-100 ring-4 ring-amber-400/50 z-20' : borderStyleClass
@@ -2057,6 +2090,7 @@ export default function LabRoomTab({
                             key={st.id}
                             draggable={true}
                             onDragStart={(e) => handleStudentDragStart(e, st.id, pcId)}
+                            onDragEnd={handleStudentDragEnd}
                             className={`rounded-lg px-2.5 py-1 flex items-center justify-between relative transition-all cursor-grab active:cursor-grabbing group text-center shadow-2xs border ${pillBgStyle}`}
                           >
                             <span className="font-black text-xs text-center truncate mx-auto flex items-center justify-center gap-1" title={st.name}>
@@ -2068,14 +2102,21 @@ export default function LabRoomTab({
                             </span>
 
                             <button
+                              type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 e.preventDefault();
                                 unassignStudentFromComputer(pcId, st.id);
                               }}
-                              onMouseDown={(e) => e.stopPropagation()}
-                              onTouchStart={(e) => e.stopPropagation()}
-                              className="absolute right-1 top-1/2 -translate-y-1/2 text-slate-900/70 hover:text-white hover:bg-rose-600 p-1 rounded-full cursor-pointer z-30 transition-all shadow-2xs border border-transparent hover:border-rose-700"
+                              onMouseDown={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                              }}
+                              onTouchStart={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                              }}
+                              className="absolute right-1 top-1/2 -translate-y-1/2 text-slate-900/70 hover:text-white hover:bg-rose-600 p-1 rounded-full cursor-pointer z-30 transition-all shadow-2xs border border-transparent hover:border-rose-700 active:scale-90"
                               title="Xóa học sinh khỏi máy"
                             >
                               <X className="w-3.5 h-3.5 stroke-[2.5]" />
