@@ -163,22 +163,27 @@ export default function StudentsTab({
       return;
     }
 
-    // 2. ⚠️ Hộp thoại hỏi ý kiến (Xác nhận) khi phát hiện trùng tên trong cùng lớp
-    const existingNameStudent = classStudents.find(s => s.name.trim().toLowerCase() === nameClean.toLowerCase());
-    if (existingNameStudent) {
+    // 2. ⚠️ Hộp thoại hỏi ý kiến & Gợi ý tự động thêm phân biệt tên phụ (1), (2)... khi trùng tên
+    let finalStudentName = nameClean;
+    const sameNameCount = classStudents.filter(s => {
+      const base = s.name.replace(/\s*\(\d+\)$/, '').trim().toLowerCase();
+      return base === nameClean.toLowerCase();
+    }).length;
+
+    if (sameNameCount > 0) {
+      const suggestedSuffixName = `${nameClean} (${sameNameCount})`;
       const confirmAddDuplicate = window.confirm(
-        `⚠️ PHÁT HIỆN HỌC SINH TRÙNG TÊN TRONG LỚP ${selectedClass}!\n\nLớp ${selectedClass} đã có học sinh: "${existingNameStudent.name}" (MSHS: ${existingNameStudent.code}).\n\nBạn có chắc chắn muốn tiếp tục THÊM HỌC SINH CÙNG HỌ TÊN này vào lớp không?\n\n• Nhấn OK: Tiếp tục thêm trùng tên vào lớp.\n• Nhấn Cancel: Hủy bỏ thao tác.`
+        `⚠️ PHÁT HIỆN HỌC SINH TRÙNG TÊN TRONG LỚP ${selectedClass}!\n\nLớp ${selectedClass} đã có ${sameNameCount} học sinh tên: "${nameClean}".\n\n💡 GỢI Ý PHÂN BIỆT TÊN PHỤ: Bạn có muốn tự động thêm số phân biệt tên phụ thành:\n👉 "${suggestedSuffixName}" không?\n\n• Nhấn OK: Tự động đổi tên thành "${suggestedSuffixName}".\n• Nhấn Cancel: Giữ nguyên tên gốc "${nameClean}".`
       );
-      if (!confirmAddDuplicate) {
-        showToast(`Đã hủy thêm học sinh trùng tên "${nameClean}".`);
-        return;
+      if (confirmAddDuplicate) {
+        finalStudentName = suggestedSuffixName;
       }
     }
 
     const item: Student = {
       id: `st-${Date.now()}`,
       code: codeClean,
-      name: nameClean,
+      name: finalStudentName,
       gender: newGender,
       classId: selectedClass,
       notes: newNote.trim()
@@ -214,7 +219,7 @@ export default function StudentsTab({
     showToast(`✅ Đã thêm học sinh ${item.name} vào lớp ${selectedClass}!`);
   };
 
-  // Handle upload paste from Excel with Confirmation & Auto-capitalization & Auto-scroll
+  // Handle upload paste from Excel with Confirmation & Auto-suffix (1), (2) & Auto-capitalization & Auto-scroll
   const handleImportExcel = () => {
     if (!excelText.trim()) {
       showToast('Vui lòng dán dữ liệu cột học sinh Copy từ Excel!', 'error');
@@ -247,21 +252,28 @@ export default function StudentsTab({
         return;
       }
 
-      const isDuplicateInClass = classStudents.some(s => s.name.trim().toLowerCase() === rawName.toLowerCase());
+      const isDuplicateInClass = classStudents.some(s => {
+        const base = s.name.replace(/\s*\(\d+\)$/, '').trim().toLowerCase();
+        return base === rawName.toLowerCase();
+      });
       if (isDuplicateInClass) {
         duplicateNamesInExcel.push(rawName);
       }
     });
 
-    // ⚠️ Hộp thoại hỏi ý kiến (Xác nhận) khi phát hiện trùng tên từ Excel
-    let allowDuplicates = false;
+    // Track name occurrences to auto-add suffix (1), (2)...
+    const nameTracker: Record<string, number> = {};
+    classStudents.forEach(s => {
+      const base = s.name.replace(/\s*\(\d+\)$/, '').trim().toLowerCase();
+      nameTracker[base] = (nameTracker[base] || 0) + 1;
+    });
+
+    let useAutoSuffix = true;
     if (duplicateNamesInExcel.length > 0) {
-      const confirmSkip = window.confirm(
-        `⚠️ PHÁT HIỆN ${duplicateNamesInExcel.length} HỌC SINH TRÙNG TÊN KHI DÁN EXCEL!\n\nCác học sinh sau đã có tên trong lớp ${selectedClass}:\n${duplicateNamesInExcel.slice(0, 3).map(n => `• ${n}`).join('\n')}${duplicateNamesInExcel.length > 3 ? '\n...' : ''}\n\nBạn có muốn LỌC BỎ các học sinh trùng tên này không?\n\n• Nhấn OK: LỌC BỎ các tên trùng (Không nhập trùng).\n• Nhấn Cancel: VẪN NHẬP TẤT CẢ các học sinh trùng tên.`
+      const confirmSuffix = window.confirm(
+        `⚠️ PHÁT HIỆN ${duplicateNamesInExcel.length} HỌC SINH TRÙNG TÊN KHI DÁN EXCEL!\n\nCác học sinh sau đã có tên trong lớp ${selectedClass}:\n${duplicateNamesInExcel.slice(0, 3).map(n => `• ${n}`).join('\n')}${duplicateNamesInExcel.length > 3 ? '\n...' : ''}\n\n💡 GỢI Ý PHÂN BIỆT TÊN PHỤ: Bạn có muốn tự động thêm số phân biệt (1), (2)... không?\n\n• Nhấn [OK]: TỰ ĐỘNG THÊM SỐ (1), (2) phân biệt tên phụ.\n• Nhấn [Cancel]: GIỮ NGUYÊN TÊN GỐC không thêm số.`
       );
-      if (!confirmSkip) {
-        allowDuplicates = true; // Thầy/Cô cố ý nhấn Cancel để nhập tất cả kể cả trùng tên!
-      }
+      useAutoSuffix = confirmSuffix;
     }
 
     let addedCount = 0;
@@ -289,9 +301,15 @@ export default function StudentsTab({
         return;
       }
 
-      const isDuplicateInClass = classStudents.some(s => s.name.trim().toLowerCase() === rawName.toLowerCase());
-      if (isDuplicateInClass && !allowDuplicates) {
-        return; // Lọc bỏ tên trùng do Thầy/Cô đã chọn OK
+      let finalName = rawName;
+      const baseKey = rawName.toLowerCase();
+      if (nameTracker[baseKey]) {
+        if (useAutoSuffix) {
+          finalName = `${rawName} (${nameTracker[baseKey]})`;
+        }
+        nameTracker[baseKey] += 1;
+      } else {
+        nameTracker[baseKey] = 1;
       }
 
       let gender: 'Nam' | 'Nữ' = 'Nam';
@@ -316,7 +334,7 @@ export default function StudentsTab({
       newStudentsList.push({
         id: `st-ex-${Date.now()}-${index}`,
         code: generatedCode,
-        name: rawName,
+        name: finalName,
         gender,
         classId: selectedClass
       });
@@ -511,9 +529,23 @@ export default function StudentsTab({
                             onChange={(e) => setEditName(e.target.value)}
                             className="w-full border border-amber-300 rounded-lg px-2 py-1.5 text-xs font-extrabold text-slate-800 bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
                           />
-                        ) : (
-                          <span className="font-extrabold text-slate-800 whitespace-nowrap">{s.name}</span>
-                        )}
+                        ) : (() => {
+                          const nameMatch = s.name.match(/^(.*?)\s*(\(\d+\))$/);
+                          return (
+                            <span className="font-extrabold text-slate-800 whitespace-nowrap flex items-center gap-1">
+                              {nameMatch ? (
+                                <>
+                                  <span>{nameMatch[1]}</span>
+                                  <span className="px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-300/80 font-black text-[10px]" title="Biệt danh phân biệt trùng tên">
+                                    {nameMatch[2]}
+                                  </span>
+                                </>
+                              ) : (
+                                <span>{s.name}</span>
+                              )}
+                            </span>
+                          );
+                        })()}
                       </td>
                       <td className="py-3.5 px-4">
                         {isEditing ? (
