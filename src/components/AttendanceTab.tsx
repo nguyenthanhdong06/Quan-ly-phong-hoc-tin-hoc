@@ -83,19 +83,29 @@ export default function AttendanceTab({
     return filteredStudents.slice(startIndex, startIndex + pageSize);
   }, [filteredStudents, currentPage, pageSize]);
 
-  // Metrics
-  let presentCount = 0;
-  let excusedCount = 0;
-  let unexcusedCount = 0;
+  // Metrics (Memoized for 0ms Instant Calculation & Zero Jitter)
+  const { presentCount, excusedCount, unexcusedCount, totalAbsentCount, attendanceRate } = React.useMemo(() => {
+    let present = 0;
+    let excused = 0;
+    let unexcused = 0;
 
-  classStudents.forEach(s => {
-    const status = currentDaysAttendance[s.id] || 'present'; // Default is present
-    if (status === 'present') presentCount++;
-    else if (status === 'excused') excusedCount++;
-    else if (status === 'unexcused') unexcusedCount++;
-  });
+    classStudents.forEach(s => {
+      const status = currentDaysAttendance[s.id] || 'present';
+      if (status === 'present') present++;
+      else if (status === 'excused') excused++;
+      else if (status === 'unexcused') unexcused++;
+    });
 
-  const totalAbsentCount = excusedCount + unexcusedCount;
+    const total = classStudents.length;
+    const rate = total > 0 ? Math.round((present / total) * 100) : 100;
+    return {
+      presentCount: present,
+      excusedCount: excused,
+      unexcusedCount: unexcused,
+      totalAbsentCount: excused + unexcused,
+      attendanceRate: rate
+    };
+  }, [classStudents, currentDaysAttendance]);
 
   // 💬 Auto Generator for Zalo / SMS Homeroom Teacher Attendance Report Text
   const generateReportText = React.useCallback((template: 'zalo' | 'sms' | 'full') => {
@@ -162,10 +172,6 @@ export default function AttendanceTab({
     msg += `\nKính báo Thầy/Cô nắm thông tin!`;
     return msg;
   }, [classStudents, currentDaysAttendance, selectedClass, selectedDate]);
-
-  const attendanceRate = classStudents.length > 0 
-    ? Math.round((presentCount / classStudents.length) * 100)
-    : 100;
 
   // Set single student status with visual pulse trigger
   const handleSetState = (studentId: string, status: 'present' | 'excused' | 'unexcused') => {
@@ -251,11 +257,6 @@ export default function AttendanceTab({
             >
               <BarChart3 className="w-4 h-4 text-amber-100" />
               <span>Bảng Thống Kê</span>
-              {totalAbsentCount > 0 && (
-                <span className="bg-rose-500 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full border border-rose-300 animate-pulse">
-                  {totalAbsentCount} vắng
-                </span>
-              )}
             </button>
 
             <button
@@ -285,51 +286,33 @@ export default function AttendanceTab({
         </div>
       </div>
 
-      {/* Statistics board with smooth number bumps */}
+      {/* Statistics board with smooth instant 0ms numbers */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 text-left">
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 text-left">
           <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Sĩ số lớp cần học</span>
           <strong className="text-2xl font-black text-slate-800 mt-1 block">{classStudents.length}</strong>
         </div>
 
-        <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100 text-left relative overflow-hidden">
-          <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 block">Hiện diện (Học tốt)</span>
-          <motion.strong 
-            key={presentCount}
-            initial={{ scale: 1.25, color: '#059669' }}
-            animate={{ scale: 1 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-            className="text-2xl font-black text-emerald-700 mt-1 block"
-          >
-            {presentCount} <span className="text-xs font-bold text-emerald-500">({attendanceRate}%)</span>
-          </motion.strong>
+        <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-200 text-left relative overflow-hidden">
+          <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 block">Hiện diện (Học tốt)</span>
+          <strong className="text-2xl font-black text-emerald-700 mt-1 block transition-all duration-200">
+            {presentCount} <span className="text-xs font-bold text-emerald-600">({attendanceRate}%)</span>
+          </strong>
         </div>
 
-        <div className="bg-amber-50 p-4 rounded-xl border border-amber-100 text-left relative overflow-hidden">
-          <span className="text-[10px] font-black uppercase tracking-wider text-amber-600 block">Xin phép nghỉ (P)</span>
-          <motion.strong 
-            key={excusedCount}
-            initial={{ scale: 1.25, color: '#d97706' }}
-            animate={{ scale: 1 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-            className="text-2xl font-black text-amber-700 mt-1 block"
-          >
+        <div className="bg-amber-50 p-4 rounded-xl border border-amber-200 text-left relative overflow-hidden">
+          <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 block">Xin phép nghỉ (P)</span>
+          <strong className="text-2xl font-black text-amber-700 mt-1 block transition-all duration-200">
             {excusedCount}
-          </motion.strong>
+          </strong>
         </div>
 
-        <div className="bg-red-50 p-4 rounded-xl border border-red-100 text-left relative overflow-hidden">
-          <span className="text-[10px] font-black uppercase tracking-wider text-red-600 block">Vắng không phép (KP)</span>
-          <motion.strong 
-            key={unexcusedCount}
-            initial={{ scale: 1.25, color: '#dc2626' }}
-            animate={{ scale: 1 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-            className="text-2xl font-black text-red-700 mt-1 block"
-          >
+        <div className="bg-red-50 p-4 rounded-xl border border-red-200 text-left relative overflow-hidden">
+          <span className="text-[10px] font-black uppercase tracking-wider text-red-700 block">Vắng không phép (KP)</span>
+          <strong className="text-2xl font-black text-red-700 mt-1 block transition-all duration-200">
             {unexcusedCount}
-          </motion.strong>
+          </strong>
         </div>
 
       </div>
