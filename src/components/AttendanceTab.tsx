@@ -1,6 +1,6 @@
 import React from 'react';
 import { Student, AttendanceData } from '../types';
-import { Check, ClipboardCheck, Calendar, UserCheck, AlertTriangle, AlertCircle, Search, X, Sparkles, CheckCircle, Save } from 'lucide-react';
+import { Check, ClipboardCheck, Calendar, UserCheck, AlertTriangle, AlertCircle, Search, X, Sparkles, CheckCircle, Save, BarChart3, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface AttendanceTabProps {
@@ -29,6 +29,9 @@ export default function AttendanceTab({
   const [currentPage, setCurrentPage] = React.useState(1);
   const [pageSize, setPageSize] = React.useState(10);
   const [justUpdatedId, setJustUpdatedId] = React.useState<string | null>(null);
+
+  // Subview toggle state: 'attendance' (default) | 'stats' (Bảng thống kê)
+  const [subView, setSubView] = React.useState<'attendance' | 'stats'>('attendance');
 
   // 💬 Zalo / SMS Fast Report Modal States
   const [isZaloModalOpen, setIsZaloModalOpen] = React.useState(false);
@@ -226,15 +229,16 @@ export default function AttendanceTab({
             </button>
 
             <button
-              onClick={() => {
-                setReportTemplate('zalo');
-                setCustomMessageText(generateReportText('zalo'));
-                setIsZaloModalOpen(true);
-              }}
-              className="bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-xs py-2 px-3.5 rounded-xl border border-sky-500 transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95"
-              title="Tạo tin nhắn Zalo/SMS tự động tổng hợp danh sách vắng gửi Giáo viên chủ nhiệm"
+              onClick={() => setSubView(prev => prev === 'stats' ? 'attendance' : 'stats')}
+              className={`font-extrabold text-xs py-2 px-3.5 rounded-xl border transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95 ${
+                subView === 'stats'
+                  ? 'bg-amber-700 text-white border-amber-600 shadow-md ring-2 ring-amber-300'
+                  : 'bg-amber-600 hover:bg-amber-700 text-white border-amber-500'
+              }`}
+              title="Mở Bảng Thống Kê Báo Cáo gửi Giáo Viên Chủ Nhiệm"
             >
-              <span>💬</span> Báo Cáo Zalo/SMS
+              <BarChart3 className="w-4 h-4 text-amber-100" />
+              <span>Bảng Thống Kê</span>
               {totalAbsentCount > 0 && (
                 <span className="bg-rose-500 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full border border-rose-300 animate-pulse">
                   {totalAbsentCount} vắng
@@ -302,116 +306,173 @@ export default function AttendanceTab({
 
       </div>
 
-      {/* Báo cáo nhanh cho Giáo viên chủ nhiệm */}
-      <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-          <div className="text-left">
-            <h4 className="text-xs font-black uppercase text-amber-700 tracking-wider flex items-center gap-1.5">
-              <span className="animate-pulse">📝</span> BẢNG THỐNG KÊ BÁO CÁO GIÁO VIÊN CHỦ NHIỆM
-            </h4>
-            <p className="text-[12px] text-slate-500 mt-0.5">
-              Báo cáo nhanh số liệu điểm danh ngày <span className="font-bold text-slate-700">{selectedDate.split('-').reverse().join('/')}</span> của lớp <span className="font-bold text-amber-600">{selectedClass}</span>.
-            </p>
-          </div>
-          
-          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+      {/* ====================================================================
+          1. CHẾ ĐỘ 1: BẢNG THỐNG KÊ (INLINE VIEW 100%)
+          ==================================================================== */}
+      {subView === 'stats' && (
+        <div className="space-y-6 animate-fadeIn">
+          {/* Top navigation bar with Quay về button & Quick Zalo button */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-[#fffbf0] border border-[#cbb89d] p-4 rounded-2xl shadow-xs">
+            <button
+              onClick={() => setSubView('attendance')}
+              className="bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-xs py-2.5 px-4.5 rounded-xl border border-slate-700 transition shadow-2xs cursor-pointer flex items-center gap-2 active:scale-95"
+            >
+              <ArrowLeft className="w-4 h-4 text-slate-200" />
+              <span>Quay Về Sổ Điểm Danh</span>
+            </button>
+
             <button
               onClick={() => {
                 setReportTemplate('zalo');
                 setCustomMessageText(generateReportText('zalo'));
                 setIsZaloModalOpen(true);
               }}
-              className="bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-2xs transition flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+              className="bg-sky-600 hover:bg-sky-700 text-white font-black text-xs py-2.5 px-4 rounded-xl border border-sky-500 transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95"
             >
-              <span>💬</span> Tạo mẫu tin nhắn Zalo / SMS
-            </button>
-
-            <button
-              onClick={() => {
-                const textMessage = generateReportText('full');
-                navigator.clipboard.writeText(textMessage);
-                showToast("Đã sao chép nội dung báo cáo điểm danh gửi GVCN thành công! ✨", "success");
-              }}
-              className="bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-2xs transition flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
-              title="Sao chép nhanh văn bản để gửi qua Zalo/Viber"
-            >
-              📋 Sao chép nhanh cho GVCN
+              <span>💬</span> Báo Cáo Zalo / SMS
             </button>
           </div>
-        </div>
 
-        <div className="overflow-hidden border border-slate-200 rounded-xl bg-white shadow-sm max-w-3xl">
-          <table className="w-full border-collapse text-xs text-left">
-            <tbody>
-              <tr className="border-b border-slate-200 hover:bg-slate-50/40 transition">
-                <td className="py-2.5 px-4 font-bold text-slate-500 bg-slate-50 w-44 border-r border-slate-200">Lớp:</td>
-                <td className="py-2.5 px-4 font-black text-amber-600">{selectedClass}</td>
-              </tr>
-              <tr className="border-b border-slate-200 hover:bg-slate-50/40 transition">
-                <td className="py-2.5 px-4 font-bold text-slate-500 bg-slate-50 w-44 border-r border-slate-200">Sĩ số:</td>
-                <td className="py-2.5 px-4 font-extrabold text-slate-800">
-                  {classStudents.length} học sinh <span className="text-slate-300 font-normal mx-1">|</span> <span className="text-pink-600 font-extrabold">{classStudents.filter(s => s.gender === 'Nữ').length} Nữ</span>
-                </td>
-              </tr>
-              <tr className="border-b border-slate-200 hover:bg-slate-50/40 transition">
-                <td className="py-2.5 px-4 font-bold text-slate-500 bg-slate-50 w-44 border-r border-slate-200">Hiện diện:</td>
-                <td className="py-2.5 px-4 font-extrabold text-emerald-700">
-                  {classStudents.filter(s => (currentDaysAttendance[s.id] || 'present') === 'present').length} học sinh đi học <span className="text-slate-300 font-normal mx-1">|</span> <span className="text-pink-600 font-extrabold">{classStudents.filter(s => (currentDaysAttendance[s.id] || 'present') === 'present' && s.gender === 'Nữ').length} Nữ</span>
-                </td>
-              </tr>
-              <tr className="border-b border-slate-200 hover:bg-slate-50/40 transition">
-                <td className="py-2.5 px-4 font-bold text-slate-500 bg-slate-50 w-44 border-r border-slate-200">Vắng:</td>
-                <td className="py-2.5 px-4 font-extrabold text-red-650">
-                  <span className="text-red-600">{classStudents.filter(s => (currentDaysAttendance[s.id] || 'present') !== 'present').length} học sinh vắng</span> <span className="text-slate-300 font-normal mx-1">|</span> <span className="text-pink-600 font-extrabold">{classStudents.filter(s => (currentDaysAttendance[s.id] || 'present') !== 'present' && s.gender === 'Nữ').length} Nữ</span>
-                </td>
-              </tr>
-              <tr className="hover:bg-slate-50/40 transition">
-                <td className="py-3 px-4 font-bold text-slate-500 bg-slate-50 w-44 border-r border-slate-200 align-middle">Họ tên HS vắng:</td>
-                <td className="py-3 px-4 font-semibold text-slate-700">
-                  {classStudents.filter(s => (currentDaysAttendance[s.id] || 'present') !== 'present').length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      <AnimatePresence>
-                        {classStudents.filter(s => (currentDaysAttendance[s.id] || 'present') !== 'present').map(s => {
-                          const status = currentDaysAttendance[s.id];
-                          const isExcused = status === 'excused';
-                          return (
-                            <motion.span 
-                              key={s.id} 
-                              initial={{ scale: 0.7, opacity: 0 }}
-                              animate={{ scale: 1, opacity: 1 }}
-                              exit={{ scale: 0.7, opacity: 0 }}
-                              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black border uppercase tracking-wider shadow-2xs ${
-                                isExcused 
-                                  ? 'bg-amber-50 text-amber-700 border-amber-200' 
-                                  : 'bg-red-50 text-red-700 border-red-200'
-                              }`}
-                            >
-                              <span>{s.name}</span>
-                              <span className="text-[8px] bg-white opacity-90 px-1 py-0.2 rounded border shadow-sm font-mono">
-                                {isExcused ? 'Phép (P)' : 'Không Phép (KP)'}
-                              </span>
-                            </motion.span>
-                          );
-                        })}
-                      </AnimatePresence>
-                    </div>
-                  ) : (
-                    <motion.span 
-                      initial={{ opacity: 0, y: 3 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="text-emerald-600 font-extrabold text-[11px] flex items-center gap-1"
-                    >
-                      <Sparkles className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                      Gương mẫu! Lớp đi học đầy đủ 100%, không có học sinh vắng.
-                    </motion.span>
-                  )}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          {/* Bảng thống kê báo cáo Giáo viên chủ nhiệm (INLINE VIEW 100% FULL WIDTH) */}
+          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4 w-full">
+            <div className="text-left border-b border-slate-200/80 pb-3">
+              <h4 className="text-xs sm:text-sm font-black uppercase text-amber-700 tracking-wider flex items-center gap-1.5">
+                <span className="animate-pulse">📝</span> BẢNG THỐNG KÊ BÁO CÁO GIÁO VIÊN CHỦ NHIỆM
+              </h4>
+              <p className="text-[12px] text-slate-500 mt-1">
+                Báo cáo nhanh số liệu điểm danh ngày <span className="font-bold text-slate-700">{selectedDate.split('-').reverse().join('/')}</span> của lớp <span className="font-bold text-amber-600">{selectedClass}</span>.
+              </p>
+            </div>
+
+            {/* Inline View 100% Full Width Table */}
+            <div className="overflow-hidden border border-slate-200 rounded-xl bg-white shadow-sm w-full">
+              <table className="w-full border-collapse text-xs text-left">
+                <tbody>
+                  <tr className="border-b border-slate-200 hover:bg-slate-50/40 transition">
+                    <td className="py-3 px-4 font-bold text-slate-500 bg-slate-50 w-44 border-r border-slate-200">Lớp:</td>
+                    <td className="py-3 px-4 font-black text-amber-600">{selectedClass}</td>
+                  </tr>
+                  <tr className="border-b border-slate-200 hover:bg-slate-50/40 transition">
+                    <td className="py-3 px-4 font-bold text-slate-500 bg-slate-50 w-44 border-r border-slate-200">Sĩ số:</td>
+                    <td className="py-3 px-4 font-extrabold text-slate-800">
+                      {classStudents.length} học sinh <span className="text-slate-300 font-normal mx-1">|</span> <span className="text-pink-600 font-extrabold">{classStudents.filter(s => s.gender === 'Nữ').length} Nữ</span>
+                    </td>
+                  </tr>
+                  <tr className="border-b border-slate-200 hover:bg-slate-50/40 transition">
+                    <td className="py-3 px-4 font-bold text-slate-500 bg-slate-50 w-44 border-r border-slate-200">Hiện diện:</td>
+                    <td className="py-3 px-4 font-extrabold text-emerald-700">
+                      {classStudents.filter(s => (currentDaysAttendance[s.id] || 'present') === 'present').length} học sinh đi học <span className="text-slate-300 font-normal mx-1">|</span> <span className="text-pink-600 font-extrabold">{classStudents.filter(s => (currentDaysAttendance[s.id] || 'present') === 'present' && s.gender === 'Nữ').length} Nữ</span>
+                    </td>
+                  </tr>
+                  <tr className="border-b border-slate-200 hover:bg-slate-50/40 transition">
+                    <td className="py-3 px-4 font-bold text-slate-500 bg-slate-50 w-44 border-r border-slate-200">Vắng:</td>
+                    <td className="py-3 px-4 font-extrabold text-red-650">
+                      <span className="text-red-600">{classStudents.filter(s => (currentDaysAttendance[s.id] || 'present') !== 'present').length} học sinh vắng</span> <span className="text-slate-300 font-normal mx-1">|</span> <span className="text-pink-600 font-extrabold">{classStudents.filter(s => (currentDaysAttendance[s.id] || 'present') !== 'present' && s.gender === 'Nữ').length} Nữ</span>
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-slate-50/40 transition">
+                    <td className="py-3.5 px-4 font-bold text-slate-500 bg-slate-50 w-44 border-r border-slate-200 align-middle">Họ tên HS vắng:</td>
+                    <td className="py-3.5 px-4 font-semibold text-slate-700">
+                      {classStudents.filter(s => (currentDaysAttendance[s.id] || 'present') !== 'present').length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          <AnimatePresence>
+                            {classStudents.filter(s => (currentDaysAttendance[s.id] || 'present') !== 'present').map(s => {
+                              const status = currentDaysAttendance[s.id];
+                              const isExcused = status === 'excused';
+                              return (
+                                <motion.span 
+                                  key={s.id} 
+                                  initial={{ scale: 0.7, opacity: 0 }}
+                                  animate={{ scale: 1, opacity: 1 }}
+                                  exit={{ scale: 0.7, opacity: 0 }}
+                                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black border uppercase tracking-wider shadow-2xs ${
+                                    isExcused 
+                                      ? 'bg-amber-50 text-amber-700 border-amber-200' 
+                                      : 'bg-red-50 text-red-700 border-red-200'
+                                  }`}
+                                >
+                                  <span>{s.name}</span>
+                                  <span className="text-[8px] bg-white opacity-90 px-1 py-0.2 rounded border shadow-sm font-mono">
+                                    {isExcused ? 'Phép (P)' : 'Không Phép (KP)'}
+                                  </span>
+                                </motion.span>
+                              );
+                            })}
+                          </AnimatePresence>
+                        </div>
+                      ) : (
+                        <motion.span 
+                          initial={{ opacity: 0, y: 3 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="text-emerald-600 font-extrabold text-[11px] flex items-center gap-1"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                          Gương mẫu! Lớp đi học đầy đủ 100%, không có học sinh vắng.
+                        </motion.span>
+                      )}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* ====================================================================
+          2. CHẾ ĐỘ 2: SỔ ĐIỂM DANH CHÍNH (SƠ ĐỒ & DANH SÁCH LỚP)
+          ==================================================================== */}
+      {subView === 'attendance' && (
+        <>
+          {/* Statistics board with smooth number bumps */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 text-left">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Sĩ số lớp cần học</span>
+              <strong className="text-2xl font-black text-slate-800 mt-1 block">{classStudents.length}</strong>
+            </div>
+
+            <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100 text-left relative overflow-hidden">
+              <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 block">Hiện diện (Học tốt)</span>
+              <motion.strong 
+                key={presentCount}
+                initial={{ scale: 1.25, color: '#059669' }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                className="text-2xl font-black text-emerald-700 mt-1 block"
+              >
+                {presentCount} <span className="text-xs font-bold text-emerald-500">({attendanceRate}%)</span>
+              </motion.strong>
+            </div>
+
+            <div className="bg-amber-50 p-4 rounded-xl border border-amber-100 text-left relative overflow-hidden">
+              <span className="text-[10px] font-black uppercase tracking-wider text-amber-600 block">Xin phép nghỉ (P)</span>
+              <motion.strong 
+                key={excusedCount}
+                initial={{ scale: 1.25, color: '#d97706' }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                className="text-2xl font-black text-amber-700 mt-1 block"
+              >
+                {excusedCount}
+              </motion.strong>
+            </div>
+
+            <div className="bg-red-50 p-4 rounded-xl border border-red-100 text-left relative overflow-hidden">
+              <span className="text-[10px] font-black uppercase tracking-wider text-red-600 block">Vắng không phép (KP)</span>
+              <motion.strong 
+                key={unexcusedCount}
+                initial={{ scale: 1.25, color: '#dc2626' }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                className="text-2xl font-black text-red-700 mt-1 block"
+              >
+                {unexcusedCount}
+              </motion.strong>
+            </div>
+
+          </div>
 
       {/* Main Table for attendance records on selected date */}
       <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs space-y-0 text-left">
@@ -797,7 +858,9 @@ export default function AttendanceTab({
           </div>
         </div>
       )}
+          {/* Close subView === 'attendance' fragment */}
+        </>
+      )}
     </div>
   );
 }
-
