@@ -173,11 +173,8 @@ export default function AttendanceTab({
     return msg;
   }, [classStudents, currentDaysAttendance, selectedClass, selectedDate]);
 
-  // Set single student status with visual pulse trigger
-  const handleSetState = (studentId: string, status: 'present' | 'excused' | 'unexcused') => {
-    setJustUpdatedId(studentId);
-    setTimeout(() => setJustUpdatedId(null), 600);
-
+  // Set single student status with 0ms instant local mutation
+  const handleSetState = React.useCallback((studentId: string, status: 'present' | 'excused' | 'unexcused') => {
     setAttendanceData(prev => {
       const dayData = { ...(prev[selectedDate] || {}) };
       const classData = { ...(dayData[selectedClass] || {}) };
@@ -185,7 +182,7 @@ export default function AttendanceTab({
       dayData[selectedClass] = classData;
       return { ...prev, [selectedDate]: dayData };
     });
-  };
+  }, [selectedClass, selectedDate, setAttendanceData]);
 
   // Set all present
   const handleSetAllPresent = () => {
@@ -492,21 +489,9 @@ export default function AttendanceTab({
                   }
 
                   return (
-                    <motion.tr 
+                    <tr 
                       key={s.id}
-                      layout
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ 
-                        opacity: 1, 
-                        y: 0,
-                        scale: isJustUpdated ? [1, 1.012, 1] : 1,
-                      }}
-                      exit={{ opacity: 0, y: -6 }}
-                      transition={{ 
-                        duration: 0.2, 
-                        scale: { duration: 0.35, ease: 'easeOut' } 
-                      }}
-                      className={`${rowBg} ${borderLeftAccent} transition-colors duration-300 relative`}
+                      className={`${rowBg} ${borderLeftAccent} transition-all duration-150 relative`}
                     >
                       <td className="py-3.5 px-4 font-bold text-slate-400">{displayIndex}</td>
                       <td className="py-3.5 px-4 font-mono font-bold text-slate-500">{s.code}</td>
@@ -598,7 +583,7 @@ export default function AttendanceTab({
 
                         </div>
                       </td>
-                    </motion.tr>
+                    </tr>
                   );
                 })}
               </AnimatePresence>

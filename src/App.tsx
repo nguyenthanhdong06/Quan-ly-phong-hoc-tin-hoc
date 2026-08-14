@@ -392,54 +392,10 @@ export default function App() {
         }
       });
 
-    // 2. Periodic background poll (every 10s) to guarantee zero data drift across all sessions
-    const interval = setInterval(async () => {
-      try {
-        const dbStates = await loadAllSupabaseStates();
-        if (dbStates && Object.keys(dbStates).length > 0) {
-          Object.keys(dbStates).forEach(key => {
-            applyCloudState(key, dbStates[key]);
-          });
-        }
-      } catch (e) {
-        // Silent background check
-      }
-    }, 10000);
-
     return () => {
       supabase.removeChannel(channel);
-      clearInterval(interval);
     };
   }, [isLoaded]);
-
-  // --- BACKGROUND CLOUD SYNC FOR AVATARS & DATA ON WINDOW FOCUS ---
-  useEffect(() => {
-    const handleFocusOrVisibility = async () => {
-      try {
-        const dbStates = await loadAllSupabaseStates();
-        if (dbStates && Object.keys(dbStates).length > 0) {
-          if (dbStates['custom_avatars_list'] && Array.isArray(dbStates['custom_avatars_list'])) {
-            safeSetLocalStorage('custom_avatars_list', dbStates['custom_avatars_list']);
-            window.dispatchEvent(new CustomEvent('custom_avatars_updated', { detail: dbStates['custom_avatars_list'] }));
-          }
-          if (dbStates['school_students']) setStudents(dbStates['school_students']);
-          if (dbStates['school_seating_chart']) setSeatingChart(dbStates['school_seating_chart']);
-          if (dbStates['school_attendance_data']) setAttendanceData(dbStates['school_attendance_data']);
-          if (dbStates['school_evaluation_data']) setEvaluationData(dbStates['school_evaluation_data']);
-          if (dbStates['school_emulation_state']) setEmulationDataState(dbStates['school_emulation_state']);
-        }
-      } catch (e) {
-        // Silent background check
-      }
-    };
-
-    window.addEventListener('focus', handleFocusOrVisibility);
-    document.addEventListener('visibilitychange', handleFocusOrVisibility);
-    return () => {
-      window.removeEventListener('focus', handleFocusOrVisibility);
-      document.removeEventListener('visibilitychange', handleFocusOrVisibility);
-    };
-  }, []);
 
   // Auto-expand and synchronize menu groups based on activeTab
   useEffect(() => {
