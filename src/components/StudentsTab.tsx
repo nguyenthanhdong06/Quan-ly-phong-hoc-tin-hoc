@@ -48,6 +48,16 @@ const NoteInput = ({ studentId, initialValue, onSave }: NoteInputProps) => {
   );
 };
 
+// 🔤 Hàm tự động viết hoa chữ cái đầu tiên của Họ và Tên (VD: nguyên văn a -> Nguyễn Văn A)
+const capitalizeName = (str: string): string => {
+  if (!str) return '';
+  return str
+    .split(' ')
+    .filter(Boolean)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+};
+
 export default function StudentsTab({
   selectedClass,
   students,
@@ -106,6 +116,8 @@ export default function StudentsTab({
     }
 
     const codeClean = editCode.trim().toUpperCase();
+    const nameClean = capitalizeName(editName.trim());
+
     if (students.some(s => s.id !== id && s.code === codeClean)) {
       showToast(`Mã số học sinh ${codeClean} đã tồn tại ở học sinh khác!`, 'error');
       return;
@@ -116,7 +128,7 @@ export default function StudentsTab({
         return {
           ...s,
           code: codeClean,
-          name: editName.trim(),
+          name: nameClean,
           gender: editGender,
           notes: editNote.trim()
         };
@@ -133,10 +145,10 @@ export default function StudentsTab({
     showToast('Đã cập nhật ghi chú học sinh!');
   };
 
-  // Handle addition with Duplicate Check & Auto-close & Auto-scroll
+  // Handle addition with Duplicate Check & Confirmation Dialog & Auto-close & Auto-scroll
   const handleAddStudent = (e: React.FormEvent) => {
     e.preventDefault();
-    const nameClean = newName.trim();
+    const nameClean = capitalizeName(newName.trim());
     const codeClean = newCode.trim().toUpperCase();
 
     if (!nameClean || !codeClean) {
@@ -151,11 +163,16 @@ export default function StudentsTab({
       return;
     }
 
-    // 2. ⚠️ Cảnh báo trùng Họ và Tên trong cùng lớp
+    // 2. ⚠️ Hộp thoại hỏi ý kiến (Xác nhận) khi phát hiện trùng tên trong cùng lớp
     const existingNameStudent = classStudents.find(s => s.name.trim().toLowerCase() === nameClean.toLowerCase());
     if (existingNameStudent) {
-      showToast(`⚠️ CẢNH BÁO TRÙNG HỌ TÊN: Học sinh "${nameClean}" (MSHS: ${existingNameStudent.code}) đã có trong danh sách lớp ${selectedClass}!`, 'error');
-      return;
+      const confirmAddDuplicate = window.confirm(
+        `⚠️ PHÁT HIỆN HỌC SINH TRÙNG TÊN TRONG LỚP ${selectedClass}!\n\nLớp ${selectedClass} đã có học sinh: "${existingNameStudent.name}" (MSHS: ${existingNameStudent.code}).\n\nBạn có chắc chắn muốn tiếp tục THÊM HỌC SINH CÙNG HỌ TÊN này vào lớp không?\n\n• Nhấn OK: Tiếp tục thêm trùng tên vào lớp.\n• Nhấn Cancel: Hủy bỏ thao tác.`
+      );
+      if (!confirmAddDuplicate) {
+        showToast(`Đã hủy thêm học sinh trùng tên "${nameClean}".`);
+        return;
+      }
     }
 
     const item: Student = {
@@ -197,7 +214,7 @@ export default function StudentsTab({
     showToast(`✅ Đã thêm học sinh ${item.name} vào lớp ${selectedClass}!`);
   };
 
-  // Handle upload paste from Excel with Duplicate Filter & Auto-scroll
+  // Handle upload paste from Excel with Confirmation & Auto-capitalization & Auto-scroll
   const handleImportExcel = () => {
     if (!excelText.trim()) {
       showToast('Vui lòng dán dữ liệu cột học sinh Copy từ Excel!', 'error');
@@ -205,20 +222,19 @@ export default function StudentsTab({
     }
 
     const lines = excelText.split('\n');
-    let addedCount = 0;
-    const newStudentsList: Student[] = [];
     const duplicateNamesInExcel: string[] = [];
 
-    lines.forEach((line, index) => {
+    // Quét phát hiện danh sách học sinh trùng tên
+    lines.forEach((line) => {
       const trimmedLine = line.trim();
-      if (!trimmedLine) return; // Skip empty rows
+      if (!trimmedLine) return;
 
       let parts = trimmedLine.split('\t');
       if (parts.length === 1 && trimmedLine.includes(',')) {
         parts = trimmedLine.split(',');
       }
 
-      const rawName = parts[0] ? parts[0].trim() : '';
+      const rawName = parts[0] ? capitalizeName(parts[0].trim()) : '';
 
       if (
         !rawName || 
@@ -231,13 +247,51 @@ export default function StudentsTab({
         return;
       }
 
-      // ⚠️ Cảnh báo & lọc bỏ học sinh bị trùng tên trong lớp hoặc trong lô dán
       const isDuplicateInClass = classStudents.some(s => s.name.trim().toLowerCase() === rawName.toLowerCase());
-      const isDuplicateInBatch = newStudentsList.some(s => s.name.trim().toLowerCase() === rawName.toLowerCase());
-      
-      if (isDuplicateInClass || isDuplicateInBatch) {
+      if (isDuplicateInClass) {
         duplicateNamesInExcel.push(rawName);
-        return; // Bỏ qua không nhập học sinh trùng tên
+      }
+    });
+
+    // ⚠️ Hộp thoại hỏi ý kiến (Xác nhận) khi phát hiện trùng tên từ Excel
+    let allowDuplicates = false;
+    if (duplicateNamesInExcel.length > 0) {
+      const confirmSkip = window.confirm(
+        `⚠️ PHÁT HIỆN ${duplicateNamesInExcel.length} HỌC SINH TRÙNG TÊN KHI DÁN EXCEL!\n\nCác học sinh sau đã có tên trong lớp ${selectedClass}:\n${duplicateNamesInExcel.slice(0, 3).map(n => `• ${n}`).join('\n')}${duplicateNamesInExcel.length > 3 ? '\n...' : ''}\n\nBạn có muốn LỌC BỎ các học sinh trùng tên này không?\n\n• Nhấn OK: LỌC BỎ các tên trùng (Không nhập trùng).\n• Nhấn Cancel: VẪN NHẬP TẤT CẢ các học sinh trùng tên.`
+      );
+      if (!confirmSkip) {
+        allowDuplicates = true; // Thầy/Cô cố ý nhấn Cancel để nhập tất cả kể cả trùng tên!
+      }
+    }
+
+    let addedCount = 0;
+    const newStudentsList: Student[] = [];
+
+    lines.forEach((line, index) => {
+      const trimmedLine = line.trim();
+      if (!trimmedLine) return;
+
+      let parts = trimmedLine.split('\t');
+      if (parts.length === 1 && trimmedLine.includes(',')) {
+        parts = trimmedLine.split(',');
+      }
+
+      const rawName = parts[0] ? capitalizeName(parts[0].trim()) : '';
+
+      if (
+        !rawName || 
+        rawName.toLowerCase().startsWith('sep=') ||
+        rawName.toLowerCase() === 'họ và tên' || 
+        rawName.toLowerCase() === 'họ tên' || 
+        rawName.toLowerCase() === 'hoten' || 
+        rawName.toLowerCase() === 'name'
+      ) {
+        return;
+      }
+
+      const isDuplicateInClass = classStudents.some(s => s.name.trim().toLowerCase() === rawName.toLowerCase());
+      if (isDuplicateInClass && !allowDuplicates) {
+        return; // Lọc bỏ tên trùng do Thầy/Cô đã chọn OK
       }
 
       let gender: 'Nam' | 'Nữ' = 'Nam';
@@ -295,17 +349,9 @@ export default function StudentsTab({
         }
       }, 250);
 
-      if (duplicateNamesInExcel.length > 0) {
-        showToast(`Tuyệt vời! Đã nạp ${addedCount} học sinh mới. ⚠️ Đã tự động lọc bỏ ${duplicateNamesInExcel.length} học sinh trùng tên (${duplicateNamesInExcel.slice(0, 2).join(', ')})`, 'success');
-      } else {
-        showToast(`Tuyệt vời! Đã nạp thành công ${addedCount} học sinh mới trực tiếp vào lớp ${selectedClass}.`);
-      }
+      showToast(`Tuyệt vời! Đã nạp thành công ${addedCount} học sinh mới vào lớp ${selectedClass}.`);
     } else {
-      if (duplicateNamesInExcel.length > 0) {
-        showToast(`⚠️ Không thêm học sinh nào: Tất cả ${duplicateNamesInExcel.length} học sinh dán vào đều đã có tên trong lớp ${selectedClass}!`, 'error');
-      } else {
-        showToast('Không bóc tách được dòng học sinh hợp lệ. Vui lòng kiểm tra lại cấu trúc!', 'error');
-      }
+      showToast('Không có học sinh mới nào được thêm vào lớp.', 'error');
     }
   };
 
@@ -768,13 +814,16 @@ export default function StudentsTab({
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-wider text-left">Họ và Tên lót & Tên</label>
+                      <label className="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-wider text-left flex justify-between items-center">
+                        <span>Họ và Tên lót & Tên</span>
+                        <span className="text-[9px] text-amber-600 font-bold lowercase">✨ Tự động viết hoa chữ cái đầu</span>
+                      </label>
                       <input
                         type="text"
                         value={newName}
-                        onChange={(e) => setNewName(e.target.value)}
-                        placeholder="Nhập họ tên của học sinh..."
-                        className="w-full border border-slate-200 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder-slate-300"
+                        onChange={(e) => setNewName(capitalizeName(e.target.value))}
+                        placeholder="Ví dụ: nguyễn văn a -> Nguyễn Văn A"
+                        className="w-full border border-slate-200 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder-slate-300 font-semibold"
                         required
                       />
                     </div>
