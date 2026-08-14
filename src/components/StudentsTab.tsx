@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Student } from '../types';
-import { Trash2, UserPlus, FileSpreadsheet, Search, AlertCircle, Plus, Pencil, Check, X, Download, IdCard } from 'lucide-react';
+import { Trash2, UserPlus, FileSpreadsheet, Search, AlertCircle, Plus, Pencil, Check, X, Download, IdCard, ArrowLeft } from 'lucide-react';
 import { StudentCard3D } from './StudentCard3D';
 
 interface StudentsTabProps {
@@ -92,7 +92,7 @@ export default function StudentsTab({
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState<10 | 20 | 50>(10);
 
-  // ➕ Thêm học sinh Modal Window State & Row Highlight State
+  // ➕ Thêm học sinh Inline View State & Row Highlight State
   const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
   const [highlightedStudentId, setHighlightedStudentId] = useState<string | null>(null);
 
@@ -100,6 +100,31 @@ export default function StudentsTab({
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedClass, searchTerm]);
+
+  // Lọc danh sách học sinh theo Lớp đang chọn và Từ khóa tìm kiếm
+  const classStudents = useMemo(() => {
+    return students.filter(s => s.classId === selectedClass);
+  }, [students, selectedClass]);
+
+  const filteredStudents = useMemo(() => {
+    return classStudents.filter(s => {
+      const matchSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          s.code.toLowerCase().includes(searchTerm.toLowerCase());
+      return matchSearch;
+    });
+  }, [classStudents, searchTerm]);
+
+  // Tính toán dữ liệu phân trang
+  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / itemsPerPage));
+  const paginatedStudents = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredStudents.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredStudents, currentPage, itemsPerPage]);
+
+  const handleDeleteStudent = (id: string, name: string) => {
+    setStudents(prev => prev.filter(s => s.id !== id));
+    showToast(`Đã xóa học sinh ${name} khỏi lớp ${selectedClass}`);
+  };
 
   const handleStartEdit = (student: Student) => {
     setEditingStudentId(student.id);
@@ -110,16 +135,17 @@ export default function StudentsTab({
   };
 
   const handleSaveEdit = (id: string) => {
-    if (!editName.trim() || !editCode.trim()) {
-      showToast('Vui lòng không để trống mã học sinh hoặc họ tên!', 'error');
-      return;
-    }
-
     const codeClean = editCode.trim().toUpperCase();
     const nameClean = capitalizeName(editName.trim());
 
-    if (students.some(s => s.id !== id && s.code === codeClean)) {
-      showToast(`Mã số học sinh ${codeClean} đã tồn tại ở học sinh khác!`, 'error');
+    if (!nameClean || !codeClean) {
+      showToast('Tên và Mã số học sinh không được để trống!', 'error');
+      return;
+    }
+
+    // Kiểm tra trùng mã học sinh ngoại trừ chính mình
+    if (students.some(s => s.id !== id && s.code.toUpperCase() === codeClean)) {
+      showToast(`Mã số học sinh "${codeClean}" đã tồn tại trên hệ thống!`, 'error');
       return;
     }
 
@@ -195,7 +221,7 @@ export default function StudentsTab({
     setNewGender('Nam');
     setNewNote('');
 
-    // 🚀 1. Tự động đóng cửa sổ 'Thêm học sinh'
+    // 🚀 1. Tự động chuyển về danh sách học sinh
     setIsAddStudentModalOpen(false);
 
     // 🎯 2. Tự động tính toán chuyển đến trang chứa học sinh vừa thêm
@@ -341,338 +367,492 @@ export default function StudentsTab({
       addedCount++;
     });
 
-    if (newStudentsList.length > 0) {
+    if (addedCount > 0) {
       setStudents(prev => [...prev, ...newStudentsList]);
       setExcelText('');
 
-      // 🚀 1. Tự động đóng cửa sổ 'Thêm học sinh'
+      // 🚀 1. Tự động chuyển về danh sách học sinh
       setIsAddStudentModalOpen(false);
 
-      // 🎯 2. Tự động chuyển tới trang chứa học sinh vừa nhập
-      const targetPage = Math.ceil((classStudents.length + newStudentsList.length) / itemsPerPage);
+      // 🎯 2. Tự động chuyển tới trang cuối chứa học sinh vừa nhập
+      const newTotalStudentsCount = classStudents.length + addedCount;
+      const targetPage = Math.max(1, Math.ceil(newTotalStudentsCount / itemsPerPage));
       setCurrentPage(targetPage);
 
-      // ✨ 3. Hiệu ứng viền nổi bật cho học sinh đầu tiên trong đợt nạp
-      const firstNewId = newStudentsList[0].id;
-      setHighlightedStudentId(firstNewId);
-      setTimeout(() => {
-        setHighlightedStudentId(null);
-      }, 4000);
+      // ✨ 3. Hiệu ứng viền phát sáng nổi bật cho học sinh cuối cùng vừa dán
+      const lastAdded = newStudentsList[newStudentsList.length - 1];
+      if (lastAdded) {
+        setHighlightedStudentId(lastAdded.id);
+        setTimeout(() => {
+          setHighlightedStudentId(null);
+        }, 4000);
 
-      // 📜 4. Cuộn mượt tới học sinh vừa dán
-      setTimeout(() => {
-        const rowEl = document.getElementById(`student-row-${firstNewId}`);
-        if (rowEl) {
-          rowEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }, 250);
+        // 📜 4. Cuộn mượt tới vị trí dòng học sinh vừa thêm
+        setTimeout(() => {
+          const rowEl = document.getElementById(`student-row-${lastAdded.id}`);
+          if (rowEl) {
+            rowEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 250);
+      }
 
-      showToast(`Tuyệt vời! Đã nạp thành công ${addedCount} học sinh mới vào lớp ${selectedClass}.`);
+      showToast(`🎉 Tuyệt vời! Đã nạp thành công ${addedCount} học sinh vào lớp ${selectedClass}!`);
     } else {
-      showToast('Không có học sinh mới nào được thêm vào lớp.', 'error');
+      showToast('Không tìm thấy dữ liệu học sinh hợp lệ để nhập!', 'error');
     }
   };
 
-  // Delete student
-  const handleDeleteStudent = (id: string, name: string) => {
-    setStudents(prev => prev.filter(s => s.id !== id));
-    showToast(`Đã xóa học sinh ${name} khỏi lớp học.`);
-  };
-
-  // Download standard Excel CSV template with UTF-8 BOM
+  // Tải file mẫu CSV đúng chuẩn Excel
   const handleDownloadTemplate = () => {
-    const sepLine = "sep=,\n";
-    const headers = "Họ Và Tên,Nữ\n";
-    const dataRows = [
-      "Bùi Ngọc Quỳnh Anh,x",
-      "Phan Thị Ngọc Anh,x",
-      "Lương Ngọc Kim Ánh,x",
-      "Nguyễn Hoàng Ân,",
-      "Nguyễn Hữu Danh,",
-      "Lê Đức Duy,",
-      "Lê Quốc Đại,",
-      "Lê Võ Tấn Đạt,",
-      "Lê Ngọc Hân,x"
-    ].join("\n");
+    const csvContent = "\uFEFF" + 
+      "Họ Và Tên,Nữ\n" +
+      "Bùi Ngọc Quỳnh Anh,x\n" +
+      "Phan Thị Ngọc Anh,x\n" +
+      "Lương Ngọc Kim Ánh,x\n" +
+      "Nguyễn Hoàng Ân,\n" +
+      "Nguyễn Hữu Danh,\n" +
+      "Lê Đức Duy,\n" +
+      "Lê Quốc Đại,\n" +
+      "Lê Võ Tấn Đạt,\n" +
+      "Lê Ngọc Hân,x\n";
 
-    const csvContent = sepLine + headers + dataRows;
-    const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `Mau_Danh_Sach_Hoc_Sinh_${selectedClass}.csv`;
-    document.body.appendChild(link);
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `Mau_Danh_Sach_Hoc_Sinh_Lop_${selectedClass}.csv`;
     link.click();
-    document.body.removeChild(link);
-    showToast("Đã tải xuống file Excel mẫu (.csv) thành công!");
+    showToast('Đã tải xuống tệp Excel CSV mẫu chuẩn!');
   };
-
-  // Filter students
-  const classStudents = students.filter(s => s.classId === selectedClass);
-  const femaleCount = classStudents.filter(s => s.gender === 'Nữ').length;
-  const filteredStudents = classStudents.filter(s => 
-    s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.code.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const totalItems = filteredStudents.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const paginatedStudents = filteredStudents.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
 
   return (
     <div className="space-y-6">
 
-      {/* 🌟 DESKOS IMAC WARM BEIGE CARD HEADER STRIP */}
-      <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs">
-        <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-          <div className="text-left">
-            <h2 className="text-sm sm:text-base font-black text-[#3d2b17] uppercase tracking-wider flex items-center gap-2">
-              <span>👥</span> QUẢN LÝ HỌC SINH LỚP: <span className="text-emerald-800 font-black bg-white/90 px-2.5 py-0.5 rounded-lg border border-[#cbb89d]">{selectedClass}</span>
-            </h2>
-            <p className="text-[11px] font-bold text-[#5c4327] mt-1">Quản lý danh sách học sinh, bóc tách nạp nhanh từ Excel và cấp huy hiệu cán bộ lớp</p>
-          </div>
-
-          <div className="flex items-center gap-2">
+      {/* ====================================================================
+          1. CHẾ ĐỘ 1: CỬA SỔ THÊM HỌC SINH VÀO LỚP (INLINE VIEW 100%)
+          ==================================================================== */}
+      {isAddStudentModalOpen ? (
+        <div className="space-y-6 animate-fadeIn w-full">
+          {/* Top Navigation Bar with Back Button */}
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-[#fffbf0] border border-[#cbb89d] p-4 rounded-2xl shadow-xs">
             <button
               type="button"
-              onClick={() => setIsAddStudentModalOpen(true)}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs py-2 px-3.5 rounded-xl border border-emerald-500 transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95"
-              title="Mở cửa sổ thêm học sinh đơn lẻ hoặc nhập hàng loạt từ Excel"
+              onClick={() => setIsAddStudentModalOpen(false)}
+              className="bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-xs py-2.5 px-4.5 rounded-xl border border-slate-700 transition shadow-2xs cursor-pointer flex items-center gap-2 active:scale-95"
             >
-              <UserPlus className="w-4 h-4 text-emerald-100" />
-              <span>Thêm học sinh</span>
+              <ArrowLeft className="w-4 h-4 text-slate-200" />
+              <span>Quay Về Danh Sách Học Sinh</span>
             </button>
 
-            <span className="text-xs font-black bg-white/90 text-emerald-900 px-3.5 py-1.5 rounded-xl border border-[#cbb89d] shadow-2xs">
-              Sĩ số: {classStudents.length} học sinh
-            </span>
+            <h3 className="font-black text-xs sm:text-sm text-[#3d2b17] tracking-wider uppercase flex items-center gap-2">
+              <UserPlus className="w-4 h-4 text-emerald-700" />
+              <span>CHỨC NĂNG THÊM HỌC SINH VÀO LỚP {selectedClass} (INLINE VIEW 100%)</span>
+            </h3>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            {/* BẢNG 1: THÊM HỌC SINH ĐƠN LẺ */}
+            <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs space-y-0 text-left">
+              <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex justify-between items-center text-left">
+                <h4 className="font-black text-xs sm:text-sm text-[#3d2b17] tracking-wider uppercase flex items-center gap-2">
+                  <UserPlus className="w-4 h-4 text-amber-700" />
+                  THÊM HỌC SINH ĐƠN LẺ
+                </h4>
+              </div>
+
+              <div className="p-4 sm:p-5 bg-white space-y-4">
+                <form onSubmit={handleAddStudent} className="space-y-3">
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-wider text-left">Mã Số học sinh (MSHS)</label>
+                    <input
+                      type="text"
+                      value={newCode}
+                      onChange={(e) => setNewCode(e.target.value)}
+                      placeholder="Ví dụ: HS388"
+                      className="w-full border border-slate-200 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder-slate-300 font-mono"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-wider text-left flex justify-between items-center">
+                      <span>Họ và Tên lót & Tên</span>
+                      <span className="text-[9px] text-amber-600 font-bold lowercase">✨ Tự động viết hoa chữ cái đầu</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={newName}
+                      onChange={(e) => setNewName(capitalizeName(e.target.value))}
+                      placeholder="Ví dụ: nguyễn văn a -> Nguyễn Văn A"
+                      className="w-full border border-slate-200 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder-slate-300 font-semibold"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-wider text-left">Giới tính học sinh</label>
+                    <div className="flex gap-4 text-xs font-semibold pt-1">
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="gender"
+                          checked={newGender === 'Nam'}
+                          onChange={() => setNewGender('Nam')}
+                          className="text-amber-500 focus:ring-amber-500 w-4 h-4"
+                        />
+                        👦🏻 Nam
+                      </label>
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="gender"
+                          checked={newGender === 'Nữ'}
+                          onChange={() => setNewGender('Nữ')}
+                          className="text-amber-500 focus:ring-amber-500 w-4 h-4"
+                        />
+                        👧🏻 Nữ
+                      </label>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-wider text-left">Ghi chú nhanh</label>
+                    <input
+                      type="text"
+                      value={newNote}
+                      onChange={(e) => setNewNote(e.target.value)}
+                      placeholder="Ghi chú học tập, thiết bị, chỗ ngồi..."
+                      className="w-full border border-slate-200 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder-slate-350"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-2.5 rounded-lg transition cursor-pointer mt-2"
+                  >
+                    + Lưu Học Sinh
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            {/* BẢNG 2: CHUẨN HÓA NHẬP HÀNG LOẠT BẰNG EXCEL */}
+            <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs space-y-0 text-left">
+              <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex justify-between items-center text-left">
+                <h4 className="font-black text-xs sm:text-sm text-[#3d2b17] tracking-wider uppercase flex items-center gap-2">
+                  <FileSpreadsheet className="w-4 h-4 text-emerald-700" />
+                  CHUẨN HÓA NHẬP HÀNG LOẠT BẰNG EXCEL
+                </h4>
+              </div>
+
+              <div className="p-4 sm:p-5 bg-white space-y-3">
+                <p className="text-[11px] text-slate-500 leading-relaxed text-left">
+                  Thầy cô sao chép đồng thời cột <strong>Họ tên học sinh</strong> và cột <strong>Nữ</strong> (như trong ảnh mẫu) trong file Excel, dán trực tiếp vào khung dưới đây.
+                </p>
+
+                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/60 text-[11px] text-slate-500 font-semibold space-y-1 text-left">
+                  <p className="text-slate-700 font-extrabold flex items-center gap-1 text-[10px]">
+                    <span>📋</span> Minh họa sao chép từ Excel:
+                  </p>
+                  <div className="overflow-hidden rounded-md border border-slate-200 bg-white font-mono text-[9px] divide-y">
+                    <div className="grid grid-cols-2 bg-slate-100 font-bold px-2 py-0.5 text-slate-700">
+                      <div>Họ Và Tên</div>
+                      <div className="border-l pl-2">Nữ</div>
+                    </div>
+                    <div className="grid grid-cols-2 px-2 py-0.5">
+                      <div>Bùi Ngọc Quỳnh Anh</div>
+                      <div className="border-l pl-2 text-rose-600 font-bold">x</div>
+                    </div>
+                    <div className="grid grid-cols-2 px-2 py-0.5">
+                      <div>Nguyễn Hoàng Ân</div>
+                      <div className="border-l pl-2 text-slate-400 font-normal"><i>(Để trống)</i></div>
+                    </div>
+                  </div>
+                  <p className="text-[9px] text-slate-400 select-none">
+                    * Cột 2 điền chữ <strong className="text-rose-600 font-bold">"x"</strong> cho học sinh Nữ, để trống nếu là Nam.
+                  </p>
+                </div>
+
+                <div className="space-y-2.5">
+                  <textarea
+                    value={excelText}
+                    onChange={(e) => setExcelText(e.target.value)}
+                    placeholder="Dán dữ liệu từ file Excel tại đây...&#10;Ví dụ:&#10;Bùi Ngọc Quỳnh Anh&#9;x&#10;Phan Thị Ngọc Anh&#9;x&#10;Nguyễn Hoàng Ân&#10;Lê Đức Duy"
+                    className="w-full text-xs border border-slate-200 rounded-xl p-3 h-32 focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono text-left"
+                  ></textarea>
+
+                  <button
+                    type="button"
+                    onClick={handleDownloadTemplate}
+                    className="flex items-center justify-center gap-1.5 text-[11px] text-emerald-700 hover:text-emerald-800 font-black bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200 py-2 rounded-xl w-full transition cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Tải file Excel mẫu (.csv)
+                  </button>
+                  
+                  <div className="flex justify-between items-center bg-slate-50 p-2 rounded-xl border border-dashed text-left">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setExcelText("Bùi Ngọc Quỳnh Anh\tx\nPhan Thị Ngọc Anh\tx\nLương Ngọc Kim Ánh\tx\nNguyễn Hoàng Ân\t\nNguyễn Hữu Danh\t\nLê Đức Duy\t\nLê Quốc Đại\t\nLê Võ Tấn Đạt\t\nLê Ngọc Hân\tx");
+                        showToast("Đã chèn dữ liệu mẫu đúng chuẩn Excel!");
+                      }}
+                      className="text-[10px] text-amber-600 hover:underline font-extrabold"
+                    >
+                      Dùng danh sách mẫu thử
+                    </button>
+                    
+                    <button
+                      onClick={handleImportExcel}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Nhập vào {selectedClass}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
-      </div>
+      ) : (
+        /* ====================================================================
+            2. CHẾ ĐỘ 2: DANH SÁCH HỌC SINH MẶC ĐỊNH (INLINE VIEW 100% SPACIOUS)
+            ==================================================================== */
+        <div className="space-y-6 w-full">
+          
+          {/* Top Banner & Control Strip */}
+          <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs">
+            <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+              <div className="text-left">
+                <h2 className="text-sm sm:text-base font-black text-[#3d2b17] uppercase tracking-wider flex items-center gap-2">
+                  <span>🎓</span> SỔ TAY HỌC SINH LỚP {selectedClass}
+                </h2>
+                <p className="text-[11px] font-bold text-[#5c4327]">
+                  Tổng số {classStudents.length} học sinh chính thức. Cho phép chỉnh sửa thông tin, ghi chú nhanh và xem thẻ ID Card.
+                </p>
+              </div>
 
-      {/* 🌟 100% FULL WIDTH DANH SÁCH HỌC SINH TABLE */}
-      <div className="w-full border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs space-y-0 text-left">
-          <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-            <div className="text-left">
-              <h3 className="font-black text-xs sm:text-sm text-[#3d2b17] tracking-wider uppercase flex items-center gap-2">
-                <span>📋</span>
-                DANH SÁCH HỌC SINH CHÍNH THỨC • LỚP {selectedClass}
-              </h3>
-              <p className="text-[11px] font-bold text-[#5c4327]">
-                Sĩ số: <strong>{classStudents.length} học sinh ({femaleCount} Nữ)</strong>
-              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAddStudentModalOpen(true)}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs py-2 px-3.5 rounded-xl border border-emerald-500 transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Thêm học sinh</span>
+                </button>
+              </div>
             </div>
 
-            <div className="relative w-full sm:w-64">
-              <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                <Search className="w-3.5 h-3.5 text-slate-400" />
-              </span>
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Tìm tên hoặc MSHS..."
-                className="w-full text-xs pl-9 pr-4 py-2 border border-[#cbb89d] rounded-xl bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-              />
+            {/* Filter & Search Bar */}
+            <div className="p-4 bg-[#fffbf0] flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
+              <div className="relative w-full sm:w-72">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Tìm kiếm theo Tên hoặc Mã..."
+                  className="w-full text-xs border border-slate-200 rounded-xl pl-9 pr-4 py-2 focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white font-medium shadow-3xs"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <span className="text-xs text-slate-500 font-bold whitespace-nowrap">Hiển thị:</span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value) as 10 | 20 | 50);
+                    setCurrentPage(1);
+                  }}
+                  className="text-xs border border-slate-200 rounded-xl px-2.5 py-1.5 bg-white font-extrabold text-slate-700 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                >
+                  <option value={10}>10 dòng / trang</option>
+                  <option value={20}>20 dòng / trang</option>
+                  <option value={50}>50 dòng / trang</option>
+                </select>
+              </div>
             </div>
           </div>
 
-          <div className="p-4 sm:p-5 bg-[#fffbf0] overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="bg-[#e8d7c0] border-b border-[#cbb89d] text-[#3d2b17] font-black uppercase text-[11px] tracking-wider">
-                  <th className="py-3 px-4 w-12 whitespace-nowrap">STT</th>
-                  <th className="py-3 px-4 w-28 whitespace-nowrap">Mã HS</th>
-                  <th className="py-3 px-4 w-60 whitespace-nowrap">Họ và Tên</th>
-                  <th className="py-3 px-4 w-24 whitespace-nowrap">Giới tính</th>
-                  <th className="py-3 px-4 whitespace-nowrap">Ghi chú</th>
-                  <th className="py-3 px-4 text-center w-28 whitespace-nowrap">Chỉnh sửa</th>
-                  <th className="py-3 px-4 text-center w-16 whitespace-nowrap">Xóa</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {paginatedStudents.map((s, idx) => {
-                  const isEditing = editingStudentId === s.id;
-                  const isHighlighted = highlightedStudentId === s.id;
-                  const stt = (currentPage - 1) * itemsPerPage + idx + 1;
-                  return (
-                    <tr
-                      id={`student-row-${s.id}`}
-                      key={s.id}
-                      className={`transition-all duration-500 ${
-                        isHighlighted
-                          ? 'bg-amber-100 ring-2 ring-amber-500 font-extrabold shadow-md'
-                          : 'hover:bg-slate-50/50'
-                      }`}
-                    >
-                      <td className="py-3.5 px-4 font-semibold text-slate-400">{stt}</td>
-                      <td className="py-3.5 px-4">
-                        {isEditing ? (
-                          <input
-                            type="text"
-                            value={editCode}
-                            onChange={(e) => setEditCode(e.target.value)}
-                            className="w-full border border-amber-300 rounded-lg px-2 py-1.5 text-xs font-mono font-bold text-slate-700 bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                          />
-                        ) : (
-                          <span className="font-mono font-bold text-slate-600">{s.code}</span>
-                        )}
-                      </td>
-                      <td className="py-3.5 px-4 text-left">
-                        {isEditing ? (
-                          <input
-                            type="text"
-                            value={editName}
-                            onChange={(e) => setEditName(e.target.value)}
-                            className="w-full border border-amber-300 rounded-lg px-2 py-1.5 text-xs font-extrabold text-slate-800 bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                          />
-                        ) : (() => {
-                          const nameMatch = s.name.match(/^(.*?)\s*(\(\d+\))$/);
-                          return (
-                            <span className="font-extrabold text-slate-800 whitespace-nowrap flex items-center gap-1">
-                              {nameMatch ? (
-                                <>
-                                  <span>{nameMatch[1]}</span>
-                                  <span className="px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-300/80 font-black text-[10px]" title="Biệt danh phân biệt trùng tên">
-                                    {nameMatch[2]}
-                                  </span>
-                                </>
-                              ) : (
-                                <span>{s.name}</span>
-                              )}
+          {/* MAIN STUDENTS LIST TABLE (100% FULL WIDTH) */}
+          <div className="w-full border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs space-y-0 text-left">
+            <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+              <div className="text-left">
+                <h3 className="font-black text-xs sm:text-sm text-[#3d2b17] tracking-wider uppercase flex items-center gap-2">
+                  <span>📋</span>
+                  DANH SÁCH HỌC SINH CHÍNH THỨC • LỚP {selectedClass} ({filteredStudents.length} EM)
+                </h3>
+              </div>
+              <span className="text-xs font-black bg-white/90 text-emerald-900 px-3 py-1 rounded-xl border border-[#cbb89d] shadow-2xs">
+                Trang {currentPage} / {totalPages}
+              </span>
+            </div>
+
+            <div className="p-4 sm:p-5 bg-[#fffbf0] overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-[#e8d7c0] border-b border-[#cbb89d] text-[#3d2b17] font-black uppercase text-[11px] tracking-wider">
+                    <th className="py-3 px-4 w-12 whitespace-nowrap">STT</th>
+                    <th className="py-3 px-4 w-28 whitespace-nowrap">Mã HS</th>
+                    <th className="py-3 px-4 w-60 whitespace-nowrap">Họ và Tên</th>
+                    <th className="py-3 px-4 w-24 whitespace-nowrap">Giới tính</th>
+                    <th className="py-3 px-4 whitespace-nowrap">Ghi chú</th>
+                    <th className="py-3 px-4 text-center w-28 whitespace-nowrap">Chỉnh sửa</th>
+                    <th className="py-3 px-4 text-center w-16 whitespace-nowrap">Xóa</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {paginatedStudents.map((s, idx) => {
+                    const isEditing = editingStudentId === s.id;
+                    const isHighlighted = highlightedStudentId === s.id;
+                    const stt = (currentPage - 1) * itemsPerPage + idx + 1;
+                    return (
+                      <tr
+                        id={`student-row-${s.id}`}
+                        key={s.id}
+                        className={`transition-all duration-500 ${
+                          isHighlighted
+                            ? 'bg-amber-100 ring-2 ring-amber-500 font-extrabold shadow-md'
+                            : 'hover:bg-slate-50/50'
+                        }`}
+                      >
+                        <td className="py-3.5 px-4 font-semibold text-slate-400">{stt}</td>
+                        <td className="py-3.5 px-4">
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              value={editCode}
+                              onChange={(e) => setEditCode(e.target.value)}
+                              className="w-full border border-amber-300 rounded-lg px-2 py-1.5 text-xs font-mono font-bold text-slate-700 bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                            />
+                          ) : (
+                            <span className="font-mono font-bold text-slate-600">{s.code}</span>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-4 text-left">
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              value={editName}
+                              onChange={(e) => setEditName(e.target.value)}
+                              className="w-full border border-amber-300 rounded-lg px-2 py-1.5 text-xs font-extrabold text-slate-800 bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                            />
+                          ) : (() => {
+                            const nameMatch = s.name.match(/^(.*?)\s*(\(\d+\))$/);
+                            return (
+                              <span className="font-extrabold text-slate-800 whitespace-nowrap flex items-center gap-1">
+                                {nameMatch ? (
+                                  <>
+                                    <span>{nameMatch[1]}</span>
+                                    <span className="px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-300/80 font-black text-[10px]" title="Biệt danh phân biệt trùng tên">
+                                      {nameMatch[2]}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <span>{s.name}</span>
+                                )}
+                              </span>
+                            );
+                          })()}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          {isEditing ? (
+                            <select
+                              value={editGender}
+                              onChange={(e) => setEditGender(e.target.value as 'Nam' | 'Nữ')}
+                              className="border border-amber-300 rounded-lg px-2 py-1.5 text-xs bg-white font-semibold text-slate-700 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                            >
+                              <option value="Nam">Nam 👦🏻</option>
+                              <option value="Nữ">Nữ 👧🏻</option>
+                            </select>
+                          ) : (
+                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wide ${s.gender === 'Nữ' ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-blue-700'}`}>
+                              {s.gender === 'Nữ' ? 'Nữ 👧🏻' : 'Nam 👦🏻'}
                             </span>
-                          );
-                        })()}
-                      </td>
-                      <td className="py-3.5 px-4">
-                        {isEditing ? (
-                          <select
-                            value={editGender}
-                            onChange={(e) => setEditGender(e.target.value as 'Nam' | 'Nữ')}
-                            className="border border-amber-300 rounded-lg px-2 py-1.5 text-xs bg-white font-semibold text-slate-700 focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                          >
-                            <option value="Nam">Nam 👦🏻</option>
-                            <option value="Nữ">Nữ 👧🏻</option>
-                          </select>
-                        ) : (
-                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wide ${s.gender === 'Nữ' ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-blue-700'}`}>
-                            {s.gender === 'Nữ' ? 'Nữ 👧🏻' : 'Nam 👦🏻'}
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3.5 px-4 text-left">
-                        {isEditing ? (
-                          <input
-                            type="text"
-                            value={editNote}
-                            onChange={(e) => setEditNote(e.target.value)}
-                            placeholder="Nhập ghi chú học sinh..."
-                            className="w-full border border-amber-300 rounded-lg px-2 py-1.5 text-xs text-slate-800 bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none font-medium"
-                          />
-                        ) : (
-                          <NoteInput
-                            studentId={s.id}
-                            initialValue={s.notes || ''}
-                            onSave={handleSaveNote}
-                          />
-                        )}
-                      </td>
-                      <td className="py-3.5 px-4 text-center">
-                        {isEditing ? (
-                          <div className="flex items-center justify-center gap-1.5">
-                            <button
-                              onClick={() => handleSaveEdit(s.id)}
-                              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2 py-1.5 rounded-lg transition shadow-sm flex items-center justify-center gap-1 text-[10px] cursor-pointer"
-                              title="Lưu"
-                            >
-                              <Check className="w-3 h-3" /> Lưu
-                            </button>
-                            <button
-                              onClick={() => setEditingStudentId(null)}
-                              className="bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold px-2 py-1.5 rounded-lg transition flex items-center justify-center gap-1 text-[10px] cursor-pointer"
-                              title="Hủy"
-                            >
-                              <X className="w-3 h-3" /> Hủy
-                            </button>
-                          </div>
-                        ) : (
+                          )}
+                        </td>
+                        <td className="py-3.5 px-4 text-left">
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              value={editNote}
+                              onChange={(e) => setEditNote(e.target.value)}
+                              placeholder="Nhập ghi chú học sinh..."
+                              className="w-full border border-amber-300 rounded-lg px-2 py-1.5 text-xs text-slate-800 bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none font-medium"
+                            />
+                          ) : (
+                            <NoteInput
+                              studentId={s.id}
+                              initialValue={s.notes || ''}
+                              onSave={handleSaveNote}
+                            />
+                          )}
+                        </td>
+                        <td className="py-3.5 px-4 text-center">
+                          {isEditing ? (
+                            <div className="flex items-center justify-center gap-1.5">
+                              <button
+                                onClick={() => handleSaveEdit(s.id)}
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2 py-1.5 rounded-lg transition shadow-sm flex items-center justify-center gap-1 text-[10px] cursor-pointer"
+                                title="Lưu"
+                              >
+                                <Check className="w-3 h-3" /> Lưu
+                              </button>
+                              <button
+                                onClick={() => setEditingStudentId(null)}
+                                className="bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold px-2 py-1.5 rounded-lg transition flex items-center justify-center gap-1 text-[10px] cursor-pointer"
+                                title="Hủy"
+                              >
+                                <X className="w-3 h-3" /> Hủy
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                onClick={() => setSelectedCardStudent(s)}
+                                className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
+                                title="Xem Thẻ ID Card Học Sinh"
+                              >
+                                <IdCard className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleStartEdit(s)}
+                                className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
+                                title="Chỉnh sửa thông tin"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-4 text-center">
                           <button
-                            onClick={() => handleStartEdit(s)}
-                            className="text-slate-400 hover:text-amber-500 p-1.5 hover:bg-amber-50 rounded transition inline-block animate-pulse cursor-pointer"
-                            title="Chỉnh sửa học sinh này"
+                            onClick={() => setStudentToDelete({ id: s.id, name: s.name })}
+                            className="p-1.5 text-slate-350 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                            title="Xóa học sinh"
                           >
-                            <Pencil className="w-3.5 h-3.5 text-amber-600" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
-                        )}
-                      </td>
-                      <td className="py-3.5 px-4 text-center flex items-center justify-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedCardStudent(s)}
-                          className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-extrabold px-2.5 py-1.5 rounded-xl border border-indigo-200 transition shadow-2xs flex items-center justify-center gap-1 text-[10px] cursor-pointer"
-                          title="Xem Thẻ Học Sinh"
-                        >
-                          <IdCard className="w-3.5 h-3.5 text-indigo-600" />
-                          <span>Xem Thẻ</span>
-                        </button>
-                        <button
-                          onClick={() => setStudentToDelete({ id: s.id, name: s.name })}
-                          className="text-slate-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded-lg transition cursor-pointer"
-                          title="Xóa học sinh này"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {paginatedStudents.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="py-8 text-center text-slate-400 font-semibold">
+                        Không tìm thấy học sinh nào trong lớp {selectedClass}!
                       </td>
                     </tr>
-                  );
-                })}
-                
-                {filteredStudents.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="py-12 text-center text-slate-400 font-medium">
-                      {classStudents.length === 0 
-                        ? `Chưa có học sinh nào thuộc lớp "${selectedClass}". Hãy dán từ Excel ở mục bên trái!`
-                        : 'Không tìm thấy học sinh nào trùng khớp với từ khóa tìm kiếm.'}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Phân trang danh sách học sinh */}
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-slate-100 text-xs text-slate-500">
-            {/* Items per page selector */}
-            <div className="flex items-center gap-2 font-semibold">
-              <span>Hiển thị</span>
-              <select
-                value={itemsPerPage}
-                onChange={(e) => {
-                  setItemsPerPage(Number(e.target.value) as 10 | 20 | 50);
-                  setCurrentPage(1);
-                }}
-                className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-amber-500 focus:outline-none font-bold text-slate-700 cursor-pointer transition"
-              >
-                <option value={10}>10</option>
-                <option value={20}>20</option>
-                <option value={50}>50</option>
-              </select>
-              <span>học sinh / trang</span>
+                  )}
+                </tbody>
+              </table>
             </div>
 
-            {/* Status information */}
-            {totalItems > 0 && (
-              <div className="font-bold text-slate-400">
-                Hiển thị <span className="text-slate-650">{(currentPage - 1) * itemsPerPage + 1}</span> - <span className="text-slate-650">{Math.min(currentPage * itemsPerPage, totalItems)}</span> trên <span className="text-amber-600">{totalItems}</span> học sinh
-              </div>
-            )}
-
-            {/* Pagination controls */}
+            {/* Pagination Controls */}
             {totalPages > 1 && (
-              <div className="flex items-center gap-1">
+              <div className="p-4 bg-[#fffbf0] border-t border-[#cbb89d] flex items-center justify-center gap-1 text-xs select-none">
                 <button
                   type="button"
                   onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
@@ -681,22 +861,21 @@ export default function StudentsTab({
                 >
                   ‹ Trước
                 </button>
-                
-                {Array.from({ length: totalPages }).map((_, i) => {
-                  const pageNum = i + 1;
-                  const isCurrent = pageNum === currentPage;
+
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
+                  const isActive = page === currentPage;
                   return (
                     <button
-                      key={pageNum}
+                      key={page}
                       type="button"
-                      onClick={() => setCurrentPage(pageNum)}
-                      className={`w-8 h-8 font-extrabold rounded-xl border transition cursor-pointer text-center ${
-                        isCurrent
-                          ? 'bg-amber-500 border-amber-500 text-white shadow-3xs'
-                          : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-8 h-8 rounded-xl font-extrabold transition cursor-pointer flex items-center justify-center ${
+                        isActive
+                          ? 'bg-amber-500 text-white shadow-xs'
+                          : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
                       }`}
                     >
-                      {pageNum}
+                      {page}
                     </button>
                   );
                 })}
@@ -714,6 +893,7 @@ export default function StudentsTab({
           </div>
 
         </div>
+      )}
 
       {/* STUDENT ID CARD PREVIEW MODAL */}
       {selectedCardStudent && (
@@ -800,206 +980,6 @@ export default function StudentsTab({
         </div>
       )}
 
-      {/* 🌟 CỬA SỔ CHỨC NĂNG THÊM HỌC SINH (ADD STUDENT MODAL WINDOW) */}
-      {isAddStudentModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-[#fffbf0] rounded-3xl border-2 border-[#cbb89d] shadow-2xl max-w-5xl w-full overflow-hidden space-y-4 p-6 animate-scaleUp text-left max-h-[92vh] overflow-y-auto">
-            
-            {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-[#cbb89d] pb-3">
-              <h3 className="font-black text-base text-[#3d2b17] flex items-center gap-2">
-                <UserPlus className="w-5 h-5 text-emerald-700" />
-                <span>CHỨC NĂNG THÊM HỌC SINH VÀO LỚP {selectedClass}</span>
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsAddStudentModalOpen(false)}
-                className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              
-              {/* BẢNG 1: THÊM HỌC SINH ĐƠN LẺ */}
-              <div className="border border-[#cbb89d] rounded-2xl bg-white overflow-hidden shadow-xs space-y-0 text-left">
-                <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex justify-between items-center text-left">
-                  <h4 className="font-black text-xs sm:text-sm text-[#3d2b17] tracking-wider uppercase flex items-center gap-2">
-                    <UserPlus className="w-4 h-4 text-amber-700" />
-                    THÊM HỌC SINH ĐƠN LẺ
-                  </h4>
-                </div>
-
-                <div className="p-4 sm:p-5 space-y-4">
-                  <form onSubmit={handleAddStudent} className="space-y-3">
-                    <div>
-                      <label className="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-wider text-left">Mã Số học sinh (MSHS)</label>
-                      <input
-                        type="text"
-                        value={newCode}
-                        onChange={(e) => setNewCode(e.target.value)}
-                        placeholder="Ví dụ: HS388"
-                        className="w-full border border-slate-200 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder-slate-300 font-mono"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-wider text-left flex justify-between items-center">
-                        <span>Họ và Tên lót & Tên</span>
-                        <span className="text-[9px] text-amber-600 font-bold lowercase">✨ Tự động viết hoa chữ cái đầu</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={newName}
-                        onChange={(e) => setNewName(capitalizeName(e.target.value))}
-                        placeholder="Ví dụ: nguyễn văn a -> Nguyễn Văn A"
-                        className="w-full border border-slate-200 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder-slate-300 font-semibold"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-wider text-left">Giới tính học sinh</label>
-                      <div className="flex gap-4 text-xs font-semibold pt-1">
-                        <label className="flex items-center gap-1.5 cursor-pointer">
-                          <input
-                            type="radio"
-                            name="gender"
-                            checked={newGender === 'Nam'}
-                            onChange={() => setNewGender('Nam')}
-                            className="text-amber-500 focus:ring-amber-500 w-4 h-4"
-                          />
-                          👦🏻 Nam
-                        </label>
-                        <label className="flex items-center gap-1.5 cursor-pointer">
-                          <input
-                            type="radio"
-                            name="gender"
-                            checked={newGender === 'Nữ'}
-                            onChange={() => setNewGender('Nữ')}
-                            className="text-amber-500 focus:ring-amber-500 w-4 h-4"
-                          />
-                          👧🏻 Nữ
-                        </label>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-wider text-left">Ghi chú nhanh</label>
-                      <input
-                        type="text"
-                        value={newNote}
-                        onChange={(e) => setNewNote(e.target.value)}
-                        placeholder="Ghi chú học tập, thiết bị, chỗ ngồi..."
-                        className="w-full border border-slate-200 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder-slate-350"
-                      />
-                    </div>
-
-                    <button
-                      type="submit"
-                      className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-2.5 rounded-lg transition cursor-pointer mt-2"
-                    >
-                      + Lưu Học Sinh
-                    </button>
-                  </form>
-                </div>
-              </div>
-
-              {/* BẢNG 2: CHUẨN HÓA NHẬP HÀNG LOẠT BẰNG EXCEL */}
-              <div className="border border-[#cbb89d] rounded-2xl bg-white overflow-hidden shadow-xs space-y-0 text-left">
-                <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex justify-between items-center text-left">
-                  <h4 className="font-black text-xs sm:text-sm text-[#3d2b17] tracking-wider uppercase flex items-center gap-2">
-                    <FileSpreadsheet className="w-4 h-4 text-emerald-700" />
-                    CHUẨN HÓA NHẬP HÀNG LOẠT BẰNG EXCEL
-                  </h4>
-                </div>
-
-                <div className="p-4 sm:p-5 space-y-3">
-                  <p className="text-[11px] text-slate-500 leading-relaxed text-left">
-                    Thầy cô sao chép đồng thời cột <strong>Họ tên học sinh</strong> và cột <strong>Nữ</strong> (như trong ảnh mẫu) trong file Excel, dán trực tiếp vào khung dưới đây.
-                  </p>
-
-                  <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/60 text-[11px] text-slate-500 font-semibold space-y-1 text-left">
-                    <p className="text-slate-700 font-extrabold flex items-center gap-1 text-[10px]">
-                      <span>📋</span> Minh họa sao chép từ Excel:
-                    </p>
-                    <div className="overflow-hidden rounded-md border border-slate-200 bg-white font-mono text-[9px] divide-y">
-                      <div className="grid grid-cols-2 bg-slate-100 font-bold px-2 py-0.5 text-slate-700">
-                        <div>Họ Và Tên</div>
-                        <div className="border-l pl-2">Nữ</div>
-                      </div>
-                      <div className="grid grid-cols-2 px-2 py-0.5">
-                        <div>Bùi Ngọc Quỳnh Anh</div>
-                        <div className="border-l pl-2 text-rose-600 font-bold">x</div>
-                      </div>
-                      <div className="grid grid-cols-2 px-2 py-0.5">
-                        <div>Nguyễn Hoàng Ân</div>
-                        <div className="border-l pl-2 text-slate-400 font-normal"><i>(Để trống)</i></div>
-                      </div>
-                    </div>
-                    <p className="text-[9px] text-slate-400 select-none">
-                      * Cột 2 điền chữ <strong className="text-rose-600 font-bold">"x"</strong> cho học sinh Nữ, để trống nếu là Nam.
-                    </p>
-                  </div>
-
-                  <div className="space-y-2.5">
-                    <textarea
-                      value={excelText}
-                      onChange={(e) => setExcelText(e.target.value)}
-                      placeholder="Dán dữ liệu từ file Excel tại đây...&#10;Ví dụ:&#10;Bùi Ngọc Quỳnh Anh&#9;x&#10;Phan Thị Ngọc Anh&#9;x&#10;Nguyễn Hoàng Ân&#10;Lê Đức Duy"
-                      className="w-full text-xs border border-slate-200 rounded-xl p-3 h-32 focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono text-left"
-                    ></textarea>
-
-                    <button
-                      type="button"
-                      onClick={handleDownloadTemplate}
-                      className="flex items-center justify-center gap-1.5 text-[11px] text-emerald-700 hover:text-emerald-800 font-black bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200 py-2 rounded-xl w-full transition cursor-pointer"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      Tải file Excel mẫu (.csv)
-                    </button>
-                    
-                    <div className="flex justify-between items-center bg-slate-50 p-2 rounded-xl border border-dashed text-left">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setExcelText("Bùi Ngọc Quỳnh Anh\tx\nPhan Thị Ngọc Anh\tx\nLương Ngọc Kim Ánh\tx\nNguyễn Hoàng Ân\t\nNguyễn Hữu Danh\t\nLê Đức Duy\t\nLê Quốc Đại\t\nLê Võ Tấn Đạt\t\nLê Ngọc Hân\tx");
-                          showToast("Đã chèn dữ liệu mẫu đúng chuẩn Excel!");
-                        }}
-                        className="text-[10px] text-amber-600 hover:underline font-extrabold"
-                      >
-                        Dùng danh sách mẫu thử
-                      </button>
-                      
-                      <button
-                        onClick={handleImportExcel}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow cursor-pointer"
-                      >
-                        <Plus className="w-3.5 h-3.5" /> Nhập vào {selectedClass}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-
-            {/* Modal Footer */}
-            <div className="flex justify-end pt-2 border-t border-[#cbb89d]">
-              <button
-                type="button"
-                onClick={() => setIsAddStudentModalOpen(false)}
-                className="px-5 py-2 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 cursor-pointer"
-              >
-                Đóng cửa sổ
-              </button>
-            </div>
-
-          </div>
-        </div>
-      )}
     </div>
   );
 }
