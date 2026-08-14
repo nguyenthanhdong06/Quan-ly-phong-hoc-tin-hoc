@@ -521,24 +521,38 @@ export default function App() {
     }
   }, [computers, isLoaded]);
 
+  // --- DEBOUNCED SUPABASE SYNC REFS FOR HIGH-FREQUENCY STATES ---
+  const seatingDebounceRef = React.useRef<NodeJS.Timeout | null>(null);
+  const attendanceDebounceRef = React.useRef<NodeJS.Timeout | null>(null);
+  const evaluationDebounceRef = React.useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     safeSetLocalStorage('school_seating_chart', seatingChart);
     if (isLoaded) {
-      saveSupabaseState('school_seating_chart', seatingChart);
+      if (seatingDebounceRef.current) clearTimeout(seatingDebounceRef.current);
+      seatingDebounceRef.current = setTimeout(() => {
+        saveSupabaseState('school_seating_chart', seatingChart);
+      }, 800);
     }
   }, [seatingChart, isLoaded]);
 
   useEffect(() => {
     safeSetLocalStorage('school_attendance_data', attendanceData);
     if (isLoaded) {
-      saveSupabaseState('school_attendance_data', attendanceData);
+      if (attendanceDebounceRef.current) clearTimeout(attendanceDebounceRef.current);
+      attendanceDebounceRef.current = setTimeout(() => {
+        saveSupabaseState('school_attendance_data', attendanceData);
+      }, 800);
     }
   }, [attendanceData, isLoaded]);
 
   useEffect(() => {
     safeSetLocalStorage('school_evaluation_data', evaluationData);
     if (isLoaded) {
-      saveSupabaseState('school_evaluation_data', evaluationData);
+      if (evaluationDebounceRef.current) clearTimeout(evaluationDebounceRef.current);
+      evaluationDebounceRef.current = setTimeout(() => {
+        saveSupabaseState('school_evaluation_data', evaluationData);
+      }, 800);
     }
   }, [evaluationData, isLoaded]);
 

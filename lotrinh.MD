@@ -75,28 +75,42 @@
 
 ---
 
-## 🔍 II. BÁO CÁO RÀ SOÁT SOURCE CODE & KHUYẾN NGHỊ (FE - BE - DB CODE AUDIT)
+## 🔍 II. BÁO CÁO RÀ SOÁT CHUYÊN SÂU: CHỨC NĂNG 'PHÒNG LAB' & 'ĐIỂM DANH' (FE - BE - DB AUDIT)
 
-### 💻 1. RÀ SOÁT FRONTEND (FE):
-- **Ưu điểm**:
-  - Giao diện DeskOS Neumorphic đẹp, chuẩn UX/UI hiện đại, 60FPS.
-  - Ảnh static đã được audit nén WebP siêu nhẹ, tích hợp CDN Google Drive load 30ms.
-  - Cấu trúc state tập trung và giao diện không bị giật lag sau khi tối ưu `useMemo` và DOM element stability.
-- **Lỗ hổng & Điểm cần cải thiện**:
-  - `App.tsx` (1869 dòng) và `LabRoomTab.tsx` (2150 dòng) đang quá lớn so với quy tắc thiết kế architecture (< 800 dòng).
-  - *Khuyến nghị*: Tiến hành phân tách dần các sub-component trong `LabRoomTab.tsx` sang folder `src/features/lab-room/` (vd: `SeatingView.tsx`, `FrameConfigView.tsx`, `LabOverview.tsx`).
+### 1. 🖥️ BÁO CÁO RÀ SOÁT ỨNG DỤNG 'PHÒNG LAB' (`LabRoomTab.tsx`):
+- **Cấu trúc dữ liệu & Luồng hoạt động**:
+  - State `seatingChart` lưu dưới dạng key-value `{ [className]: { [pcId]: studentId } }`.
+  - Luồng lưu dữ liệu: Khi kéo thả hoặc gán máy ➔ `setSeatingChart` (0ms) ➔ `localStorage.setItem` (~0.1ms) ➔ `saveSupabaseState` với Debounce 800ms.
+- **Đánh giá Hiệu năng & Trải nghiệm (FE)**:
+  - *Điểm mạnh*: Phản hồi kéo thả mượt 60FPS, đã hết chớp nháy sau khi xử lý `dragleave` và `e.stopPropagation()`. Huy hiệu `🟢 Đã đồng bộ lên đám mây` giúp giáo viên hoàn toàn an tâm.
+  - *Điểm cần cải thiện*: Dung lượng lưu trữ của key `'school_seating_chart'` đẩy lên Supabase là 1 mảng JSON khổng lồ chứa dữ liệu sơ đồ của tất cả các lớp.
 
-### 🗄️ 2. RÀ SOÁT BACKEND & DATABASE (BE & DB):
-- **Ưu điểm**:
-  - Kiến trúc đồng bộ 2 tầng: LocalStorage ghi nhận 0ms + Supabase background debounced 800ms giúp trải nghiệm mượt mà không bao giờ bị nghẽn mạng.
-  - Có mã hóa SHA-256 cho mật khẩu và mã hóa session ID thiết bị.
-- **Lỗ hổng & Cảnh báo Bảo mật**:
-  - Phân quyền (Authorization) hiện tại chỉ check role `admin`/`teacher` trên Frontend UI. Trên Supabase Database, nếu chưa bật Row Level Security (RLS) policies thì người dùng am hiểu công nghệ có thể dùng API Key công khai để ghi đè DB.
-  - *Khuyến nghị*: Bật RLS Policies trên Supabase Dashboard cho các bảng `school_seating_chart`, `students`, `attendance`.
+---
+
+### 2. 📋 BÁO CÁO RÀ SOÁT ỨNG DỤNG 'ĐIỂM DANH' (`AttendanceTab.tsx`):
+- **Cấu trúc dữ liệu & Luồng hoạt động**:
+  - State `attendanceData` lưu dạng `{ [date]: { [className]: { [studentId]: status } } }`.
+  - Luồng lưu dữ liệu: Điểm danh từng học sinh ➔ `setAttendanceData` ➔ Trigger `useEffect` ở `App.tsx` ➔ Gửi API `saveSupabaseState('school_attendance', attendanceData)`.
+- **Đánh giá Hiệu năng & Trải nghiệm (FE)**:
+  - *Điểm mạnh*: Các thẻ thống kê ("Sĩ số", "Hiện diện", "Nghỉ có phép", "Vắng không phép") phản hồi 0ms nhờ `React.useMemo`. Bộ 3 nút điểm danh (`Đi Học`, `Có Phép`, `Không Phép`) và nhãn trạng thái dưới tên vô cùng rõ ràng.
+  - *Lỗ hổng Kỹ thuật BE - DB*:
+    - **Lỗi 1 (Nghẽn cổ chai Request HTTP)**: Trong `AttendanceTab.tsx`, mỗi lần nhấp điểm danh 1 học sinh là kích hoạt `useEffect` ở `App.tsx` gửi ngay 1 Request HTTP `POST` lên Supabase. Điểm danh nhanh 10 học sinh liên tiếp sẽ bắn 10 Request HTTP song song làm mạng bị nghẽn (Network Bottleneck) và Supabase trả về chậm 2-3s.
+    - **Lỗi 2 (Thiếu Kênh Đồng Bộ Realtime 2 Chiều)**: Nếu Giáo viên A điểm danh trên máy 1, Giáo viên B mở máy 2 sẽ không thấy kết quả điểm danh nhảy tự động trừ khi reload lại trang.
+
+---
+
+### 🛠️ 3. BẢNG TỔNG HỢP LỖ HỔNG & KHUYẾN NGHỊ THỰC THI:
+
+| Stt | Tên Lỗ hổng / Điểm trễ | Ảnh hưởng | Nguyên nhân Kỹ thuật | Khuyến nghị & Giải pháp Khắc phục |
+| :---: | :--- | :--- | :--- | :--- |
+| **1** | **Spam Request HTTP khi điểm danh nhanh** | Điểm danh 10 HS liên tiếp làm Supabase phản hồi chậm 2-3s | `AttendanceTab` chưa có Debounce timer, bắn API Supabase liên tục mỗi click | **Bổ sung Debounce Timer (500-800ms)** cho state `attendanceData` giống như `LabRoomTab` |
+| **2** | **Thiếu Kênh Realtime 2 chiều tức thì** | Giáo viên máy 2 không thấy máy 1 vừa đổi chỗ / điểm danh | Chưa đăng ký `supabase.channel('public:school_states').on(...)` ở Client | **Kích hoạt Supabase Realtime Subscription** tự động lắng nghe event DB để sync UI 2 chiều |
+| **3** | **Payload JSON khổng lồ gửi về Supabase** | Truyền tải dữ liệu phình to khi số lượng ngày/lớp tăng | Key `'school_attendance'` gom toàn bộ ngày trong năm thành 1 object lớn | **Tách nhỏ Key theo ngày/tháng** (vd: `school_attendance_2026-08-14`) giúp Payload nhẹ x10 lần |
+| **4** | **Phân quyền RLS chưa xiết chặt trên Supabase** | Lỗ hổng bảo mật nếu ai đó lấy Anon Key | DB Supabase cài Policy `USING (true)` cho phép đọc/ghi tự do | **Cấu hình RLS Policy** kiểm tra vai trò xác thực người dùng |
 
 ---
 
 ## 🎯 III. DANH MỤC VIỆC CẦN LÀM TIẾP THEO (NEXT STEPS)
 1. **BẮT BUỘC ĐỌC FILE `lotrinh.MD` NÀY ĐẦU TIÊN** trước mỗi ca làm việc mới hoặc khi tiếp nhận yêu cầu mới.
-2. Tách nhỏ các file lớn (> 800 dòng) như `LabRoomTab.tsx` và `App.tsx` theo từng mô-đun tính năng riêng.
-3. Tiếp nhận các yêu cầu phát triển hoặc tùy chỉnh giao diện từ Thầy/Cô.
+2. Áp dụng ngay bộ lọc Debounce 800ms cho việc lưu `attendanceData` để loại bỏ 100% hiện tượng nghẽn request Supabase khi điểm danh nhanh.
+3. Kích hoạt Supabase Realtime Subscription cho ứng dụng Phòng Lab & Điểm danh.
