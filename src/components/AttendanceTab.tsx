@@ -30,6 +30,11 @@ export default function AttendanceTab({
   const [pageSize, setPageSize] = React.useState(10);
   const [justUpdatedId, setJustUpdatedId] = React.useState<string | null>(null);
 
+  // 💬 Zalo / SMS Fast Report Modal States
+  const [isZaloModalOpen, setIsZaloModalOpen] = React.useState(false);
+  const [reportTemplate, setReportTemplate] = React.useState<'zalo' | 'sms' | 'full'>('zalo');
+  const [customMessageText, setCustomMessageText] = React.useState('');
+
   // Reset search term when class changes for perfect UX
   React.useEffect(() => {
     setSearchTerm('');
@@ -74,6 +79,74 @@ export default function AttendanceTab({
     else if (status === 'excused') excusedCount++;
     else if (status === 'unexcused') unexcusedCount++;
   });
+
+  const totalAbsentCount = excusedCount + unexcusedCount;
+
+  // 💬 Auto Generator for Zalo / SMS Homeroom Teacher Attendance Report Text
+  const generateReportText = React.useCallback((template: 'zalo' | 'sms' | 'full') => {
+    const total = classStudents.length;
+    const femaleTotal = classStudents.filter(s => s.gender === 'Nữ').length;
+
+    const presentStudents = classStudents.filter(s => (currentDaysAttendance[s.id] || 'present') === 'present');
+    const excusedStudents = classStudents.filter(s => currentDaysAttendance[s.id] === 'excused');
+    const unexcusedStudents = classStudents.filter(s => currentDaysAttendance[s.id] === 'unexcused');
+    const absentStudents = [...excusedStudents, ...unexcusedStudents];
+
+    const formattedDate = selectedDate.split('-').reverse().join('/');
+
+    if (template === 'sms') {
+      if (absentStudents.length === 0) {
+        return `[DIEM DANH ${selectedClass} ${formattedDate}] Si so ${total} HS. Lop di du 100%!`;
+      }
+      const absentNames = absentStudents.map(s => `${s.name} (${currentDaysAttendance[s.id] === 'excused' ? 'P' : 'KP'})`).join(', ');
+      return `[DIEM DANH ${selectedClass} ${formattedDate}] Vang ${absentStudents.length}/${total} HS: ${absentNames}.`;
+    }
+
+    if (template === 'full') {
+      let msg = `📋 BÁO CÁO CHI TIẾT ĐIỂM DANH LỚP ${selectedClass}\n`;
+      msg += `📅 Ngày dạy: ${formattedDate} | Môn: Tin học\n`;
+      msg += `------------------------------------\n`;
+      msg += `📊 Sĩ số: ${total} học sinh (Nữ: ${femaleTotal})\n`;
+      msg += `✅ Có mặt: ${presentStudents.length}/${total} HS (${Math.round((presentStudents.length / (total || 1)) * 100)}%)\n`;
+      msg += `🟡 Vắng có phép (P): ${excusedStudents.length} HS\n`;
+      msg += `🔴 Vắng không phép (KP): ${unexcusedStudents.length} HS\n`;
+      msg += `------------------------------------\n`;
+      if (absentStudents.length === 0) {
+        msg += `🎉 LỚP HỌC ĐI ĐỦ 100%! Không có học sinh vắng.`;
+      } else {
+        msg += `📝 DANH SÁCH HỌC SINH VẮNG:\n`;
+        absentStudents.forEach((s, idx) => {
+          const st = currentDaysAttendance[s.id];
+          const statusText = st === 'excused' ? 'Có Phép (P)' : 'KHÔNG PHÉP (KP)';
+          msg += `${idx + 1}. ${s.name} (MSHS: ${s.code}) - [${statusText}]\n`;
+        });
+      }
+      return msg;
+    }
+
+    // Default Zalo Standard Template
+    let msg = `📋 BÁO CÁO ĐIỂM DANH LỚP ${selectedClass} - NGÀY ${formattedDate}\n`;
+    msg += `------------------------------------\n`;
+    msg += `👨‍🏫 Kính gửi Giáo viên chủ nhiệm Lớp ${selectedClass},\n`;
+    msg += `Em xin báo cáo điểm danh tiết Tin học hôm nay (${formattedDate}):\n\n`;
+    msg += `📊 Sĩ số: ${total} học sinh\n`;
+    msg += `✅ Hiện diện: ${presentStudents.length}/${total} HS\n`;
+    msg += `❌ Số lượng vắng: ${absentStudents.length} học sinh\n\n`;
+
+    if (absentStudents.length === 0) {
+      msg += `🎉 LỚP ĐI HỌC ĐỦ 100%! Không có học sinh vắng mặt.\n`;
+    } else {
+      msg += `📌 Danh sách học sinh vắng mặt:\n`;
+      absentStudents.forEach((s, idx) => {
+        const st = currentDaysAttendance[s.id];
+        const tag = st === 'excused' ? 'Có phép (P)' : 'KHÔNG PHÉP (KP)';
+        msg += `${idx + 1}. ${s.name} - [${tag}]\n`;
+      });
+    }
+
+    msg += `\nKính báo Thầy/Cô nắm thông tin!`;
+    return msg;
+  }, [classStudents, currentDaysAttendance, selectedClass, selectedDate]);
 
   const attendanceRate = classStudents.length > 0 
     ? Math.round((presentCount / classStudents.length) * 100)
@@ -153,8 +226,25 @@ export default function AttendanceTab({
             </button>
 
             <button
+              onClick={() => {
+                setReportTemplate('zalo');
+                setCustomMessageText(generateReportText('zalo'));
+                setIsZaloModalOpen(true);
+              }}
+              className="bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-xs py-2 px-3.5 rounded-xl border border-sky-500 transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95"
+              title="Tạo tin nhắn Zalo/SMS tự động tổng hợp danh sách vắng gửi Giáo viên chủ nhiệm"
+            >
+              <span>💬</span> Báo Cáo Zalo/SMS
+              {totalAbsentCount > 0 && (
+                <span className="bg-rose-500 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full border border-rose-300 animate-pulse">
+                  {totalAbsentCount} vắng
+                </span>
+              )}
+            </button>
+
+            <button
               onClick={handleSave}
-              className="bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs py-2 px-3.5 rounded-xl border border-amber-500 transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95"
+              className="bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs py-2 px-4 rounded-xl border border-amber-500 transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95"
             >
               <Save className="w-4 h-4 text-amber-100" />
               Lưu Sổ
@@ -224,33 +314,30 @@ export default function AttendanceTab({
             </p>
           </div>
           
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => {
-              const textMessage = `BÁO CÁO ĐIỂM DANH LỚP: ${selectedClass}\n` +
-                `- Sĩ số: ${classStudents.length} học sinh (Nữ: ${classStudents.filter(s => s.gender === 'Nữ').length})\n` +
-                `- Hiện diện: ${classStudents.filter(s => (currentDaysAttendance[s.id] || 'present') === 'present').length} học sinh` +
-                ` (Nữ: ${classStudents.filter(s => (currentDaysAttendance[s.id] || 'present') === 'present' && s.gender === 'Nữ').length})\n` +
-                `- Vắng: ${classStudents.filter(s => (currentDaysAttendance[s.id] || 'present') !== 'present').length} học sinh` +
-                ` (Nữ: ${classStudents.filter(s => (currentDaysAttendance[s.id] || 'present') !== 'present' && s.gender === 'Nữ').length})\n` +
-                `- Họ tên HS vắng: ${
-                  classStudents.filter(s => (currentDaysAttendance[s.id] || 'present') !== 'present').length > 0
-                    ? classStudents.filter(s => (currentDaysAttendance[s.id] || 'present') !== 'present').map(s => {
-                        const st = currentDaysAttendance[s.id];
-                        return `${s.name} (${st === 'excused' ? 'Phép' : 'Không phép'})`;
-                      }).join(', ')
-                    : 'Không có (Lớp đi đủ 100%)'
-                }`;
-              
-              navigator.clipboard.writeText(textMessage);
-              showToast("Đã sao chép nội dung báo cáo điểm danh gửi GVCN thành công! ✨");
-            }}
-            className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-[10px] uppercase tracking-wider px-3.5 py-2.5 rounded-xl shadow-sm transition flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
-            title="Sao chép văn bản để gửi qua Zalo/Viber"
-          >
-            📋 Sao chép nhanh cho GVCN
-          </motion.button>
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <button
+              onClick={() => {
+                setReportTemplate('zalo');
+                setCustomMessageText(generateReportText('zalo'));
+                setIsZaloModalOpen(true);
+              }}
+              className="bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-2xs transition flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+            >
+              <span>💬</span> Tạo mẫu tin nhắn Zalo / SMS
+            </button>
+
+            <button
+              onClick={() => {
+                const textMessage = generateReportText('full');
+                navigator.clipboard.writeText(textMessage);
+                showToast("Đã sao chép nội dung báo cáo điểm danh gửi GVCN thành công! ✨", "success");
+              }}
+              className="bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-2xs transition flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+              title="Sao chép nhanh văn bản để gửi qua Zalo/Viber"
+            >
+              📋 Sao chép nhanh cho GVCN
+            </button>
+          </div>
         </div>
 
         <div className="overflow-hidden border border-slate-200 rounded-xl bg-white shadow-sm max-w-3xl">
@@ -595,6 +682,121 @@ export default function AttendanceTab({
         )}
       </div>
 
+      {/* 💬 INTERACTIVE ZALO / SMS REPORT GENERATOR MODAL */}
+      {isZaloModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#fffbf0] rounded-3xl border-2 border-[#cbb89d] shadow-2xl max-w-2xl w-full overflow-hidden space-y-4 p-6 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center border-b border-[#cbb89d] pb-3">
+              <h3 className="font-black text-base text-[#3d2b17] flex items-center gap-2">
+                <span>💬</span> BÁO CÁO ZALO/SMS CHO GVCN LỚP {selectedClass}
+              </h3>
+              <button
+                onClick={() => setIsZaloModalOpen(false)}
+                className="text-slate-400 hover:text-slate-700 text-lg font-bold cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Template Switcher Tabs */}
+            <div className="flex gap-2 bg-[#dfccb0] p-1.5 rounded-2xl border border-[#cbb89d]">
+              <button
+                type="button"
+                onClick={() => {
+                  setReportTemplate('zalo');
+                  setCustomMessageText(generateReportText('zalo'));
+                }}
+                className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                  reportTemplate === 'zalo' ? 'bg-sky-600 text-white shadow-xs' : 'text-slate-700 hover:bg-white/60'
+                }`}
+              >
+                💬 Mẫu Zalo Chuẩn
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setReportTemplate('sms');
+                  setCustomMessageText(generateReportText('sms'));
+                }}
+                className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                  reportTemplate === 'sms' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-700 hover:bg-white/60'
+                }`}
+              >
+                📱 Mẫu SMS Ngắn
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setReportTemplate('full');
+                  setCustomMessageText(generateReportText('full'));
+                }}
+                className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                  reportTemplate === 'full' ? 'bg-amber-600 text-white shadow-xs' : 'text-slate-700 hover:bg-white/60'
+                }`}
+              >
+                📑 Mẫu Chi Tiết Đầy Đủ
+              </button>
+            </div>
+
+            {/* Live Preview Textarea */}
+            <div className="space-y-1.5 text-left">
+              <label className="block text-xs font-black text-slate-700">Xem trước & Chỉnh sửa nội dung tin nhắn gửi GVCN:</label>
+              <textarea
+                rows={9}
+                value={customMessageText}
+                onChange={(e) => setCustomMessageText(e.target.value)}
+                className="w-full p-3.5 text-xs font-mono font-bold rounded-2xl border border-[#cbb89d] bg-white focus:outline-none focus:border-sky-600 shadow-inner leading-relaxed text-slate-800"
+              />
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex flex-wrap items-center justify-end gap-2.5 pt-2 border-t border-[#cbb89d]">
+              <button
+                type="button"
+                onClick={() => setIsZaloModalOpen(false)}
+                className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 cursor-pointer"
+              >
+                Đóng
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(customMessageText);
+                  showToast('Đã sao chép tin nhắn thành công! Thầy/Cô có thể dán (Ctrl+V) vào Zalo ngay.', 'success');
+                }}
+                className="px-4.5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95"
+              >
+                <span>📋</span> Sao Chép Nội Dung
+              </button>
+
+              <a
+                href="https://zalo.me/"
+                target="_blank"
+                rel="noreferrer"
+                onClick={() => {
+                  navigator.clipboard.writeText(customMessageText);
+                  showToast('Đã sao chép tin nhắn & Mở trang Zalo!', 'success');
+                }}
+                className="px-4.5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-black text-xs transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95 no-underline"
+              >
+                <span>💬</span> Mở Zalo Web
+              </a>
+
+              <a
+                href={`sms:?body=${encodeURIComponent(customMessageText)}`}
+                onClick={() => {
+                  navigator.clipboard.writeText(customMessageText);
+                  showToast('Đã sao chép & Kích hoạt ứng dụng Tin nhắn SMS!', 'success');
+                }}
+                className="px-4.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95 no-underline"
+              >
+                <span>📱</span> Gửi SMS
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
