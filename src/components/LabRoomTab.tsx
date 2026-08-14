@@ -103,6 +103,7 @@ export interface PCFrameConfig {
   cardSize: 'sm' | 'md' | 'lg' | 'xl';
   borderRadius: string;
   glowEffect: boolean;
+  badgeRightMargin?: number;
 }
 
 interface LabRoomTabProps {
@@ -504,14 +505,16 @@ export default function LabRoomTab({
         skinId: 'imac-classic',
         cardSize: 'md',
         borderRadius: 'rounded-2xl',
-        glowEffect: true
+        glowEffect: true,
+        badgeRightMargin: 0
       };
     } catch {
       return {
         skinId: 'imac-classic',
         cardSize: 'md',
         borderRadius: 'rounded-2xl',
-        glowEffect: true
+        glowEffect: true,
+        badgeRightMargin: 0
       };
     }
   });
@@ -928,15 +931,24 @@ export default function LabRoomTab({
               <div className="flex justify-between items-center font-bold text-[10px] border-b border-slate-400 pb-0.5 mb-0.5 w-full gap-1">
                 <span className="font-black text-slate-900 whitespace-nowrap shrink-0">🖥️ {formatComputerName(pcId)}</span>
                 {cellData.monitorRole === 'L. Trưởng' ? (
-                  <span className="text-[7.5px] font-black bg-amber-300 text-slate-950 px-1 rounded border border-amber-600 whitespace-nowrap shrink-0 ml-auto">
+                  <span 
+                    style={{ marginRight: `${frameConfig.badgeRightMargin || 0}px` }}
+                    className="text-[7.5px] font-black bg-amber-300 text-slate-950 px-1 rounded border border-amber-600 whitespace-nowrap shrink-0 ml-auto transition-all"
+                  >
                     🌟 L. TRƯỞNG
                   </span>
                 ) : cellData.monitorRole === 'Lớp phó' ? (
-                  <span className="text-[7.5px] font-black bg-sky-300 text-slate-950 px-1 rounded border border-sky-600 whitespace-nowrap shrink-0 ml-auto">
+                  <span 
+                    style={{ marginRight: `${frameConfig.badgeRightMargin || 0}px` }}
+                    className="text-[7.5px] font-black bg-sky-300 text-slate-950 px-1 rounded border border-sky-600 whitespace-nowrap shrink-0 ml-auto transition-all"
+                  >
                     ⭐ LỚP PHÓ
                   </span>
                 ) : cellData.monitorRole === 'Tổ trưởng' ? (
-                  <span className="text-[7.5px] font-black bg-purple-300 text-slate-950 px-1 rounded border border-purple-600 whitespace-nowrap shrink-0 ml-auto">
+                  <span 
+                    style={{ marginRight: `${frameConfig.badgeRightMargin || 0}px` }}
+                    className="text-[7.5px] font-black bg-purple-300 text-slate-950 px-1 rounded border border-purple-600 whitespace-nowrap shrink-0 ml-auto transition-all"
+                  >
                     🔰 TỔ TRƯỞNG
                   </span>
                 ) : null}
@@ -1241,15 +1253,24 @@ export default function LabRoomTab({
                       </span>
 
                       {monitorRole === 'L. Trưởng' ? (
-                        <span className="text-[8.5px] sm:text-[9px] font-black bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded-full border border-amber-500 shadow-md animate-pulse whitespace-nowrap shrink-0 ml-auto inline-flex items-center gap-0.5">
+                        <span 
+                          style={{ marginRight: `${frameConfig.badgeRightMargin || 0}px` }}
+                          className="text-[8.5px] sm:text-[9px] font-black bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded-full border border-amber-500 shadow-md animate-pulse whitespace-nowrap shrink-0 ml-auto inline-flex items-center gap-0.5 transition-all"
+                        >
                           🌟 L. TRƯỞNG
                         </span>
                       ) : monitorRole === 'Lớp phó' ? (
-                        <span className="text-[8.5px] sm:text-[9px] font-black bg-sky-400 text-slate-950 px-1.5 py-0.5 rounded-full border border-sky-500 shadow-md whitespace-nowrap shrink-0 ml-auto inline-flex items-center gap-0.5">
+                        <span 
+                          style={{ marginRight: `${frameConfig.badgeRightMargin || 0}px` }}
+                          className="text-[8.5px] sm:text-[9px] font-black bg-sky-400 text-slate-950 px-1.5 py-0.5 rounded-full border border-sky-500 shadow-md whitespace-nowrap shrink-0 ml-auto inline-flex items-center gap-0.5 transition-all"
+                        >
                           ⭐ LỚP PHÓ
                         </span>
                       ) : monitorRole === 'Tổ trưởng' ? (
-                        <span className="text-[8.5px] sm:text-[9px] font-black bg-purple-400 text-slate-950 px-1.5 py-0.5 rounded-full border border-purple-500 shadow-md whitespace-nowrap shrink-0 ml-auto inline-flex items-center gap-0.5">
+                        <span 
+                          style={{ marginRight: `${frameConfig.badgeRightMargin || 0}px` }}
+                          className="text-[8.5px] sm:text-[9px] font-black bg-purple-400 text-slate-950 px-1.5 py-0.5 rounded-full border border-purple-500 shadow-md whitespace-nowrap shrink-0 ml-auto inline-flex items-center gap-0.5 transition-all"
+                        >
                           🔰 TỔ TRƯỞNG
                         </span>
                       ) : null}
@@ -1565,6 +1586,39 @@ export default function LabRoomTab({
                 </div>
               </div>
             </div>
+
+            {/* 📏 MARGIN ADJUSTMENT CONTROL BOX */}
+            <div className="bg-[#fffbf0] rounded-3xl p-6 border border-[#cbb89d] shadow-xs space-y-4">
+              <h4 className="font-black text-sm text-[#3d2b17] flex items-center gap-2">
+                <Move className="w-4 h-4 text-amber-600" /> TÙY CHỈNH KHOẢNG CÁCH LỀ BÊN PHẢI (MARGIN ADJUSTMENT)
+              </h4>
+
+              <div className="space-y-3">
+                <div className="flex justify-between items-center text-xs font-bold">
+                  <label className="text-slate-700">Khoảng cách từ nhãn tới mép lề bên phải thẻ Card:</label>
+                  <span className="font-black bg-amber-100 text-amber-950 px-2.5 py-0.5 rounded-full border border-amber-300 shadow-2xs">
+                    {frameConfig.badgeRightMargin || 0} px
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <span className="text-[11px] font-bold text-slate-500">0px (Sát lề)</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="32"
+                    step="1"
+                    value={frameConfig.badgeRightMargin || 0}
+                    onChange={(e) => setFrameConfig(prev => ({ ...prev, badgeRightMargin: Number(e.target.value) }))}
+                    className="flex-1 accent-emerald-600 cursor-pointer h-2 bg-slate-200 rounded-lg"
+                  />
+                  <span className="text-[11px] font-bold text-slate-500">32px (Thụt lùi)</span>
+                </div>
+                <p className="text-[11px] font-bold text-slate-500 italic">
+                  💡 Thầy/Cô có thể kéo thanh trượt để tự do căn chỉnh khoảng cách nhãn Cán bộ lớp (L. Trưởng, Lớp phó...) thụt lùi so với mép lề bên phải theo ý muốn.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="lg:col-span-5 space-y-4">
@@ -1585,9 +1639,15 @@ export default function LabRoomTab({
                   backgroundPosition: 'center'
                 } : undefined}
               >
-                <div className="flex justify-between items-center mb-3">
-                  <span className="font-mono font-black text-xs bg-emerald-600 text-white px-2.5 py-1 rounded-lg border border-emerald-400 shadow-2xs">
+                <div className="flex justify-between items-center mb-3 w-full gap-1">
+                  <span className="font-mono font-black text-xs bg-emerald-600 text-white px-2.5 py-1 rounded-lg border border-emerald-400 shadow-2xs whitespace-nowrap shrink-0">
                     🖥️ Máy 01
+                  </span>
+                  <span 
+                    style={{ marginRight: `${frameConfig.badgeRightMargin || 0}px` }}
+                    className="text-[8.5px] sm:text-[9px] font-black bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded-full border border-amber-500 shadow-md animate-pulse whitespace-nowrap shrink-0 ml-auto inline-flex items-center gap-0.5 transition-all"
+                  >
+                    🌟 L. TRƯỞNG
                   </span>
                 </div>
 
@@ -1927,23 +1987,38 @@ export default function LabRoomTab({
                     </span>
 
                     {monitorRole === 'L. Trưởng' ? (
-                      <span className="text-[8.5px] sm:text-[9px] font-black bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded-full border border-amber-500 shadow-md animate-pulse whitespace-nowrap shrink-0 ml-auto inline-flex items-center gap-0.5">
+                      <span 
+                        style={{ marginRight: `${frameConfig.badgeRightMargin || 0}px` }}
+                        className="text-[8.5px] sm:text-[9px] font-black bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded-full border border-amber-500 shadow-md animate-pulse whitespace-nowrap shrink-0 ml-auto inline-flex items-center gap-0.5 transition-all"
+                      >
                         🌟 L. TRƯỞNG
                       </span>
                     ) : monitorRole === 'Lớp phó' ? (
-                      <span className="text-[8.5px] sm:text-[9px] font-black bg-sky-400 text-slate-950 px-1.5 py-0.5 rounded-full border border-sky-500 shadow-md whitespace-nowrap shrink-0 ml-auto inline-flex items-center gap-0.5">
+                      <span 
+                        style={{ marginRight: `${frameConfig.badgeRightMargin || 0}px` }}
+                        className="text-[8.5px] sm:text-[9px] font-black bg-sky-400 text-slate-950 px-1.5 py-0.5 rounded-full border border-sky-500 shadow-md whitespace-nowrap shrink-0 ml-auto inline-flex items-center gap-0.5 transition-all"
+                      >
                         ⭐ LỚP PHÓ
                       </span>
                     ) : monitorRole === 'Tổ trưởng' ? (
-                      <span className="text-[8.5px] sm:text-[9px] font-black bg-purple-400 text-slate-950 px-1.5 py-0.5 rounded-full border border-purple-500 shadow-md whitespace-nowrap shrink-0 ml-auto inline-flex items-center gap-0.5">
+                      <span 
+                        style={{ marginRight: `${frameConfig.badgeRightMargin || 0}px` }}
+                        className="text-[8.5px] sm:text-[9px] font-black bg-purple-400 text-slate-950 px-1.5 py-0.5 rounded-full border border-purple-500 shadow-md whitespace-nowrap shrink-0 ml-auto inline-flex items-center gap-0.5 transition-all"
+                      >
                         🔰 TỔ TRƯỞNG
                       </span>
                     ) : targetIncident ? (
-                      <span className="text-[8.5px] sm:text-[9px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded-full border border-rose-400 animate-pulse whitespace-nowrap shrink-0 ml-auto inline-flex items-center gap-0.5" title={targetIncident.issue}>
+                      <span 
+                        style={{ marginRight: `${frameConfig.badgeRightMargin || 0}px` }}
+                        className="text-[8.5px] sm:text-[9px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded-full border border-rose-400 animate-pulse whitespace-nowrap shrink-0 ml-auto inline-flex items-center gap-0.5 transition-all" title={targetIncident.issue}
+                      >
                         HỎNG
                       </span>
                     ) : hasAbsentStudent ? (
-                      <span className="text-[8.5px] sm:text-[9px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded-full border border-rose-400 whitespace-nowrap shrink-0 ml-auto inline-flex items-center gap-0.5" title="Có học sinh báo vắng mặt hôm nay">
+                      <span 
+                        style={{ marginRight: `${frameConfig.badgeRightMargin || 0}px` }}
+                        className="text-[8.5px] sm:text-[9px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded-full border border-rose-400 whitespace-nowrap shrink-0 ml-auto inline-flex items-center gap-0.5 transition-all" title="Có học sinh báo vắng mặt hôm nay"
+                      >
                         CÓ VẮNG
                       </span>
                     ) : null}
