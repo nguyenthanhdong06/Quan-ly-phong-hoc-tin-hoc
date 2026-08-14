@@ -34,11 +34,10 @@ export default function AttendanceTab({
   const [pageSize, setPageSize] = React.useState(10);
   const [justUpdatedId, setJustUpdatedId] = React.useState<string | null>(null);
 
-  // Subview toggle state: 'attendance' (default) | 'stats' (Bảng thống kê)
-  const [subView, setSubView] = React.useState<'attendance' | 'stats'>('attendance');
+  // Subview toggle state: 'attendance' (default) | 'stats' (Bảng thống kê) | 'zalo' (Báo cáo Zalo/SMS 100% Inline View)
+  const [subView, setSubView] = React.useState<'attendance' | 'stats' | 'zalo'>('attendance');
 
-  // 💬 Zalo / SMS Fast Report Modal States
-  const [isZaloModalOpen, setIsZaloModalOpen] = React.useState(false);
+  // 💬 Zalo / SMS Fast Report States
   const [reportTemplate, setReportTemplate] = React.useState<'zalo' | 'sms' | 'full'>('zalo');
   const [customMessageText, setCustomMessageText] = React.useState('');
 
@@ -263,9 +262,13 @@ export default function AttendanceTab({
               onClick={() => {
                 setReportTemplate('zalo');
                 setCustomMessageText(generateReportText('zalo'));
-                setIsZaloModalOpen(true);
+                setSubView(prev => prev === 'zalo' ? 'attendance' : 'zalo');
               }}
-              className="bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-xs py-2 px-3.5 rounded-xl border border-sky-500 transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95"
+              className={`font-extrabold text-xs py-2 px-3.5 rounded-xl border transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95 ${
+                subView === 'zalo'
+                  ? 'bg-sky-700 text-white border-sky-600 shadow-md ring-2 ring-sky-300'
+                  : 'bg-sky-600 hover:bg-sky-700 text-white border-sky-500'
+              }`}
               title="Tạo tin nhắn Zalo/SMS tự động tổng hợp danh sách vắng gửi Giáo viên chủ nhiệm"
             >
               <span>💬</span> Báo Cáo Zalo/SMS
@@ -710,24 +713,36 @@ export default function AttendanceTab({
         )}
       </div>
 
-      {/* 💬 INTERACTIVE ZALO / SMS REPORT GENERATOR MODAL */}
-      {isZaloModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#fffbf0] rounded-3xl border-2 border-[#cbb89d] shadow-2xl max-w-2xl w-full overflow-hidden space-y-4 p-6 animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex justify-between items-center border-b border-[#cbb89d] pb-3">
-              <h3 className="font-black text-base text-[#3d2b17] flex items-center gap-2">
-                <span>💬</span> BÁO CÁO ZALO/SMS CHO GVCN LỚP {selectedClass}
-              </h3>
-              <button
-                onClick={() => setIsZaloModalOpen(false)}
-                className="text-slate-400 hover:text-slate-700 text-lg font-bold cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
+      {/* ====================================================================
+          2. CHẾ ĐỘ 2: BÁO CÁO ZALO/SMS CHO GVCN (INLINE VIEW 100%)
+          ==================================================================== */}
+      {subView === 'zalo' && (
+        <div className="space-y-6 animate-fadeIn w-full">
+          {/* Top navigation bar with Quay về button */}
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-[#fffbf0] border border-[#cbb89d] p-4 rounded-2xl shadow-xs">
+            <button
+              type="button"
+              onClick={() => setSubView('attendance')}
+              className="bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-xs py-2.5 px-4.5 rounded-xl border border-slate-700 transition shadow-2xs cursor-pointer flex items-center gap-2 active:scale-95"
+            >
+              <ArrowLeft className="w-4 h-4 text-slate-200" />
+              <span>Quay Về Sổ Điểm Danh</span>
+            </button>
 
-            {/* Template Switcher Tabs */}
-            <div className="flex gap-2 bg-[#dfccb0] p-1.5 rounded-2xl border border-[#cbb89d]">
+            <h3 className="text-sm sm:text-base font-black text-slate-800 flex items-center gap-1.5">
+              <span>💬</span> BÁO CÁO ZALO/SMS CHO GVCN LỚP <span className="text-sky-700 font-mono bg-sky-50 px-2.5 py-0.5 rounded-lg border border-sky-200">{selectedClass}</span>
+            </h3>
+
+            <span className="text-xs font-bold text-slate-500">
+              Ngày: <strong className="text-slate-800 font-mono">{systemDateText}</strong>
+            </span>
+          </div>
+
+          {/* Inline View 100% Full Width Container */}
+          <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-md border border-[#cbb89d] space-y-5 text-left w-full">
+            
+            {/* Report Template Selector Strip */}
+            <div className="flex flex-wrap items-center gap-2 bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200">
               <button
                 type="button"
                 onClick={() => {
@@ -766,17 +781,17 @@ export default function AttendanceTab({
               </button>
             </div>
 
-            {/* GVCN Info Configuration Box: Name & Phone with 10-Digit Validation */}
-            <div className="bg-sky-50/90 p-3.5 rounded-2xl border border-sky-200 text-left space-y-3">
+            {/* GVCN Info Configuration Box (Read-Only Linked from Class Management) */}
+            <div className="bg-sky-50/90 p-4 rounded-2xl border border-sky-200 text-left space-y-3">
               
               {/* Device Auto-Detect Switcher Strip */}
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sky-200/80 pb-2.5">
                 <span className="text-xs font-black text-sky-950 flex items-center gap-1.5">
-                  ⚙️ CẤU HÌNH BÁO CÁO ZALO LỚP <span className="text-sky-700 bg-white px-2 py-0.5 rounded-lg border border-sky-300">{selectedClass}</span>:
+                  ⚙️ KÍCH HOẠT KẾT NỐI ZALO LỚP <span className="text-sky-700 bg-white px-2 py-0.5 rounded-lg border border-sky-300">{selectedClass}</span>:
                 </span>
 
                 <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-sky-300 shadow-3xs">
-                  <span className="text-[10px] font-bold text-slate-500 px-1">Kích hoạt:</span>
+                  <span className="text-[10px] font-bold text-slate-500 px-1">Chế độ:</span>
                   <button
                     type="button"
                     onClick={() => setZaloTargetMode('pc')}
@@ -799,7 +814,7 @@ export default function AttendanceTab({
               </div>
 
               {/* GVCN Name & Phone Display Grid (Read-Only linked from Class Management) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white p-3 rounded-2xl border border-sky-200 shadow-2xs text-left">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white p-3.5 rounded-2xl border border-sky-200 shadow-2xs text-left">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-black text-sky-950 whitespace-nowrap flex items-center gap-1">
                     👤 GVCN Lớp {selectedClass}:
@@ -852,95 +867,95 @@ export default function AttendanceTab({
             <div className="space-y-1.5 text-left">
               <label className="block text-xs font-black text-slate-700">Xem trước & Chỉnh sửa nội dung tin nhắn gửi GVCN:</label>
               <textarea
-                rows={8}
+                rows={9}
                 value={customMessageText}
                 onChange={(e) => setCustomMessageText(e.target.value)}
-                className="w-full p-3.5 text-xs font-mono font-bold rounded-2xl border border-[#cbb89d] bg-white focus:outline-none focus:border-sky-600 shadow-inner leading-relaxed text-slate-800"
+                className="w-full p-4 text-xs font-mono font-bold rounded-2xl border border-[#cbb89d] bg-white focus:outline-none focus:border-sky-600 shadow-inner leading-relaxed text-slate-800"
               />
             </div>
 
             {/* Action buttons */}
-            <div className="flex flex-wrap items-center justify-end gap-2.5 pt-2 border-t border-[#cbb89d]">
+            <div className="flex flex-wrap items-center justify-between gap-2.5 pt-3 border-t border-[#cbb89d]">
               <button
                 type="button"
-                onClick={() => setIsZaloModalOpen(false)}
-                className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 cursor-pointer"
+                onClick={() => setSubView('attendance')}
+                className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 cursor-pointer flex items-center gap-1.5"
               >
-                Đóng
+                <ArrowLeft className="w-4 h-4 text-slate-600" />
+                <span>Quay Về</span>
               </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  navigator.clipboard.writeText(customMessageText);
-                  showToast('Đã sao chép tin nhắn thành công! Thầy/Cô có thể dán (Ctrl+V) vào Zalo ngay.', 'success');
-                }}
-                className="px-4.5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95"
-              >
-                <span>📋</span> Sao Chép Nội Dung
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(customMessageText);
+                    showToast('Đã sao chép tin nhắn thành công! Thầy/Cô có thể dán (Ctrl+V) vào Zalo ngay.', 'success');
+                  }}
+                  className="px-4.5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95"
+                >
+                  <span>📋</span> Sao Chép Nội Dung
+                </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  const cleanPhone = gvcnPhone.trim().replace(/\D/g, '');
-                  if (gvcnPhone.trim() && cleanPhone.length !== 10) {
-                    showToast(`⚠️ SĐT Zalo GVCN chưa đúng 10 chữ số (Hiện tại đang có ${cleanPhone.length} số). Vui lòng gõ đủ 10 số!`, 'error');
-                    return;
-                  }
-
-                  // 1. Sao chép nội dung tin nhắn vào Bộ nhớ tạm (Clipboard)
-                  navigator.clipboard.writeText(customMessageText);
-
-                  if (zaloTargetMode === 'pc') {
-                    // Kích hoạt Zalo PC App via zalo://
-                    let zaloNativeAppUri = 'zalo://';
-                    if (cleanPhone) {
-                      zaloNativeAppUri = `zalo://conversation?phone=${cleanPhone}`;
+                <button
+                  type="button"
+                  onClick={() => {
+                    const cleanPhone = gvcnPhone.trim().replace(/\D/g, '');
+                    if (gvcnPhone.trim() && cleanPhone.length !== 10) {
+                      showToast(`⚠️ SĐT Zalo GVCN chưa đúng 10 chữ số (Hiện tại đang có ${cleanPhone.length} số). Vui lòng gõ đủ 10 số!`, 'error');
+                      return;
                     }
 
-                    const nativeLink = document.createElement('a');
-                    nativeLink.href = zaloNativeAppUri;
-                    document.body.appendChild(nativeLink);
-                    nativeLink.click();
-                    document.body.removeChild(nativeLink);
+                    navigator.clipboard.writeText(customMessageText);
 
-                    setTimeout(() => {
-                      window.location.href = zaloNativeAppUri;
-                    }, 150);
+                    if (zaloTargetMode === 'pc') {
+                      let zaloNativeAppUri = 'zalo://';
+                      if (cleanPhone) {
+                        zaloNativeAppUri = `zalo://conversation?phone=${cleanPhone}`;
+                      }
 
-                    showToast(`Đã sao chép tin nhắn & Mở Zalo PC App ${cleanPhone ? `chat với SĐT ${cleanPhone}` : ''}!`, 'success');
-                  } else {
-                    // Kích hoạt Zalo Mobile App via https://zalo.me/
-                    let mobileUri = 'https://zalo.me/';
-                    if (cleanPhone) {
-                      mobileUri = `https://zalo.me/${cleanPhone}`;
+                      const nativeLink = document.createElement('a');
+                      nativeLink.href = zaloNativeAppUri;
+                      document.body.appendChild(nativeLink);
+                      nativeLink.click();
+                      document.body.removeChild(nativeLink);
+
+                      setTimeout(() => {
+                        window.location.href = zaloNativeAppUri;
+                      }, 150);
+
+                      showToast(`Đã sao chép tin nhắn & Mở Zalo PC App ${cleanPhone ? `chat với SĐT ${cleanPhone}` : ''}!`, 'success');
+                    } else {
+                      let mobileUri = 'https://zalo.me/';
+                      if (cleanPhone) {
+                        mobileUri = `https://zalo.me/${cleanPhone}`;
+                      }
+
+                      window.open(mobileUri, '_blank');
+                      showToast(`Đã sao chép tin nhắn & Mở Zalo Mobile App ${cleanPhone ? `với SĐT ${cleanPhone}` : ''}!`, 'success');
                     }
+                  }}
+                  className="px-4.5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-black text-xs transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95 border border-sky-500"
+                  title={zaloTargetMode === 'pc' ? 'Kích hoạt ứng dụng Zalo PC trên máy tính' : 'Mở ứng dụng Zalo Mobile trên điện thoại'}
+                >
+                  <span>💬</span> {zaloTargetMode === 'pc' ? 'Mở Zalo PC App' : 'Mở App Zalo Mobile'}
+                </button>
 
-                    window.open(mobileUri, '_blank');
-                    showToast(`Đã sao chép tin nhắn & Mở Zalo Mobile App ${cleanPhone ? `với SĐT ${cleanPhone}` : ''}!`, 'success');
+                <a
+                  href={
+                    gvcnPhone.trim().replace(/\D/g, '') 
+                      ? `sms:${gvcnPhone.trim().replace(/\D/g, '')}?body=${encodeURIComponent(customMessageText)}` 
+                      : `sms:?body=${encodeURIComponent(customMessageText)}`
                   }
-                }}
-                className="px-4.5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-black text-xs transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95 border border-sky-500"
-                title={zaloTargetMode === 'pc' ? 'Kích hoạt ứng dụng Zalo PC trên máy tính' : 'Mở ứng dụng Zalo Mobile trên điện thoại'}
-              >
-                <span>💬</span> {zaloTargetMode === 'pc' ? 'Mở Zalo PC App' : 'Mở App Zalo Mobile'}
-              </button>
-
-              <a
-                href={
-                  gvcnPhone.trim().replace(/\D/g, '') 
-                    ? `sms:${gvcnPhone.trim().replace(/\D/g, '')}?body=${encodeURIComponent(customMessageText)}` 
-                    : `sms:?body=${encodeURIComponent(customMessageText)}`
-                }
-                onClick={() => {
-                  navigator.clipboard.writeText(customMessageText);
-                  showToast('Đã sao chép & Kích hoạt ứng dụng Tin nhắn SMS!', 'success');
-                }}
-                className="px-4.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95 no-underline"
-              >
-                <span>📱</span> Gửi SMS
-              </a>
+                  onClick={() => {
+                    navigator.clipboard.writeText(customMessageText);
+                    showToast('Đã sao chép & Kích hoạt ứng dụng Tin nhắn SMS!', 'success');
+                  }}
+                  className="px-4.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95 no-underline"
+                >
+                  <span>📱</span> Gửi SMS
+                </a>
+              </div>
             </div>
           </div>
         </div>
