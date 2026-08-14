@@ -1158,7 +1158,6 @@ export default function LabRoomTab({
                               )}
                             </div>
                             <div className="text-[10px] font-bold text-slate-400 flex items-center gap-2 mt-0.5">
-                              <span>MSHS: {st.code}</span>
                               <div className="flex items-center gap-1 text-[9px]">
                                 <button
                                   onClick={(e) => {
