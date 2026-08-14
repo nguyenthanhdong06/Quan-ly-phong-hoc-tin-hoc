@@ -247,6 +247,18 @@ export default function AttendanceTab({
             </button>
 
             <button
+              onClick={() => {
+                setReportTemplate('zalo');
+                setCustomMessageText(generateReportText('zalo'));
+                setIsZaloModalOpen(true);
+              }}
+              className="bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-xs py-2 px-3.5 rounded-xl border border-sky-500 transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95"
+              title="Tạo tin nhắn Zalo/SMS tự động tổng hợp danh sách vắng gửi Giáo viên chủ nhiệm"
+            >
+              <span>💬</span> Báo Cáo Zalo/SMS
+            </button>
+
+            <button
               onClick={handleSave}
               className="bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs py-2 px-4 rounded-xl border border-amber-500 transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95"
             >
@@ -425,54 +437,7 @@ export default function AttendanceTab({
           ==================================================================== */}
       {subView === 'attendance' && (
         <>
-          {/* Statistics board with smooth number bumps */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 text-left">
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Sĩ số lớp cần học</span>
-              <strong className="text-2xl font-black text-slate-800 mt-1 block">{classStudents.length}</strong>
-            </div>
-
-            <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100 text-left relative overflow-hidden">
-              <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 block">Hiện diện (Học tốt)</span>
-              <motion.strong 
-                key={presentCount}
-                initial={{ scale: 1.25, color: '#059669' }}
-                animate={{ scale: 1 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                className="text-2xl font-black text-emerald-700 mt-1 block"
-              >
-                {presentCount} <span className="text-xs font-bold text-emerald-500">({attendanceRate}%)</span>
-              </motion.strong>
-            </div>
-
-            <div className="bg-amber-50 p-4 rounded-xl border border-amber-100 text-left relative overflow-hidden">
-              <span className="text-[10px] font-black uppercase tracking-wider text-amber-600 block">Xin phép nghỉ (P)</span>
-              <motion.strong 
-                key={excusedCount}
-                initial={{ scale: 1.25, color: '#d97706' }}
-                animate={{ scale: 1 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                className="text-2xl font-black text-amber-700 mt-1 block"
-              >
-                {excusedCount}
-              </motion.strong>
-            </div>
-
-            <div className="bg-red-50 p-4 rounded-xl border border-red-100 text-left relative overflow-hidden">
-              <span className="text-[10px] font-black uppercase tracking-wider text-red-600 block">Vắng không phép (KP)</span>
-              <motion.strong 
-                key={unexcusedCount}
-                initial={{ scale: 1.25, color: '#dc2626' }}
-                animate={{ scale: 1 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                className="text-2xl font-black text-red-700 mt-1 block"
-              >
-                {unexcusedCount}
-              </motion.strong>
-            </div>
-
-          </div>
+          {/* Main Table for attendance records on selected date */}
 
       {/* Main Table for attendance records on selected date */}
       <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs space-y-0 text-left">
