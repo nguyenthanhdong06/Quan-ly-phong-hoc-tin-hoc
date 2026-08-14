@@ -197,7 +197,7 @@ export default function AttendanceTab({
         <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
           <div className="text-left">
             <h2 className="text-sm sm:text-base font-black text-[#3d2b17] uppercase tracking-wider flex items-center gap-2">
-              <span>📋</span> SỔ ĐIỂM DANH HỌC SINH LỚP: <span className="text-emerald-800 font-black bg-white/90 px-2.5 py-0.5 rounded-lg border border-[#cbb89d]">{selectedClass}</span>
+              <span>📋</span> SỔ ĐIỂM DANH LỚP: <span className="text-emerald-800 font-black bg-white/90 px-2.5 py-0.5 rounded-lg border border-[#cbb89d]">{selectedClass}</span>
             </h2>
             <p className="text-[11px] font-bold text-[#5c4327] flex items-center gap-1 mt-1">
               <Calendar className="w-3.5 h-3.5 text-amber-800" />
@@ -323,25 +323,14 @@ export default function AttendanceTab({
           ==================================================================== */}
       {subView === 'stats' && (
         <div className="space-y-6 animate-fadeIn">
-          {/* Top navigation bar with Quay về button & Quick Zalo button */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-[#fffbf0] border border-[#cbb89d] p-4 rounded-2xl shadow-xs">
+          {/* Top navigation bar with Quay về button */}
+          <div className="flex items-center justify-between gap-3 bg-[#fffbf0] border border-[#cbb89d] p-4 rounded-2xl shadow-xs">
             <button
               onClick={() => setSubView('attendance')}
               className="bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-xs py-2.5 px-4.5 rounded-xl border border-slate-700 transition shadow-2xs cursor-pointer flex items-center gap-2 active:scale-95"
             >
               <ArrowLeft className="w-4 h-4 text-slate-200" />
               <span>Quay Về Sổ Điểm Danh</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setReportTemplate('zalo');
-                setCustomMessageText(generateReportText('zalo'));
-                setIsZaloModalOpen(true);
-              }}
-              className="bg-sky-600 hover:bg-sky-700 text-white font-black text-xs py-2.5 px-4 rounded-xl border border-sky-500 transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95"
-            >
-              <span>💬</span> Báo Cáo Zalo / SMS
             </button>
           </div>
 
