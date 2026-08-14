@@ -531,57 +531,49 @@ export default function AttendanceTab({
                         </span>
                       </td>
                       <td className="py-3.5 px-4 text-center">
-                        <div className="inline-flex rounded-xl bg-slate-100/90 p-1 w-full border border-slate-200/70 shadow-inner gap-1">
+                        <div className="inline-flex rounded-xl bg-slate-100/90 p-1 w-full border border-slate-300/80 shadow-inner gap-1.5 select-none">
                           
-                          {/* Present Button */}
-                          <motion.button
+                          {/* 1. NÚT ĐI HỌC (PRESENT) */}
+                          <button
                             type="button"
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.95 }}
                             onClick={() => handleSetState(s.id, 'present')}
-                            className={`flex-1 text-center py-1.5 px-2 rounded-lg text-[10.5px] font-black tracking-wide transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                            className={`flex-1 text-center py-2 px-2.5 rounded-lg text-xs font-black tracking-wide transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 ${
                               currentStatus === 'present' 
-                                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20 ring-1 ring-emerald-500' 
-                                : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
+                                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30 ring-2 ring-emerald-400 border border-emerald-500 scale-[1.02]' 
+                                : 'bg-white text-emerald-800 hover:bg-emerald-50 border border-emerald-200/80 hover:border-emerald-400 font-extrabold'
                             }`}
                           >
-                            <Check className={`w-3.5 h-3.5 ${currentStatus === 'present' ? 'text-white' : 'text-slate-400'}`} />
-                            Đi Học
-                          </motion.button>
+                            <Check className={`w-3.5 h-3.5 stroke-[3] ${currentStatus === 'present' ? 'text-white' : 'text-emerald-600'}`} />
+                            <span>Đi Học</span>
+                          </button>
 
-                          {/* Excused Button */}
-                          <motion.button
+                          {/* 2. NÚT CÓ PHÉP (P) (EXCUSED) */}
+                          <button
                             type="button"
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.95 }}
                             onClick={() => handleSetState(s.id, 'excused')}
-                            className={`flex-1 text-center py-1.5 px-2 rounded-lg text-[10.5px] font-black tracking-wide transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                            className={`flex-1 text-center py-2 px-2.5 rounded-lg text-xs font-black tracking-wide transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 ${
                               currentStatus === 'excused' 
-                                ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20 ring-1 ring-amber-400' 
-                                : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
+                                ? 'bg-amber-500 text-white shadow-md shadow-amber-500/30 ring-2 ring-amber-300 border border-amber-400 scale-[1.02]' 
+                                : 'bg-white text-amber-800 hover:bg-amber-50 border border-amber-200/80 hover:border-amber-400 font-extrabold'
                             }`}
                           >
-                            <Calendar className={`w-3.5 h-3.5 ${currentStatus === 'excused' ? 'text-white' : 'text-slate-400'}`} />
-                            Có Phép (P)
-                          </motion.button>
+                            <Calendar className={`w-3.5 h-3.5 stroke-[2.5] ${currentStatus === 'excused' ? 'text-white' : 'text-amber-600'}`} />
+                            <span>Có Phép (P)</span>
+                          </button>
 
-                          {/* Unexcused Button (LÀM NỔI BẬT ĐẶC BIỆT KHI ĐƯỢC CHỌN VÀ KHÔNG CHỌN - HẾT MỜ CHỮ) */}
-                          <motion.button
+                          {/* 3. NÚT KHÔNG PHÉP (KP) (UNEXCUSED) */}
+                          <button
                             type="button"
-                            whileHover={{ scale: 1.03 }}
-                            whileTap={{ scale: 0.95 }}
                             onClick={() => handleSetState(s.id, 'unexcused')}
-                            className={`flex-1 text-center py-1.5 px-2 rounded-lg text-[10.5px] font-black tracking-wide transition-all flex items-center justify-center gap-1 cursor-pointer select-none ${
+                            className={`flex-1 text-center py-2 px-2.5 rounded-lg text-xs font-black tracking-wide transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 ${
                               currentStatus === 'unexcused' 
-                                ? 'bg-gradient-to-r from-rose-600 to-red-600 text-white shadow-lg shadow-rose-600/40 ring-2 ring-rose-400 border border-rose-500 animate-pulse' 
-                                : 'bg-rose-50/90 text-rose-900 hover:text-rose-950 hover:bg-rose-100 border border-rose-200 font-black'
+                                ? 'bg-gradient-to-r from-rose-600 to-red-600 text-white shadow-md shadow-rose-600/30 ring-2 ring-rose-400 border border-rose-500 animate-pulse scale-[1.02]' 
+                                : 'bg-white text-rose-800 hover:bg-rose-50 border border-rose-200/80 hover:border-rose-400 font-extrabold'
                             }`}
                           >
-                            <X className={`w-3.5 h-3.5 ${currentStatus === 'unexcused' ? 'text-white font-black' : 'text-rose-600 font-black'}`} />
-                            <span className={currentStatus === 'unexcused' ? 'text-white font-black drop-shadow-xs' : 'text-rose-900 font-black'}>
-                              Không Phép (KP)
-                            </span>
-                          </motion.button>
+                            <X className={`w-3.5 h-3.5 stroke-[3] ${currentStatus === 'unexcused' ? 'text-white' : 'text-rose-600'}`} />
+                            <span>Không Phép (KP)</span>
+                          </button>
 
                         </div>
                       </td>
