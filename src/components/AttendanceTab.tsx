@@ -42,44 +42,14 @@ export default function AttendanceTab({
   const [reportTemplate, setReportTemplate] = React.useState<'zalo' | 'sms' | 'full'>('zalo');
   const [customMessageText, setCustomMessageText] = React.useState('');
 
-  // 📱 Homeroom Teacher (GVCN) Info state (synced with Class Management & persisted per class)
+  // 📱 Homeroom Teacher (GVCN) Info linked directly from Class Management (classes prop)
   const currentClassObj = classes?.find(c => c.id === selectedClass);
-
-  const [gvcnName, setGvcnName] = React.useState<string>(() => {
-    return currentClassObj?.teacher || localStorage.getItem(`gvcn_name_${selectedClass}`) || '';
-  });
-
-  const [gvcnPhone, setGvcnPhone] = React.useState<string>(() => {
-    return currentClassObj?.teacherPhone || localStorage.getItem(`zalo_phone_${selectedClass}`) || '';
-  });
+  const gvcnName = currentClassObj?.teacher || 'Chưa cập nhật';
+  const gvcnPhone = currentClassObj?.teacherPhone || '';
 
   // 💻 / 📱 Device Auto-Detection for Zalo PC vs Zalo Mobile
   const isMobileInitial = typeof window !== 'undefined' && (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768);
   const [zaloTargetMode, setZaloTargetMode] = React.useState<'pc' | 'mobile'>(isMobileInitial ? 'mobile' : 'pc');
-
-  React.useEffect(() => {
-    const classObj = classes?.find(c => c.id === selectedClass);
-    setGvcnName(classObj?.teacher || localStorage.getItem(`gvcn_name_${selectedClass}`) || '');
-    setGvcnPhone(classObj?.teacherPhone || localStorage.getItem(`zalo_phone_${selectedClass}`) || '');
-  }, [selectedClass, classes]);
-
-  const handleNameChange = (val: string) => {
-    setGvcnName(val);
-    localStorage.setItem(`gvcn_name_${selectedClass}`, val);
-
-    if (setClasses) {
-      setClasses(prev => prev.map(c => c.id === selectedClass ? { ...c, teacher: val } : c));
-    }
-  };
-
-  const handlePhoneChange = (val: string) => {
-    setGvcnPhone(val);
-    localStorage.setItem(`zalo_phone_${selectedClass}`, val);
-
-    if (setClasses) {
-      setClasses(prev => prev.map(c => c.id === selectedClass ? { ...c, teacherPhone: val } : c));
-    }
-  };
 
   // Reset search term when class changes for perfect UX
   React.useEffect(() => {
@@ -828,62 +798,51 @@ export default function AttendanceTab({
                 </div>
               </div>
 
-              {/* GVCN Name & Phone input grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-black text-sky-950 mb-1 flex items-center gap-1.5">
-                    <span>👤</span> Giáo viên chủ nhiệm:
-                  </label>
-                  <input
-                    type="text"
-                    value={gvcnName}
-                    onChange={(e) => handleNameChange(e.target.value)}
-                    placeholder="Nhập tên GVCN (Ví dụ: Thầy Thanh Đồng)..."
-                    className="w-full text-xs font-bold px-3 py-1.5 rounded-xl border border-sky-300 bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-800"
-                  />
+              {/* GVCN Name & Phone Display Grid (Read-Only linked from Class Management) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white p-3 rounded-2xl border border-sky-200 shadow-2xs text-left">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black text-sky-950 whitespace-nowrap flex items-center gap-1">
+                    👤 GVCN Lớp {selectedClass}:
+                  </span>
+                  <span className="text-xs font-black text-slate-800 bg-sky-50/90 px-3 py-1 rounded-xl border border-sky-200">
+                    {gvcnName}
+                  </span>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-black text-sky-950 mb-1 flex items-center gap-1.5">
-                    <span>📱</span> SĐT Zalo GVCN:
-                  </label>
-                  <input
-                    type="tel"
-                    value={gvcnPhone}
-                    onChange={(e) => handlePhoneChange(e.target.value)}
-                    placeholder="Nhập SĐT Zalo (Ví dụ: 0912345678)..."
-                    className="w-full text-xs font-bold px-3 py-1.5 rounded-xl border border-sky-300 bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-800"
-                  />
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black text-sky-950 whitespace-nowrap flex items-center gap-1">
+                    📱 SĐT Zalo:
+                  </span>
+                  <span className={`text-xs font-extrabold px-3 py-1 rounded-xl border ${
+                    gvcnPhone 
+                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200 font-mono font-black' 
+                      : 'bg-rose-50 text-rose-700 border-rose-200 font-normal italic'
+                  }`}>
+                    {gvcnPhone || 'Chưa cập nhật bên Quản Lý Lớp'}
+                  </span>
                 </div>
               </div>
 
-              {/* Realtime 10-digit Phone Validation Helper */}
+              {/* Linked Info Status Helper */}
               {(() => {
                 const clean = gvcnPhone.trim().replace(/\D/g, '');
-                if (!clean) {
+                if (!gvcnPhone) {
                   return (
-                    <p className="text-[11px] text-slate-500 font-semibold flex items-center gap-1">
-                      💡 <em>Nhập đúng 10 chữ số (Ví dụ: 0912345678) để tự động đồng bộ & kích hoạt Zalo chat với GVCN {gvcnName ? `(${gvcnName})` : ''}.</em>
+                    <p className="text-[11px] text-amber-700 font-bold flex items-center gap-1 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
+                      <span>⚠️</span> Lớp <strong>{selectedClass}</strong> chưa được nhập SĐT Zalo GVCN. Thầy/Cô bổ sung SĐT tại mục <strong>"Quản Lý Lớp Học"</strong>.
                     </p>
                   );
                 }
-                if (clean.length < 10) {
+                if (clean.length !== 10) {
                   return (
                     <p className="text-[11px] text-rose-600 font-bold flex items-center gap-1 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200">
-                      <span>⚠️</span> Số điện thoại đang có <strong>{clean.length}</strong>/10 chữ số (Còn thiếu <strong>{10 - clean.length}</strong> số). Vui lòng gõ đủ 10 số!
-                    </p>
-                  );
-                }
-                if (clean.length > 10) {
-                  return (
-                    <p className="text-[11px] text-rose-600 font-bold flex items-center gap-1 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200">
-                      <span>⚠️</span> Số điện thoại đang có <strong>{clean.length}</strong> chữ số (Đã thừa <strong>{clean.length - 10}</strong> số). SĐT Zalo hợp lệ cần đúng 10 số!
+                      <span>⚠️</span> SĐT Zalo GVCN đang có <strong>{clean.length}</strong> chữ số (Cần đúng 10 số). Vui lòng kiểm tra lại bên "Quản Lý Lớp Học"!
                     </p>
                   );
                 }
                 return (
                   <p className="text-[11px] text-emerald-700 font-extrabold flex items-center gap-1 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
-                    <span>✅</span> SĐT hợp lệ (Đủ 10 chữ số)! Đã tự động đồng bộ GVCN: <strong>{gvcnName || 'Chưa đặt tên'}</strong> sang Quản Lý Lớp Học.
+                    <span>✅</span> Thông tin móc nối trực tiếp từ Quản Lý Lớp Học. Sẵn sàng kết nối Zalo với GVCN: <strong>{gvcnName}</strong> ({gvcnPhone}).
                   </p>
                 );
               })()}
