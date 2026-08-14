@@ -568,6 +568,10 @@ export default function LabRoomTab({
     xl: 'p-4.5 min-h-[150px]'
   };
 
+  // 🟢 Auto-Save Indicator State ('synced' | 'saving')
+  const [syncStatus, setSyncStatus] = useState<'synced' | 'saving'>('synced');
+  const [lastSyncedTime, setLastSyncedTime] = useState<string>('Vừa xong');
+
   // --- ⚡ INSTANT 60FPS ZERO-LAG SEATING MUTATION SAVE HANDLER ---
   const saveSeatingState = useCallback((newClassSeating: { [pcId: string]: string }) => {
     const updatedChart: SeatingChart = {
@@ -575,15 +579,16 @@ export default function LabRoomTab({
       [selectedClass]: newClassSeating
     };
 
-    // 1. INSTANT REACT STATE UPDATE (0ms)
+    // 1. INSTANT REACT STATE UPDATE & AUTO-SAVE INDICATOR 'saving'
     setSeatingChart(updatedChart);
+    setSyncStatus('saving');
 
     // 2. INSTANT LOCAL STORAGE WRITE (~0.1ms)
     try {
       localStorage.setItem('school_seating_chart', JSON.stringify(updatedChart));
     } catch (e) {}
 
-    // 3. DEBOUNCED BACKGROUND SUPABASE SYNC (1500ms - Never blocks UI frames)
+    // 3. DEBOUNCED BACKGROUND SUPABASE SYNC (800ms - Never blocks UI frames)
     if (supabaseDebounceTimerRef.current) {
       clearTimeout(supabaseDebounceTimerRef.current);
     }
@@ -591,8 +596,36 @@ export default function LabRoomTab({
       try {
         saveSupabaseState('school_seating_chart', updatedChart);
       } catch (e) {}
-    }, 1500);
+
+      // 4. UPDATE AUTO-SAVE INDICATOR TO 'synced' (Đã đồng bộ lên đám mây)
+      setSyncStatus('synced');
+      const nowTime = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      setLastSyncedTime(nowTime);
+    }, 800);
   }, [selectedClass, setSeatingChart]);
+
+  const renderAutoSaveIndicator = () => (
+    <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black transition-all shadow-2xs border select-none ${
+      syncStatus === 'saving'
+        ? 'bg-amber-100/90 text-amber-900 border-amber-300 animate-pulse'
+        : 'bg-emerald-100/90 text-emerald-900 border-emerald-300'
+    }`}>
+      {syncStatus === 'saving' ? (
+        <>
+          <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping shrink-0" />
+          <span>🔄 Đang lưu phiên làm việc...</span>
+        </>
+      ) : (
+        <>
+          <span className="relative flex h-2.5 w-2.5 shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+          </span>
+          <span>🟢 Đã đồng bộ lên đám mây ({lastSyncedTime})</span>
+        </>
+      )}
+    </div>
+  );
 
   // Assign student to computer
   const assignStudentToComputer = useCallback((pcId: string, studentId: string) => {
@@ -1034,10 +1067,13 @@ export default function LabRoomTab({
                 <ArrowLeft className="w-4 h-4 text-slate-700" /> Quay Về Sơ Đồ Chính
               </button>
               <div>
-                <h3 className="font-black text-sm text-slate-900 flex items-center gap-2">
-                  <Armchair className="w-4 h-4 text-amber-800" />
-                  CHỨC NĂNG KÉO THẢ XẾP CHỖ NGỒI HỌC SINH (LỚP {selectedClass.toUpperCase()})
-                </h3>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="font-black text-sm text-slate-900 flex items-center gap-2">
+                    <Armchair className="w-4 h-4 text-amber-800" />
+                    CHỨC NĂNG KÉO THẢ XẾP CHỖ NGỒI HỌC SINH (LỚP {selectedClass.toUpperCase()})
+                  </h3>
+                  {renderAutoSaveIndicator()}
+                </div>
                 <p className="text-[11px] font-bold text-slate-600">Kéo thả học sinh từ bảng danh sách chờ hoặc tráo đổi ghế giữa các máy tính</p>
               </div>
             </div>
@@ -1770,6 +1806,9 @@ export default function LabRoomTab({
             <Sparkles className="w-3.5 h-3.5" />
             <span>Xếp Tự Động</span>
           </button>
+
+          {/* 🟢 Auto-Save Indicator */}
+          {renderAutoSaveIndicator()}
         </div>
 
         {/* Xóa chỗ ngồi */}
