@@ -82,6 +82,9 @@ export default function StudentsTab({
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState<10 | 20 | 50>(10);
 
+  // ➕ Thêm học sinh Modal Window State
+  const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
+
   // Reset trang khi đổi lớp hoặc tìm kiếm để tránh bị trang trống
   useEffect(() => {
     setCurrentPage(1);
@@ -302,6 +305,16 @@ export default function StudentsTab({
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsAddStudentModalOpen(true)}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs py-2 px-3.5 rounded-xl border border-emerald-500 transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95"
+              title="Mở cửa sổ thêm học sinh đơn lẻ hoặc nhập hàng loạt từ Excel"
+            >
+              <UserPlus className="w-4 h-4 text-emerald-100" />
+              <span>Thêm học sinh</span>
+            </button>
+
             <span className="text-xs font-black bg-white/90 text-emerald-900 px-3.5 py-1.5 rounded-xl border border-[#cbb89d] shadow-2xs">
               Sĩ số: {classStudents.length} học sinh
             </span>
@@ -309,168 +322,8 @@ export default function StudentsTab({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Left Column forms */}
-        <div className="space-y-6">
-          
-          {/* Paste Excel component */}
-          <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">
-            <h4 className="font-extrabold text-sm text-slate-800 border-b pb-2 flex items-center gap-2">
-              <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
-              Chuẩn hóa Nhập hàng loạt bằng Excel
-            </h4>
-            
-            <p className="text-[11px] text-slate-500 leading-relaxed text-left">
-              Thầy cô sao chép đồng thời cột <strong>Họ tên học sinh</strong> và cột <strong>Nữ</strong> (như trong ảnh mẫu) trong file Excel, dán trực tiếp vào khung dưới đây.
-            </p>
-
-            {/* Quick Helper Layout representation */}
-            <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/60 text-[11px] text-slate-500 font-semibold space-y-1 text-left">
-              <p className="text-slate-700 font-extrabold flex items-center gap-1 text-[10px]">
-                <span>📋</span> Minh họa sao chép từ Excel:
-              </p>
-              <div className="overflow-hidden rounded-md border border-slate-200 bg-white font-mono text-[9px] divide-y">
-                <div className="grid grid-cols-2 bg-slate-100 font-bold px-2 py-0.5 text-slate-700">
-                  <div>Họ Và Tên</div>
-                  <div className="border-l pl-2">Nữ</div>
-                </div>
-                <div className="grid grid-cols-2 px-2 py-0.5">
-                  <div>Bùi Ngọc Quỳnh Anh</div>
-                  <div className="border-l pl-2 text-rose-600 font-bold">x</div>
-                </div>
-                <div className="grid grid-cols-2 px-2 py-0.5">
-                  <div>Nguyễn Hoàng Ân</div>
-                  <div className="border-l pl-2 text-slate-400 font-normal"><i>(Để trống)</i></div>
-                </div>
-              </div>
-              <p className="text-[9px] text-slate-400 select-none">
-                * Cột 2 điền chữ <strong className="text-rose-600 font-bold">"x"</strong> cho học sinh Nữ, để trống nếu là Nam.
-              </p>
-            </div>
-
-            <div className="space-y-2.5">
-              <textarea
-                value={excelText}
-                onChange={(e) => setExcelText(e.target.value)}
-                placeholder="Dán dữ liệu từ file Excel tại đây...&#10;Ví dụ:&#10;Bùi Ngọc Quỳnh Anh&#9;x&#10;Phan Thị Ngọc Anh&#9;x&#10;Nguyễn Hoàng Ân&#10;Lê Đức Duy"
-                className="w-full text-xs border border-slate-200 rounded-xl p-3 h-36 focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono text-left"
-              ></textarea>
-
-              {/* Action Buttons */}
-              <button
-                type="button"
-                onClick={handleDownloadTemplate}
-                className="flex items-center justify-center gap-1.5 text-[11px] text-emerald-700 hover:text-emerald-800 font-black bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200 py-2 rounded-xl w-full transition cursor-pointer"
-              >
-                <Download className="w-3.5 h-3.5" />
-                Tải file Excel mẫu (.csv)
-              </button>
-              
-              <div className="flex justify-between items-center bg-slate-50 p-2 rounded-xl border border-dashed text-left">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setExcelText("Bùi Ngọc Quỳnh Anh\tx\nPhan Thị Ngọc Anh\tx\nLương Ngọc Kim Ánh\tx\nNguyễn Hoàng Ân\t\nNguyễn Hữu Danh\t\nLê Đức Duy\t\nLê Quốc Đại\t\nLê Võ Tấn Đạt\t\nLê Ngọc Hân\tx");
-                    showToast("Đã chèn dữ liệu mẫu đúng chuẩn Excel!");
-                  }}
-                  className="text-[10px] text-amber-600 hover:underline font-extrabold"
-                >
-                  Dùng danh sách mẫu thử
-                </button>
-                
-                <button
-                  onClick={handleImportExcel}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" /> Nhập vào {selectedClass}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Single Student Form */}
-          <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">
-            <h4 className="font-extrabold text-sm text-slate-800 border-b pb-2 flex items-center gap-1.5">
-              <UserPlus className="w-4 h-4 text-amber-500" />
-              Thêm học sinh đơn lẻ
-            </h4>
-
-            <form onSubmit={handleAddStudent} className="space-y-3">
-              <div>
-                <label className="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-wider text-left">Mã Số học sinh (MSHS)</label>
-                <input
-                  type="text"
-                  value={newCode}
-                  onChange={(e) => setNewCode(e.target.value)}
-                  placeholder="Ví dụ: HS388"
-                  className="w-full border border-slate-200 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder-slate-300 font-mono"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-wider text-left">Họ và Tên lót & Tên</label>
-                <input
-                  type="text"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  placeholder="Nhập họ tên của học sinh..."
-                  className="w-full border border-slate-200 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder-slate-300"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-wider text-left">Giới tính học sinh</label>
-                <div className="flex gap-4 text-xs font-semibold pt-1">
-                  <label className="flex items-center gap-1.5 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="gender"
-                      checked={newGender === 'Nam'}
-                      onChange={() => setNewGender('Nam')}
-                      className="text-amber-500 focus:ring-amber-500 w-4 h-4"
-                    />
-                    👦🏻 Nam
-                  </label>
-                  <label className="flex items-center gap-1.5 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="gender"
-                      checked={newGender === 'Nữ'}
-                      onChange={() => setNewGender('Nữ')}
-                      className="text-amber-500 focus:ring-amber-500 w-4 h-4"
-                    />
-                    👧🏻 Nữ
-                  </label>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-wider text-left">Ghi chú nhanh</label>
-                <input
-                  type="text"
-                  value={newNote}
-                  onChange={(e) => setNewNote(e.target.value)}
-                  placeholder="Ghi chú học tập, thiết bị, chỗ ngồi..."
-                  className="w-full border border-slate-200 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder-slate-350"
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-2.5 rounded-lg transition"
-              >
-                + Lưu Học Sinh
-              </button>
-            </form>
-          </div>
-
-        </div>
-
-        {/* Right Column Student Table */}
-        <div className="lg:col-span-2 border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs space-y-0 text-left">
+      {/* 🌟 100% FULL WIDTH DANH SÁCH HỌC SINH TABLE */}
+      <div className="w-full border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs space-y-0 text-left">
           <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div className="text-left">
               <h3 className="font-black text-xs sm:text-sm text-[#3d2b17] tracking-wider uppercase flex items-center gap-2">
@@ -708,8 +561,6 @@ export default function StudentsTab({
 
         </div>
 
-      </div>
-
       {/* STUDENT ID CARD PREVIEW MODAL */}
       {selectedCardStudent && (
         <div 
@@ -795,6 +646,203 @@ export default function StudentsTab({
         </div>
       )}
 
+      {/* 🌟 CỬA SỔ CHỨC NĂNG THÊM HỌC SINH (ADD STUDENT MODAL WINDOW) */}
+      {isAddStudentModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-[#fffbf0] rounded-3xl border-2 border-[#cbb89d] shadow-2xl max-w-5xl w-full overflow-hidden space-y-4 p-6 animate-scaleUp text-left max-h-[92vh] overflow-y-auto">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-[#cbb89d] pb-3">
+              <h3 className="font-black text-base text-[#3d2b17] flex items-center gap-2">
+                <UserPlus className="w-5 h-5 text-emerald-700" />
+                <span>CHỨC NĂNG THÊM HỌC SINH VÀO LỚP {selectedClass}</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsAddStudentModalOpen(false)}
+                className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              
+              {/* BẢNG 1: THÊM HỌC SINH ĐƠN LẺ */}
+              <div className="border border-[#cbb89d] rounded-2xl bg-white overflow-hidden shadow-xs space-y-0 text-left">
+                <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex justify-between items-center text-left">
+                  <h4 className="font-black text-xs sm:text-sm text-[#3d2b17] tracking-wider uppercase flex items-center gap-2">
+                    <UserPlus className="w-4 h-4 text-amber-700" />
+                    THÊM HỌC SINH ĐƠN LẺ
+                  </h4>
+                </div>
+
+                <div className="p-4 sm:p-5 space-y-4">
+                  <form onSubmit={handleAddStudent} className="space-y-3">
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-wider text-left">Mã Số học sinh (MSHS)</label>
+                      <input
+                        type="text"
+                        value={newCode}
+                        onChange={(e) => setNewCode(e.target.value)}
+                        placeholder="Ví dụ: HS388"
+                        className="w-full border border-slate-200 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder-slate-300 font-mono"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-wider text-left">Họ và Tên lót & Tên</label>
+                      <input
+                        type="text"
+                        value={newName}
+                        onChange={(e) => setNewName(e.target.value)}
+                        placeholder="Nhập họ tên của học sinh..."
+                        className="w-full border border-slate-200 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder-slate-300"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-wider text-left">Giới tính học sinh</label>
+                      <div className="flex gap-4 text-xs font-semibold pt-1">
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="gender"
+                            checked={newGender === 'Nam'}
+                            onChange={() => setNewGender('Nam')}
+                            className="text-amber-500 focus:ring-amber-500 w-4 h-4"
+                          />
+                          👦🏻 Nam
+                        </label>
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="gender"
+                            checked={newGender === 'Nữ'}
+                            onChange={() => setNewGender('Nữ')}
+                            className="text-amber-500 focus:ring-amber-500 w-4 h-4"
+                          />
+                          👧🏻 Nữ
+                        </label>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-wider text-left">Ghi chú nhanh</label>
+                      <input
+                        type="text"
+                        value={newNote}
+                        onChange={(e) => setNewNote(e.target.value)}
+                        placeholder="Ghi chú học tập, thiết bị, chỗ ngồi..."
+                        className="w-full border border-slate-200 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder-slate-350"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-2.5 rounded-lg transition cursor-pointer mt-2"
+                    >
+                      + Lưu Học Sinh
+                    </button>
+                  </form>
+                </div>
+              </div>
+
+              {/* BẢNG 2: CHUẨN HÓA NHẬP HÀNG LOẠT BẰNG EXCEL */}
+              <div className="border border-[#cbb89d] rounded-2xl bg-white overflow-hidden shadow-xs space-y-0 text-left">
+                <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex justify-between items-center text-left">
+                  <h4 className="font-black text-xs sm:text-sm text-[#3d2b17] tracking-wider uppercase flex items-center gap-2">
+                    <FileSpreadsheet className="w-4 h-4 text-emerald-700" />
+                    CHUẨN HÓA NHẬP HÀNG LOẠT BẰNG EXCEL
+                  </h4>
+                </div>
+
+                <div className="p-4 sm:p-5 space-y-3">
+                  <p className="text-[11px] text-slate-500 leading-relaxed text-left">
+                    Thầy cô sao chép đồng thời cột <strong>Họ tên học sinh</strong> và cột <strong>Nữ</strong> (như trong ảnh mẫu) trong file Excel, dán trực tiếp vào khung dưới đây.
+                  </p>
+
+                  <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/60 text-[11px] text-slate-500 font-semibold space-y-1 text-left">
+                    <p className="text-slate-700 font-extrabold flex items-center gap-1 text-[10px]">
+                      <span>📋</span> Minh họa sao chép từ Excel:
+                    </p>
+                    <div className="overflow-hidden rounded-md border border-slate-200 bg-white font-mono text-[9px] divide-y">
+                      <div className="grid grid-cols-2 bg-slate-100 font-bold px-2 py-0.5 text-slate-700">
+                        <div>Họ Và Tên</div>
+                        <div className="border-l pl-2">Nữ</div>
+                      </div>
+                      <div className="grid grid-cols-2 px-2 py-0.5">
+                        <div>Bùi Ngọc Quỳnh Anh</div>
+                        <div className="border-l pl-2 text-rose-600 font-bold">x</div>
+                      </div>
+                      <div className="grid grid-cols-2 px-2 py-0.5">
+                        <div>Nguyễn Hoàng Ân</div>
+                        <div className="border-l pl-2 text-slate-400 font-normal"><i>(Để trống)</i></div>
+                      </div>
+                    </div>
+                    <p className="text-[9px] text-slate-400 select-none">
+                      * Cột 2 điền chữ <strong className="text-rose-600 font-bold">"x"</strong> cho học sinh Nữ, để trống nếu là Nam.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    <textarea
+                      value={excelText}
+                      onChange={(e) => setExcelText(e.target.value)}
+                      placeholder="Dán dữ liệu từ file Excel tại đây...&#10;Ví dụ:&#10;Bùi Ngọc Quỳnh Anh&#9;x&#10;Phan Thị Ngọc Anh&#9;x&#10;Nguyễn Hoàng Ân&#10;Lê Đức Duy"
+                      className="w-full text-xs border border-slate-200 rounded-xl p-3 h-32 focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono text-left"
+                    ></textarea>
+
+                    <button
+                      type="button"
+                      onClick={handleDownloadTemplate}
+                      className="flex items-center justify-center gap-1.5 text-[11px] text-emerald-700 hover:text-emerald-800 font-black bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200 py-2 rounded-xl w-full transition cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      Tải file Excel mẫu (.csv)
+                    </button>
+                    
+                    <div className="flex justify-between items-center bg-slate-50 p-2 rounded-xl border border-dashed text-left">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setExcelText("Bùi Ngọc Quỳnh Anh\tx\nPhan Thị Ngọc Anh\tx\nLương Ngọc Kim Ánh\tx\nNguyễn Hoàng Ân\t\nNguyễn Hữu Danh\t\nLê Đức Duy\t\nLê Quốc Đại\t\nLê Võ Tấn Đạt\t\nLê Ngọc Hân\tx");
+                          showToast("Đã chèn dữ liệu mẫu đúng chuẩn Excel!");
+                        }}
+                        className="text-[10px] text-amber-600 hover:underline font-extrabold"
+                      >
+                        Dùng danh sách mẫu thử
+                      </button>
+                      
+                      <button
+                        onClick={handleImportExcel}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> Nhập vào {selectedClass}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex justify-end pt-2 border-t border-[#cbb89d]">
+              <button
+                type="button"
+                onClick={() => setIsAddStudentModalOpen(false)}
+                className="px-5 py-2 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 cursor-pointer"
+              >
+                Đóng cửa sổ
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }
