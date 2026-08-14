@@ -269,12 +269,12 @@ export default function ClassesTab({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">Giáo viên phụ trách dạy</label>
+                <label className="block text-xs font-bold text-slate-500 mb-1">Giáo viên chủ nhiệm</label>
                 <input
                   type="text"
                   value={classTeacherInput}
                   onChange={(e) => setClassTeacherInput(e.target.value)}
-                  placeholder="Ví dụ: Thầy Thanh Đồng"
+                  placeholder="Ví dụ: Thầy Nguyễn Thanh Đồng..."
                   className="w-full text-xs border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none"
                   required
                 />
@@ -446,7 +446,7 @@ export default function ClassesTab({
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-500 mb-1">Giáo viên</label>
+                      <label className="block text-[10px] font-bold text-slate-500 mb-1">Giáo viên chủ nhiệm</label>
                       <input
                         type="text"
                         value={editingClass.teacher}
