@@ -82,8 +82,9 @@ export default function StudentsTab({
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState<10 | 20 | 50>(10);
 
-  // ➕ Thêm học sinh Modal Window State
+  // ➕ Thêm học sinh Modal Window State & Row Highlight State
   const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
+  const [highlightedStudentId, setHighlightedStudentId] = useState<string | null>(null);
 
   // Reset trang khi đổi lớp hoặc tìm kiếm để tránh bị trang trống
   useEffect(() => {
@@ -132,24 +133,35 @@ export default function StudentsTab({
     showToast('Đã cập nhật ghi chú học sinh!');
   };
 
-  // Handle addition
+  // Handle addition with Duplicate Check & Auto-close & Auto-scroll
   const handleAddStudent = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newName.trim() || !newCode.trim()) {
+    const nameClean = newName.trim();
+    const codeClean = newCode.trim().toUpperCase();
+
+    if (!nameClean || !codeClean) {
       showToast('Vui lòng nhập đầy đủ mã học sinh và họ tên!', 'error');
       return;
     }
 
-    const codeClean = newCode.trim().toUpperCase();
-    if (students.some(s => s.code === codeClean)) {
-      showToast(`Mã số học sinh ${codeClean} đã tồn tại trong trường!`, 'error');
+    // 1. ⚠️ Cảnh báo trùng Mã số học sinh (MSHS)
+    const existingCodeStudent = students.find(s => s.code.toUpperCase() === codeClean);
+    if (existingCodeStudent) {
+      showToast(`⚠️ CẢNH BÁO TRÙNG MÃ: MSHS "${codeClean}" đã thuộc về học sinh ${existingCodeStudent.name} (Lớp ${existingCodeStudent.classId})!`, 'error');
+      return;
+    }
+
+    // 2. ⚠️ Cảnh báo trùng Họ và Tên trong cùng lớp
+    const existingNameStudent = classStudents.find(s => s.name.trim().toLowerCase() === nameClean.toLowerCase());
+    if (existingNameStudent) {
+      showToast(`⚠️ CẢNH BÁO TRÙNG HỌ TÊN: Học sinh "${nameClean}" (MSHS: ${existingNameStudent.code}) đã có trong danh sách lớp ${selectedClass}!`, 'error');
       return;
     }
 
     const item: Student = {
       id: `st-${Date.now()}`,
       code: codeClean,
-      name: newName.trim(),
+      name: nameClean,
       gender: newGender,
       classId: selectedClass,
       notes: newNote.trim()
@@ -160,10 +172,32 @@ export default function StudentsTab({
     setNewName('');
     setNewGender('Nam');
     setNewNote('');
-    showToast(`Đã thêm học sinh ${item.name} vào lớp ${selectedClass}`);
+
+    // 🚀 1. Tự động đóng cửa sổ 'Thêm học sinh'
+    setIsAddStudentModalOpen(false);
+
+    // 🎯 2. Tự động tính toán chuyển đến trang chứa học sinh vừa thêm
+    const targetPage = Math.ceil((classStudents.length + 1) / itemsPerPage);
+    setCurrentPage(targetPage);
+
+    // ✨ 3. Hiệu ứng viền phát sáng làm nổi bật học sinh vừa thêm
+    setHighlightedStudentId(item.id);
+    setTimeout(() => {
+      setHighlightedStudentId(null);
+    }, 4000);
+
+    // 📜 4. Cuộn mượt màn hình tới vị trí dòng học sinh vừa thêm
+    setTimeout(() => {
+      const rowEl = document.getElementById(`student-row-${item.id}`);
+      if (rowEl) {
+        rowEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 250);
+
+    showToast(`✅ Đã thêm học sinh ${item.name} vào lớp ${selectedClass}!`);
   };
 
-  // Handle upload paste from Excel
+  // Handle upload paste from Excel with Duplicate Filter & Auto-scroll
   const handleImportExcel = () => {
     if (!excelText.trim()) {
       showToast('Vui lòng dán dữ liệu cột học sinh Copy từ Excel!', 'error');
@@ -173,12 +207,12 @@ export default function StudentsTab({
     const lines = excelText.split('\n');
     let addedCount = 0;
     const newStudentsList: Student[] = [];
+    const duplicateNamesInExcel: string[] = [];
 
     lines.forEach((line, index) => {
       const trimmedLine = line.trim();
       if (!trimmedLine) return; // Skip empty rows
 
-      // Support splitting by tab or comma (for Excel copy or CSV format)
       let parts = trimmedLine.split('\t');
       if (parts.length === 1 && trimmedLine.includes(',')) {
         parts = trimmedLine.split(',');
@@ -186,7 +220,6 @@ export default function StudentsTab({
 
       const rawName = parts[0] ? parts[0].trim() : '';
 
-      // Skip Excel separator directive or table headers if pasted accidentally
       if (
         !rawName || 
         rawName.toLowerCase().startsWith('sep=') ||
@@ -198,23 +231,26 @@ export default function StudentsTab({
         return;
       }
 
-      // Check if user specified gender in the second column (usually under "Nữ" column)
+      // ⚠️ Cảnh báo & lọc bỏ học sinh bị trùng tên trong lớp hoặc trong lô dán
+      const isDuplicateInClass = classStudents.some(s => s.name.trim().toLowerCase() === rawName.toLowerCase());
+      const isDuplicateInBatch = newStudentsList.some(s => s.name.trim().toLowerCase() === rawName.toLowerCase());
+      
+      if (isDuplicateInClass || isDuplicateInBatch) {
+        duplicateNamesInExcel.push(rawName);
+        return; // Bỏ qua không nhập học sinh trùng tên
+      }
+
       let gender: 'Nam' | 'Nữ' = 'Nam';
       if (parts[1] !== undefined) {
         const rawGender = parts[1].trim().toLowerCase();
-        // Since the column header is "Nữ":
-        // - Cells with 'x', 'X', 'nữ', 'nu', '1', '✓', 'female' are 'Nữ'
-        // - Any non-empty string that is NOT 'nam', 'm', or 'male' indicates 'Nữ'
         if (rawGender === 'x' || rawGender === 'nữ' || rawGender === 'nu' || rawGender === '1' || rawGender === 'f' || rawGender === 'female' || rawGender === '✓') {
           gender = 'Nữ';
         } else if (rawGender === 'nam' || rawGender === 'm' || rawGender === 'male') {
           gender = 'Nam';
         } else if (rawGender.length > 0) {
-          // Any mark in "Nữ" column indicates Female
           gender = 'Nữ';
         }
       } else {
-        // Simple Vietnamese gender guesser to look high-tech and natural:
         const lowerName = rawName.toLowerCase();
         if (lowerName.includes('thị') || lowerName.includes('vy') || lowerName.includes('lan') || lowerName.includes('hoa') || lowerName.includes('diệp') || lowerName.includes('trang') || lowerName.includes('nhung')) {
           gender = 'Nữ';
@@ -236,9 +272,40 @@ export default function StudentsTab({
     if (newStudentsList.length > 0) {
       setStudents(prev => [...prev, ...newStudentsList]);
       setExcelText('');
-      showToast(`Tuyệt vời! Đã nạp thành công ${addedCount} học sinh mới trực tiếp vào lớp ${selectedClass}.`);
+
+      // 🚀 1. Tự động đóng cửa sổ 'Thêm học sinh'
+      setIsAddStudentModalOpen(false);
+
+      // 🎯 2. Tự động chuyển tới trang chứa học sinh vừa nhập
+      const targetPage = Math.ceil((classStudents.length + newStudentsList.length) / itemsPerPage);
+      setCurrentPage(targetPage);
+
+      // ✨ 3. Hiệu ứng viền nổi bật cho học sinh đầu tiên trong đợt nạp
+      const firstNewId = newStudentsList[0].id;
+      setHighlightedStudentId(firstNewId);
+      setTimeout(() => {
+        setHighlightedStudentId(null);
+      }, 4000);
+
+      // 📜 4. Cuộn mượt tới học sinh vừa dán
+      setTimeout(() => {
+        const rowEl = document.getElementById(`student-row-${firstNewId}`);
+        if (rowEl) {
+          rowEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 250);
+
+      if (duplicateNamesInExcel.length > 0) {
+        showToast(`Tuyệt vời! Đã nạp ${addedCount} học sinh mới. ⚠️ Đã tự động lọc bỏ ${duplicateNamesInExcel.length} học sinh trùng tên (${duplicateNamesInExcel.slice(0, 2).join(', ')})`, 'success');
+      } else {
+        showToast(`Tuyệt vời! Đã nạp thành công ${addedCount} học sinh mới trực tiếp vào lớp ${selectedClass}.`);
+      }
     } else {
-      showToast('Không bóc tách được dòng học sinh hợp lệ. Vui lòng kiểm tra lại cấu trúc!', 'error');
+      if (duplicateNamesInExcel.length > 0) {
+        showToast(`⚠️ Không thêm học sinh nào: Tất cả ${duplicateNamesInExcel.length} học sinh dán vào đều đã có tên trong lớp ${selectedClass}!`, 'error');
+      } else {
+        showToast('Không bóc tách được dòng học sinh hợp lệ. Vui lòng kiểm tra lại cấu trúc!', 'error');
+      }
     }
   };
 
@@ -365,9 +432,18 @@ export default function StudentsTab({
               <tbody className="divide-y divide-slate-100">
                 {paginatedStudents.map((s, idx) => {
                   const isEditing = editingStudentId === s.id;
+                  const isHighlighted = highlightedStudentId === s.id;
                   const stt = (currentPage - 1) * itemsPerPage + idx + 1;
                   return (
-                    <tr key={s.id} className="hover:bg-slate-50/50 transition">
+                    <tr
+                      id={`student-row-${s.id}`}
+                      key={s.id}
+                      className={`transition-all duration-500 ${
+                        isHighlighted
+                          ? 'bg-amber-100 ring-2 ring-amber-500 font-extrabold shadow-md'
+                          : 'hover:bg-slate-50/50'
+                      }`}
+                    >
                       <td className="py-3.5 px-4 font-semibold text-slate-400">{stt}</td>
                       <td className="py-3.5 px-4">
                         {isEditing ? (
