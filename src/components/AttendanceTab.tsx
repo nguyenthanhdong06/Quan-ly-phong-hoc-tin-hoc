@@ -867,24 +867,37 @@ export default function AttendanceTab({
                     return;
                   }
 
-                  let zaloUrl = 'https://zalo.me/';
+                  // 1. Sao chép nội dung tin nhắn vào Bộ nhớ tạm (Clipboard)
+                  navigator.clipboard.writeText(customMessageText);
+
+                  // 2. Kích hoạt trực tiếp Ứng dụng Zalo PC cài đặt trên Máy tính qua Native OS Protocol (zalo://)
+                  let zaloNativeAppUri = 'zalo://';
                   if (cleanPhone) {
-                    zaloUrl = `https://zalo.me/${cleanPhone}`;
+                    zaloNativeAppUri = `zalo://conversation?phone=${cleanPhone}`;
                   }
 
-                  navigator.clipboard.writeText(customMessageText);
-                  window.open(zaloUrl, '_blank');
+                  // Tạo phần tử liên kết để kích hoạt App Zalo PC không mở tab web phụ
+                  const nativeLink = document.createElement('a');
+                  nativeLink.href = zaloNativeAppUri;
+                  document.body.appendChild(nativeLink);
+                  nativeLink.click();
+                  document.body.removeChild(nativeLink);
+
+                  // Trigger fallback cho các trình duyệt chặn click tự động
+                  setTimeout(() => {
+                    window.location.href = zaloNativeAppUri;
+                  }, 150);
 
                   if (cleanPhone) {
-                    showToast(`Đã sao chép tin nhắn & Kích hoạt Zalo chat trực tiếp với GVCN SĐT ${cleanPhone}!`, 'success');
+                    showToast(`Đã sao chép tin nhắn & Mở ứng dụng Zalo PC chat với SĐT ${cleanPhone}!`, 'success');
                   } else {
-                    showToast('Đã sao chép tin nhắn & Kích hoạt ứng dụng Zalo trên máy!', 'success');
+                    showToast('Đã sao chép tin nhắn & Mở ứng dụng Zalo PC cài đặt trên máy tính!', 'success');
                   }
                 }}
                 className="px-4.5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-black text-xs transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95 border border-sky-500"
-                title="Kích hoạt ứng dụng Zalo & mở cửa sổ chat trực tiếp với số Zalo GVCN"
+                title="Kích hoạt ứng dụng Zalo PC cài sẵn trên máy tính & mở cửa sổ nhắn tin"
               >
-                <span>💬</span> Mở Zalo
+                <span>💬</span> Mở Zalo PC App
               </button>
 
               <a
