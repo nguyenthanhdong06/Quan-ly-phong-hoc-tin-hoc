@@ -32,6 +32,7 @@ export default function ClassesTab({
   const [classGradeIdInput, setClassGradeIdInput] = useState<number | ''>('');
   const [classTeacherInput, setClassTeacherInput] = useState('');
   const [classTeacherPhoneInput, setClassTeacherPhoneInput] = useState('');
+  const [classSubjectTeacherInput, setClassSubjectTeacherInput] = useState('');
   const [editingClass, setEditingClass] = useState<ClassItem | null>(null);
 
   // Cascade delete control modal/state
@@ -133,7 +134,8 @@ export default function ClassesTab({
       name: classNameInput.trim(),
       gradeId: Number(classGradeIdInput),
       teacher: classTeacherInput.trim(),
-      teacherPhone: classTeacherPhoneInput.trim()
+      teacherPhone: classTeacherPhoneInput.trim(),
+      subjectTeacher: classSubjectTeacherInput.trim()
     };
 
     setClasses(prev => [...prev, newC]);
@@ -142,6 +144,7 @@ export default function ClassesTab({
     setClassGradeIdInput('');
     setClassTeacherInput('');
     setClassTeacherPhoneInput('');
+    setClassSubjectTeacherInput('');
     showToast(`Đã thêm lớp ${newC.name} thành công!`);
   };
 
@@ -277,6 +280,17 @@ export default function ClassesTab({
                   placeholder="Ví dụ: Thầy Nguyễn Thanh Đồng..."
                   className="w-full text-xs border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none"
                   required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">Giáo viên bộ môn phụ trách</label>
+                <input
+                  type="text"
+                  value={classSubjectTeacherInput}
+                  onChange={(e) => setClassSubjectTeacherInput(e.target.value)}
+                  placeholder="Ví dụ: Thầy Thanh Đồng (Tin học), Cô Thu Trang (Anh văn)..."
+                  className="w-full text-xs border border-slate-200 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none"
                 />
               </div>
 
@@ -434,7 +448,7 @@ export default function ClassesTab({
               {editingClass && (
                 <form onSubmit={handleUpdateClass} className="p-4 bg-orange-50 rounded-2xl border border-orange-200 space-y-3">
                   <span className="text-xs font-black text-orange-850 block uppercase">ĐANG EDIT LỚP: {editingClass.id}</span>
-                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
                     <div>
                       <label className="block text-[10px] font-bold text-slate-500 mb-1">Tên lớp hiển thị</label>
                       <input
@@ -453,6 +467,16 @@ export default function ClassesTab({
                         onChange={(e) => setEditingClass({ ...editingClass, teacher: e.target.value })}
                         className="w-full text-xs border border-slate-200 rounded-lg p-2 bg-white"
                         required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 mb-1">GV Bộ môn phụ trách</label>
+                      <input
+                        type="text"
+                        value={editingClass.subjectTeacher || ''}
+                        onChange={(e) => setEditingClass({ ...editingClass, subjectTeacher: e.target.value })}
+                        placeholder="Ví dụ: Tin học..."
+                        className="w-full text-xs border border-slate-200 rounded-lg p-2 bg-white"
                       />
                     </div>
                     <div>
@@ -599,6 +623,9 @@ export default function ClassesTab({
                                         <div className="mt-2.5 space-y-1.5 text-xs text-slate-500 font-semibold text-left">
                                           <p className="flex items-center gap-1 text-slate-600">
                                             👤 Chủ nhiệm: <strong className="text-slate-800 font-extrabold">{c.teacher}</strong>
+                                          </p>
+                                          <p className="flex items-center gap-1 text-indigo-700">
+                                            🎓 GV Bộ môn: <strong className="text-indigo-900 font-extrabold">{c.subjectTeacher || 'Chưa phân công'}</strong>
                                           </p>
                                           <p className="flex items-center gap-1 text-sky-700">
                                             📱 SĐT Zalo: <strong className="text-sky-900 font-extrabold">{c.teacherPhone || 'Chưa có'}</strong>

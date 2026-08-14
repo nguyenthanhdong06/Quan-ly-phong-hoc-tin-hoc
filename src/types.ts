@@ -9,6 +9,7 @@ export interface ClassItem {
   gradeId: number;
   teacher: string;
   teacherPhone?: string;
+  subjectTeacher?: string; // Giáo viên bộ môn phụ trách (Ví dụ: Tin học, Anh văn...)
 }
 
 export interface Student {

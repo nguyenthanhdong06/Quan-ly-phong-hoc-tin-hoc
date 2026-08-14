@@ -7,12 +7,12 @@ export const defaultGrades: Grade[] = [
 ];
 
 export const defaultClasses: ClassItem[] = [
-  { id: 'Ba 1', name: 'Ba 1', gradeId: 3, teacher: 'Nguyễn Thanh Đồng', teacherPhone: '0912345678' },
-  { id: '3B', name: 'Lớp 3B', gradeId: 3, teacher: 'Lê Hoài Nam', teacherPhone: '0987654321' },
-  { id: '4A', name: 'Lớp 4A', gradeId: 4, teacher: 'Nguyễn Thanh Đồng', teacherPhone: '0912345678' },
-  { id: '4B', name: 'Lớp 4B', gradeId: 4, teacher: 'Phạm Hồng Hạnh', teacherPhone: '0901234567' },
-  { id: '5A', name: 'Lớp 5A', gradeId: 5, teacher: 'Nguyễn Thanh Đồng', teacherPhone: '0912345678' },
-  { id: '5B', name: 'Lớp 5B', gradeId: 5, teacher: 'Vũ Minh Khôi', teacherPhone: '0934567890' },
+  { id: 'Ba 1', name: 'Ba 1', gradeId: 3, teacher: 'Nguyễn Thanh Đồng', teacherPhone: '0912345678', subjectTeacher: 'Nguyễn Thanh Đồng (Tin học)' },
+  { id: '3B', name: 'Lớp 3B', gradeId: 3, teacher: 'Lê Hoài Nam', teacherPhone: '0987654321', subjectTeacher: 'Nguyễn Thanh Đồng (Tin học)' },
+  { id: '4A', name: 'Lớp 4A', gradeId: 4, teacher: 'Nguyễn Thanh Đồng', teacherPhone: '0912345678', subjectTeacher: 'Nguyễn Thanh Đồng (Tin học)' },
+  { id: '4B', name: 'Lớp 4B', gradeId: 4, teacher: 'Phạm Hồng Hạnh', teacherPhone: '0901234567', subjectTeacher: 'Nguyễn Thanh Đồng (Tin học)' },
+  { id: '5A', name: 'Lớp 5A', gradeId: 5, teacher: 'Nguyễn Thanh Đồng', teacherPhone: '0912345678', subjectTeacher: 'Nguyễn Thanh Đồng (Tin học)' },
+  { id: '5B', name: 'Lớp 5B', gradeId: 5, teacher: 'Vũ Minh Khôi', teacherPhone: '0934567890', subjectTeacher: 'Nguyễn Thanh Đồng (Tin học)' },
 ];
 
 export const defaultStudents: Student[] = [
