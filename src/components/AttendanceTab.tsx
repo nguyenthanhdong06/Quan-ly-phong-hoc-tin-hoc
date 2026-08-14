@@ -42,18 +42,35 @@ export default function AttendanceTab({
   const [reportTemplate, setReportTemplate] = React.useState<'zalo' | 'sms' | 'full'>('zalo');
   const [customMessageText, setCustomMessageText] = React.useState('');
 
-  // 📱 Homeroom Teacher (GVCN) Zalo Phone state (synced with Class Management & persisted per class)
+  // 📱 Homeroom Teacher (GVCN) Info state (synced with Class Management & persisted per class)
   const currentClassObj = classes?.find(c => c.id === selectedClass);
+
+  const [gvcnName, setGvcnName] = React.useState<string>(() => {
+    return currentClassObj?.teacher || localStorage.getItem(`gvcn_name_${selectedClass}`) || '';
+  });
 
   const [gvcnPhone, setGvcnPhone] = React.useState<string>(() => {
     return currentClassObj?.teacherPhone || localStorage.getItem(`zalo_phone_${selectedClass}`) || '';
   });
 
+  // 💻 / 📱 Device Auto-Detection for Zalo PC vs Zalo Mobile
+  const isMobileInitial = typeof window !== 'undefined' && (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768);
+  const [zaloTargetMode, setZaloTargetMode] = React.useState<'pc' | 'mobile'>(isMobileInitial ? 'mobile' : 'pc');
+
   React.useEffect(() => {
     const classObj = classes?.find(c => c.id === selectedClass);
-    const phone = classObj?.teacherPhone || localStorage.getItem(`zalo_phone_${selectedClass}`) || '';
-    setGvcnPhone(phone);
+    setGvcnName(classObj?.teacher || localStorage.getItem(`gvcn_name_${selectedClass}`) || '');
+    setGvcnPhone(classObj?.teacherPhone || localStorage.getItem(`zalo_phone_${selectedClass}`) || '');
   }, [selectedClass, classes]);
+
+  const handleNameChange = (val: string) => {
+    setGvcnName(val);
+    localStorage.setItem(`gvcn_name_${selectedClass}`, val);
+
+    if (setClasses) {
+      setClasses(prev => prev.map(c => c.id === selectedClass ? { ...c, teacher: val } : c));
+    }
+  };
 
   const handlePhoneChange = (val: string) => {
     setGvcnPhone(val);
@@ -779,19 +796,65 @@ export default function AttendanceTab({
               </button>
             </div>
 
-            {/* GVCN Zalo Phone Number Configuration Box with 10-Digit Validation */}
-            <div className="bg-sky-50/90 p-3.5 rounded-2xl border border-sky-200 text-left space-y-2">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                <label className="text-xs font-black text-sky-950 flex items-center gap-1.5 whitespace-nowrap">
-                  <span>📱</span> SĐT Zalo GVCN Lớp {selectedClass}:
-                </label>
-                <input
-                  type="tel"
-                  value={gvcnPhone}
-                  onChange={(e) => handlePhoneChange(e.target.value)}
-                  placeholder="Nhập SĐT Zalo (Ví dụ: 0912345678)..."
-                  className="w-full sm:w-64 text-xs font-bold px-3 py-1.5 rounded-xl border border-sky-300 bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-800"
-                />
+            {/* GVCN Info Configuration Box: Name & Phone with 10-Digit Validation */}
+            <div className="bg-sky-50/90 p-3.5 rounded-2xl border border-sky-200 text-left space-y-3">
+              
+              {/* Device Auto-Detect Switcher Strip */}
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sky-200/80 pb-2.5">
+                <span className="text-xs font-black text-sky-950 flex items-center gap-1.5">
+                  ⚙️ CẤU HÌNH BÁO CÁO ZALO LỚP <span className="text-sky-700 bg-white px-2 py-0.5 rounded-lg border border-sky-300">{selectedClass}</span>:
+                </span>
+
+                <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-sky-300 shadow-3xs">
+                  <span className="text-[10px] font-bold text-slate-500 px-1">Kích hoạt:</span>
+                  <button
+                    type="button"
+                    onClick={() => setZaloTargetMode('pc')}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-black transition cursor-pointer flex items-center gap-1 ${
+                      zaloTargetMode === 'pc' ? 'bg-sky-600 text-white shadow-2xs' : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    💻 Zalo PC (Máy tính)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setZaloTargetMode('mobile')}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-black transition cursor-pointer flex items-center gap-1 ${
+                      zaloTargetMode === 'mobile' ? 'bg-sky-600 text-white shadow-2xs' : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    📱 Zalo Mobile (Điện thoại)
+                  </button>
+                </div>
+              </div>
+
+              {/* GVCN Name & Phone input grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-black text-sky-950 mb-1 flex items-center gap-1.5">
+                    <span>👤</span> Giáo viên chủ nhiệm:
+                  </label>
+                  <input
+                    type="text"
+                    value={gvcnName}
+                    onChange={(e) => handleNameChange(e.target.value)}
+                    placeholder="Nhập tên GVCN (Ví dụ: Thầy Thanh Đồng)..."
+                    className="w-full text-xs font-bold px-3 py-1.5 rounded-xl border border-sky-300 bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-800"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-black text-sky-950 mb-1 flex items-center gap-1.5">
+                    <span>📱</span> SĐT Zalo GVCN:
+                  </label>
+                  <input
+                    type="tel"
+                    value={gvcnPhone}
+                    onChange={(e) => handlePhoneChange(e.target.value)}
+                    placeholder="Nhập SĐT Zalo (Ví dụ: 0912345678)..."
+                    className="w-full text-xs font-bold px-3 py-1.5 rounded-xl border border-sky-300 bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-800"
+                  />
+                </div>
               </div>
 
               {/* Realtime 10-digit Phone Validation Helper */}
@@ -800,7 +863,7 @@ export default function AttendanceTab({
                 if (!clean) {
                   return (
                     <p className="text-[11px] text-slate-500 font-semibold flex items-center gap-1">
-                      💡 <em>Nhập đúng 10 chữ số (Ví dụ: 0912345678) để tự động đồng bộ & kích hoạt Zalo chat với GVCN.</em>
+                      💡 <em>Nhập đúng 10 chữ số (Ví dụ: 0912345678) để tự động đồng bộ & kích hoạt Zalo chat với GVCN {gvcnName ? `(${gvcnName})` : ''}.</em>
                     </p>
                   );
                 }
@@ -820,7 +883,7 @@ export default function AttendanceTab({
                 }
                 return (
                   <p className="text-[11px] text-emerald-700 font-extrabold flex items-center gap-1 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
-                    <span>✅</span> SĐT hợp lệ (Đủ 10 chữ số)! Đã tự động đồng bộ sang Quản Lý Lớp Học.
+                    <span>✅</span> SĐT hợp lệ (Đủ 10 chữ số)! Đã tự động đồng bộ GVCN: <strong>{gvcnName || 'Chưa đặt tên'}</strong> sang Quản Lý Lớp Học.
                   </p>
                 );
               })()}
@@ -870,34 +933,39 @@ export default function AttendanceTab({
                   // 1. Sao chép nội dung tin nhắn vào Bộ nhớ tạm (Clipboard)
                   navigator.clipboard.writeText(customMessageText);
 
-                  // 2. Kích hoạt trực tiếp Ứng dụng Zalo PC cài đặt trên Máy tính qua Native OS Protocol (zalo://)
-                  let zaloNativeAppUri = 'zalo://';
-                  if (cleanPhone) {
-                    zaloNativeAppUri = `zalo://conversation?phone=${cleanPhone}`;
-                  }
+                  if (zaloTargetMode === 'pc') {
+                    // Kích hoạt Zalo PC App via zalo://
+                    let zaloNativeAppUri = 'zalo://';
+                    if (cleanPhone) {
+                      zaloNativeAppUri = `zalo://conversation?phone=${cleanPhone}`;
+                    }
 
-                  // Tạo phần tử liên kết để kích hoạt App Zalo PC không mở tab web phụ
-                  const nativeLink = document.createElement('a');
-                  nativeLink.href = zaloNativeAppUri;
-                  document.body.appendChild(nativeLink);
-                  nativeLink.click();
-                  document.body.removeChild(nativeLink);
+                    const nativeLink = document.createElement('a');
+                    nativeLink.href = zaloNativeAppUri;
+                    document.body.appendChild(nativeLink);
+                    nativeLink.click();
+                    document.body.removeChild(nativeLink);
 
-                  // Trigger fallback cho các trình duyệt chặn click tự động
-                  setTimeout(() => {
-                    window.location.href = zaloNativeAppUri;
-                  }, 150);
+                    setTimeout(() => {
+                      window.location.href = zaloNativeAppUri;
+                    }, 150);
 
-                  if (cleanPhone) {
-                    showToast(`Đã sao chép tin nhắn & Mở ứng dụng Zalo PC chat với SĐT ${cleanPhone}!`, 'success');
+                    showToast(`Đã sao chép tin nhắn & Mở Zalo PC App ${cleanPhone ? `chat với SĐT ${cleanPhone}` : ''}!`, 'success');
                   } else {
-                    showToast('Đã sao chép tin nhắn & Mở ứng dụng Zalo PC cài đặt trên máy tính!', 'success');
+                    // Kích hoạt Zalo Mobile App via https://zalo.me/
+                    let mobileUri = 'https://zalo.me/';
+                    if (cleanPhone) {
+                      mobileUri = `https://zalo.me/${cleanPhone}`;
+                    }
+
+                    window.open(mobileUri, '_blank');
+                    showToast(`Đã sao chép tin nhắn & Mở Zalo Mobile App ${cleanPhone ? `với SĐT ${cleanPhone}` : ''}!`, 'success');
                   }
                 }}
                 className="px-4.5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-black text-xs transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95 border border-sky-500"
-                title="Kích hoạt ứng dụng Zalo PC cài sẵn trên máy tính & mở cửa sổ nhắn tin"
+                title={zaloTargetMode === 'pc' ? 'Kích hoạt ứng dụng Zalo PC trên máy tính' : 'Mở ứng dụng Zalo Mobile trên điện thoại'}
               >
-                <span>💬</span> Mở Zalo PC App
+                <span>💬</span> {zaloTargetMode === 'pc' ? 'Mở Zalo PC App' : 'Mở App Zalo Mobile'}
               </button>
 
               <a
