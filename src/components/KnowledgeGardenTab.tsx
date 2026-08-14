@@ -39,8 +39,8 @@ interface KnowledgeGardenTabProps {
   showToast: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
 }
 
-import { extractGoogleDriveFileId, convertGoogleDriveUrl } from '../utils/googleDriveImageHelper';
-export { extractGoogleDriveFileId, convertGoogleDriveUrl };
+import { extractGoogleDriveFileId, convertGoogleDriveUrl, getGoogleDriveFallbackUrls } from '../utils/googleDriveImageHelper';
+export { extractGoogleDriveFileId, convertGoogleDriveUrl, getGoogleDriveFallbackUrls };
 
 // 7 Cấp Độ Tăng Trưởng - Cây Hoa Đào (Hỗ trợ WebP nén siêu nhẹ)
 export const GARDEN_STAGES = [
@@ -196,11 +196,38 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     if (customSet && customSet.levels && customSet.levels[level as keyof typeof customSet.levels]) {
       const customImg = customSet.levels[level as keyof typeof customSet.levels];
       if (customImg && customImg.trim()) {
-        return { url: convertGoogleDriveUrl(customImg), fallback: GARDEN_STAGES[level - 1].fallbackUrl };
+        return { url: convertGoogleDriveUrl(customImg, 800), fallback: GARDEN_STAGES[level - 1].fallbackUrl };
       }
     }
     const defaultStage = GARDEN_STAGES[level - 1] || GARDEN_STAGES[0];
     return { url: defaultStage.imgUrl, fallback: defaultStage.fallbackUrl };
+  };
+
+  // ⚡ Universal Google Drive Image Error Fallback Handler (Đồng bộ 100% từ Kho Avatar)
+  const handleGardenDriveImageError = (
+    e: React.SyntheticEvent<HTMLImageElement, Event>,
+    rawUrl?: string,
+    fallbackLocalUrl?: string
+  ) => {
+    const target = e.currentTarget as HTMLImageElement;
+    const sourceUrl = rawUrl || target.src;
+    const fileId = extractGoogleDriveFileId(sourceUrl);
+
+    if (fileId) {
+      const fallbackChain = getGoogleDriveFallbackUrls(fileId, 800);
+      const currentStepIndex = Number(target.dataset.fallbackStep || '0');
+
+      if (currentStepIndex < fallbackChain.length) {
+        target.dataset.fallbackStep = String(currentStepIndex + 1);
+        target.src = fallbackChain[currentStepIndex];
+        return;
+      }
+    }
+
+    if (fallbackLocalUrl && !target.dataset.triedFinalLocalFallback) {
+      target.dataset.triedFinalLocalFallback = 'true';
+      target.src = fallbackLocalUrl;
+    }
   };
   const [waterModalStudent, setWaterModalStudent] = useState<Student | null>(null);
   const [selectedWaterAmount, setSelectedWaterAmount] = useState<number>(3);
@@ -784,28 +811,11 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                       <img 
                         src={processedUrl} 
                         alt={`Preview ${st.level}`} 
+                        referrerPolicy="no-referrer"
+                        loading="lazy"
+                        decoding="async"
                         className="w-12 h-12 object-contain rounded-lg border border-slate-200 bg-white p-1 shadow-2xs"
-                        onError={(e) => {
-                          const target = e.currentTarget as HTMLImageElement;
-                          if (driveFileId) {
-                            if (!target.dataset.triedUserContent) {
-                              target.dataset.triedUserContent = 'true';
-                              target.src = `https://drive.usercontent.google.com/download?id=${driveFileId}&export=view`;
-                              return;
-                            }
-                            if (!target.dataset.triedRawLh3) {
-                              target.dataset.triedRawLh3 = 'true';
-                              target.src = `https://lh3.googleusercontent.com/d/${driveFileId}`;
-                              return;
-                            }
-                            if (!target.dataset.triedThumbnail) {
-                              target.dataset.triedThumbnail = 'true';
-                              target.src = `https://drive.google.com/thumbnail?id=${driveFileId}&sz=w1000`;
-                              return;
-                            }
-                          }
-                          target.src = GARDEN_STAGES[st.level - 1].fallbackUrl;
-                        }}
+                        onError={(e) => handleGardenDriveImageError(e, currentUrl, GARDEN_STAGES[st.level - 1].fallbackUrl)}
                       />
                     ) : (
                       <span className="text-2xl">{st.icon}</span>
@@ -940,7 +950,15 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
               {GARDEN_STAGES.map(st => (
                 <div key={st.level} className="bg-slate-50 rounded-2xl p-3 text-center border border-slate-200 space-y-1.5">
                   <span className="text-xs font-black text-slate-400 block">Lvl {st.level}</span>
-                  <img src={st.imgUrl} alt={st.name} className="h-14 w-auto object-contain mx-auto my-1 filter drop-shadow-2xs" />
+                  <img 
+                    src={st.imgUrl} 
+                    alt={st.name} 
+                    referrerPolicy="no-referrer"
+                    loading="lazy"
+                    decoding="async"
+                    className="h-14 w-auto object-contain mx-auto my-1 filter drop-shadow-2xs" 
+                    onError={(e) => handleGardenDriveImageError(e, st.imgUrl, st.fallbackUrl)}
+                  />
                   <span className="text-[10px] font-bold text-slate-500 block truncate">{st.name}</span>
                 </div>
               ))}
@@ -986,28 +1004,11 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                         <img 
                           src={processedUrl} 
                           alt={`Lvl ${lvl}`} 
+                          referrerPolicy="no-referrer"
+                          loading="lazy"
+                          decoding="async"
                           className="h-14 w-auto object-contain mx-auto my-1 filter drop-shadow-2xs" 
-                          onError={(e) => {
-                            const target = e.currentTarget as HTMLImageElement;
-                            if (driveFileId) {
-                              if (!target.dataset.triedUserContent) {
-                                target.dataset.triedUserContent = 'true';
-                                target.src = `https://drive.usercontent.google.com/download?id=${driveFileId}&export=view`;
-                                return;
-                              }
-                              if (!target.dataset.triedRawLh3) {
-                                target.dataset.triedRawLh3 = 'true';
-                                target.src = `https://lh3.googleusercontent.com/d/${driveFileId}`;
-                                return;
-                              }
-                              if (!target.dataset.triedThumbnail) {
-                                target.dataset.triedThumbnail = 'true';
-                                target.src = `https://drive.google.com/thumbnail?id=${driveFileId}&sz=w1000`;
-                                return;
-                              }
-                            }
-                            target.src = stageDefault.fallbackUrl;
-                          }}
+                          onError={(e) => handleGardenDriveImageError(e, img, stageDefault.fallbackUrl)}
                         />
                       ) : (
                         <span className="text-3xl block my-2">{stageDefault.icon}</span>
@@ -1182,31 +1183,10 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                       <img 
                         src={getStageImageUrl(g.seed, currentStage.level).url} 
                         alt={currentStage.name} 
-                        onError={(e) => {
-                          const target = e.currentTarget as HTMLImageElement;
-                          const fileId = extractGoogleDriveFileId(target.src) || extractGoogleDriveFileId(g.seed);
-                          if (fileId) {
-                            if (!target.dataset.triedUserContent) {
-                              target.dataset.triedUserContent = 'true';
-                              target.src = `https://drive.usercontent.google.com/download?id=${fileId}&export=view`;
-                              return;
-                            }
-                            if (!target.dataset.triedRawLh3) {
-                              target.dataset.triedRawLh3 = 'true';
-                              target.src = `https://lh3.googleusercontent.com/d/${fileId}`;
-                              return;
-                            }
-                            if (!target.dataset.triedThumbnail) {
-                              target.dataset.triedThumbnail = 'true';
-                              target.src = `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
-                              return;
-                            }
-                          }
-                          if (!target.dataset.triedFallback) {
-                            target.dataset.triedFallback = 'true';
-                            target.src = getStageImageUrl(g.seed, currentStage.level).fallback;
-                          }
-                        }}
+                        referrerPolicy="no-referrer"
+                        loading="lazy"
+                        decoding="async"
+                        onError={(e) => handleGardenDriveImageError(e, g.seed, getStageImageUrl(g.seed, currentStage.level).fallback)}
                         className="h-32 w-auto object-contain mx-auto my-2 group-hover:scale-105 transition-transform filter drop-shadow-xs" 
                       />
                       <div className="font-black text-xs text-slate-900 truncate">{student.name}</div>
@@ -1315,31 +1295,10 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                 <img
                   src={getStageImageUrl(activeGarden.seed, activeStageInfo.currentStage.level).url}
                   alt={activeStageInfo.currentStage.name}
-                  onError={(e) => {
-                    const target = e.currentTarget as HTMLImageElement;
-                    const fileId = extractGoogleDriveFileId(target.src) || extractGoogleDriveFileId(activeGarden.seed);
-                    if (fileId) {
-                      if (!target.dataset.triedUserContent) {
-                        target.dataset.triedUserContent = 'true';
-                        target.src = `https://drive.usercontent.google.com/download?id=${fileId}&export=view`;
-                        return;
-                      }
-                      if (!target.dataset.triedRawLh3) {
-                        target.dataset.triedRawLh3 = 'true';
-                        target.src = `https://lh3.googleusercontent.com/d/${fileId}`;
-                        return;
-                      }
-                      if (!target.dataset.triedThumbnail) {
-                        target.dataset.triedThumbnail = 'true';
-                        target.src = `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
-                        return;
-                      }
-                    }
-                    if (!target.dataset.triedFallback) {
-                      target.dataset.triedFallback = 'true';
-                      target.src = getStageImageUrl(activeGarden.seed, activeStageInfo.currentStage.level).fallback;
-                    }
-                  }}
+                  referrerPolicy="no-referrer"
+                  loading="lazy"
+                  decoding="async"
+                  onError={(e) => handleGardenDriveImageError(e, activeGarden.seed, getStageImageUrl(activeGarden.seed, activeStageInfo.currentStage.level).fallback)}
                   className="h-60 sm:h-72 object-contain filter drop-shadow-md mx-auto transition-transform duration-300 hover:scale-105 active:scale-95"
                 />
 
