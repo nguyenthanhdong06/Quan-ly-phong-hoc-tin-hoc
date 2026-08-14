@@ -441,11 +441,7 @@ export default function AttendanceTab({
           2. CHẾ ĐỘ 2: SỔ ĐIỂM DANH CHÍNH (SƠ ĐỒ & DANH SÁCH LỚP)
           ==================================================================== */}
       {subView === 'attendance' && (
-        <>
-          {/* Main Table for attendance records on selected date */}
-
-      {/* Main Table for attendance records on selected date */}
-      <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs space-y-0 text-left">
+        <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs space-y-0 text-left">
         
         {/* Search student controls & Header Strip */}
         <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
@@ -712,9 +708,10 @@ export default function AttendanceTab({
           </div>
         )}
       </div>
+      )}
 
       {/* ====================================================================
-          2. CHẾ ĐỘ 2: BÁO CÁO ZALO/SMS CHO GVCN (INLINE VIEW 100%)
+          3. CHẾ ĐỘ 3: BÁO CÁO ZALO/SMS CHO GVCN (INLINE VIEW 100%)
           ==================================================================== */}
       {subView === 'zalo' && (
         <div className="space-y-6 animate-fadeIn w-full">
@@ -959,9 +956,6 @@ export default function AttendanceTab({
             </div>
           </div>
         </div>
-      )}
-          {/* Close subView === 'attendance' fragment */}
-        </>
       )}
     </div>
   );
