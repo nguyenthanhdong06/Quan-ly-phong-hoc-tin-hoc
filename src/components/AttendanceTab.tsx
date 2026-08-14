@@ -480,14 +480,14 @@ export default function AttendanceTab({
                   const isJustUpdated = justUpdatedId === s.id;
 
                   // Dynamic row styling based on status
-                  let rowBg = 'bg-white hover:bg-slate-50/60';
+                  let rowBg = 'bg-white hover:bg-emerald-50/20';
                   let borderLeftAccent = 'border-l-4 border-l-emerald-500';
 
                   if (currentStatus === 'excused') {
-                    rowBg = 'bg-amber-50/40 hover:bg-amber-50/80';
+                    rowBg = 'bg-amber-50/70 hover:bg-amber-100/60';
                     borderLeftAccent = 'border-l-4 border-l-amber-500';
                   } else if (currentStatus === 'unexcused') {
-                    rowBg = 'bg-rose-50/40 hover:bg-rose-50/80';
+                    rowBg = 'bg-rose-50/70 hover:bg-rose-100/60';
                     borderLeftAccent = 'border-l-4 border-l-rose-500';
                   }
 
@@ -511,18 +511,39 @@ export default function AttendanceTab({
                       <td className="py-3.5 px-4 font-bold text-slate-400">{displayIndex}</td>
                       <td className="py-3.5 px-4 font-mono font-bold text-slate-500">{s.code}</td>
                       <td className="py-3.5 px-4 text-left">
-                        <div className="flex items-center gap-2">
-                          <strong className="font-black text-slate-900 text-sm">{s.name}</strong>
-                          {isJustUpdated && (
-                            <motion.span 
-                              initial={{ opacity: 0, scale: 0.5 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              exit={{ opacity: 0 }}
-                              className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-400 text-slate-900 shadow-xs flex items-center gap-1"
-                            >
-                              ✓ Đã cập nhật
-                            </motion.span>
-                          )}
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            <strong className="font-black text-slate-900 text-sm">{s.name}</strong>
+                            {isJustUpdated && (
+                              <motion.span 
+                                initial={{ opacity: 0, scale: 0.5 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-400 text-slate-900 shadow-xs flex items-center gap-1"
+                              >
+                                ✓ Đã cập nhật
+                              </motion.span>
+                            )}
+                          </div>
+
+                          {/* 🌟 Direct Row Status Badge for instant readability */}
+                          <div>
+                            {currentStatus === 'present' && (
+                              <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-900 border border-emerald-300/80 inline-flex items-center gap-1 shadow-2xs">
+                                ✓ Đi học
+                              </span>
+                            )}
+                            {currentStatus === 'excused' && (
+                              <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-200 text-amber-950 border border-amber-400 inline-flex items-center gap-1 shadow-2xs">
+                                🟡 Vắng có phép (P)
+                              </span>
+                            )}
+                            {currentStatus === 'unexcused' && (
+                              <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-rose-200 text-rose-950 border border-rose-400 inline-flex items-center gap-1 shadow-2xs animate-pulse">
+                                🔴 VẮNG KHÔNG PHÉP (KP)
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td className="py-3.5 px-4">
@@ -531,19 +552,19 @@ export default function AttendanceTab({
                         </span>
                       </td>
                       <td className="py-3.5 px-4 text-center">
-                        <div className="inline-flex rounded-xl bg-slate-100/90 p-1 w-full border border-slate-300/80 shadow-inner gap-1.5 select-none">
+                        <div className="inline-flex rounded-xl bg-slate-200/80 p-1 w-full border border-slate-300/80 shadow-inner gap-1.5 select-none">
                           
                           {/* 1. NÚT ĐI HỌC (PRESENT) */}
                           <button
                             type="button"
                             onClick={() => handleSetState(s.id, 'present')}
-                            className={`flex-1 text-center py-2 px-2.5 rounded-lg text-xs font-black tracking-wide transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 ${
+                            className={`flex-1 text-center py-2 px-2.5 rounded-lg text-xs tracking-wide transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
                               currentStatus === 'present' 
-                                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30 ring-2 ring-emerald-400 border border-emerald-500 scale-[1.02]' 
-                                : 'bg-white text-emerald-800 hover:bg-emerald-50 border border-emerald-200/80 hover:border-emerald-400 font-extrabold'
+                                ? 'bg-emerald-600 text-white font-black shadow-md shadow-emerald-600/30 ring-2 ring-emerald-400 border border-emerald-500 scale-[1.03]' 
+                                : 'bg-slate-100/90 text-slate-500 hover:text-slate-900 hover:bg-white border border-slate-200 font-bold'
                             }`}
                           >
-                            <Check className={`w-3.5 h-3.5 stroke-[3] ${currentStatus === 'present' ? 'text-white' : 'text-emerald-600'}`} />
+                            <Check className={`w-3.5 h-3.5 stroke-[3] ${currentStatus === 'present' ? 'text-white' : 'text-slate-400'}`} />
                             <span>Đi Học</span>
                           </button>
 
@@ -551,13 +572,13 @@ export default function AttendanceTab({
                           <button
                             type="button"
                             onClick={() => handleSetState(s.id, 'excused')}
-                            className={`flex-1 text-center py-2 px-2.5 rounded-lg text-xs font-black tracking-wide transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 ${
+                            className={`flex-1 text-center py-2 px-2.5 rounded-lg text-xs tracking-wide transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
                               currentStatus === 'excused' 
-                                ? 'bg-amber-500 text-white shadow-md shadow-amber-500/30 ring-2 ring-amber-300 border border-amber-400 scale-[1.02]' 
-                                : 'bg-white text-amber-800 hover:bg-amber-50 border border-amber-200/80 hover:border-amber-400 font-extrabold'
+                                ? 'bg-amber-500 text-white font-black shadow-md shadow-amber-500/30 ring-2 ring-amber-300 border border-amber-400 scale-[1.03]' 
+                                : 'bg-slate-100/90 text-slate-500 hover:text-slate-900 hover:bg-white border border-slate-200 font-bold'
                             }`}
                           >
-                            <Calendar className={`w-3.5 h-3.5 stroke-[2.5] ${currentStatus === 'excused' ? 'text-white' : 'text-amber-600'}`} />
+                            <Calendar className={`w-3.5 h-3.5 stroke-[2.5] ${currentStatus === 'excused' ? 'text-white' : 'text-slate-400'}`} />
                             <span>Có Phép (P)</span>
                           </button>
 
@@ -565,13 +586,13 @@ export default function AttendanceTab({
                           <button
                             type="button"
                             onClick={() => handleSetState(s.id, 'unexcused')}
-                            className={`flex-1 text-center py-2 px-2.5 rounded-lg text-xs font-black tracking-wide transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 ${
+                            className={`flex-1 text-center py-2 px-2.5 rounded-lg text-xs tracking-wide transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
                               currentStatus === 'unexcused' 
-                                ? 'bg-gradient-to-r from-rose-600 to-red-600 text-white shadow-md shadow-rose-600/30 ring-2 ring-rose-400 border border-rose-500 animate-pulse scale-[1.02]' 
-                                : 'bg-white text-rose-800 hover:bg-rose-50 border border-rose-200/80 hover:border-rose-400 font-extrabold'
+                                ? 'bg-gradient-to-r from-rose-600 to-red-600 text-white font-black shadow-md shadow-rose-600/30 ring-2 ring-rose-400 border border-rose-500 animate-pulse scale-[1.03]' 
+                                : 'bg-slate-100/90 text-slate-500 hover:text-slate-900 hover:bg-white border border-slate-200 font-bold'
                             }`}
                           >
-                            <X className={`w-3.5 h-3.5 stroke-[3] ${currentStatus === 'unexcused' ? 'text-white' : 'text-rose-600'}`} />
+                            <X className={`w-3.5 h-3.5 stroke-[3] ${currentStatus === 'unexcused' ? 'text-white' : 'text-slate-400'}`} />
                             <span>Không Phép (KP)</span>
                           </button>
 
