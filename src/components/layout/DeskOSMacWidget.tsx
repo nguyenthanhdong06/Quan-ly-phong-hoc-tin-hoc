@@ -1,6 +1,7 @@
 import React from 'react';
 import { Laptop, ShieldCheck } from 'lucide-react';
 import { Member } from '../../types';
+import PwaInstallButton from '../PwaInstallButton';
 
 interface DeskOSMacWidgetProps {
   currentUser: Member | null;
@@ -57,11 +58,16 @@ export const DeskOSMacWidget: React.FC<DeskOSMacWidgetProps> = ({ currentUser })
         <h2 className="text-sm sm:text-base font-black text-[#42301c] tracking-tight leading-snug">
           Xin chào, {teacherName} 👏
         </h2>
-        <div className="flex items-center gap-1.5 mt-0.5">
+        <div className="flex items-center gap-1.5 mt-0.5 mb-2">
           <span className="bg-amber-100 border border-amber-300 text-amber-800 text-[10px] font-black px-2 py-0.2 rounded-full shadow-2xs">
             {roleName}
           </span>
           <span className="text-[11px] font-bold text-[#806443]">• Trường TH Long Định</span>
+        </div>
+
+        {/* 1-Click PWA Desktop App Installer Button */}
+        <div className="my-1">
+          <PwaInstallButton />
         </div>
 
         <p className="text-[11px] font-bold text-[#967650] mt-1.5 flex items-center gap-1">
