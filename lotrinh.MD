@@ -97,8 +97,10 @@
 - [x] **Xây Dựng Modul Ứng Dụng Mới 'Cài Đặt Ứng Dụng' ([src/components/AppInstallerTab.tsx](file:///d:/LAPTRINH/qu%E1%BA%A3n-l%C3%BD-ph%C3%B2ng-h%E1%BB%8Dc-tin-h%E1%BB%8Dc/src/components/AppInstallerTab.tsx))**:
   - Tạo ứng dụng độc lập trên giao diện DeskOS App Grid với tên gọi **'Cài đặt ứng dụng'**.
   - **Tích hợp PWA Desktop Shortcut 1-Click**: Cho phép tạo và tải về tệp Lối Tắt Màn Hình Windows (.url) hoặc kích hoạt ô cài đặt PWA Native 1-Click mở ứng dụng mượt như phần mềm gốc.
-  - **Cấu hình URL Tên Miền Chính Thức**: Đổi URL chạy thử `http://localhost:3000/` thành đường dẫn URL chính thức: **`https://phongmaythlongdinh.com/`**.
-  - **Tự Động Đề Xuất Bộ Icon Shortcut Phù Hợp**: Tự động gợi ý 4 bộ Icon đẹp mắt chuẩn HD phù hợp nhất với tên ứng dụng (Icon Máy Tính Phòng Lab 🖥️, Icon Trường TH Long Định 🏫, Icon PWA Siêu Tốc ⚡, Icon Laptop Giáo Viên 💻).
+  - [x] **Cấu hình URL Tên Miền Chính Thức**: Đổi URL chạy thử `http://localhost:3000/` thành đường dẫn URL chính thức: **`https://phongmaythlongdinh.com/`**.
+- [x] **Kích Hoạt Tải Lối Tắt Desktop 1-Click Trực Tiếp ([src/utils/shortcutInstaller.ts](file:///d:/LAPTRINH/qu%E1%BA%A3n-l%C3%BD-ph%C3%B2ng-h%E1%BB%8Dc-tin-h%E1%BB%8Dc/src/utils/shortcutInstaller.ts))**:
+  - Tự động kích hoạt tải tệp Lối Tắt Desktop Windows (`PhongMayTHLongDinh.url`) hướng về `https://phongmaythlongdinh.com/` ngay khi người dùng click vào Icon **'Cài đặt ứng dụng'**.
+  - **Loại bỏ hoàn toàn cửa sổ giao diện bên trong** giúp trải nghiệm siêu nhanh 1-Click đúng như yêu cầu của Thầy/Cô.
 
 ---
 

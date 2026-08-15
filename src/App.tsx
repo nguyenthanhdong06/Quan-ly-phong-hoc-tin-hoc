@@ -29,7 +29,7 @@ import AdminTab from './components/AdminTab';
 import TimetableTab from './components/TimetableTab';
 import LabBookingTab from './components/LabBookingTab';
 import OfflineSyncBanner from './components/OfflineSyncBanner';
-import AppInstallerTab from './components/AppInstallerTab';
+import { triggerInstantShortcutDownload } from './utils/shortcutInstaller';
 import { InteractiveGamesTab } from './components/InteractiveGamesTab';
 import { PersonalQuestionsTab } from './components/PersonalQuestionsTab';
 import ComputerReportTab from './components/ComputerReportTab';
@@ -168,6 +168,13 @@ export default function App() {
   const [minimizedTabs, setMinimizedTabs] = useState<string[]>([]);
 
   const handleOpenApp = (tabId: string) => {
+    if (tabId === 'app-installer') {
+      triggerInstantShortcutDownload((msg, type) => {
+        showToast(msg, type === 'error' ? 'error' : 'success');
+      });
+      return;
+    }
+
     if (tabId !== 'dashboard') {
       if (!openTabs.includes(tabId)) {
         setOpenTabs(prev => [...prev, tabId]);
@@ -1443,10 +1450,6 @@ export default function App() {
                 selectedGrade={selectedGrade}
               />
             )}
-
-            {activeTab === 'app-installer' && (
-              <AppInstallerTab showToast={showToast} />
-            )}
           </DeskOSMacWindow>
         )}
 
@@ -1470,7 +1473,7 @@ export default function App() {
       {/* DeskOS Start Menu Popover */}
       <DeskOSSidebar
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleOpenApp}
         currentUser={currentUser}
         onLogout={handleLogout}
         isOpen={isStartMenuOpen}
