@@ -1072,7 +1072,6 @@ export default function LabRoomTab({
                     <Armchair className="w-4 h-4 text-amber-800" />
                     CHỨC NĂNG KÉO THẢ XẾP CHỖ NGỒI HỌC SINH (LỚP {selectedClass.toUpperCase()})
                   </h3>
-                  {renderAutoSaveIndicator()}
                 </div>
                 <p className="text-[11px] font-bold text-slate-600">Kéo thả học sinh từ bảng danh sách chờ hoặc tráo đổi ghế giữa các máy tính</p>
               </div>
@@ -1806,9 +1805,6 @@ export default function LabRoomTab({
             <Sparkles className="w-3.5 h-3.5" />
             <span>Xếp Tự Động</span>
           </button>
-
-          {/* 🟢 Auto-Save Indicator */}
-          {renderAutoSaveIndicator()}
         </div>
 
         {/* Xóa chỗ ngồi */}

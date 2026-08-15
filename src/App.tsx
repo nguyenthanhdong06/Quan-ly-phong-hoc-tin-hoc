@@ -42,6 +42,7 @@ import { supabase, loadAllSupabaseStates, saveSupabaseState, setSupabaseOnline }
 import { safeSetLocalStorage } from './utils/safeStorage';
 import { verifyPassword, sanitizeInput } from './utils/security';
 import { createSessionId, setLocalSession, getLocalSession, clearLocalSession } from './features/auth/multiDeviceSession';
+import { initRamAutoOptimizer } from './utils/ramOptimizer';
 
 // DeskOS Layout Components
 import { DeskOSSidebar } from './components/layout/DeskOSSidebar';
@@ -331,6 +332,14 @@ export default function App() {
       }
     }
     syncFromSupabase();
+  }, []);
+
+  // --- 🧠 AUTOMATIC 30-MINUTE RAM & CACHE OPTIMIZER ---
+  useEffect(() => {
+    const cleanup = initRamAutoOptimizer((msg, type) => {
+      showToast(msg, type === 'info' ? 'success' : type);
+    });
+    return cleanup;
   }, []);
 
   // --- REALTIME TWO-WAY CLOUD SYNC BETWEEN LOCALHOST AND VERCEL ---

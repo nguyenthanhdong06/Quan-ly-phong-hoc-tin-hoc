@@ -85,6 +85,14 @@
 
 ---
 
+### 🧠 GIAI ĐOẠN 7: TỰ ĐỘNG TỐI ƯU HÓA BỘ NHỚ RAM 30 PHÚT & TINH CHỈNH GIAO DIỆN PHÒNG LAB (CẬP NHẬT 15/08/2026)
+- [x] **Tự Động Tối Ưu Hóa Bộ Nhớ RAM Định Kỳ 30 Phút ([src/utils/ramOptimizer.ts](file:///d:/LAPTRINH/qu%E1%BA%A3n-l%C3%BD-ph%C3%B2ng-h%E1%BB%8Dc-tin-h%E1%BB%8Dc/src/utils/ramOptimizer.ts))**:
+  - Tự động quét dọn bộ nhớ đệm (Cache) rác trình duyệt, giải phóng các đối tượng Blob URL không còn sử dụng, kích hoạt V8 Garbage Collector và xóa các file tạm ngầm sau mỗi 30 phút sử dụng liên tục.
+  - Đảm bảo ứng dụng chạy cả ngày không bị đầy bộ nhớ RAM hay chậm lag.
+- [x] **Gỡ Bỏ Huy Hiệu Auto-Save Đã Đánh Dấu ([src/components/LabRoomTab.tsx](file:///d:/LAPTRINH/qu%E1%BA%A3n-l%C3%BD-ph%C3%B2ng-h%E1%BB%8Dc-tin-h%E1%BB%8Dc/src/components/LabRoomTab.tsx))**: Loại bỏ hoàn toàn nút huy hiệu `🟢 Đã đồng bộ lên đám mây (HH:mm:ss)` trên thanh công cụ Phòng Lab theo đúng khoanh vùng trong ảnh của Thầy/Cô.
+
+---
+
 ## 🔍 II. BÁO CÁO RÀ SOÁT CHUYÊN SÂU: CHỨC NĂNG 'PHÒNG LAB' & 'ĐIỂM DANH' (FE - BE - DB AUDIT)
 
 ### 1. 🖥️ BÁO CÁO RÀ SOÁT ỨNG DỤNG 'PHÒNG LAB' (`LabRoomTab.tsx`):
