@@ -93,14 +93,6 @@
 
 ---
 
-### 💻 GIAI ĐOẠN 8: TÍCH HỢP PWA DESKTOP SHORTCUT 1-CLICK CÀI ĐẶT RA MÀN HÌNH WINDOWS (CẬP NHẬT 15/08/2026)
-- [x] **Xây Dựng Nút Bấm Cài App 1-Click ([src/components/PwaInstallButton.tsx](file:///d:/LAPTRINH/qu%E1%BA%A3n-l%C3%BD-ph%C3%B2ng-h%E1%BB%8Dc-tin-h%E1%BB%8Dc/src/components/PwaInstallButton.tsx))**:
-  - Bắt sự kiện trình duyệt `beforeinstallprompt`, hiển thị nút bấm nổi bật **`💻 CÀI APP RA DESKTOP WINDOWS (1-CLICK)`** trên cửa sổ Welcome DeskOS.
-  - Nhấp 1 click để gọi prompt cài đặt PWA native của Windows / Chrome / Edge.
-- [x] **Tự Động Tạo & Tải File Phím Tắt Windows (.url)**: Tự tạo file phím tắt `Phòng Học Tin Học.url` kéo ra màn hình Desktop Windows để mở ứng dụng siêu tốc!
-
----
-
 ## 🔍 II. BÁO CÁO RÀ SOÁT CHUYÊN SÂU: CHỨC NĂNG 'PHÒNG LAB' & 'ĐIỂM DANH' (FE - BE - DB AUDIT)
 
 ### 1. 🖥️ BÁO CÁO RÀ SOÁT ỨNG DỤNG 'PHÒNG LAB' (`LabRoomTab.tsx`):
