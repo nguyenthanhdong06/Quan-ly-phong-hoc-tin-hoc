@@ -29,6 +29,7 @@ import AdminTab from './components/AdminTab';
 import TimetableTab from './components/TimetableTab';
 import LabBookingTab from './components/LabBookingTab';
 import OfflineSyncBanner from './components/OfflineSyncBanner';
+import AppInstallerTab from './components/AppInstallerTab';
 import { InteractiveGamesTab } from './components/InteractiveGamesTab';
 import { PersonalQuestionsTab } from './components/PersonalQuestionsTab';
 import ComputerReportTab from './components/ComputerReportTab';
@@ -1441,6 +1442,10 @@ export default function App() {
                 showToast={showToast}
                 selectedGrade={selectedGrade}
               />
+            )}
+
+            {activeTab === 'app-installer' && (
+              <AppInstallerTab showToast={showToast} />
             )}
           </DeskOSMacWindow>
         )}

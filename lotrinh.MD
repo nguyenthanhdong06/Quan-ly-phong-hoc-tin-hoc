@@ -93,6 +93,15 @@
 
 ---
 
+### 📱 GIAI ĐOẠN 8: XÂY DỰNG ỨNG DỤNG 'CÀI ĐẶT ỨNG DỤNG' & ĐỔI URL CHÍNH THỨC (CẬP NHẬT 15/08/2026)
+- [x] **Xây Dựng Modul Ứng Dụng Mới 'Cài Đặt Ứng Dụng' ([src/components/AppInstallerTab.tsx](file:///d:/LAPTRINH/qu%E1%BA%A3n-l%C3%BD-ph%C3%B2ng-h%E1%BB%8Dc-tin-h%E1%BB%8Dc/src/components/AppInstallerTab.tsx))**:
+  - Tạo ứng dụng độc lập trên giao diện DeskOS App Grid với tên gọi **'Cài đặt ứng dụng'**.
+  - **Tích hợp PWA Desktop Shortcut 1-Click**: Cho phép tạo và tải về tệp Lối Tắt Màn Hình Windows (.url) hoặc kích hoạt ô cài đặt PWA Native 1-Click mở ứng dụng mượt như phần mềm gốc.
+  - **Cấu hình URL Tên Miền Chính Thức**: Đổi URL chạy thử `http://localhost:3000/` thành đường dẫn URL chính thức: **`https://phongmaythlongdinh.com/`**.
+  - **Tự Động Đề Xuất Bộ Icon Shortcut Phù Hợp**: Tự động gợi ý 4 bộ Icon đẹp mắt chuẩn HD phù hợp nhất với tên ứng dụng (Icon Máy Tính Phòng Lab 🖥️, Icon Trường TH Long Định 🏫, Icon PWA Siêu Tốc ⚡, Icon Laptop Giáo Viên 💻).
+
+---
+
 ## 🔍 II. BÁO CÁO RÀ SOÁT CHUYÊN SÂU: CHỨC NĂNG 'PHÒNG LAB' & 'ĐIỂM DANH' (FE - BE - DB AUDIT)
 
 ### 1. 🖥️ BÁO CÁO RÀ SOÁT ỨNG DỤNG 'PHÒNG LAB' (`LabRoomTab.tsx`):

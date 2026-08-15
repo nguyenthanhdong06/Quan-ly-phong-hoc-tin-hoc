@@ -16,7 +16,8 @@ import {
   Image as ImageIcon,
   FileText,
   Sprout,
-  CalendarCheck
+  CalendarCheck,
+  Download
 } from 'lucide-react';
 import { Member } from '../../types';
 import { playAppLaunchSound } from '../../utils/audioEffects';
@@ -57,6 +58,7 @@ const ALL_POSSIBLE_APPS: AppItem[] = [
   { id: 'avatar-gallery', label: 'Kho avatar', icon: ImageIcon, bg: 'bg-[#fbcfe8]', text: 'text-[#be185d]', requiresTeacherRole: true },
   { id: 'computer-report', label: 'Báo cáo máy', icon: FileText, bg: 'bg-[#a5f3fc]', text: 'text-[#0891b2]', requiresLoggedIn: true },
   { id: 'interactive-games', label: 'Trò chơi', icon: Gamepad2, bg: 'bg-[#e9d5ff]', text: 'text-[#7e22ce]', requiresTeacherRole: true },
+  { id: 'app-installer', label: 'Cài đặt ứng dụng', icon: Download, bg: 'bg-[#fef3c7]', text: 'text-[#d97706]' },
   { id: 'admin', label: 'Quản trị', icon: Settings, bg: 'bg-[#e2e8f0]', text: 'text-[#334155]', requiresAdmin: true },
 ];
 
