@@ -337,26 +337,34 @@ export default function App() {
   useEffect(() => {
     if (!isLoaded) return;
 
-    // Helper to update local state from incoming Cloud payload
+    // Helper to update local state from incoming Cloud payload with Deep Equality Check to skip WebSocket Echo re-renders
     const applyCloudState = (key: string, value: any) => {
       safeSetLocalStorage(key, value);
+      const isIdentical = (prev: any) => {
+        try {
+          return JSON.stringify(prev) === JSON.stringify(value);
+        } catch {
+          return false;
+        }
+      };
+
       switch (key) {
-        case 'school_grades': setGrades(value); break;
-        case 'school_classes': setClasses(value); break;
-        case 'school_students': setStudents(value); break;
-        case 'school_computers': setComputers(value); break;
-        case 'school_seating_chart': setSeatingChart(value); break;
-        case 'school_attendance_data': setAttendanceData(value); break;
-        case 'school_evaluation_data': setEvaluationData(value); break;
-        case 'school_emulation_state': setEmulationDataState(value); break;
-        case 'school_documents': setDocuments(value); break;
-        case 'school_members': setMembers(value); break;
-        case 'school_timetable_data': setTimetableData(value); break;
-        case 'school_quotes': setQuotes(value); break;
-        case 'school_lab_bookings': setLabBookings(value); break;
-        case 'school_lab_incidents': setLabIncidents(value); break;
-        case 'school_lab_maintenance_logs': setLabMaintenanceLogs(value); break;
-        case 'school_labs': setLabs(value); break;
+        case 'school_grades': setGrades(prev => isIdentical(prev) ? prev : value); break;
+        case 'school_classes': setClasses(prev => isIdentical(prev) ? prev : value); break;
+        case 'school_students': setStudents(prev => isIdentical(prev) ? prev : value); break;
+        case 'school_computers': setComputers(prev => isIdentical(prev) ? prev : value); break;
+        case 'school_seating_chart': setSeatingChart(prev => isIdentical(prev) ? prev : value); break;
+        case 'school_attendance_data': setAttendanceData(prev => isIdentical(prev) ? prev : value); break;
+        case 'school_evaluation_data': setEvaluationData(prev => isIdentical(prev) ? prev : value); break;
+        case 'school_emulation_state': setEmulationDataState(prev => isIdentical(prev) ? prev : value); break;
+        case 'school_documents': setDocuments(prev => isIdentical(prev) ? prev : value); break;
+        case 'school_members': setMembers(prev => isIdentical(prev) ? prev : value); break;
+        case 'school_timetable_data': setTimetableData(prev => isIdentical(prev) ? prev : value); break;
+        case 'school_quotes': setQuotes(prev => isIdentical(prev) ? prev : value); break;
+        case 'school_lab_bookings': setLabBookings(prev => isIdentical(prev) ? prev : value); break;
+        case 'school_lab_incidents': setLabIncidents(prev => isIdentical(prev) ? prev : value); break;
+        case 'school_lab_maintenance_logs': setLabMaintenanceLogs(prev => isIdentical(prev) ? prev : value); break;
+        case 'school_labs': setLabs(prev => isIdentical(prev) ? prev : value); break;
         case 'custom_avatars_list':
           if (Array.isArray(value)) {
             window.dispatchEvent(new CustomEvent('custom_avatars_updated', { detail: value }));
