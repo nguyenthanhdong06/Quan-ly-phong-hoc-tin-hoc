@@ -1,0 +1,24 @@
+{
+  "name": "Quản Lý Phòng Học Tin Học - Trường TH Long Định",
+  "short_name": "Phòng Tin Học",
+  "description": "Hệ thống số quản lý phòng học Tin học, điểm danh, sơ đồ phòng máy và thi đua khen thưởng ngoại tuyến hoàn toàn (Offline-First)",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5e6ca",
+  "theme_color": "#381DFC",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/img/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/img/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

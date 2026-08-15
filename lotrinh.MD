@@ -75,6 +75,16 @@
 
 ---
 
+### 🌐 GIAI ĐOẠN 6: TÍCH HỢP PWA (PROGRESSIVE WEB APP) NGOẠI TUYẾN HOÀN TOÀN (OFFLINE-FIRST) (CẬP NHẬT 15/08/2026)
+- [x] **Cấu Hình PWA Web App Manifest ([public/manifest.json](file:///d:/LAPTRINH/qu%E1%BA%A3n-l%C3%BD-ph%C3%B2ng-h%E1%BB%8Dc-tin-h%E1%BB%8Dc/public/manifest.json))**: Khai báo đầy đủ tên ứng dụng, biểu tượng maskable icons (192px & 512px), tone màu hoàng gia `#381DFC`, chế độ `standalone` cho phép cài đặt app như phần mềm native trên Windows / iOS / Android.
+- [x] **Xây Dựng Service Worker Ngoại Tuyến ([public/sw.js](file:///d:/LAPTRINH/qu%E1%BA%A3n-l%C3%BD-ph%C3%B2ng-h%E1%BB%8Dc-tin-h%E1%BB%8Dc/public/sw.js))**: Tự động lưu bộ nhớ đệm (Cache Static Assets) toàn bộ mã nguồn HTML, CSS, JS, Ảnh WebP, SVG, Font chữ. Trình duyệt tải trang tức thì **ngay cả khi phòng máy mất sạch 100% mạng Internet**.
+- [x] **Cơ Chế Trình Quản Lý PWA & Tự Động Khôi Phục Nguồn Mạch ([src/utils/pwaRegister.ts](file:///d:/LAPTRINH/qu%E1%BA%A3n-l%C3%BD-ph%C3%B2ng-h%E1%BB%8Dc-tin-h%E1%BB%8Dc/src/utils/pwaRegister.ts))**: Đăng ký Service Worker an toàn, tự động lắng nghe sự kiện chuyển đổi trạng thái mạng `online` / `offline` thời gian thực.
+- [x] **Thanh Thống Báo Trạng Thái Trực Quan ([src/components/OfflineSyncBanner.tsx](file:///d:/LAPTRINH/qu%E1%BA%A3n-l%C3%BD-ph%C3%B2ng-h%E1%BB%8Dc-tin-h%E1%BB%8Dc/src/components/OfflineSyncBanner.tsx))**:
+  - **Khi Mất Mạng (Offline)**: Hiển thị banner cảnh báo **`⚡ ĐANG Ở CHẾ ĐỘ NGOẠI TUYẾN (OFFLINE-FIRST PWA) - 0ms Local Sync`**. Mọi thao tác Điểm danh, Xếp chỗ máy tính, Tặng sao đều thực thi 100% bình thường trên máy tính!
+  - **Khi Có Mạng Trở Lại (Online Restored)**: Hiển thị banner xanh rực rỡ **`🟢 ĐÃ KHÔI PHỤC KẾT NỐI INTERNET! - Tự động đồng bộ toàn bộ dữ liệu ngoại tuyến lên Supabase Cloud!`** và tự động xả sạch bản ghi ngoại tuyến đẩy lên DB Cloud mà không cần F5!
+
+---
+
 ## 🔍 II. BÁO CÁO RÀ SOÁT CHUYÊN SÂU: CHỨC NĂNG 'PHÒNG LAB' & 'ĐIỂM DANH' (FE - BE - DB AUDIT)
 
 ### 1. 🖥️ BÁO CÁO RÀ SOÁT ỨNG DỤNG 'PHÒNG LAB' (`LabRoomTab.tsx`):

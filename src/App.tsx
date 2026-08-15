@@ -28,6 +28,7 @@ import { AvatarGalleryTab, loadCustomAvatars } from './components/AvatarGalleryT
 import AdminTab from './components/AdminTab';
 import TimetableTab from './components/TimetableTab';
 import LabBookingTab from './components/LabBookingTab';
+import OfflineSyncBanner from './components/OfflineSyncBanner';
 import { InteractiveGamesTab } from './components/InteractiveGamesTab';
 import { PersonalQuestionsTab } from './components/PersonalQuestionsTab';
 import ComputerReportTab from './components/ComputerReportTab';
@@ -1187,6 +1188,8 @@ export default function App() {
 
   return (
     <div className={`h-screen max-h-screen overflow-hidden ${activeWallpaper.className} text-slate-800 flex flex-col font-sans transition-all relative select-none`}>
+      {/* PWA Offline-First Status Banner */}
+      <OfflineSyncBanner onOnlineRestored={forcePushToSupabase} />
       
       {/* Toast Notification block */}
       {toast.show && (
