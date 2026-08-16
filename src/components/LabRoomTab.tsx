@@ -331,9 +331,11 @@ export default function LabRoomTab({
     };
   }, [hideAislesPrint, pcColumnIndices, activeLabGrid]);
 
-  // Students of current selected class
+  // Students of current selected class (Case-insensitive & trimmed for 100% full list match)
   const classStudents = useMemo(() => {
-    return students.filter(s => s.classId === selectedClass);
+    if (!selectedClass) return [];
+    const target = selectedClass.trim().toLowerCase();
+    return students.filter(s => s.classId && s.classId.trim().toLowerCase() === target);
   }, [students, selectedClass]);
 
   const attendanceSummary = useMemo(() => {
@@ -443,23 +445,42 @@ export default function LabRoomTab({
     return classStudents.filter(s => !assignedStudentIdsList.includes(s.id));
   }, [classStudents, assignedStudentIdsList]);
 
+  // Helper to find which computer a student is currently assigned to
+  const getStudentSeatedMachine = useCallback((studentId: string): string | null => {
+    const pcId = Object.keys(currentClassSeating).find(key => {
+      const ids = getAssignedStudentIds(currentClassSeating[key]);
+      return ids.includes(studentId);
+    });
+    return pcId ? formatComputerName(pcId) : null;
+  }, [currentClassSeating, getAssignedStudentIds]);
+
+  // Panel Filter Mode: 'unassigned' (Chưa xếp) | 'all' (Tất cả lớp) | 'assigned' (Đã xếp)
+  const [panelFilterMode, setPanelFilterMode] = useState<'unassigned' | 'all' | 'assigned'>('unassigned');
+
   // Toggle Left Unassigned Panel (Inside Seating Sub-View)
   const [isUnassignedPanelVisible, setIsUnassignedPanelVisible] = useState<boolean>(true);
 
   // 1-Click Quick Assign Selection
   const [selectedStudentForAssign, setSelectedStudentForAssign] = useState<string | null>(null);
 
-  // Search input for unassigned panel
+  // Search & Filter input for side panel
   const [unassignedSearch, setUnassignedSearch] = useState('');
-  const filteredUnassignedStudents = useMemo(() => {
-    if (!unassignedSearch.trim()) return unassignedStudents;
+  const filteredPanelStudents = useMemo(() => {
+    let list = classStudents;
+    if (panelFilterMode === 'unassigned') {
+      list = unassignedStudents;
+    } else if (panelFilterMode === 'assigned') {
+      list = classStudents.filter(s => assignedStudentIdsList.includes(s.id));
+    }
+
+    if (!unassignedSearch.trim()) return list;
     const q = unassignedSearch.toLowerCase();
-    return unassignedStudents.filter(s => 
+    return list.filter(s => 
       s.name.toLowerCase().includes(q) || 
-      s.code.toLowerCase().includes(q) ||
+      (s.code && s.code.toLowerCase().includes(q)) ||
       formatStudentNameFirstAndMiddle(s.name).toLowerCase().includes(q)
     );
-  }, [unassignedStudents, unassignedSearch]);
+  }, [classStudents, unassignedStudents, assignedStudentIdsList, panelFilterMode, unassignedSearch]);
 
   // Quick Student Finder Search State
   const [searchStudentSeat, setSearchStudentSeat] = useState<string>('');
@@ -1102,27 +1123,58 @@ export default function LabRoomTab({
         {/* Dual Panel Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           
-          {/* LEFT PANEL: HỌC SINH CHỜ NGỒI */}
+          {/* LEFT PANEL: DANH SÁCH HỌC SINH CHỜ / TẤT CẢ LỚP */}
           {isUnassignedPanelVisible && (
             <div className="lg:col-span-4 bg-[#fffbf0] rounded-2xl p-4 border border-[#cbb89d] shadow-xs space-y-3 flex flex-col max-h-[720px] overflow-hidden">
               
-              <div className="space-y-0.5 border-b border-[#cbb89d] pb-2.5">
+              <div className="space-y-2 border-b border-[#cbb89d] pb-2.5">
                 <div className="flex justify-between items-center">
                   <h3 className="font-black text-xs text-[#3d2b17] flex items-center gap-1.5">
                     <User className="w-4 h-4 text-amber-800" />
-                    HỌC SINH CHỜ NGỒI ({unassignedStudents.length})
+                    DANH SÁCH HỌC SINH LỚP ({classStudents.length} HS)
                   </h3>
                   <button
                     onClick={() => setIsUnassignedPanelVisible(false)}
                     className="px-2 py-0.5 rounded-md bg-amber-100 hover:bg-amber-200 text-[#3d2b17] border border-amber-300 font-black text-[10px] cursor-pointer shadow-2xs flex items-center gap-1"
-                    title="Ẩn bảng chờ để mở rộng sơ đồ máy"
+                    title="Ẩn bảng để mở rộng sơ đồ máy"
                   >
                     <span>◀ Ẩn</span>
                   </button>
                 </div>
-                <p className="text-[10px] font-bold text-slate-500 leading-snug">
-                  Kéo HOẶC nhấp chọn học sinh để xếp vào ô máy tính.
-                </p>
+
+                {/* 🌟 Tab Chuyển Chế Độ Lọc Danh Sách Học Sinh */}
+                <div className="flex rounded-xl bg-amber-200/60 p-1 border border-[#cbb89d] gap-1 text-[10px] font-black">
+                  <button
+                    onClick={() => setPanelFilterMode('unassigned')}
+                    className={`flex-1 py-1 px-1.5 rounded-lg transition-all text-center cursor-pointer ${
+                      panelFilterMode === 'unassigned'
+                        ? 'bg-amber-700 text-white shadow-xs font-black'
+                        : 'text-[#5c4327] hover:bg-white/60 font-bold'
+                    }`}
+                  >
+                    Chưa xếp ({unassignedStudents.length})
+                  </button>
+                  <button
+                    onClick={() => setPanelFilterMode('all')}
+                    className={`flex-1 py-1 px-1.5 rounded-lg transition-all text-center cursor-pointer ${
+                      panelFilterMode === 'all'
+                        ? 'bg-amber-700 text-white shadow-xs font-black'
+                        : 'text-[#5c4327] hover:bg-white/60 font-bold'
+                    }`}
+                  >
+                    Tất cả lớp ({classStudents.length})
+                  </button>
+                  <button
+                    onClick={() => setPanelFilterMode('assigned')}
+                    className={`flex-1 py-1 px-1.5 rounded-lg transition-all text-center cursor-pointer ${
+                      panelFilterMode === 'assigned'
+                        ? 'bg-amber-700 text-white shadow-xs font-black'
+                        : 'text-[#5c4327] hover:bg-white/60 font-bold'
+                    }`}
+                  >
+                    Đã xếp ({assignedStudentIdsList.length})
+                  </button>
+                </div>
               </div>
 
               <div className="relative">
@@ -1131,18 +1183,19 @@ export default function LabRoomTab({
                   type="text"
                   value={unassignedSearch}
                   onChange={(e) => setUnassignedSearch(e.target.value)}
-                  placeholder="Tìm kiếm học sinh..."
+                  placeholder="Tìm kiếm học sinh trong danh sách..."
                   className="w-full pl-9 pr-3 py-1.5 text-xs font-bold rounded-xl border border-[#cbb89d] bg-white focus:outline-none focus:border-emerald-600"
                 />
               </div>
 
-              <div className="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[540px]">
-                {filteredUnassignedStudents.length > 0 ? (
-                  filteredUnassignedStudents.map(st => {
+              <div className="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[520px]">
+                {filteredPanelStudents.length > 0 ? (
+                  filteredPanelStudents.map(st => {
                     const att = getStudentAttendance(st.id);
                     const isAbsent = att === 'excused' || att === 'unexcused';
                     const isSelectedForAssign = selectedStudentForAssign === st.id;
                     const monitorRole = getStudentMonitorRole(st);
+                    const seatedMachine = getStudentSeatedMachine(st.id);
 
                     return (
                       <div
@@ -1172,6 +1225,12 @@ export default function LabRoomTab({
                             <div className="font-black text-xs text-slate-900 group-hover:text-emerald-950 flex flex-wrap items-center gap-1.5">
                               <span>{st.name}</span>
                               
+                              {seatedMachine && (
+                                <span className="text-[9px] font-black bg-emerald-600 text-white px-1.5 py-0.5 rounded border border-emerald-700 flex items-center gap-0.5 shadow-2xs">
+                                  🖥️ {seatedMachine}
+                                </span>
+                              )}
+
                               {monitorRole === 'L. Trưởng' && (
                                 <span className="text-[9px] font-black bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded border border-amber-500 flex items-center gap-0.5 shadow-2xs">
                                   L. TRƯỞNG
@@ -1213,21 +1272,25 @@ export default function LabRoomTab({
                           </div>
                         </div>
 
-                        <span className={`text-[9px] font-black px-2 py-1 rounded-md border flex items-center gap-1 ${
+                        <span className={`text-[9px] font-black px-2 py-1 rounded-md border flex items-center gap-1 shrink-0 ${
                           isSelectedForAssign 
                             ? 'bg-emerald-600 text-white border-emerald-700 animate-pulse'
                             : isAbsent 
                               ? 'bg-rose-200 text-rose-900 border-rose-300' 
-                              : 'bg-amber-100 text-amber-900 border-amber-200 group-hover:bg-emerald-200 group-hover:text-emerald-900'
+                              : seatedMachine
+                                ? 'bg-sky-100 text-sky-900 border-sky-300 group-hover:bg-sky-200'
+                                : 'bg-amber-100 text-amber-900 border-amber-200 group-hover:bg-emerald-200 group-hover:text-emerald-900'
                         }`}>
-                          {isSelectedForAssign ? '✓ Đang chọn' : 'Xếp máy 👆'}
+                          {isSelectedForAssign ? '✓ Đang chọn' : seatedMachine ? 'Đổi máy 🔄' : 'Xếp máy 👆'}
                         </span>
                       </div>
                     );
                   })
                 ) : (
-                  <div className="text-center py-10 font-bold text-xs text-emerald-800">
-                    ✓ Tất cả học sinh đã có máy!
+                  <div className="text-center py-10 font-bold text-xs text-amber-800">
+                    {panelFilterMode === 'unassigned' 
+                      ? '✓ Tất cả học sinh đã có máy!' 
+                      : 'Không tìm thấy học sinh phù hợp!'}
                   </div>
                 )}
               </div>
