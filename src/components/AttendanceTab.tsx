@@ -39,8 +39,8 @@ const AttendanceStudentRow = React.memo(({
     rowBg = 'bg-amber-50/70 hover:bg-amber-100/60';
     borderLeftAccent = 'border-l-4 border-l-amber-500';
   } else if (currentStatus === 'unexcused') {
-    rowBg = 'bg-rose-50/70 hover:bg-rose-100/60';
-    borderLeftAccent = 'border-l-4 border-l-rose-500';
+    rowBg = 'bg-rose-100/80 hover:bg-rose-200/70';
+    borderLeftAccent = 'border-l-4 border-l-red-600';
   }
 
   return (
@@ -75,7 +75,7 @@ const AttendanceStudentRow = React.memo(({
               </span>
             )}
             {currentStatus === 'unexcused' && (
-              <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-rose-200 text-rose-950 border border-rose-400 inline-flex items-center gap-1 shadow-2xs animate-pulse">
+              <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-red-600 text-white border border-red-700 inline-flex items-center gap-1 shadow-2xs">
                 🔴 VẮNG KHÔNG PHÉP (KP)
               </span>
             )}
@@ -120,7 +120,7 @@ const AttendanceStudentRow = React.memo(({
             onClick={() => onSetState(s.id, 'unexcused')}
             className={`flex-1 text-center py-2 px-2.5 rounded-lg text-xs tracking-wide transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
               currentStatus === 'unexcused' 
-                ? 'bg-gradient-to-r from-rose-600 to-red-600 text-white font-black shadow-md shadow-rose-600/30 ring-2 ring-rose-400 border border-rose-500 animate-pulse scale-[1.03]' 
+                ? 'bg-red-600 text-white font-black shadow-md shadow-red-600/30 ring-2 ring-red-400 border border-red-500 scale-[1.03]' 
                 : 'bg-slate-100/90 text-slate-500 hover:text-slate-900 hover:bg-white border border-slate-200 font-bold'
             }`}
           >
