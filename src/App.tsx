@@ -35,6 +35,11 @@ import {
   loadDayPartitionedAttendance, 
   applyPartitionedAttendanceUpdate 
 } from './utils/attendancePartition';
+import { 
+  saveDayPartitionedEvaluation, 
+  loadDayPartitionedEvaluation, 
+  applyPartitionedEvaluationUpdate 
+} from './utils/evaluationPartition';
 import { InteractiveGamesTab } from './components/InteractiveGamesTab';
 import { PersonalQuestionsTab } from './components/PersonalQuestionsTab';
 import ComputerReportTab from './components/ComputerReportTab';
@@ -144,7 +149,7 @@ export default function App() {
   const [computers, setComputers] = useState<Computer[]>(() => safeParse('school_computers', generateDefaultComputers()));
   const [seatingChart, setSeatingChart] = useState<SeatingChart>(() => safeParse('school_seating_chart', defaultSeating));
   const [attendanceData, setAttendanceData] = useState<AttendanceData>(() => loadDayPartitionedAttendance(undefined, defaultAttendance));
-  const [evaluationData, setEvaluationData] = useState<EvaluationData>(() => safeParse('school_evaluation_data', defaultEvaluation));
+  const [evaluationData, setEvaluationData] = useState<EvaluationData>(() => loadDayPartitionedEvaluation(undefined, defaultEvaluation));
   const [emulationDataState, setEmulationDataState] = useState<EmulationDataState>(() => safeParse('school_emulation_state', defaultEmulation));
   const [documents, setDocuments] = useState<DocumentItem[]>(() => safeParse('school_documents', defaultDocuments));
   const [members, setMembers] = useState<Member[]>(() => safeParse('school_members', defaultMembers));
@@ -313,7 +318,7 @@ export default function App() {
           if (dbStates['school_computers']) setComputers(dbStates['school_computers']);
           if (dbStates['school_seating_chart']) setSeatingChart(dbStates['school_seating_chart']);
           setAttendanceData(loadDayPartitionedAttendance(dbStates, defaultAttendance));
-          if (dbStates['school_evaluation_data']) setEvaluationData(dbStates['school_evaluation_data']);
+          setEvaluationData(loadDayPartitionedEvaluation(dbStates, defaultEvaluation));
           if (dbStates['school_emulation_state']) setEmulationDataState(dbStates['school_emulation_state']);
           if (dbStates['school_documents']) setDocuments(dbStates['school_documents']);
           if (dbStates['school_members']) setMembers(dbStates['school_members']);
@@ -375,13 +380,17 @@ export default function App() {
         return;
       }
 
+      if (key.startsWith('school_evaluation_')) {
+        setEvaluationData(prev => applyPartitionedEvaluationUpdate(prev, key, value));
+        return;
+      }
+
       switch (key) {
         case 'school_grades': setGrades(prev => isIdentical(prev) ? prev : value); break;
         case 'school_classes': setClasses(prev => isIdentical(prev) ? prev : value); break;
         case 'school_students': setStudents(prev => isIdentical(prev) ? prev : value); break;
         case 'school_computers': setComputers(prev => isIdentical(prev) ? prev : value); break;
         case 'school_seating_chart': setSeatingChart(prev => isIdentical(prev) ? prev : value); break;
-        case 'school_evaluation_data': setEvaluationData(prev => isIdentical(prev) ? prev : value); break;
         case 'school_emulation_state': setEmulationDataState(prev => isIdentical(prev) ? prev : value); break;
         case 'school_documents': setDocuments(prev => isIdentical(prev) ? prev : value); break;
         case 'school_members': setMembers(prev => isIdentical(prev) ? prev : value); break;
@@ -543,14 +552,15 @@ export default function App() {
   }, [attendanceData, selectedDate, isLoaded]);
 
   useEffect(() => {
-    safeSetLocalStorage('school_evaluation_data', evaluationData);
     if (isLoaded) {
       if (evaluationDebounceRef.current) clearTimeout(evaluationDebounceRef.current);
       evaluationDebounceRef.current = setTimeout(() => {
-        saveSupabaseState('school_evaluation_data', evaluationData);
+        saveDayPartitionedEvaluation(evaluationData, selectedDate);
       }, 800);
+    } else {
+      safeSetLocalStorage('school_evaluation_data', evaluationData);
     }
-  }, [evaluationData, isLoaded]);
+  }, [evaluationData, selectedDate, isLoaded]);
 
   useEffect(() => {
     safeSetLocalStorage('school_emulation_state', emulationDataState);
@@ -789,7 +799,7 @@ export default function App() {
         if (dbStates['school_computers']) setComputers(dbStates['school_computers']);
         if (dbStates['school_seating_chart']) setSeatingChart(dbStates['school_seating_chart']);
         setAttendanceData(loadDayPartitionedAttendance(dbStates, defaultAttendance));
-        if (dbStates['school_evaluation_data']) setEvaluationData(dbStates['school_evaluation_data']);
+        setEvaluationData(loadDayPartitionedEvaluation(dbStates, defaultEvaluation));
         if (dbStates['school_emulation_state']) setEmulationDataState(dbStates['school_emulation_state']);
         if (dbStates['school_documents']) setDocuments(dbStates['school_documents']);
         if (dbStates['school_members']) setMembers(dbStates['school_members']);
@@ -826,7 +836,7 @@ export default function App() {
         saveSupabaseState('school_computers', computers),
         saveSupabaseState('school_seating_chart', seatingChart),
         saveDayPartitionedAttendance(attendanceData),
-        saveSupabaseState('school_evaluation_data', evaluationData),
+        saveDayPartitionedEvaluation(evaluationData),
         saveSupabaseState('school_emulation_state', emulationDataState),
         saveSupabaseState('school_documents', documents),
         saveSupabaseState('school_members', members),
