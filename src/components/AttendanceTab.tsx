@@ -2,6 +2,7 @@ import React from 'react';
 import { Student, AttendanceData, ClassItem } from '../types';
 import { Check, ClipboardCheck, Calendar, UserCheck, AlertTriangle, AlertCircle, Search, X, Sparkles, CheckCircle, Save, BarChart3, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { VietnameseDatePicker } from './common/VietnameseDatePicker';
 
 interface AttendanceTabProps {
   selectedClass: string;
@@ -339,17 +340,11 @@ export default function AttendanceTab({
 
           {/* Date Selector & Save block */}
           <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
-            <div className="flex items-center gap-2 bg-white/90 border border-[#cbb89d] px-3 py-1.5 rounded-xl text-xs font-semibold">
-              <span className="text-slate-700 whitespace-nowrap font-bold">Chọn ngày dạy:</span>
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => {
-                  if (e.target.value) setSelectedDate(e.target.value);
-                }}
-                className="bg-transparent border-none text-slate-900 font-extrabold focus:outline-none focus:ring-0 cursor-pointer"
-              />
-            </div>
+            <VietnameseDatePicker
+              label="Chọn ngày dạy:"
+              value={selectedDate}
+              onChange={(newDate) => setSelectedDate(newDate)}
+            />
 
             <button
               onClick={handleSetAllPresent}

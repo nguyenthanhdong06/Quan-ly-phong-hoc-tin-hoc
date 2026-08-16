@@ -5,6 +5,7 @@ import { triggerStarsConfetti } from '../utils/confetti';
 import { playStarRewardSound, playWarningDeductSound } from '../utils/audioEffects';
 import { CyberRobotCardFrameDecoration } from './CyberRobotCardFrameDecoration';
 import { StudentCard3D } from './StudentCard3D';
+import { VietnameseDatePicker } from './common/VietnameseDatePicker';
 
 interface EvaluationTabProps {
   selectedClass: string;
@@ -356,17 +357,11 @@ export default function EvaluationTab({
 
           {/* Date & Save controls */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
-            <div className="flex items-center gap-2 bg-white/90 border border-[#cbb89d] px-3.5 py-1.5 rounded-xl text-xs font-semibold w-full sm:w-auto">
-              <span className="text-slate-700 font-bold whitespace-nowrap text-left text-xs">Ngày chấm:</span>
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => {
-                  if (e.target.value) setSelectedDate(e.target.value);
-                }}
-                className="bg-transparent border-none text-slate-900 font-extrabold focus:outline-none focus:ring-0 cursor-pointer"
-              />
-            </div>
+            <VietnameseDatePicker
+              label="Ngày chấm:"
+              value={selectedDate}
+              onChange={(newDate) => setSelectedDate(newDate)}
+            />
 
             <button
               onClick={handleSave}
