@@ -146,15 +146,15 @@ export default function LabRoomTab({
     return labs.find(l => l.id === selectedLabId || l.code === selectedLabId || l.name === selectedLabId) || labs[0];
   }, [labs, selectedLabId]);
 
-  // Realtime Sync Attendance Data State
-  const [localAttendance] = useState<AttendanceData>(() => {
-    if (attendanceData && Object.keys(attendanceData).length > 0) return attendanceData;
-    return loadDayPartitionedAttendance();
-  });
-
+  // Dynamic 2-Way Synchronized Attendance Map between Điểm Danh app and Phòng Lab app
   const currentClassAttendanceMap = useMemo(() => {
-    return localAttendance?.[selectedDate]?.[selectedClass] || {};
-  }, [localAttendance, selectedDate, selectedClass]);
+    const propMap = attendanceData?.[selectedDate]?.[selectedClass];
+    if (propMap && Object.keys(propMap).length > 0) {
+      return propMap;
+    }
+    const partitioned = loadDayPartitionedAttendance();
+    return partitioned?.[selectedDate]?.[selectedClass] || {};
+  }, [attendanceData, selectedDate, selectedClass]);
 
   const getStudentAttendance = useCallback((studentId: string): 'present' | 'excused' | 'unexcused' => {
     if (currentClassAttendanceMap[studentId]) {
