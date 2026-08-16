@@ -122,6 +122,8 @@
   - Tách nhỏ key lưu trữ Đánh giá & Chấm sao theo từng ngày (`school_evaluation_YYYY-MM-DD`): Giúp nén nhẹ dung lượng đồng bộ đám mây và WebSocket thêm x10-x100 lần.
 - [x] **Memoize Từng Dòng Học Sinh Với React.memo ([src/components/AttendanceTab.tsx](file:///d:/LAPTRINH/qu%E1%BA%A3n-l%C3%BD-ph%C3%B2ng-h%E1%BB%8Dc-tin-h%E1%BB%8Dc/src/components/AttendanceTab.tsx))**:
   - Tách `AttendanceStudentRow` bọc bởi `React.memo`: Chỉ render lại duy nhất 1 dòng học sinh vừa thay đổi trạng thái, 39 học sinh còn lại giữ nguyên DOM 100% (0ms cost re-render).
+- [x] **Memoize Thẻ Học Sinh Trong Sổ Đánh Giá & Chấm Sao ([src/components/StudentCard3D.tsx](file:///d:/LAPTRINH/qu%E1%BA%A3n-l%C3%BD-ph%C3%B2ng-h%E1%BB%8Dc-tin-h%E1%BB%8Dc/src/components/StudentCard3D.tsx) & [src/components/EvaluationTab.tsx](file:///d:/LAPTRINH/qu%E1%BA%A3n-l%C3%BD-ph%C3%B2ng-h%E1%BB%8Dc-tin-h%E1%BB%8Dc/src/components/EvaluationTab.tsx))**:
+  - Bọc `React.memo` cho `StudentCard3D` và tạo `EvaluationStudentCardItem`: Giữ nguyên DOM 100% cho 39 thẻ học sinh khác khi bấm chọn/thưởng sao 1 học sinh.
 
 ---
 
