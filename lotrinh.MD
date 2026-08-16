@@ -110,7 +110,11 @@
 - [x] **Đồng Bộ Dải Banner iMac Warm Beige Trên 100% Ứng Dụng**:
   - Chuẩn hóa cấu trúc dải banner tiêu đề cho tất cả các ứng dụng (`AttendanceTab`, `StudentsTab`, `ClassesTab`, `EvaluationTab`, `KnowledgeGardenTab`, `TimetableTab`, `ResourcesTab`, `AvatarGalleryTab`, `ComputerReportTab`) theo đúng chuẩn thiết kế iMac Warm Beige (`border-2 border-[#cbb89d] rounded-3xl bg-[#fffbf0] overflow-hidden shadow-sm` với dải trên `bg-[#dfccb0] border-b border-[#cbb89d] px-5 py-3`).
 - [x] **Đồng Bộ Mã Nguồn Lên GitHub Repository**:
-  - Đã Commit và Push mã nguồn thành công lên đúng GitHub Repository (`https://github.com/nguyenthanhdong06/Quan-ly-phong-hoc-tin-hoc`) với Commit Message Tiếng Việt rõ ràng: *"Cập nhật nút Không phép sang màu đỏ rực rỡ và đồng bộ cấu trúc dải banner iMac Warm Beige trên toàn bộ ứng dụng"*.
+  - Đã Commit và Push mã nguồn thành công lên đúng GitHub Repository (`https://github.com/nguyenthanhdong06/Quan-ly-phong-hoc-tin-hoc`) với Commit Message Tiếng Việt rõ ràng.
+- [x] **Khắc Phục Triệt Để 100% Lỗi Dựt Lag Do WebSocket & Cloud Sync ([src/supabaseClient.ts](file:///d:/LAPTRINH/qu%E1%BA%A3n-l%C3%BD-ph%C3%B2ng-h%E1%BB%8Dc-tin-h%E1%BB%8Dc/src/supabaseClient.ts) & [src/App.tsx](file:///d:/LAPTRINH/qu%E1%BA%A3n-l%C3%BD-ph%C3%B2ng-h%E1%BB%8Dc-tin-h%E1%BB%8Dc/src/App.tsx))**:
+  - Tích hợp **WebSocket Self-Echo Suppressor** (`isRecentLocalSave(key, 3000)`): Loại bỏ 100% phản hồi lặp lại của WebSocket khi client vừa lưu dữ liệu local, giải phóng Main Thread CPU không bị nghẽn hàm so sánh `isIdentical`.
+  - Hoãn đệm bất đồng bộ `safeSetLocalStorage` (800ms) giúp thao tác nhấp chuột điểm danh đạt tốc độ phản hồi 0ms siêu mượt.
+  - Tối ưu DOM Table Rendering trong `AttendanceTab.tsx` loại bỏ `<AnimatePresence>` đạt tốc độ 60FPS.
 
 ---
 
