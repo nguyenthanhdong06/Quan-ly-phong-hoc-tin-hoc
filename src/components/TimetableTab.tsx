@@ -564,8 +564,9 @@ export default function TimetableTab({
         }
       `}</style>
 
-      {/* NEW INTERACTIVE HEADER SECTION & MODE CONTROLLER */}
-      <div className="bg-white p-3.5 sm:px-5 sm:py-3 rounded-2xl shadow-sm border border-slate-100 text-left flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+      {/* 🌟 1. DESKOS IMAC WARM BEIGE CARD HEADER STRIP */}
+      <div className="border-2 border-[#cbb89d] rounded-3xl bg-[#fffbf0] overflow-hidden shadow-sm">
+        <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-5 py-3 flex flex-col xl:flex-row xl:items-center justify-between gap-3 text-left">
         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
           <div className="bg-emerald-50 p-2.5 rounded-xl text-emerald-600 shrink-0 w-fit">
             <Calendar className="w-5 h-5 text-emerald-600" />
@@ -706,6 +707,7 @@ export default function TimetableTab({
 
         </div>
       </div>
+    </div>
 
       {/* TEACHER CARD PROFILE (ONLY IN PERSONAL VIEW) */}
       {viewMode === 'personal' && selectedTeacher && (

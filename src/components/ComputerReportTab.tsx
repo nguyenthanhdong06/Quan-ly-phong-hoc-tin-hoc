@@ -825,21 +825,22 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
         </div>
       )}
 
-      {/* HEADER SECTION */}
-      <div className="bg-[#e2f1f2]/30 border border-[#113f43]/10 text-slate-800 p-4 rounded-2xl shadow-3xs relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5 text-left">
-          <div className="w-10 h-10 rounded-xl bg-[#113f43]/10 flex items-center justify-center border border-[#113f43]/10 shadow-3xs">
-            <BookOpen className="w-5 h-5 text-[#113f43]" />
+      {/* 🌟 1. DESKOS IMAC WARM BEIGE CARD HEADER STRIP */}
+      <div className="border-2 border-[#cbb89d] rounded-3xl bg-[#fffbf0] overflow-hidden shadow-sm">
+        <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-5 py-3 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5 text-left">
+            <div className="w-10 h-10 rounded-xl bg-amber-100/80 flex items-center justify-center border border-[#cbb89d] shadow-2xs">
+              <BookOpen className="w-5 h-5 text-amber-900" />
+            </div>
+            <div>
+              <h2 className="text-sm font-black uppercase tracking-wider text-[#3d2b17] flex items-center gap-2">
+                BÁO CÁO CƠ SỞ VẬT CHẤT PHÒNG MÁY TÍNH
+              </h2>
+              <p className="text-[11px] text-[#5c4327] font-bold">
+                Báo cáo hiện trạng trang thiết bị vật chất phòng tin học - Trường TH Long Định
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-sm font-black uppercase tracking-wider text-[#113f43] flex items-center gap-2">
-              Báo cáo phòng máy tính
-            </h2>
-            <p className="text-[11px] text-slate-500 font-medium">
-              Báo cáo hiện trạng trang thiết bị vật chất phòng tin học - Trường TH Long Định
-            </p>
-          </div>
-        </div>
 
         {/* Action Toggle Modes */}
         <div className="flex flex-wrap gap-2 relative">
@@ -853,6 +854,7 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
           </button>
         </div>
       </div>
+    </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         

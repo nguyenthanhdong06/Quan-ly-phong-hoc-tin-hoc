@@ -468,8 +468,8 @@ export default function ClassesTab({
         <div className="space-y-6 w-full">
           
           {/* 🌟 BANNER CẤU TRÚC ĐỒNG BỘ NỀN KEM NGÀ GIỐNG VƯỜN TRI THỨC */}
-          <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs">
-            <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <div className="border-2 border-[#cbb89d] rounded-3xl bg-[#fffbf0] overflow-hidden shadow-sm">
+            <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-5 py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
               <div className="text-left">
                 <h2 className="text-sm sm:text-base font-black text-[#3d2b17] uppercase tracking-wider flex items-center gap-2">
                   <span>🏫</span> QUẢN LÝ KHỐI LỚP & LỚP HỌC

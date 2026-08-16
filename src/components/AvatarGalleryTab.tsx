@@ -414,19 +414,20 @@ export const AvatarGalleryTab: React.FC<AvatarGalleryTabProps> = ({
         className="hidden"
       />
 
-      {/* Header Info Banner */}
-      <div className="bg-white p-3.5 sm:px-5 sm:py-3.5 rounded-2xl border border-slate-100 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <div className="bg-amber-100 p-2 rounded-xl text-amber-600 shrink-0">
-              <Image className="w-4.5 h-4.5" />
+      {/* 🌟 1. DESKOS IMAC WARM BEIGE CARD HEADER STRIP */}
+      <div className="border-2 border-[#cbb89d] rounded-3xl bg-[#fffbf0] overflow-hidden shadow-sm">
+        <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-5 py-3 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <div className="bg-amber-100 p-2 rounded-xl text-amber-800 shrink-0">
+                <Image className="w-4.5 h-4.5" />
+              </div>
+              <h2 className="text-base sm:text-lg font-black text-[#3d2b17] tracking-tight uppercase">KHO AVATAR HỌC SINH</h2>
             </div>
-            <h2 className="text-base sm:text-lg font-black text-slate-800 tracking-tight">KHO AVATAR HỌC SINH</h2>
+            <p className="text-xs text-[#5c4327] font-bold mt-0.5">
+              Quản trị viên hoặc Giáo viên có thể lựa chọn avatar độc đáo từ Google Drive hoặc tải từ máy tính cho từng học sinh.
+            </p>
           </div>
-          <p className="text-xs text-slate-400 font-medium mt-0.5">
-            Quản trị viên hoặc Giáo viên có thể lựa chọn avatar độc đáo từ Google Drive hoặc tải từ máy tính cho từng học sinh.
-          </p>
-        </div>
 
         {/* Class selector */}
         <div className="flex items-center gap-2 self-start md:self-center shrink-0">
@@ -448,6 +449,7 @@ export const AvatarGalleryTab: React.FC<AvatarGalleryTabProps> = ({
           </select>
         </div>
       </div>
+    </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Left column: Compact Searchable Student Picker / Table */}

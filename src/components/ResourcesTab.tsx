@@ -236,6 +236,20 @@ export default function ResourcesTab({
   return (
     <div className="space-y-6">
 
+      {/* 🌟 1. DESKOS IMAC WARM BEIGE CARD HEADER STRIP */}
+      <div className="border-2 border-[#cbb89d] rounded-3xl bg-[#fffbf0] overflow-hidden shadow-sm">
+        <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-5 py-3 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 text-left">
+          <div>
+            <h2 className="text-sm sm:text-base font-black text-[#3d2b17] uppercase tracking-wider flex items-center gap-2">
+              <span>📚</span> KHO TÀI NGUYÊN & HỌC LIỆU GIẢNG DẠY
+            </h2>
+            <p className="text-[11px] font-bold text-[#5c4327] mt-1">
+              Cung cấp phiếu học tập, Kế hoạch giáo dục (KHGD), bài giảng điện tử PPT phục vụ môn Tin học.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Left column: upload form */}

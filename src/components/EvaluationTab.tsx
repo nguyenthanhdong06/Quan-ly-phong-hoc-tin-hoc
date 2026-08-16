@@ -307,8 +307,8 @@ export default function EvaluationTab({
     <div className="space-y-6">
 
       {/* 🌟 DESKOS IMAC WARM BEIGE CARD HEADER STRIP */}
-      <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs">
-        <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div className="border-2 border-[#cbb89d] rounded-3xl bg-[#fffbf0] overflow-hidden shadow-sm">
+        <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-5 py-3 flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="text-left">
             <h2 className="text-sm sm:text-base font-black text-[#3d2b17] uppercase tracking-wider flex items-center gap-2">
               <span>⭐</span> SỔ ĐÁNH GIÁ & CHẤM ĐIỂM SAO LỚP: <span className="text-emerald-800 font-black bg-white/90 px-2.5 py-0.5 rounded-lg border border-[#cbb89d]">{selectedClass}</span>

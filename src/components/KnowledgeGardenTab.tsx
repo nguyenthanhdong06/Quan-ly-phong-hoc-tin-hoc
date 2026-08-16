@@ -1074,8 +1074,8 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     <div className="space-y-4 sm:space-y-6 text-slate-800 pb-10">
       
       {/* 🌟 1. DESKOS IMAC WARM BEIGE CARD HEADER STRIP */}
-      <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs">
-        <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+      <div className="border-2 border-[#cbb89d] rounded-3xl bg-[#fffbf0] overflow-hidden shadow-sm">
+        <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-5 py-3 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
           <div className="flex items-center gap-2 text-left">
             <span className="font-bold text-xs text-[#5c4327]">Đang chọn:</span>
             <span className="font-black text-xs text-emerald-800 bg-white/80 px-2.5 py-1 rounded-lg border border-[#cbb89d]">

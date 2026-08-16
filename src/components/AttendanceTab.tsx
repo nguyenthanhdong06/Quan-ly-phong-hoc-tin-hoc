@@ -208,8 +208,8 @@ export default function AttendanceTab({
     <div className="space-y-6">
 
       {/* 🌟 DESKOS IMAC WARM BEIGE CARD HEADER STRIP */}
-      <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs">
-        <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+      <div className="border-2 border-[#cbb89d] rounded-3xl bg-[#fffbf0] overflow-hidden shadow-sm">
+        <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-5 py-3 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
           <div className="text-left">
             <h2 className="text-sm sm:text-base font-black text-[#3d2b17] uppercase tracking-wider flex items-center gap-2">
               <span>📋</span> SỔ ĐIỂM DANH LỚP: <span className="text-emerald-800 font-black bg-white/90 px-2.5 py-0.5 rounded-lg border border-[#cbb89d]">{selectedClass}</span>
@@ -573,7 +573,7 @@ export default function AttendanceTab({
                             onClick={() => handleSetState(s.id, 'unexcused')}
                             className={`flex-1 text-center py-2 px-2.5 rounded-lg text-xs tracking-wide transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
                               currentStatus === 'unexcused' 
-                                ? 'bg-gradient-to-r from-rose-600 to-red-600 text-white font-black shadow-md shadow-rose-600/30 ring-2 ring-rose-400 border border-rose-500 animate-pulse scale-[1.03]' 
+                                ? 'bg-red-600 hover:bg-red-700 text-white font-black shadow-md shadow-red-600/40 ring-2 ring-red-400 border border-red-500 scale-[1.03]' 
                                 : 'bg-slate-100/90 text-slate-500 hover:text-slate-900 hover:bg-white border border-slate-200 font-bold'
                             }`}
                           >
