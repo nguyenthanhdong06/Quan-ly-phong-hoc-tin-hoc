@@ -124,6 +124,8 @@
   - Tách `AttendanceStudentRow` bọc bởi `React.memo`: Chỉ render lại duy nhất 1 dòng học sinh vừa thay đổi trạng thái, 39 học sinh còn lại giữ nguyên DOM 100% (0ms cost re-render).
 - [x] **Memoize Thẻ Học Sinh Trong Sổ Đánh Giá & Chấm Sao ([src/components/StudentCard3D.tsx](file:///d:/LAPTRINH/qu%E1%BA%A3n-l%C3%BD-ph%C3%B2ng-h%E1%BB%8Dc-tin-h%E1%BB%8Dc/src/components/StudentCard3D.tsx) & [src/components/EvaluationTab.tsx](file:///d:/LAPTRINH/qu%E1%BA%A3n-l%C3%BD-ph%C3%B2ng-h%E1%BB%8Dc-tin-h%E1%BB%8Dc/src/components/EvaluationTab.tsx))**:
   - Bọc `React.memo` cho `StudentCard3D` và tạo `EvaluationStudentCardItem`: Giữ nguyên DOM 100% cho 39 thẻ học sinh khác khi bấm chọn/thưởng sao 1 học sinh.
+- [x] **Sửa Lỗi Bất Đồng Bộ Dữ Liệu Điểm Danh 2-Chiều Giữa 'Điểm Danh' & 'Phòng Lab' ([src/components/LabRoomTab.tsx](file:///d:/LAPTRINH/qu%E1%BA%A3n-l%C3%BD-ph%C3%B2ng-h%E1%BB%8Dc-tin-h%E1%BB%8Dc/src/components/LabRoomTab.tsx))**:
+  - Gỡ bỏ state đóng băng nội bộ `localAttendance`, liên kết trực tiếp prop `attendanceData` theo thời gian thực (Realtime Props) và nạp phân mảnh theo ngày. Đồng bộ 100% số lượng Có mặt/Vắng mặt và sơ đồ chỗ ngồi.
 
 ---
 
