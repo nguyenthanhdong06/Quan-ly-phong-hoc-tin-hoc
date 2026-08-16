@@ -17,6 +17,7 @@ import { compressImageFile } from './KnowledgeGardenTab';
 import { playButtonClickSound, playVictoryFanfareSound } from '../utils/audioEffects';
 import { safeSetLocalStorage } from '../utils/safeStorage';
 import { saveSupabaseState } from '../supabaseClient';
+import { loadDayPartitionedAttendance } from '../utils/attendancePartition';
 
 // Helper to generate default lab matrix layout (Rows x Cols) with labels Máy 01, Máy 02...
 export const generateDefaultLabLayout = (rows: number = 5, cols: number = 8) => {
@@ -148,12 +149,7 @@ export default function LabRoomTab({
   // Realtime Sync Attendance Data State
   const [localAttendance] = useState<AttendanceData>(() => {
     if (attendanceData && Object.keys(attendanceData).length > 0) return attendanceData;
-    try {
-      const saved = localStorage.getItem('school_attendance_data');
-      return saved ? JSON.parse(saved) : {};
-    } catch {
-      return {};
-    }
+    return loadDayPartitionedAttendance();
   });
 
   const currentClassAttendanceMap = useMemo(() => {

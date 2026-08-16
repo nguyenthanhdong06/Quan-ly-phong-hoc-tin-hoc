@@ -30,6 +30,11 @@ import TimetableTab from './components/TimetableTab';
 import LabBookingTab from './components/LabBookingTab';
 import OfflineSyncBanner from './components/OfflineSyncBanner';
 import { triggerInstantShortcutDownload } from './utils/shortcutInstaller';
+import { 
+  saveDayPartitionedAttendance, 
+  loadDayPartitionedAttendance, 
+  applyPartitionedAttendanceUpdate 
+} from './utils/attendancePartition';
 import { InteractiveGamesTab } from './components/InteractiveGamesTab';
 import { PersonalQuestionsTab } from './components/PersonalQuestionsTab';
 import ComputerReportTab from './components/ComputerReportTab';
@@ -138,7 +143,7 @@ export default function App() {
   const [students, setStudents] = useState<Student[]>(() => safeParse('school_students', defaultStudents));
   const [computers, setComputers] = useState<Computer[]>(() => safeParse('school_computers', generateDefaultComputers()));
   const [seatingChart, setSeatingChart] = useState<SeatingChart>(() => safeParse('school_seating_chart', defaultSeating));
-  const [attendanceData, setAttendanceData] = useState<AttendanceData>(() => safeParse('school_attendance_data', defaultAttendance));
+  const [attendanceData, setAttendanceData] = useState<AttendanceData>(() => loadDayPartitionedAttendance(undefined, defaultAttendance));
   const [evaluationData, setEvaluationData] = useState<EvaluationData>(() => safeParse('school_evaluation_data', defaultEvaluation));
   const [emulationDataState, setEmulationDataState] = useState<EmulationDataState>(() => safeParse('school_emulation_state', defaultEmulation));
   const [documents, setDocuments] = useState<DocumentItem[]>(() => safeParse('school_documents', defaultDocuments));
@@ -307,7 +312,7 @@ export default function App() {
           if (dbStates['school_students']) setStudents(dbStates['school_students']);
           if (dbStates['school_computers']) setComputers(dbStates['school_computers']);
           if (dbStates['school_seating_chart']) setSeatingChart(dbStates['school_seating_chart']);
-          if (dbStates['school_attendance_data']) setAttendanceData(dbStates['school_attendance_data']);
+          setAttendanceData(loadDayPartitionedAttendance(dbStates, defaultAttendance));
           if (dbStates['school_evaluation_data']) setEvaluationData(dbStates['school_evaluation_data']);
           if (dbStates['school_emulation_state']) setEmulationDataState(dbStates['school_emulation_state']);
           if (dbStates['school_documents']) setDocuments(dbStates['school_documents']);
@@ -365,13 +370,17 @@ export default function App() {
         }
       };
 
+      if (key.startsWith('school_attendance_')) {
+        setAttendanceData(prev => applyPartitionedAttendanceUpdate(prev, key, value));
+        return;
+      }
+
       switch (key) {
         case 'school_grades': setGrades(prev => isIdentical(prev) ? prev : value); break;
         case 'school_classes': setClasses(prev => isIdentical(prev) ? prev : value); break;
         case 'school_students': setStudents(prev => isIdentical(prev) ? prev : value); break;
         case 'school_computers': setComputers(prev => isIdentical(prev) ? prev : value); break;
         case 'school_seating_chart': setSeatingChart(prev => isIdentical(prev) ? prev : value); break;
-        case 'school_attendance_data': setAttendanceData(prev => isIdentical(prev) ? prev : value); break;
         case 'school_evaluation_data': setEvaluationData(prev => isIdentical(prev) ? prev : value); break;
         case 'school_emulation_state': setEmulationDataState(prev => isIdentical(prev) ? prev : value); break;
         case 'school_documents': setDocuments(prev => isIdentical(prev) ? prev : value); break;
@@ -526,13 +535,12 @@ export default function App() {
     if (isLoaded) {
       if (attendanceDebounceRef.current) clearTimeout(attendanceDebounceRef.current);
       attendanceDebounceRef.current = setTimeout(() => {
-        safeSetLocalStorage('school_attendance_data', attendanceData);
-        saveSupabaseState('school_attendance_data', attendanceData);
+        saveDayPartitionedAttendance(attendanceData, selectedDate);
       }, 800);
     } else {
       safeSetLocalStorage('school_attendance_data', attendanceData);
     }
-  }, [attendanceData, isLoaded]);
+  }, [attendanceData, selectedDate, isLoaded]);
 
   useEffect(() => {
     safeSetLocalStorage('school_evaluation_data', evaluationData);
@@ -780,7 +788,7 @@ export default function App() {
         if (dbStates['school_students']) setStudents(dbStates['school_students']);
         if (dbStates['school_computers']) setComputers(dbStates['school_computers']);
         if (dbStates['school_seating_chart']) setSeatingChart(dbStates['school_seating_chart']);
-        if (dbStates['school_attendance_data']) setAttendanceData(dbStates['school_attendance_data']);
+        setAttendanceData(loadDayPartitionedAttendance(dbStates, defaultAttendance));
         if (dbStates['school_evaluation_data']) setEvaluationData(dbStates['school_evaluation_data']);
         if (dbStates['school_emulation_state']) setEmulationDataState(dbStates['school_emulation_state']);
         if (dbStates['school_documents']) setDocuments(dbStates['school_documents']);
@@ -817,7 +825,7 @@ export default function App() {
         saveSupabaseState('school_students', students),
         saveSupabaseState('school_computers', computers),
         saveSupabaseState('school_seating_chart', seatingChart),
-        saveSupabaseState('school_attendance_data', attendanceData),
+        saveDayPartitionedAttendance(attendanceData),
         saveSupabaseState('school_evaluation_data', evaluationData),
         saveSupabaseState('school_emulation_state', emulationDataState),
         saveSupabaseState('school_documents', documents),
