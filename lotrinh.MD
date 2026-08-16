@@ -130,6 +130,8 @@
   - Tích hợp bộ chuyển tab 3 chế độ (Chưa xếp | Tất cả lớp | Đã xếp), hiển thị nhãn máy tính đã ngồi và nút `Đổi máy 🔄`. Chuẩn hóa so khớp mã lớp không phân biệt chữ hoa/thường.
 - [x] **Loại Bỏ Tính Năng WebSocket Supabase Cho Ứng Dụng 'Điểm Danh' ([src/App.tsx](file:///d:/LAPTRINH/qu%E1%BA%A3n-l%C3%BD-ph%C3%B2ng-h%E1%BB%8Dc-tin-h%E1%BB%8Dc/src/App.tsx))**:
   - Bỏ 100% sự kiện lắng nghe WebSocket Realtime kênh `school_attendance_...` cho ứng dụng Điểm danh. Điểm danh hoạt động siêu tốc 0ms với LocalStorage & Supabase REST API không bị nghẽn hay lặp sự kiện WebSocket.
+- [x] **Cập Nhật Hiệu Ứng Nền Đỏ Tức Thì Cho Nút 'Không Phép' ([src/components/AttendanceTab.tsx](file:///d:/LAPTRINH/qu%E1%BA%A3n-l%C3%BD-ph%C3%B2ng-h%E1%BB%8Dc-tin-h%E1%BB%8Dc/src/components/AttendanceTab.tsx))**:
+  - Khi nhấp chọn 'Không phép (KP)', nút lập tức chuyển sang màu nền đỏ đậm `bg-red-600` rực rỡ, đi kèm nhãn trạng thái và viền dòng nổi bật.
 
 ---
 
