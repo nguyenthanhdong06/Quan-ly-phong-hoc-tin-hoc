@@ -39,7 +39,7 @@ import { SciFi3DPopupFrame } from './components/SciFi3DPopupFrame';
 import { CalendarCheck } from 'lucide-react';
 
 // Supabase services
-import { supabase, loadAllSupabaseStates, saveSupabaseState, setSupabaseOnline } from './supabaseClient';
+import { supabase, loadAllSupabaseStates, saveSupabaseState, setSupabaseOnline, isRecentLocalSave } from './supabaseClient';
 import { safeSetLocalStorage } from './utils/safeStorage';
 import { verifyPassword, sanitizeInput } from './utils/security';
 import { createSessionId, setLocalSession, getLocalSession, clearLocalSession } from './features/auth/multiDeviceSession';
@@ -408,6 +408,10 @@ export default function App() {
         (payload: any) => {
           if (payload.new && payload.new.key) {
             const { key, value } = payload.new;
+            // 🛡️ CHỐNG LẶP ECHO WEBSOCKET: Bỏ qua nếu dữ liệu vừa được chính client này lưu xuống gần đây (dưới 3s)
+            if (isRecentLocalSave(key, 3000)) {
+              return;
+            }
             applyCloudState(key, value);
           }
         }
@@ -519,12 +523,14 @@ export default function App() {
   }, [seatingChart, isLoaded]);
 
   useEffect(() => {
-    safeSetLocalStorage('school_attendance_data', attendanceData);
     if (isLoaded) {
       if (attendanceDebounceRef.current) clearTimeout(attendanceDebounceRef.current);
       attendanceDebounceRef.current = setTimeout(() => {
+        safeSetLocalStorage('school_attendance_data', attendanceData);
         saveSupabaseState('school_attendance_data', attendanceData);
       }, 800);
+    } else {
+      safeSetLocalStorage('school_attendance_data', attendanceData);
     }
   }, [attendanceData, isLoaded]);
 

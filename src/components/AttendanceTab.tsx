@@ -469,8 +469,7 @@ export default function AttendanceTab({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              <AnimatePresence>
-                {paginatedStudents.map((s, index) => {
+              {paginatedStudents.map((s, index) => {
                   const currentStatus = currentDaysAttendance[s.id] || 'present';
                   const originalIndex = classStudents.findIndex(cs => cs.id === s.id);
                   const displayIndex = originalIndex !== -1 ? originalIndex + 1 : index + 1;
@@ -586,7 +585,6 @@ export default function AttendanceTab({
                     </tr>
                   );
                 })}
-              </AnimatePresence>
               
               {classStudents.length > 0 && filteredStudents.length === 0 && (
                 <tr>

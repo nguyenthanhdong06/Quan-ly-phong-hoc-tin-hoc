@@ -85,11 +85,24 @@ export async function loadAllSupabaseStates(): Promise<Record<string, any>> {
   }
 }
 
+// Local save timestamps tracker to eliminate WebSocket echo lag loops
+const lastLocalSaveTimestamps: Record<string, number> = {};
+
+export function markKeySavedLocally(key: string) {
+  lastLocalSaveTimestamps[key] = Date.now();
+}
+
+export function isRecentLocalSave(key: string, thresholdMs = 3000): boolean {
+  const lastSave = lastLocalSaveTimestamps[key] || 0;
+  return Date.now() - lastSave < thresholdMs;
+}
+
 /**
  * Save state key-value to Supabase with auto-reconnect
  */
 export async function saveSupabaseState(key: string, value: any): Promise<boolean> {
-  // Sync to localStorage first for instant client responsiveness
+  // Mark local save timestamp to suppress self WebSocket echoes
+  markKeySavedLocally(key);
   safeSetLocalStorage(key, value);
 
   // Always attempt saving to Supabase database
