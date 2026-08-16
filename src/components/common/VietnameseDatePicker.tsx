@@ -33,15 +33,22 @@ export const VietnameseDatePicker: React.FC<VietnameseDatePickerProps> = ({
     const cleanStr = dmy.trim().replace(/[-.]/g, '/');
     const parts = cleanStr.split('/');
     if (parts.length === 3) {
-      const day = parts[0].padStart(2, '0');
-      const month = parts[1].padStart(2, '0');
+      const rawDay = parts[0];
+      const rawMonth = parts[1];
       const year = parts[2];
-      if (year.length === 4 && !isNaN(Number(day)) && !isNaN(Number(month)) && !isNaN(Number(year))) {
-        const dNum = Number(day);
-        const mNum = Number(month);
+      
+      // Strict check: year must be 4 digits, day & month must be valid numbers
+      if (year.length === 4 && rawDay.length >= 1 && rawMonth.length >= 1) {
+        const dNum = Number(rawDay);
+        const mNum = Number(rawMonth);
         const yNum = Number(year);
-        if (mNum >= 1 && mNum <= 12 && dNum >= 1 && dNum <= 31 && yNum >= 1900 && yNum <= 2100) {
-          return `${year}-${month}-${day}`;
+
+        if (!isNaN(dNum) && !isNaN(mNum) && !isNaN(yNum)) {
+          if (mNum >= 1 && mNum <= 12 && dNum >= 1 && dNum <= 31 && yNum >= 1900 && yNum <= 2100) {
+            const formattedDay = String(dNum).padStart(2, '0');
+            const formattedMonth = String(mNum).padStart(2, '0');
+            return `${year}-${formattedMonth}-${formattedDay}`;
+          }
         }
       }
     }
@@ -50,27 +57,39 @@ export const VietnameseDatePicker: React.FC<VietnameseDatePickerProps> = ({
 
   // Local text input state for typing directly
   const [inputText, setInputText] = useState(() => formatYMDtoDMY(value));
+  const [isFocused, setIsFocused] = useState(false);
 
-  // Keep inputText in sync when value prop changes (e.g. from calendar picker)
+  // Keep inputText in sync when value prop changes, BUT ONLY when not actively focused by user
   useEffect(() => {
-    setInputText(formatYMDtoDMY(value));
-  }, [value]);
+    if (!isFocused) {
+      setInputText(formatYMDtoDMY(value));
+    }
+  }, [value, isFocused]);
 
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setInputText(val);
 
-    // Try parsing as user types
+    // Try parsing as user types complete date
     const parsedYMD = parseDMYtoYMD(val);
     if (parsedYMD && parsedYMD !== value) {
       onChange(parsedYMD);
     }
   };
 
+  const handleFocus = () => {
+    setIsFocused(true);
+  };
+
   const handleTextBlur = () => {
-    // If invalid text was left on blur, revert back to current valid value prop
+    setIsFocused(false);
+    // If text is valid on blur, apply and format
     const parsedYMD = parseDMYtoYMD(inputText);
-    if (!parsedYMD) {
+    if (parsedYMD) {
+      onChange(parsedYMD);
+      setInputText(formatYMDtoDMY(parsedYMD));
+    } else {
+      // Revert back to current valid value if text left incomplete or invalid
       setInputText(formatYMDtoDMY(value));
     }
   };
@@ -99,6 +118,7 @@ export const VietnameseDatePicker: React.FC<VietnameseDatePickerProps> = ({
           type="text"
           value={inputText}
           onChange={handleTextChange}
+          onFocus={handleFocus}
           onBlur={handleTextBlur}
           placeholder="DD/MM/YYYY"
           maxLength={10}
