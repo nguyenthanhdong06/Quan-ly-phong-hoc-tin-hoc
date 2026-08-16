@@ -13,7 +13,7 @@ interface StudentCard3DProps {
   isAbsent?: boolean;
 }
 
-export const StudentCard3D: React.FC<StudentCard3DProps> = ({
+export const StudentCard3D: React.FC<StudentCard3DProps> = React.memo(({
   student,
   classStudents = [],
   machineName = 'Chưa xếp máy',
@@ -172,4 +172,4 @@ export const StudentCard3D: React.FC<StudentCard3DProps> = ({
       </div>
     </div>
   );
-};
+});

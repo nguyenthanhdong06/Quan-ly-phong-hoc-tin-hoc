@@ -113,18 +113,15 @@ const SimpleAvatar = ({ emoji, bg, size = 'w-16 h-16', className = '', avatarUrl
   );
 };
 
-// Helper to format student name for short display to fit card perfectly while keeping native tooltip for hover
 const formatDisplayName = (fullName: string) => {
   if (!fullName) return '';
   const parts = fullName.trim().split(/\s+/);
   if (parts.length > 2) {
-    // Return last 2 words (e.g. "Nguyễn Thị Mộng Mơ" -> "Mộng Mơ")
     return parts.slice(-2).join(' ');
   }
   return fullName;
 };
 
-// Helper to get achievement badge info based on cumulative stars
 const getStudentBadge = (stars: number) => {
   if (stars >= 20) {
     return {
@@ -138,21 +135,55 @@ const getStudentBadge = (stars: number) => {
     return {
       type: 'gold',
       label: 'Huy hiệu Vàng',
-      ringClass: 'ring-[3.5px] ring-amber-400 ring-offset-2 shadow-[0_0_15px_rgba(251,191,36,0.55)]',
-      badgeClass: 'bg-gradient-to-r from-amber-400 to-yellow-500 text-white border-amber-200 text-[8px] font-black',
-      emoji: '👑'
+      ringClass: 'ring-[3.5px] ring-amber-400 ring-offset-2 shadow-[0_0_12px_rgba(251,191,36,0.5)]',
+      badgeClass: 'bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-amber-950 border-amber-200 text-[8px] font-black',
+      emoji: '🥇'
     };
   } else if (stars >= 5) {
     return {
       type: 'silver',
       label: 'Huy hiệu Bạc',
-      ringClass: 'ring-[3.5px] ring-slate-300 ring-offset-2 shadow-[0_0_8px_rgba(148,163,184,0.35)]',
-      badgeClass: 'bg-gradient-to-r from-slate-300 to-slate-400 text-white border-slate-200 text-[8px] font-black',
+      ringClass: 'ring-[3px] ring-slate-300 ring-offset-1 shadow-xs',
+      badgeClass: 'bg-gradient-to-r from-slate-200 to-slate-400 text-slate-900 border-slate-100 text-[8px] font-black',
       emoji: '🥈'
     };
   }
   return null;
 };
+
+interface EvaluationStudentCardItemProps {
+  student: Student;
+  classStudents: Student[];
+  machineName: string;
+  currentStars: number;
+  isAbsent: boolean;
+  onSelectStudent: (student: Student) => void;
+}
+
+const EvaluationStudentCardItem = React.memo(({
+  student: s,
+  classStudents,
+  machineName,
+  currentStars,
+  isAbsent,
+  onSelectStudent
+}: EvaluationStudentCardItemProps) => {
+  return (
+    <div 
+      onClick={() => onSelectStudent(s)}
+      className="w-full flex justify-center cursor-pointer hover:scale-[1.025] active:scale-[0.98] transition-transform duration-200"
+    >
+      <StudentCard3D
+        student={s}
+        classStudents={classStudents}
+        machineName={machineName}
+        starCount={currentStars}
+        size="sm"
+        isAbsent={isAbsent}
+      />
+    </div>
+  );
+});
 
 export default function EvaluationTab({
   selectedClass,
@@ -172,6 +203,10 @@ export default function EvaluationTab({
   
   const [searchTerm, setSearchTerm] = React.useState('');
   const [selectedStudent, setSelectedStudent] = React.useState<Student | null>(null);
+
+  const handleSelectStudent = React.useCallback((student: Student) => {
+    setSelectedStudent(student);
+  }, []);
 
   // Reset search term when class changes for perfect UX
   React.useEffect(() => {
@@ -389,28 +424,20 @@ export default function EvaluationTab({
               : (emulationObj.exchangedStickers || 0) * 5;
             const currentStars = Math.max(0, cumulativeStars - deducted);
 
-            const avatar = getStudentAvatar(s.id, students);
-            const badge = getStudentBadge(currentStars);
-
             // Check if student is marked as absent today
             const attendanceStatus = attendanceData[selectedDate]?.[selectedClass]?.[s.id];
             const isAbsent = attendanceStatus === 'excused' || attendanceStatus === 'unexcused';
 
             return (
-              <div 
-                key={s.id} 
-                onClick={() => setSelectedStudent(s)}
-                className="w-full flex justify-center cursor-pointer hover:scale-[1.025] active:scale-[0.98] transition-transform duration-200"
-              >
-                <StudentCard3D
-                  student={s}
-                  classStudents={classStudents}
-                  machineName={seatObj ? seatObj.name : 'Chưa xếp máy'}
-                  starCount={currentStars}
-                  size="sm"
-                  isAbsent={isAbsent}
-                />
-              </div>
+              <EvaluationStudentCardItem
+                key={s.id}
+                student={s}
+                classStudents={classStudents}
+                machineName={seatObj ? seatObj.name : 'Chưa xếp máy'}
+                currentStars={currentStars}
+                isAbsent={isAbsent}
+                onSelectStudent={handleSelectStudent}
+              />
             );
           })}
         </div>
