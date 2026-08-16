@@ -573,7 +573,7 @@ export default function AttendanceTab({
                             onClick={() => handleSetState(s.id, 'unexcused')}
                             className={`flex-1 text-center py-2 px-2.5 rounded-lg text-xs tracking-wide transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
                               currentStatus === 'unexcused' 
-                                ? 'bg-red-600 hover:bg-red-700 text-white font-black shadow-md shadow-red-600/40 ring-2 ring-red-400 border border-red-500 scale-[1.03]' 
+                                ? 'bg-gradient-to-r from-rose-600 to-red-600 text-white font-black shadow-md shadow-rose-600/30 ring-2 ring-rose-400 border border-rose-500 animate-pulse scale-[1.03]' 
                                 : 'bg-slate-100/90 text-slate-500 hover:text-slate-900 hover:bg-white border border-slate-200 font-bold'
                             }`}
                           >
