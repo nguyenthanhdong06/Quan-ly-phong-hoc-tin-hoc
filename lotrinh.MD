@@ -137,7 +137,7 @@
 - [x] **Nâng Cấp Phân Quyền Không Gian Làm Việc Độc Lập & Phân Phối Lớp Học Theo TKB ([src/App.tsx](file:///d:/LAPTRINH/qu%E1%BA%A3n-l%C3%BD-ph%C3%B2ng-h%E1%BB%8Dc-tin-h%E1%BB%8Dc/src/App.tsx), [src/utils/classFilters.ts](file:///d:/LAPTRINH/qu%E1%BA%A3n-l%C3%BD-ph%C3%B2ng-h%E1%BB%8Dc-tin-h%E1%BB%8Dc/src/utils/classFilters.ts))**:
   - **Báo cáo máy**: Mỗi giáo viên có không gian báo cáo cá nhân độc lập, không thấy báo cáo của giáo viên khác (trừ Admin thấy tất cả).
   - **Khớp danh sách lớp 100% TKB**: Lọc chính xác các lớp được phân công dạy trong Thời khóa biểu của giáo viên hiện tại (trừ Admin thấy 100% tất cả các lớp).
-  - **Ẩn ứng dụng 'Lớp học'**: Ẩn menu ứng dụng Lớp học đối với tất cả giáo viên thường (chỉ Admin truy cập).
+  - **Ẩn ứng dụng 'Lớp học'**: Ẩn menu ứng dụng Lớp học trên toàn bộ giao diện DeskOS (Màn hình chính App Grid, Menu Start, Sidebar điều hướng) đối với tất cả giáo viên thường (chỉ Admin mới nhìn thấy và truy cập).
   - **Thời khóa biểu cá nhân**: Giới hạn ứng dụng Thời khóa biểu chỉ hiển thị thời khóa biểu của Giáo viên hiện tại, khóa bộ chọn GV khác (trừ Admin).
   - **Ẩn chức năng 'Duyệt & Quản lý' Đăng ký phòng máy**: Ẩn tab 5 "Duyệt & Quản lý" đối với tất cả giáo viên thường (chỉ Admin có quyền duyệt/quản lý).
 
