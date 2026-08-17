@@ -134,6 +134,12 @@
   - Khi nhấp chọn 'Không phép (KP)', nút lập tức chuyển sang màu nền đỏ đậm `bg-red-600` rực rỡ, đi kèm nhãn trạng thái và viền dòng nổi bật.
 - [x] **Chuẩn Hóa Định Dạng Ngày Tháng Chuẩn Việt Nam DD/MM/YYYY ([src/components/common/VietnameseDatePicker.tsx](file:///d:/LAPTRINH/qu%E1%BA%A3n-l%C3%BD-ph%C3%B2ng-h%E1%BB%8Dc-tin-h%E1%BB%8Dc/src/components/common/VietnameseDatePicker.tsx))**:
   - Xây dựng thành phần `VietnameseDatePicker` dùng chung cho toàn bộ các ứng dụng (Điểm Danh, Đánh Giá & Chấm Sao...), tích hợp 2 tính năng song song: (1) Nhập tay trực tiếp định dạng `DD/MM/YYYY` (ví dụ: `16/08/2026`), và (2) Nhấp chuột vào biểu tượng lịch 📅 để bật bộ chọn ngày. Khắc phục triệt để lỗi tự nhảy về số '01' khi gõ hoặc xóa ngày tháng nhờ cơ chế kiểm soát Focus & Lazy Parse linh hoạt.
+- [x] **Nâng Cấp Phân Quyền Không Gian Làm Việc Độc Lập & Phân Phối Lớp Học Theo TKB ([src/App.tsx](file:///d:/LAPTRINH/qu%E1%BA%A3n-l%C3%BD-ph%C3%B2ng-h%E1%BB%8Dc-tin-h%E1%BB%8Dc/src/App.tsx), [src/utils/classFilters.ts](file:///d:/LAPTRINH/qu%E1%BA%A3n-l%C3%BD-ph%C3%B2ng-h%E1%BB%8Dc-tin-h%E1%BB%8Dc/src/utils/classFilters.ts))**:
+  - **Báo cáo máy**: Mỗi giáo viên có không gian báo cáo cá nhân độc lập, không thấy báo cáo của giáo viên khác (trừ Admin thấy tất cả).
+  - **Khớp danh sách lớp 100% TKB**: Lọc chính xác các lớp được phân công dạy trong Thời khóa biểu của giáo viên hiện tại (trừ Admin thấy 100% tất cả các lớp).
+  - **Ẩn ứng dụng 'Lớp học'**: Ẩn menu ứng dụng Lớp học đối với tất cả giáo viên thường (chỉ Admin truy cập).
+  - **Thời khóa biểu cá nhân**: Giới hạn ứng dụng Thời khóa biểu chỉ hiển thị thời khóa biểu của Giáo viên hiện tại, khóa bộ chọn GV khác (trừ Admin).
+  - **Ẩn chức năng 'Duyệt & Quản lý' Đăng ký phòng máy**: Ẩn tab 5 "Duyệt & Quản lý" đối với tất cả giáo viên thường (chỉ Admin có quyền duyệt/quản lý).
 
 ---
 
