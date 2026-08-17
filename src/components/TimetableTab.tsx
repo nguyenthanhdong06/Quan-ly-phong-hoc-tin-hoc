@@ -33,11 +33,16 @@ export default function TimetableTab({
   currentUser,
   showToast
 }: TimetableTabProps) {
+  const isAdmin = Boolean(currentUser?.role?.includes('Admin'));
+
   // Find teachers from members list
   const teachers = members.filter(m => m.role.includes('Giáo viên') || m.role.includes('Admin'));
 
-  // Default selected teacher to saved selection, or current user, or first teacher
+  // Default selected teacher to saved selection for Admin, or lock to currentUser for teachers
   const [selectedTeacherUsername, setSelectedTeacherUsername] = useState<string>(() => {
+    if (!isAdmin && currentUser) {
+      return currentUser.username;
+    }
     const saved = localStorage.getItem('timetable_selected_teacher');
     if (saved) return saved;
     if (currentUser) {
@@ -67,7 +72,19 @@ export default function TimetableTab({
   const [signatureTitle, setSignatureTitle] = useState<string>(() => getTeacherSignature(selectedTeacherUsername));
 
   useEffect(() => {
+    if (!isAdmin && currentUser && selectedTeacherUsername !== currentUser.username) {
+      setSelectedTeacherUsername(currentUser.username);
+    }
+  }, [isAdmin, currentUser, selectedTeacherUsername]);
+
+  useEffect(() => {
     const handleStorage = () => {
+      if (!isAdmin && currentUser) {
+        setSelectedTeacherUsername(currentUser.username);
+        setTimetableTitle(getTeacherTitle(currentUser.username));
+        setSignatureTitle(getTeacherSignature(currentUser.username));
+        return;
+      }
       const savedTeacher = localStorage.getItem('timetable_selected_teacher') || selectedTeacherUsername;
       if (savedTeacher !== selectedTeacherUsername) {
         setSelectedTeacherUsername(savedTeacher);
@@ -82,10 +99,16 @@ export default function TimetableTab({
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener('timetable_config_updated', handleStorage);
     };
-  }, [selectedTeacherUsername]);
+  }, [selectedTeacherUsername, isAdmin, currentUser]);
 
   // View modes: 'personal' (Cá nhân), 'global' (Toàn trường), 'search' (Tra cứu nhanh)
   const [viewMode, setViewMode] = useState<'personal' | 'global' | 'search'>('personal');
+
+  useEffect(() => {
+    if (!isAdmin && viewMode !== 'personal') {
+      setViewMode('personal');
+    }
+  }, [isAdmin, viewMode]);
   const [previewPaperMode, setPreviewPaperMode] = useState<boolean>(false);
   const [selectedGlobalDay, setSelectedGlobalDay] = useState<string>('2'); // '2' = Thứ 2, etc.
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -574,41 +597,48 @@ export default function TimetableTab({
           <div className="space-y-1">
             <div className="flex flex-wrap items-center gap-2">
               {/* INTERACTIVE MODE BADGE SWITCHER */}
-              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
-                <button
-                  onClick={() => setViewMode('personal')}
-                  className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase transition-all duration-200 cursor-pointer ${
-                    viewMode === 'personal'
-                      ? 'bg-emerald-600 text-white shadow-xs'
-                      : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                  title="Xem thời khóa biểu chi tiết từng giáo viên"
-                >
-                  Cá nhân
-                </button>
-                <button
-                  onClick={() => setViewMode('global')}
-                  className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase transition-all duration-200 cursor-pointer ${
-                    viewMode === 'global'
-                      ? 'bg-emerald-600 text-white shadow-xs'
-                      : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                  title="Quan sát thời khóa biểu tổng hợp của cả trường"
-                >
-                  Toàn trường
-                </button>
-                <button
-                  onClick={() => setViewMode('search')}
-                  className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase transition-all duration-200 cursor-pointer ${
-                    viewMode === 'search'
-                      ? 'bg-emerald-600 text-white shadow-xs'
-                      : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                  title="Tìm nhanh lịch học của Lớp, Môn hoặc Giáo viên"
-                >
-                  Tra cứu nhanh
-                </button>
-              </div>
+              {/* INTERACTIVE MODE BADGE SWITCHER (ADMIN ONLY) */}
+              {isAdmin ? (
+                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                  <button
+                    onClick={() => setViewMode('personal')}
+                    className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase transition-all duration-200 cursor-pointer ${
+                      viewMode === 'personal'
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                    title="Xem thời khóa biểu chi tiết từng giáo viên"
+                  >
+                    Cá nhân
+                  </button>
+                  <button
+                    onClick={() => setViewMode('global')}
+                    className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase transition-all duration-200 cursor-pointer ${
+                      viewMode === 'global'
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                    title="Quan sát thời khóa biểu tổng hợp của cả trường"
+                  >
+                    Toàn trường
+                  </button>
+                  <button
+                    onClick={() => setViewMode('search')}
+                    className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase transition-all duration-200 cursor-pointer ${
+                      viewMode === 'search'
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                    title="Tìm nhanh lịch học của Lớp, Môn hoặc Giáo viên"
+                  >
+                    Tra cứu nhanh
+                  </button>
+                </div>
+              ) : (
+                <div className="px-3 py-1 bg-emerald-100 text-emerald-950 font-black text-xs rounded-xl border border-emerald-300 shadow-2xs">
+                  📅 THỜI KHÓA BIỂU CÁ NHÂN
+                </div>
+              )}
             </div>
             
             <p className="text-[10px] text-slate-500 font-semibold leading-normal">
@@ -663,30 +693,36 @@ export default function TimetableTab({
                 In Lịch / PDF
               </button>
 
-              {/* Teacher Selector dropdown */}
+              {/* Teacher Selector dropdown (ADMIN ONLY SELECTOR, NON-ADMIN SHOWS READONLY USER BADGE) */}
               <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
                 <span className="text-[10px] md:text-xs font-black text-slate-500 uppercase flex items-center gap-1 shrink-0 ml-1">
                   <User className="w-3.5 h-3.5 text-slate-400" /> Giáo viên:
                 </span>
-                <select
-                  value={selectedTeacherUsername}
-                  onChange={(e) => {
-                    const newUsername = e.target.value;
-                    setSelectedTeacherUsername(newUsername);
-                    localStorage.setItem('timetable_selected_teacher', newUsername);
-                    window.dispatchEvent(new Event('timetable_config_updated'));
-                    window.dispatchEvent(new Event('storage'));
-                    const name = teachers.find(t => t.username === newUsername)?.name || newUsername;
-                    showToast(`Đã chuyển sang xem TKB của: ${name}`, 'success');
-                  }}
-                  className="border border-slate-200 bg-white rounded-xl py-1 px-2.5 text-xs font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer min-w-[150px]"
-                >
-                  {teachers.map((t) => (
-                    <option key={t.id} value={t.username}>
-                      {t.name} {t.username === currentUser?.username ? '(Tôi)' : ''}
-                    </option>
-                  ))}
-                </select>
+                {isAdmin ? (
+                  <select
+                    value={selectedTeacherUsername}
+                    onChange={(e) => {
+                      const newUsername = e.target.value;
+                      setSelectedTeacherUsername(newUsername);
+                      localStorage.setItem('timetable_selected_teacher', newUsername);
+                      window.dispatchEvent(new Event('timetable_config_updated'));
+                      window.dispatchEvent(new Event('storage'));
+                      const name = teachers.find(t => t.username === newUsername)?.name || newUsername;
+                      showToast(`Đã chuyển sang xem TKB của: ${name}`, 'success');
+                    }}
+                    className="border border-slate-200 bg-white rounded-xl py-1 px-2.5 text-xs font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer min-w-[150px]"
+                  >
+                    {teachers.map((t) => (
+                      <option key={t.id} value={t.username}>
+                        {t.name} {t.username === currentUser?.username ? '(Tôi)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span className="px-3 py-1 bg-white border border-slate-200 rounded-xl text-xs font-black text-emerald-800 shadow-2xs">
+                    👤 {currentUser?.name}
+                  </span>
+                )}
               </div>
             </>
           )}

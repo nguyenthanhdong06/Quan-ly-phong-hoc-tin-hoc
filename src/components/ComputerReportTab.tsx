@@ -63,6 +63,8 @@ interface SavedReport {
   title: string;
   date: string;
   creator: string;
+  creatorId?: string;
+  creatorUsername?: string;
   generalInfo: GeneralInfo;
   assets: AssetRow[];
   brokenDetails: BrokenDetailRow[];
@@ -132,6 +134,8 @@ const DEFAULT_ADDITIONS: AdditionRow[] = [
 ];
 
 export default function ComputerReportTab({ currentUser }: ComputerReportTabProps) {
+  const isAdmin = Boolean(currentUser?.role?.includes('Admin'));
+
   // General Form States
   const [generalInfo, setGeneralInfo] = useState<GeneralInfo>({
     tieuDeBaoCao: 'BÁO CÁO CƠ SỞ VẬT CHẤT PHÒNG MÁY TÍNH',
@@ -159,6 +163,17 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
   const [viewMode, setViewMode] = useState<'edit' | 'preview'>('edit');
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [isPrintMode, setIsPrintMode] = useState<boolean>(false);
+
+  // Filter visible reports: Admin sees ALL, non-admin sees ONLY their own workspace reports!
+  const visibleReports = React.useMemo(() => {
+    if (isAdmin) return savedReports;
+    return savedReports.filter(r => {
+      if (r.creatorId && currentUser?.id && r.creatorId === currentUser.id) return true;
+      if (r.creatorUsername && currentUser?.username && r.creatorUsername === currentUser.username) return true;
+      if (r.creator && currentUser?.name && r.creator === currentUser.name) return true;
+      return false;
+    });
+  }, [savedReports, currentUser, isAdmin]);
 
   // Load saved reports on mount
   useEffect(() => {
@@ -322,6 +337,8 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
       title: reportTitle,
       date: new Date().toLocaleDateString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }),
       creator: generalInfo.nguoiPhuTrach,
+      creatorId: currentUser?.id,
+      creatorUsername: currentUser?.username,
       generalInfo,
       assets,
       brokenDetails,
@@ -866,22 +883,24 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
                 📂 Lịch sử báo cáo
               </h3>
               <span className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                {savedReports.length} bản
+                {visibleReports.length} bản
               </span>
             </div>
 
             <p className="text-[11px] text-slate-400 mb-4 leading-relaxed">
-              Các báo cáo đã lưu được lưu trữ trên trình duyệt của giáo viên để xem lại, cập nhật hoặc xuất bản in bất cứ lúc nào.
+              {isAdmin 
+                ? 'Danh sách báo cáo của tất cả giáo viên trong trường (Quyền Admin).' 
+                : 'Không gian báo cáo cá nhân của Thầy/Cô để lưu trữ, xem lại và xuất bản in.'}
             </p>
 
-            {savedReports.length === 0 ? (
+            {visibleReports.length === 0 ? (
               <div className="border border-dashed border-slate-200 rounded-2xl p-6 text-center text-slate-400 text-xs font-medium space-y-2">
                 <FileText className="w-8 h-8 mx-auto text-slate-300 stroke-1" />
                 <p>Chưa có báo cáo nào được lưu.</p>
               </div>
             ) : (
               <div className="space-y-2.5 max-h-[420px] overflow-y-auto pr-1">
-                {savedReports.map((rep) => {
+                {visibleReports.map((rep) => {
                   const isActive = activeReportId === rep.id;
                   return (
                     <div

@@ -28,6 +28,7 @@ import { AvatarGalleryTab, loadCustomAvatars } from './components/AvatarGalleryT
 import AdminTab from './components/AdminTab';
 import TimetableTab from './components/TimetableTab';
 import LabBookingTab from './components/LabBookingTab';
+import { getTeacherAssignedClasses } from './utils/classFilters';
 import OfflineSyncBanner from './components/OfflineSyncBanner';
 import { triggerInstantShortcutDownload } from './utils/shortcutInstaller';
 import { 
@@ -633,18 +634,29 @@ export default function App() {
     );
   }, [currentUser]);
 
-  // Filter classes by grade
-  const filteredActiveClasses = useMemo(() => {
-    return classes.filter(c => c.gradeId === selectedGrade);
-  }, [classes, selectedGrade]);
+  const isAdmin = useMemo(() => {
+    return currentUser !== null && Boolean(currentUser.role?.includes('Admin'));
+  }, [currentUser]);
 
-  // Auto handle selectedClass synchronization when grade changes
+  // Filter classes by teacher timetable assignment (Admin gets ALL 100% classes)
+  const userAssignedClasses = useMemo(() => {
+    return getTeacherAssignedClasses(currentUser, timetableData, classes);
+  }, [currentUser, timetableData, classes]);
+
+  // Filter active classes by grade from user's assigned classes
+  const filteredActiveClasses = useMemo(() => {
+    return userAssignedClasses.filter(c => c.gradeId === selectedGrade);
+  }, [userAssignedClasses, selectedGrade]);
+
+  // Auto handle selectedClass synchronization when grade or assigned classes change
   useEffect(() => {
-    const firstOfGrade = classes.find(c => c.gradeId === selectedGrade);
+    const firstOfGrade = userAssignedClasses.find(c => c.gradeId === selectedGrade);
     if (firstOfGrade) {
       setSelectedClass(firstOfGrade.id);
+    } else if (userAssignedClasses.length > 0) {
+      setSelectedClass(userAssignedClasses[0].id);
     }
-  }, [selectedGrade, classes]);
+  }, [selectedGrade, userAssignedClasses]);
 
   // --- COMPUTER LAYOUT GROUPS (For 3D-Like classroom representation) ---
   const classroomColumns = useMemo(() => {
@@ -887,26 +899,28 @@ export default function App() {
         <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Học sinh</span>
       </button>
 
-      <button
-        onClick={() => {
-          setActiveTab('classes-management');
-          setIsMobileMenuOpen(false);
-        }}
-        title={isSidebarCollapsed ? "Khối & Lớp" : ""}
-        className={`flex items-center gap-2.5 w-full px-3 py-1.5 rounded-lg text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 ${
-          isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
-        } ${
-          activeTab === 'classes-management'
-            ? isSidebarCollapsed
-              ? 'text-amber-300 shadow-inner font-black bg-white/10'
-              : 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black bg-white/10'
-            : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
-        }`}
-        style={getTabStyle('classes-management')}
-      >
-        {isSidebarCollapsed && <Layers className="w-4 h-4 shrink-0" />}
-        <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Khối & Lớp</span>
-      </button>
+      {isAdmin && (
+        <button
+          onClick={() => {
+            setActiveTab('classes-management');
+            setIsMobileMenuOpen(false);
+          }}
+          title={isSidebarCollapsed ? "Khối & Lớp" : ""}
+          className={`flex items-center gap-2.5 w-full px-3 py-1.5 rounded-lg text-[11px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 ${
+            isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : ''
+          } ${
+            activeTab === 'classes-management'
+              ? isSidebarCollapsed
+                ? 'text-amber-300 shadow-inner font-black bg-white/10'
+                : 'text-amber-300 border-l-4 border-amber-300 shadow-inner font-black bg-white/10'
+              : 'text-[#e2f1f2]/80 hover:bg-white/12 hover:text-white'
+          }`}
+          style={getTabStyle('classes-management')}
+        >
+          {isSidebarCollapsed && <Layers className="w-4 h-4 shrink-0" />}
+          <span className={isSidebarCollapsed ? 'md:hidden' : ''}>Khối & Lớp</span>
+        </button>
+      )}
 
       <button
         onClick={() => {
@@ -1299,7 +1313,7 @@ export default function App() {
               />
             )}
 
-            {activeTab === 'classes-management' && hasAdminOrTeacherAccess && (
+            {activeTab === 'classes-management' && isAdmin && (
               <ClassesTab
                 grades={grades}
                 setGrades={setGrades}
@@ -1321,7 +1335,7 @@ export default function App() {
                 setAttendanceData={setAttendanceData}
                 showToast={showToast}
                 systemDateText={systemDateText}
-                classes={classes}
+                classes={userAssignedClasses}
                 setClasses={setClasses}
               />
             )}
@@ -1354,7 +1368,7 @@ export default function App() {
                 isRedemptionPeriod={isRedemptionPeriod}
                 computers={computers}
                 seatingChart={seatingChart}
-                classes={classes}
+                classes={userAssignedClasses}
                 grades={grades}
                 systemDateText={systemDateText}
                 evaluationData={evaluationData}
@@ -1366,7 +1380,7 @@ export default function App() {
               <KnowledgeGardenTab
                 students={students}
                 selectedClass={selectedClass}
-                classes={classes}
+                classes={userAssignedClasses}
                 onSelectClass={setSelectedClass}
                 showToast={showToast}
               />
@@ -1383,7 +1397,7 @@ export default function App() {
                 setSeatingChart={setSeatingChart}
                 showToast={showToast}
                 labs={labs}
-                classes={classes}
+                classes={userAssignedClasses}
                 onSelectClass={setSelectedClass}
                 attendanceData={attendanceData}
                 selectedDate={selectedDate}
@@ -1402,7 +1416,7 @@ export default function App() {
             {activeTab === 'lab-booking' && (
               <LabBookingTab
                 members={members}
-                classes={classes}
+                classes={userAssignedClasses}
                 computers={computers}
                 currentUser={currentUser}
                 showToast={showToast}
@@ -1430,7 +1444,7 @@ export default function App() {
               <AvatarGalleryTab
                 students={students}
                 setStudents={setStudents}
-                classes={classes}
+                classes={userAssignedClasses}
                 selectedClass={selectedClass}
                 setSelectedClass={setSelectedClass}
                 showToast={showToast}

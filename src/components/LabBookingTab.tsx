@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { LabInfo, LabBooking, LabIncident, LabMaintenanceLog, Member, ClassItem, Computer } from '../types';
 import { 
   CalendarDays, FilePenLine, AlertTriangle, Sliders, Plus, Trash2, CheckCircle2, 
@@ -110,8 +110,16 @@ export default function LabBookingTab({
   labs,
   setLabs
 }: LabBookingTabProps) {
+  const isAdmin = Boolean(currentUser?.role?.includes('Admin'));
+
   const [activeSubTab, setActiveSubTab] = useState<'calendar' | 'booking' | 'incident' | 'log' | 'admin'>('calendar');
   const [selectedLab, setSelectedLab] = useState<string>(labs[0] ? labs[0].id : 'lab1');
+
+  useEffect(() => {
+    if (!isAdmin && activeSubTab === 'admin') {
+      setActiveSubTab('calendar');
+    }
+  }, [isAdmin, activeSubTab]);
 
   // Inline Sub-View Modes cho 2 nút "Ghi nhật ký" và "Thêm phòng mới"
   const [logSubViewMode, setLogSubViewMode] = useState<'list' | 'add'>('list');
@@ -851,17 +859,19 @@ export default function LabBookingTab({
               )}
             </button>
 
-            <button
-              onClick={() => { setActiveSubTab('admin'); setAdminSubViewMode('list'); scrollToFormTop(); }}
-              className={`px-4 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-                activeSubTab === 'admin'
-                  ? 'bg-amber-600 text-white shadow-md'
-                  : 'text-[#3d2b17] hover:bg-[#d5c3aa]'
-              }`}
-            >
-              <Sliders className="w-4 h-4" />
-              <span>Duyệt & Quản Lý</span>
-            </button>
+            {isAdmin && (
+              <button
+                onClick={() => { setActiveSubTab('admin'); setAdminSubViewMode('list'); scrollToFormTop(); }}
+                className={`px-4 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+                  activeSubTab === 'admin'
+                    ? 'bg-amber-600 text-white shadow-md'
+                    : 'text-[#3d2b17] hover:bg-[#d5c3aa]'
+                }`}
+              >
+                <Sliders className="w-4 h-4 text-amber-200" />
+                <span>5. Duyệt & Quản Lý</span>
+              </button>
+            )}
           </nav>
         </div>
       </div>
@@ -1730,9 +1740,9 @@ export default function LabBookingTab({
       )}
 
       {/* ====================================================================
-          MODULE 5: QUẢN LÝ DUYỆT PHIẾU, SỰ CỐ & THIẾT KẾ SƠ ĐỒ PHÒNG LAB
+          MODULE 5: QUẢN LÝ DUYỆT PHIẾU, SỰ CỐ & THIẾT KẾ SƠ ĐỒ PHÒNG LAB (ADMIN ONLY)
           ==================================================================== */}
-      {activeSubTab === 'admin' && (
+      {activeSubTab === 'admin' && isAdmin && (
         <div className="space-y-6 animate-fadeIn text-left">
           {adminSubViewMode === 'editor' ? (
             /* INLINE TRÌNH THIẾT KẾ SƠ ĐỒ MA TRẬN PHÒNG LAB */
