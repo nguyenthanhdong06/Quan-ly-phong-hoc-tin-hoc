@@ -45,7 +45,7 @@ interface DeskOSAppGridProps {
 const ALL_POSSIBLE_APPS: AppItem[] = [
   { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard, bg: 'bg-[#bae6fd]', text: 'text-[#0369a1]' },
   { id: 'students', label: 'Học sinh', icon: Users, bg: 'bg-[#bbf7d0]', text: 'text-[#15803d]', requiresTeacherRole: true },
-  { id: 'classes-management', label: 'Lớp học', icon: School, bg: 'bg-[#fef08a]', text: 'text-[#a16207]', requiresTeacherRole: true },
+  { id: 'classes-management', label: 'Lớp học', icon: School, bg: 'bg-[#fef08a]', text: 'text-[#a16207]', requiresAdmin: true },
   { id: 'attendance', label: 'Điểm danh', icon: ClipboardCheck, bg: 'bg-[#ddd6fe]', text: 'text-[#6d28d9]', requiresTeacherRole: true },
   { id: 'evaluation', label: 'Đánh giá', icon: Star, bg: 'bg-[#fbcfe8]', text: 'text-[#be185d]', requiresTeacherRole: true },
   { id: 'emulation', label: 'Thi đua', icon: Trophy, bg: 'bg-[#fef08a]', text: 'text-[#854d0e]', requiresTeacherRole: true },

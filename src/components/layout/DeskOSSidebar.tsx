@@ -93,7 +93,7 @@ export const DeskOSSidebar: React.FC<DeskOSSidebarProps> = ({
   const allMenuItems = [
     { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard, color: 'bg-[#bae6fd] text-[#0369a1] border-[#7dd3fc]' },
     { id: 'students', label: 'Quản lý Học sinh', icon: Users, color: 'bg-[#bbf7d0] text-[#15803d] border-[#86efac]' },
-    { id: 'classes-management', label: 'Quản lý Lớp học', icon: School, color: 'bg-[#fef08a] text-[#a16207] border-[#fde047]' },
+    ...(isAdmin ? [{ id: 'classes-management', label: 'Quản lý Lớp học', icon: School, color: 'bg-[#fef08a] text-[#a16207] border-[#fde047]' }] : []),
     { id: 'attendance', label: 'Điểm danh Học sinh', icon: ClipboardCheck, color: 'bg-[#ddd6fe] text-[#6d28d9] border-[#c4b5fd]' },
     { id: 'evaluation', label: 'Đánh giá Tiết học', icon: Star, color: 'bg-[#fbcfe8] text-[#be185d] border-[#f472b6]' },
     { id: 'emulation', label: 'Thi đua Phòng máy', icon: Trophy, color: 'bg-[#fef08a] text-[#854d0e] border-[#fde047]' },
