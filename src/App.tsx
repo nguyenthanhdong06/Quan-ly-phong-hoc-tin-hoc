@@ -721,35 +721,11 @@ export default function App() {
     }
     clearLocalSession(); // Clear session ID from LocalStorage
     setCurrentUser(null);
-    setLoginForm({ username: '', password: '' }); // Clear credentials on logout
+    setLoginForm({ username: '', password: '' }); // Clear credentials on logout to allow entering any other account
+    setShowPassword(false);
     setIsLoginModalOpen(true);
     setActiveTab('dashboard');
   };
-
-  // --- MULTI-DEVICE SESSION CONTROL (Tự động phát hiện và đăng xuất tài khoản trùng) ---
-  useEffect(() => {
-    if (!currentUser) return;
-
-    const checkSessionConflict = () => {
-      const localSess = getLocalSession();
-      const dbUser = members.find((m) => m.id === currentUser.id);
-
-      if (dbUser && dbUser.activeSessionId && localSess && dbUser.activeSessionId !== localSess) {
-        showToast(`CẢNH BÁO BẢO MẬT: Tài khoản "${currentUser.name}" vừa được đăng nhập trên một thiết bị khác! Tự động đăng xuất...`, 'error');
-        handleLogout();
-      }
-    };
-
-    const interval = setInterval(checkSessionConflict, 2000);
-    window.addEventListener('storage', checkSessionConflict);
-    window.addEventListener('focus', checkSessionConflict);
-
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('storage', checkSessionConflict);
-      window.removeEventListener('focus', checkSessionConflict);
-    };
-  }, [currentUser, members]);
 
   // --- EFFECT: INACTIVITY SECURITY AUTO LOGOUT ---
   useEffect(() => {
@@ -1536,7 +1512,7 @@ export default function App() {
 
       {/* DEDICATED FULLSCREEN LOGIN PAGE (formmaumoi.png & Screenshot 2026-08-01 090051.png) */}
       {(isLoginModalOpen || !currentUser) && (
-        <div className="fixed inset-0 z-50 overflow-hidden bg-slate-950 flex flex-col md:flex-row select-none">
+        <div className="fixed inset-0 z-50 overflow-hidden bg-slate-950 flex flex-col md:flex-row">
           
           {/* ========================================================================= */}
           {/* VỊ TRÍ SỐ 2: ĐẶT ẢNH 'background.webp' LẤP HẾT KHOẢNG TRỐNG (Left Section) */}
@@ -1600,10 +1576,12 @@ export default function App() {
                     value={loginForm.username}
                     onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
                     placeholder="tên đăng nhập"
-                    className="w-full h-full bg-transparent border-none outline-none text-white font-extrabold text-xs sm:text-sm placeholder:text-white/80 placeholder:font-medium px-3 font-mono leading-none flex items-center"
+                    className="w-full h-full bg-transparent border-none outline-none text-white font-extrabold text-xs sm:text-sm placeholder:text-white/80 placeholder:font-medium px-3 font-mono leading-none flex items-center select-text cursor-text"
                     autoFocus
                     autoComplete="off"
                     required
+                    readOnly={false}
+                    disabled={false}
                   />
                 </div>
 
@@ -1622,9 +1600,11 @@ export default function App() {
                     value={loginForm.password}
                     onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
                     placeholder="mật khẩu"
-                    className="w-full h-full bg-transparent border-none outline-none text-white font-extrabold text-xs sm:text-sm placeholder:text-white/80 placeholder:font-medium px-3 font-mono leading-none flex items-center"
+                    className="w-full h-full bg-transparent border-none outline-none text-white font-extrabold text-xs sm:text-sm placeholder:text-white/80 placeholder:font-medium px-3 font-mono leading-none flex items-center select-text cursor-text"
                     autoComplete="off"
                     required
+                    readOnly={false}
+                    disabled={false}
                   />
                 </div>
 
