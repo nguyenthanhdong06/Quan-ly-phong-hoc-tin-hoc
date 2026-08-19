@@ -142,8 +142,8 @@
 - [x] **Khắc Phục Lỗi Tự Động Đăng Xuất Văng Tài Khoản & Mở Khóa Chỉnh Sửa Ô Nhập Tên Đăng Nhập ([src/App.tsx](file:///d:/LAPTRINH/qu%E1%BA%A3n-l%C3%BD-ph%C3%B2ng-h%E1%BB%8Dc-tin-h%E1%BB%8Dc/src/App.tsx))**:
   - **Khắc phục văng tài khoản khi đăng nhập**: Loại bỏ hoàn toàn vòng lặp kiểm tra xung đột phiên làm việc đa thiết bị (`checkSessionConflict`) do đồng bộ Supabase / WebSocket gây văng tài khoản đột ngột ngay sau khi đăng nhập.
 - [x] **Tích Hợp Chức Năng Khôi Phục & Đổi Mật Khẩu Nhanh Qua Mã Xác Minh OTP ([src/App.tsx](file:///d:/LAPTRINH/qu%E1%BA%A3n-l%C3%BD-ph%C3%B2ng-h%E1%BB%8Dc-tin-h%E1%BB%8Dc/src/App.tsx))**:
-  - **Nút 'Quên mật khẩu?'**: Loại bỏ khung nền button màu xanh pill container cũ, chuyển sang dạng chữ thuần sắc nét kết hợp biểu tượng Chìa Khóa `🔑 Quên mật khẩu? Khôi phục nhanh` mượt mà, giữ nguyên 100% chức năng.
-  - **Đồng bộ Tone màu Royal Blue DeskOS**: Thay đổi toàn bộ bảng màu cửa sổ Popup sang tone Xanh Hoàng Gia Royal Blue (`#381DFC`), Vàng Gold và Tím Sapphire sang trọng đồng bộ 100% với màn hình Đăng nhập và DeskOS.
+  - **Nút 'Quên mật khẩu?'**: Dạng chữ thuần sắc nét kết hợp biểu tượng Chìa Khóa `🔑 Quên mật khẩu? Khôi phục nhanh` mượt mà.
+  - **Đồng bộ Tone màu & Cấu trúc theo mẫu ảnh ([src/App.tsx](file:///d:/LAPTRINH/qu%E1%BA%A3n-l%C3%BD-ph%C3%B2ng-h%E1%BB%8Dc-tin-h%E1%BB%8Dc/src/App.tsx))**: Chuyển đổi toàn bộ Popup 'Khôi phục và đổi mật khẩu nhanh' sang Tone Kem Caramel Kem (`#fbf7ee`), thanh tiêu đề Caramel Vàng Gold, nút đóng tròn beige, thẻ thông tin trắng bo tròn và các nút bấm nhung 3D viên thuốc dạng Teal/Green (`#24877b`) khớp 100% với mẫu ảnh 'Đánh Giá & Tặng Sao Học Sinh'.
   - **Dịch vụ Gửi Email/SMS OTP ([src/services/emailSmsOtpService.ts](file:///d:/LAPTRINH/qu%E1%BA%A3n-l%C3%BD-ph%C3%B2ng-h%E1%BB%8Dc-tin-h%E1%BB%8Dc/src/services/emailSmsOtpService.ts))**: Viết sẵn Module phát lệnh gửi Email & SMS OTP thực tế tới Email/SĐT của Giáo viên; tích hợp cổng mô phỏng bảo mật và chế độ xem mã thử nghiệm dành cho Dev/Admin.
 
 ---
