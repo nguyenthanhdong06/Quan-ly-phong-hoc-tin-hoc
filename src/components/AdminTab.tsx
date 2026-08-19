@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Member, Computer, Student, ClassItem, MotivationalQuote } from '../types';
-import { UserCheck, Trash2, ShieldAlert, Heart, HardDrive, Cpu, Cloud, Check, Wifi, AlertTriangle, RefreshCw, Database, FileCode, CheckCircle2, X, Calendar, Plus, Clock, User, Sparkles, Settings, FileText, Printer, Save, Key, Lock, Eye, EyeOff, RotateCcw } from 'lucide-react';
+import { UserCheck, Trash2, ShieldAlert, Heart, HardDrive, Cpu, Cloud, Check, Wifi, AlertTriangle, RefreshCw, Database, FileCode, CheckCircle2, X, Calendar, Plus, Clock, User, Sparkles, Settings, FileText, Printer, Save, Key, Lock, Eye, EyeOff, RotateCcw, Mail, Send, ArrowRight } from 'lucide-react';
 import { safeSetLocalStorage } from '../utils/safeStorage';
 import { saveSupabaseState, SQL_INITIALIZATION_QUERY } from '../supabaseClient';
+import { sendOtpToUser } from '../services/emailSmsOtpService';
 
 interface AdminTabProps {
   members: Member[];
@@ -44,7 +45,47 @@ export default function AdminTab({
   setQuotes
 }: AdminTabProps) {
 
-  const [activeSubTab, setActiveSubTab] = useState<'giang_day' | 'phan_quyen' | 'danh_ngon' | 'he_thong' | 'database'>('giang_day');
+  const [activeSubTab, setActiveSubTab] = useState<'giang_day' | 'phan_quyen' | 'danh_ngon' | 'email_sms' | 'he_thong' | 'database'>('giang_day');
+
+  // Email & SMS Config States
+  const [otpProvider, setOtpProvider] = useState<string>(() => localStorage.getItem('school_otp_provider') || 'emailjs');
+  const [emailApiKey, setEmailApiKey] = useState<string>(() => localStorage.getItem('school_email_api_key') || '');
+  const [emailServiceId, setEmailServiceId] = useState<string>(() => localStorage.getItem('school_email_service_id') || '');
+  const [emailTemplateId, setEmailTemplateId] = useState<string>(() => localStorage.getItem('school_email_template_id') || '');
+  const [senderEmail, setSenderEmail] = useState<string>(() => localStorage.getItem('school_sender_email') || 'thlongdinh.otp@gmail.com');
+  const [smsApiKey, setSmsApiKey] = useState<string>(() => localStorage.getItem('school_sms_api_key') || '');
+  const [isTestingEmail, setIsTestingEmail] = useState(false);
+
+  const handleSaveOtpConfig = (e: React.FormEvent) => {
+    e.preventDefault();
+    localStorage.setItem('school_otp_provider', otpProvider);
+    localStorage.setItem('school_email_api_key', emailApiKey.trim());
+    localStorage.setItem('school_email_service_id', emailServiceId.trim());
+    localStorage.setItem('school_email_template_id', emailTemplateId.trim());
+    localStorage.setItem('school_sender_email', senderEmail.trim());
+    localStorage.setItem('school_sms_api_key', smsApiKey.trim());
+
+    showToast('⚙️ Đã lưu cấu hình API Key Email & SMS OTP thành công!', 'success');
+  };
+
+  const handleTestSendEmail = async () => {
+    if (!currentUser?.email && !senderEmail) {
+      showToast('Vui lòng nhập Email người gửi hoặc cập nhật Email cá nhân Admin!', 'error');
+      return;
+    }
+    setIsTestingEmail(true);
+    const testOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    const testTargetEmail = currentUser?.email || senderEmail;
+    
+    try {
+      const res = await sendOtpToUser('admin', currentUser?.name || 'Admin', testTargetEmail, currentUser?.phone, testOtp);
+      showToast(`✉️ ${res.message}`, 'success');
+    } catch (err) {
+      showToast('Không thể gửi Email thử nghiệm. Vui lòng kiểm tra lại API Key.', 'error');
+    } finally {
+      setIsTestingEmail(false);
+    }
+  };
 
   // States for adding member
   const [newName, setNewName] = useState('');
@@ -356,6 +397,13 @@ export default function AdminTab({
       icon: Sparkles,
       activeClass: 'bg-[#5837fa] hover:bg-[#472bd1] text-white border-transparent shadow-xs shadow-[#5837fa]/20',
       inactiveClass: 'bg-[#5837fa]/8 text-[#472bd1] hover:bg-[#5837fa]/15 border-transparent'
+    },
+    {
+      id: 'email_sms',
+      label: 'Cấu hình Email & SMS OTP',
+      icon: Mail,
+      activeClass: 'bg-[#2563eb] hover:bg-[#1d4ed8] text-white border-transparent shadow-xs shadow-[#2563eb]/20',
+      inactiveClass: 'bg-[#2563eb]/8 text-[#1d4ed8] hover:bg-[#2563eb]/15 border-transparent'
     },
     {
       id: 'he_thong',
@@ -1370,6 +1418,220 @@ export default function AdminTab({
             </div>
 
           </div>
+        </div>
+      )}
+
+      {/* 5. CẤU HÌNH API KEY EMAIL & SMS OTP */}
+      {activeSubTab === 'email_sms' && (
+        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 text-left space-y-6 animate-fadeIn">
+          
+          {/* Header Banner */}
+          <div className="border-b border-slate-100 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-blue-50 p-3 rounded-2xl text-blue-600 border border-blue-100">
+                <Mail className="w-6 h-6 animate-bounce" />
+              </div>
+              <div>
+                <h3 className="font-black text-slate-800 text-base uppercase tracking-wide flex items-center gap-2">
+                  <span>Cấu Hình Cổng Gửi Mã Xác Minh OTP (Email & SMS)</span>
+                  <span className="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-2.5 py-0.5 rounded-full border border-emerald-200">
+                    Miễn phí 100%
+                  </span>
+                </h3>
+                <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                  Thiết lập API Key từ EmailJS hoặc Resend API để hệ thống tự động gửi tin nhắn mã OTP thực tế về hòm thư Email & Số điện thoại Giáo viên
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleTestSendEmail}
+              disabled={isTestingEmail}
+              className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md transition cursor-pointer active:scale-95 disabled:opacity-50 shrink-0"
+            >
+              <Send className={`w-4 h-4 ${isTestingEmail ? 'animate-spin' : ''}`} />
+              <span>{isTestingEmail ? 'Đang gửi Email test...' : 'Gửi Email OTP Thử Nghiệm'}</span>
+            </button>
+          </div>
+
+          <form onSubmit={handleSaveOtpConfig} className="space-y-6">
+            
+            {/* Provider Selector Cards */}
+            <div className="space-y-2">
+              <label className="block text-xs font-black uppercase text-slate-700 tracking-wider">
+                1. Chọn Nhà Cung Cấp Cổng Email / SMS OTP:
+              </label>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                
+                {/* Option 1: EmailJS */}
+                <div
+                  onClick={() => setOtpProvider('emailjs')}
+                  className={`p-4 rounded-2xl border-2 cursor-pointer transition flex flex-col justify-between ${
+                    otpProvider === 'emailjs'
+                      ? 'border-blue-600 bg-blue-50/50 shadow-sm'
+                      : 'border-slate-200 bg-slate-50/50 hover:bg-slate-100'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-black text-xs text-blue-900">EmailJS Gateway</span>
+                    <span className="text-[10px] bg-blue-100 text-blue-800 font-black px-2 py-0.5 rounded">Gói Miễn Phí</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-2 font-medium">
+                    200 email/tháng miễn phí. Kết nối trực tiếp với Gmail, Outlook hoặc Email trường học.
+                  </p>
+                </div>
+
+                {/* Option 2: Resend */}
+                <div
+                  onClick={() => setOtpProvider('resend')}
+                  className={`p-4 rounded-2xl border-2 cursor-pointer transition flex flex-col justify-between ${
+                    otpProvider === 'resend'
+                      ? 'border-blue-600 bg-blue-50/50 shadow-sm'
+                      : 'border-slate-200 bg-slate-50/50 hover:bg-slate-100'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-black text-xs text-indigo-900">Resend API</span>
+                    <span className="text-[10px] bg-indigo-100 text-indigo-800 font-black px-2 py-0.5 rounded">3,000 Email/tháng</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-2 font-medium">
+                    3,000 email/tháng siêu tốc. Khuyên dùng cho trường học giao dịch lớn.
+                  </p>
+                </div>
+
+                {/* Option 3: Custom Webhook */}
+                <div
+                  onClick={() => setOtpProvider('webhook')}
+                  className={`p-4 rounded-2xl border-2 cursor-pointer transition flex flex-col justify-between ${
+                    otpProvider === 'webhook'
+                      ? 'border-blue-600 bg-blue-50/50 shadow-sm'
+                      : 'border-slate-200 bg-slate-50/50 hover:bg-slate-100'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-black text-xs text-slate-900">SMS Gateway / Webhook</span>
+                    <span className="text-[10px] bg-slate-200 text-slate-700 font-black px-2 py-0.5 rounded">Tùy biến</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-2 font-medium">
+                    Kết nối Cổng nhắn tin SMS Viettel/Zalo ZNS của Nhà trường qua Webhook HTTP POST.
+                  </p>
+                </div>
+
+              </div>
+            </div>
+
+            {/* API Credentials Input Form */}
+            <div className="bg-slate-50/80 p-5 rounded-2xl border border-slate-200/80 space-y-4">
+              <h4 className="font-extrabold text-xs text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                <Key className="w-4 h-4 text-blue-600" />
+                2. Điền API Key & Thông Số Cấu Hình ({otpProvider.toUpperCase()}):
+              </h4>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                {/* API Key */}
+                <div>
+                  <label className="block text-[11px] font-black uppercase text-slate-600 mb-1">
+                    API Key / Public Key: *
+                  </label>
+                  <input
+                    type="password"
+                    value={emailApiKey}
+                    onChange={(e) => setEmailApiKey(e.target.value)}
+                    placeholder={otpProvider === 'resend' ? 're_123456789...' : 'user_live_xxx...'}
+                    className="w-full bg-white border border-slate-300 rounded-xl py-2.5 px-3 text-xs font-mono font-bold text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    {otpProvider === 'resend' 
+                      ? '* Đăng ký miễn phí tại https://resend.com để lấy API Key' 
+                      : '* Đăng ký tài khoản EmailJS tại https://emailjs.com để lấy Public Key'
+                    }
+                  </p>
+                </div>
+
+                {/* Email Sender Address */}
+                <div>
+                  <label className="block text-[11px] font-black uppercase text-slate-600 mb-1">
+                    Địa chỉ Email Gửi Đi Mặc Định (Sender):
+                  </label>
+                  <input
+                    type="email"
+                    value={senderEmail}
+                    onChange={(e) => setSenderEmail(e.target.value)}
+                    placeholder="thlongdinh.otp@gmail.com"
+                    className="w-full bg-white border border-slate-300 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    * Email dùng để phát tin nhắn OTP đến hộp thư của Giáo viên.
+                  </p>
+                </div>
+
+                {/* Optional Service ID for EmailJS */}
+                {otpProvider === 'emailjs' && (
+                  <>
+                    <div>
+                      <label className="block text-[11px] font-black uppercase text-slate-600 mb-1">
+                        EmailJS Service ID:
+                      </label>
+                      <input
+                        type="text"
+                        value={emailServiceId}
+                        onChange={(e) => setEmailServiceId(e.target.value)}
+                        placeholder="service_gmail"
+                        className="w-full bg-white border border-slate-300 rounded-xl py-2.5 px-3 text-xs font-mono font-bold text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-black uppercase text-slate-600 mb-1">
+                        EmailJS Template ID:
+                      </label>
+                      <input
+                        type="text"
+                        value={emailTemplateId}
+                        onChange={(e) => setEmailTemplateId(e.target.value)}
+                        placeholder="template_otp"
+                        className="w-full bg-white border border-slate-300 rounded-xl py-2.5 px-3 text-xs font-mono font-bold text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* SMS API Key */}
+                <div>
+                  <label className="block text-[11px] font-black uppercase text-slate-600 mb-1">
+                    SMS Gateway API Key (Tùy chọn):
+                  </label>
+                  <input
+                    type="password"
+                    value={smsApiKey}
+                    onChange={(e) => setSmsApiKey(e.target.value)}
+                    placeholder="sms_key_optional..."
+                    className="w-full bg-white border border-slate-300 rounded-xl py-2.5 px-3 text-xs font-mono font-bold text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    * Điền API Key nếu trường sử dụng thêm dịch vụ gửi SMS Brandname trực tiếp về di động.
+                  </p>
+                </div>
+
+              </div>
+            </div>
+
+            {/* Save Button */}
+            <div className="flex justify-end pt-2">
+              <button
+                type="submit"
+                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition cursor-pointer active:scale-95"
+              >
+                <Save className="w-4 h-4" />
+                <span>Lưu Cấu Hình Cổng Email & SMS OTP</span>
+              </button>
+            </div>
+
+          </form>
+
         </div>
       )}
 
