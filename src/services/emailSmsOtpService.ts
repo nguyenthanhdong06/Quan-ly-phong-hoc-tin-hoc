@@ -19,14 +19,14 @@ export async function sendOtpToUser(
   otpCode: string
 ): Promise<OtpSendResult> {
   const provider = localStorage.getItem('school_otp_provider') || 'emailjs';
-  const apiKey = localStorage.getItem('school_email_api_key') || '';
-  const serviceId = localStorage.getItem('school_email_service_id') || 'service_school';
-  const templateId = localStorage.getItem('school_email_template_id') || 'template_otp';
-  const senderEmail = localStorage.getItem('school_sender_email') || 'thlongdinh.otp@gmail.com';
-  const smsApiKey = localStorage.getItem('school_sms_api_key') || '';
+  const apiKey = (localStorage.getItem('school_email_api_key') || '').trim();
+  const serviceId = (localStorage.getItem('school_email_service_id') || '').trim();
+  const templateId = (localStorage.getItem('school_email_template_id') || '').trim();
+  const senderEmail = (localStorage.getItem('school_sender_email') || 'thlongdinh.otp@gmail.com').trim();
+  const smsApiKey = (localStorage.getItem('school_sms_api_key') || '').trim();
 
-  const targetEmail = email || `${username.toLowerCase()}@school.edu.vn`;
-  const targetPhone = phone || '0987.654.321';
+  const targetEmail = (email || `${username.toLowerCase()}@school.edu.vn`).trim();
+  const targetPhone = (phone || '0987.654.321').trim();
   
   // Format masked email & phone for privacy display
   const maskedEmail = targetEmail.replace(/(.{2})(.*)(?=@)/, '$1***');
@@ -37,7 +37,7 @@ export async function sendOtpToUser(
     if (apiKey) {
       if (provider === 'resend') {
         // Gửi qua Resend API (Miễn phí 3,000 email/tháng)
-        await fetch('https://api.resend.com/emails', {
+        const res = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -58,23 +58,45 @@ export async function sendOtpToUser(
             `
           })
         });
+
+        if (!res.ok) {
+          const errBody = await res.text();
+          throw new Error(`Resend API Lỗi (${res.status}): ${errBody}`);
+        }
       } else {
         // Gửi qua EmailJS API
-        await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+        // Truyền đầy đủ 100% các biến khớp với Template EmailJS của Thầy/Cô
+        const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            service_id: serviceId,
-            template_id: templateId,
-            user_id: apiKey,
+            service_id: serviceId || 'service_school',
+            template_id: templateId || 'template_otp',
+            user_id: apiKey, // Public Key
             template_params: {
-              to_name: teacherName,
+              // Biến khớp chính xác với ảnh màn hình EmailJS Template của Thầy
               to_email: targetEmail,
+              teacher_name: teacherName,
+              otp: otpCode,
+              expire_minutes: '1',
+              title: 'Khôi phục mật khẩu',
+              name: teacherName || 'Giáo viên',
+              email: senderEmail,
+              
+              // Biến dự phòng
+              to_name: teacherName,
               otp_code: otpCode,
+              user_email: targetEmail,
               sender_email: senderEmail
             }
           })
         });
+
+        if (!res.ok) {
+          const errText = await res.text();
+          console.error('❌ EmailJS Error:', res.status, errText);
+          throw new Error(`EmailJS phản hồi lỗi: ${errText} (Mã: ${res.status})`);
+        }
       }
     }
 
@@ -83,16 +105,16 @@ export async function sendOtpToUser(
     return {
       success: true,
       message: apiKey 
-        ? `Đã gửi Email OTP thật thành công qua ${provider.toUpperCase()} tới ${destinationMasked}!`
+        ? `Đã gửi Email OTP thật thành công qua ${provider.toUpperCase()} tới ${targetEmail}!`
         : `Đã phát lệnh gửi mã OTP tới ${destinationMasked} (Mô phỏng an toàn - Chưa điền API Key)`,
       destinationMasked,
       sentTime: new Date().toLocaleTimeString('vi-VN')
     };
-  } catch (error) {
-    console.warn('⚠️ Lỗi kết nối Cổng Email/SMS thật, chuyển sang chế độ mô phỏng an toàn:', error);
+  } catch (error: any) {
+    console.warn('⚠️ Lỗi kết nối Cổng Email/SMS thật:', error);
     return {
-      success: true,
-      message: `Đã gửi mã xác minh OTP tới ${destinationMasked} (Mô phỏng an toàn)`,
+      success: false,
+      message: `Lỗi cổng Email: ${error?.message || 'Không thể kết nối dịch vụ send mail'}. Đã chuyển sang mã OTP mô phỏng để tiếp tục thử nghiệm.`,
       destinationMasked,
       sentTime: new Date().toLocaleTimeString('vi-VN')
     };
