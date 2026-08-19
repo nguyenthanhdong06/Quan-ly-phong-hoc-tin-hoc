@@ -142,9 +142,9 @@
 - [x] **Khắc Phục Lỗi Tự Động Đăng Xuất Văng Tài Khoản & Mở Khóa Chỉnh Sửa Ô Nhập Tên Đăng Nhập ([src/App.tsx](file:///d:/LAPTRINH/qu%E1%BA%A3n-l%C3%BD-ph%C3%B2ng-h%E1%BB%8Dc-tin-h%E1%BB%8Dc/src/App.tsx))**:
   - **Khắc phục văng tài khoản khi đăng nhập**: Loại bỏ hoàn toàn vòng lặp kiểm tra xung đột phiên làm việc đa thiết bị (`checkSessionConflict`) do đồng bộ Supabase / WebSocket gây văng tài khoản đột ngột ngay sau khi đăng nhập.
 - [x] **Tích Hợp Chức Năng Khôi Phục & Đổi Mật Khẩu Nhanh Qua Mã Xác Minh OTP ([src/App.tsx](file:///d:/LAPTRINH/qu%E1%BA%A3n-l%C3%BD-ph%C3%B2ng-h%E1%BB%8Dc-tin-h%E1%BB%8Dc/src/App.tsx))**:
-  - **Nút 'Quên mật khẩu?'**: Tích hợp liên kết `🔑 Quên mật khẩu? Khôi phục nhanh` ngay tại màn hình đăng nhập.
-  - **Quy trình 3 bước chuẩn an toàn**: (1) Kiểm tra tên đăng nhập ➔ (2) Nhập mã OTP xác minh 6 chữ số có đếm ngược 60s ➔ (3) Nhập mật khẩu mới và xác nhận.
-  - **Tự động lưu & điền mật khẩu mới**: Đồng bộ tức thì mật khẩu mới xuống LocalStorage & Supabase REST API, đồng thời tự động điền mật khẩu mới vào form đăng nhập để giáo viên sử dụng ngay lập tức.
+  - **Nút 'Quên mật khẩu?'**: Loại bỏ khung nền button màu xanh pill container cũ, chuyển sang dạng chữ thuần sắc nét kết hợp biểu tượng Chìa Khóa `🔑 Quên mật khẩu? Khôi phục nhanh` mượt mà, giữ nguyên 100% chức năng.
+  - **Giao diện Popup DeskOS**: Thiết kế lại toàn bộ cửa sổ Popup 'Khôi phục và đổi mật khẩu nhanh' theo chuẩn phong cách DeskOS (Thanh tiêu đề macOS 3 nút giao diện hybrid, kính mờ glassmorphism, bước chuyển tab mượt).
+  - **Bảo mật mã OTP**: Ẩn hoàn toàn mã OTP công khai khỏi màn hình Popup và Toast; chỉ hiển thị thông báo bảo mật mã OTP đã được gửi đến Email/SMS đăng ký của thầy/cô.
 
 ---
 
