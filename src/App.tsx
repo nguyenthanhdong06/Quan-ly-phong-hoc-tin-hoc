@@ -1800,131 +1800,102 @@ export default function App() {
         </div>
       )}
 
-      {/* DESKOS ROYAL BLUE STYLE FORGOT / RESET PASSWORD RECOVERY MODAL */}
+      {/* WARM CARAMEL / CREAM & TEAL 3D STYLE FORGOT / RESET PASSWORD RECOVERY MODAL (MATCHING REFERENCE IMAGE) */}
       {isForgotPasswordModalOpen && (
-        <div className="fixed inset-0 bg-slate-950/75 backdrop-blur-xl z-[70] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-[70] flex items-center justify-center p-4">
           
-          {/* DeskOS Window Frame */}
-          <div className="bg-gradient-to-br from-[#121338] via-[#1b1e56] to-[#0f102d] text-white rounded-3xl w-full max-w-lg shadow-[0_25px_70px_rgba(56,29,252,0.4)] border border-[#523be8]/50 overflow-hidden transform transition-all animate-in zoom-in-95 duration-200 text-left">
+          {/* Main Dialog Window Frame */}
+          <div className="bg-[#fbf7ee] text-[#3d2514] rounded-3xl w-full max-w-lg shadow-2xl border border-[#e5dacf] overflow-hidden transform transition-all animate-in zoom-in-95 duration-200 text-left">
             
-            {/* DeskOS macOS/Windows Hybrid Header Bar */}
-            <div className="bg-gradient-to-r from-[#171948] via-[#22266c] to-[#171948] px-4 py-3 border-b border-[#381DFC]/40 flex items-center justify-between select-none">
+            {/* Warm Caramel Header Bar */}
+            <div className="bg-gradient-to-r from-[#ecdcc7] via-[#e5d3bc] to-[#ded0bb] px-6 py-4 border-b border-[#d8c7b0] flex items-center justify-between select-none">
               
-              {/* Left Mac Window Traffic Lights Controls */}
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsForgotPasswordModalOpen(false)}
-                  className="w-3 h-3 rounded-full bg-[#ff5f56] hover:brightness-110 transition cursor-pointer flex items-center justify-center group"
-                  title="Đóng cửa sổ"
-                >
-                  <X className="w-2 h-2 text-slate-900 opacity-0 group-hover:opacity-100" />
-                </button>
-                <div className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
-                <div className="w-3 h-3 rounded-full bg-[#27c93f]" />
-                
-                <div className="h-3.5 w-px bg-slate-700/80 mx-1.5" />
-
-                <div className="flex items-center gap-2">
-                  <div className="p-1 rounded-lg bg-[#381DFC]/30 text-amber-300 border border-[#523be8]/60">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                  </div>
-                  <span className="font-extrabold text-xs text-white tracking-wide uppercase">
-                    DeskOS Security Pass Center
-                  </span>
-                </div>
+              <div className="flex items-center gap-2.5">
+                <span className="text-amber-600 text-xl">⭐</span>
+                <h3 className="font-extrabold text-base text-[#4a2e16] tracking-wide">
+                  Khôi Phục & Đổi Mật Khẩu Nhanh
+                </h3>
               </div>
 
-              {/* Close Button */}
+              {/* Circular Close Button */}
               <button
                 type="button"
                 onClick={() => setIsForgotPasswordModalOpen(false)}
-                className="p-1 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition cursor-pointer"
+                className="w-8 h-8 rounded-full bg-[#ede1ce] border border-[#d6c4a9] text-[#4a2e16] hover:bg-[#e3d2bb] transition cursor-pointer flex items-center justify-center shadow-xs"
+                title="Đóng cửa sổ"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* DeskOS Subheader Banner */}
-            <div className="bg-gradient-to-r from-[#381DFC] via-[#4d32ff] to-[#6d28d9] px-6 py-4 border-b border-[#523be8]/40 shadow-md flex items-center justify-between">
-              <div className="space-y-0.5">
-                <h3 className="font-black text-sm text-white uppercase tracking-wider flex items-center gap-2 drop-shadow-sm">
-                  <KeyRound className="w-4 h-4 text-amber-300" />
-                  Khôi Phục & Đổi Mật Khẩu Nhanh
-                </h3>
-                <p className="text-[11px] text-amber-200/90 font-medium">
-                  Hệ thống bảo mật xác minh OTP 3 bước tiêu chuẩn DeskOS
-                </p>
-              </div>
-
-              <div className="px-3 py-1 rounded-xl bg-white/15 border border-white/30 text-[10px] font-black text-amber-300 uppercase tracking-widest backdrop-blur-xs">
-                Bước {forgotStep}/3
-              </div>
-            </div>
-
-            {/* DeskOS Step Progress Tracker Pills */}
-            <div className="bg-[#0b0c24]/90 px-6 py-2.5 border-b border-slate-800/80 flex items-center justify-between text-xs font-black">
-              <div className={`flex items-center gap-1.5 px-3 py-1 rounded-xl transition ${forgotStep >= 1 ? 'bg-[#381DFC] text-white border border-amber-300/50 shadow-sm' : 'text-slate-500'}`}>
-                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] ${forgotStep >= 1 ? 'bg-amber-400 text-slate-950 font-black' : 'bg-slate-800 text-slate-400'}`}>1</span>
+            {/* Step Progress Bar (Warm Beige & Golden Badge) */}
+            <div className="bg-[#f4ebd9] px-6 py-3 border-b border-[#ebdcc7] flex items-center justify-between text-xs font-black select-none">
+              <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full transition ${forgotStep >= 1 ? 'bg-[#f4bf3b] text-[#422e00] border border-[#dca31f] shadow-xs' : 'bg-[#e8dbcc] text-[#8c7866]'}`}>
+                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${forgotStep >= 1 ? 'bg-[#422e00] text-white font-bold' : 'bg-[#cbbaa8] text-white'}`}>1</span>
                 <span>Tài khoản</span>
               </div>
 
-              <ChevronRight className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+              <ChevronRight className="w-4 h-4 text-[#b8a594] shrink-0" />
 
-              <div className={`flex items-center gap-1.5 px-3 py-1 rounded-xl transition ${forgotStep >= 2 ? 'bg-[#381DFC] text-white border border-amber-300/50 shadow-sm' : 'text-slate-500'}`}>
-                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] ${forgotStep >= 2 ? 'bg-amber-400 text-slate-950 font-black' : 'bg-slate-800 text-slate-400'}`}>2</span>
+              <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full transition ${forgotStep >= 2 ? 'bg-[#f4bf3b] text-[#422e00] border border-[#dca31f] shadow-xs' : 'bg-[#e8dbcc] text-[#8c7866]'}`}>
+                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${forgotStep >= 2 ? 'bg-[#422e00] text-white font-bold' : 'bg-[#cbbaa8] text-white'}`}>2</span>
                 <span>Mã OTP</span>
               </div>
 
-              <ChevronRight className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+              <ChevronRight className="w-4 h-4 text-[#b8a594] shrink-0" />
 
-              <div className={`flex items-center gap-1.5 px-3 py-1 rounded-xl transition ${forgotStep >= 3 ? 'bg-emerald-600 text-white border border-emerald-400/50 shadow-sm' : 'text-slate-500'}`}>
-                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] ${forgotStep >= 3 ? 'bg-emerald-400 text-slate-950 font-black' : 'bg-slate-800 text-slate-400'}`}>3</span>
+              <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full transition ${forgotStep >= 3 ? 'bg-emerald-600 text-white border border-emerald-700 shadow-xs' : 'bg-[#e8dbcc] text-[#8c7866]'}`}>
+                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${forgotStep >= 3 ? 'bg-white text-emerald-900 font-bold' : 'bg-[#cbbaa8] text-white'}`}>3</span>
                 <span>Mật khẩu mới</span>
               </div>
             </div>
 
-            {/* DeskOS Modal Body */}
+            {/* Modal Body Container */}
             <div className="p-6 space-y-5">
               
               {/* STEP 1: ENTER USERNAME */}
               {forgotStep === 1 && (
-                <form onSubmit={handleSendOtpCode} className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-extrabold uppercase text-amber-200 mb-1.5 tracking-wider">
+                <form onSubmit={handleSendOtpCode} className="space-y-5">
+                  
+                  {/* Card Info Box */}
+                  <div className="bg-white border border-[#e8ded0] rounded-2xl p-4 shadow-xs space-y-2">
+                    <h4 className="font-extrabold text-xs uppercase tracking-wider text-[#237a6e] flex items-center gap-2">
+                      <span className="text-base">🔑</span>
                       Nhập tên đăng nhập của Thầy/Cô:
-                    </label>
-                    <div className="relative">
-                      <Users className="w-4 h-4 text-amber-300 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    </h4>
+
+                    <div className="relative pt-1">
+                      <Users className="w-4 h-4 text-[#237a6e] absolute left-3.5 top-1/2 -translate-y-1/2" />
                       <input
                         type="text"
                         value={forgotUsernameInput}
                         onChange={(e) => setForgotUsernameInput(e.target.value)}
                         placeholder="Ví dụ: dong.nt, nam.lh..."
-                        className="w-full bg-[#0b0c24] border border-[#381DFC]/70 rounded-xl py-2.5 pl-10 pr-3 text-xs font-extrabold text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-300 focus:ring-1 focus:ring-amber-300 shadow-inner"
+                        className="w-full bg-[#faf7f0] border border-[#d8cbba] rounded-2xl py-3 pl-10 pr-4 text-xs font-extrabold text-[#3d2514] placeholder:text-[#9c8978] focus:outline-none focus:border-[#237a6e] focus:ring-2 focus:ring-[#237a6e]/20 shadow-inner"
                         autoFocus
                         required
                       />
                     </div>
-                    <p className="text-[10px] text-slate-400 mt-2 font-medium leading-relaxed">
-                      * Mã xác minh OTP 6 chữ số sẽ được phát lệnh gửi tới Email và Số điện thoại di động đăng ký của Thầy/Cô.
+                    <p className="text-[11px] text-[#7a6452] font-medium leading-relaxed pt-1">
+                      * Hệ thống sẽ khởi tạo mã OTP xác minh và phát lệnh gửi tới Email & Số điện thoại di động đăng ký của Thầy/Cô.
                     </p>
                   </div>
 
-                  <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-800/80">
+                  {/* Actions Footer - 3D Capsule Pill Button Style */}
+                  <div className="flex justify-end gap-3 pt-2">
                     <button
                       type="button"
                       onClick={() => setIsForgotPasswordModalOpen(false)}
-                      className="px-4 py-2 rounded-xl text-xs font-bold text-slate-300 hover:bg-white/10 transition cursor-pointer"
+                      className="px-5 py-2.5 rounded-full text-xs font-bold text-[#5c4433] bg-[#ebe0d1] border border-[#d6c5b3] hover:bg-[#e0d3c2] transition cursor-pointer"
                     >
                       Hủy bỏ
                     </button>
                     <button
                       type="submit"
-                      className="px-5 py-2 rounded-xl text-xs font-black bg-[#381DFC] hover:bg-[#4d32ff] text-white shadow-lg transition cursor-pointer flex items-center gap-1.5 active:scale-95 border border-amber-300/40"
+                      className="px-7 py-3 rounded-full text-xs font-black bg-gradient-to-b from-[#3ba89b] via-[#24877b] to-[#156e63] text-white border border-[#135c53] shadow-[0_4px_12px_rgba(21,110,99,0.35)] hover:brightness-110 transition cursor-pointer flex items-center gap-2 active:scale-95"
                     >
                       <span>Gửi Mã OTP</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
+                      <ArrowRight className="w-4 h-4" />
                     </button>
                   </div>
                 </form>
@@ -1932,55 +1903,56 @@ export default function App() {
 
               {/* STEP 2: ENTER OTP CODE */}
               {forgotStep === 2 && (
-                <form onSubmit={handleVerifyOtpCode} className="space-y-4">
+                <form onSubmit={handleVerifyOtpCode} className="space-y-5">
                   
-                  {/* Masked Security Info Banner (NO PLAIN OTP CODE SHOWN ON POPUP) */}
-                  <div className="bg-[#0b0c24]/90 border border-[#381DFC]/60 rounded-2xl p-4 text-xs space-y-2.5">
-                    <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                      <span className="font-extrabold text-amber-300 flex items-center gap-1.5">
-                        <ShieldCheck className="w-4 h-4 text-amber-400" />
+                  {/* Account Summary Card */}
+                  <div className="bg-white border border-[#e8ded0] rounded-2xl p-4 shadow-xs space-y-3">
+                    <div className="flex items-center justify-between border-b border-[#eee4d8] pb-2.5">
+                      <span className="font-black text-xs text-[#237a6e] flex items-center gap-1.5">
+                        <ShieldCheck className="w-4 h-4 text-[#237a6e]" />
                         Tài khoản: {forgotMatchedUser?.name}
                       </span>
-                      <span className="text-[10px] font-mono bg-[#381DFC]/30 text-amber-200 px-2 py-0.5 rounded border border-[#523be8]">
+                      <span className="text-[11px] font-mono bg-[#f4bf3b] text-[#422e00] font-black px-2.5 py-0.5 rounded-full border border-[#dca31f]">
                         {forgotMatchedUser?.username}
                       </span>
                     </div>
 
-                    <div className="flex items-start gap-2.5 text-slate-300 text-[11px]">
-                      <div className="p-1.5 bg-[#381DFC]/40 text-amber-300 rounded-lg shrink-0 mt-0.5 border border-[#523be8]">
-                        <Mail className="w-3.5 h-3.5" />
+                    <div className="flex items-start gap-3 text-[#3d2514] text-[11px]">
+                      <div className="p-2 bg-[#e3f2ef] text-[#237a6e] rounded-xl shrink-0 border border-[#bce0d9]">
+                        <Mail className="w-4 h-4" />
                       </div>
                       <div className="space-y-1 text-left">
-                        <p className="font-extrabold text-white">Đã phát lệnh gửi mã xác minh 6 chữ số!</p>
-                        <p className="text-[10px] text-slate-300 leading-normal">
+                        <p className="font-extrabold text-[#237a6e]">Đã phát lệnh gửi mã xác minh 6 chữ số!</p>
+                        <p className="text-[11px] text-[#6e5847] leading-normal">
                           {otpInfoResult?.destinationMasked
                             ? `Mã đã gửi tới ${otpInfoResult.destinationMasked}.`
-                            : `Kiểm tra tin nhắn Email / SMS gửi tới địa chỉ đăng ký của thầy/cô.`
+                            : `Vui lòng kiểm tra tin nhắn Email / SMS gửi tới địa chỉ đăng ký của thầy/cô.`
                           }
                         </p>
                       </div>
                     </div>
 
                     {/* Collapsible Test Mode OTP Preview Box */}
-                    <div className="border-t border-slate-800/80 pt-2 text-left">
+                    <div className="border-t border-[#eee4d8] pt-2 text-left">
                       <button
                         type="button"
                         onClick={() => setShowOtpTestPreview(!showOtpTestPreview)}
-                        className="text-[10px] font-bold text-amber-400/90 hover:text-amber-300 underline cursor-pointer flex items-center gap-1"
+                        className="text-[11px] font-extrabold text-[#237a6e] hover:underline cursor-pointer flex items-center gap-1"
                       >
                         {showOtpTestPreview ? '🙈 Ẩn mã xem thử Dev/Test' : '👁️ Bấm xem thử mã OTP (Dành cho Dev/Test)'}
                       </button>
                       {showOtpTestPreview && generatedOtp && (
-                        <div className="mt-2 p-2.5 bg-amber-500/10 border border-amber-400/30 rounded-xl text-center animate-fadeIn">
-                          <span className="text-[9px] text-amber-300 font-mono block">MÃ OTP TEST CỦA BẠN LÀ:</span>
-                          <span className="text-base font-black font-mono tracking-[0.3em] text-amber-300">{generatedOtp}</span>
+                        <div className="mt-2.5 p-3 bg-[#fdf3d8] border border-[#f4bf3b] rounded-2xl text-center animate-fadeIn">
+                          <span className="text-[10px] text-[#5e4300] font-bold block uppercase tracking-wider">MÃ OTP TEST CỦA BẠN LÀ:</span>
+                          <span className="text-xl font-black font-mono tracking-[0.3em] text-[#422e00]">{generatedOtp}</span>
                         </div>
                       )}
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-extrabold uppercase text-amber-200 mb-1.5 tracking-wider">
+                  {/* Input Card */}
+                  <div className="bg-white border border-[#e8ded0] rounded-2xl p-4 shadow-xs space-y-2">
+                    <label className="block text-xs font-extrabold uppercase text-[#237a6e] mb-1 tracking-wider">
                       Nhập mã xác minh OTP (6 chữ số):
                     </label>
                     <input
@@ -1989,41 +1961,42 @@ export default function App() {
                       value={otpInput}
                       onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, ''))}
                       placeholder="Nhập 6 chữ số OTP"
-                      className="w-full bg-[#0b0c24] border border-[#381DFC]/70 rounded-xl py-3 px-4 text-center font-mono text-lg tracking-[0.4em] font-black text-amber-300 placeholder:text-slate-600 placeholder:tracking-normal placeholder:text-xs placeholder:font-sans focus:outline-none focus:border-amber-300 focus:ring-1 focus:ring-amber-300 shadow-inner"
+                      className="w-full bg-[#faf7f0] border border-[#d8cbba] rounded-2xl py-3 px-4 text-center font-mono text-xl tracking-[0.4em] font-black text-[#237a6e] placeholder:text-[#ab9886] placeholder:tracking-normal placeholder:text-xs placeholder:font-sans focus:outline-none focus:border-[#237a6e] focus:ring-2 focus:ring-[#237a6e]/20 shadow-inner"
                       autoFocus
                       required
                     />
+
+                    <div className="flex items-center justify-between text-xs text-[#7a6452] pt-1">
+                      <span>
+                        {otpTimer > 0 ? (
+                          <>Mã có hiệu lực trong <strong className="text-[#237a6e] font-mono text-sm">{otpTimer}s</strong></>
+                        ) : (
+                          <span className="text-red-600 font-bold">Mã OTP đã hết hạn!</span>
+                        )}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleSendOtpCode()}
+                        className="text-xs font-extrabold text-[#237a6e] hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        Gửi lại mã
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
-                    <span>
-                      {otpTimer > 0 ? (
-                        <>Mã có hiệu lực trong <strong className="text-amber-300 font-mono">{otpTimer}s</strong></>
-                      ) : (
-                        <span className="text-red-400 font-bold">Mã OTP đã hết hạn!</span>
-                      )}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleSendOtpCode()}
-                      className="text-xs font-bold text-amber-300 hover:underline flex items-center gap-1 cursor-pointer"
-                    >
-                      <RefreshCw className="w-3 h-3" />
-                      Gửi lại mã
-                    </button>
-                  </div>
-
-                  <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-800/80">
+                  {/* Actions Footer */}
+                  <div className="flex justify-end gap-3 pt-2">
                     <button
                       type="button"
                       onClick={() => setForgotStep(1)}
-                      className="px-4 py-2 rounded-xl text-xs font-bold text-slate-300 hover:bg-white/10 transition cursor-pointer"
+                      className="px-5 py-2.5 rounded-full text-xs font-bold text-[#5c4433] bg-[#ebe0d1] border border-[#d6c5b3] hover:bg-[#e0d3c2] transition cursor-pointer"
                     >
                       Quay lại
                     </button>
                     <button
                       type="submit"
-                      className="px-5 py-2 rounded-xl text-xs font-black bg-[#381DFC] hover:bg-[#4d32ff] text-white shadow-lg transition cursor-pointer flex items-center gap-1.5 active:scale-95 border border-amber-300/40"
+                      className="px-7 py-3 rounded-full text-xs font-black bg-gradient-to-b from-[#3ba89b] via-[#24877b] to-[#156e63] text-white border border-[#135c53] shadow-[0_4px_12px_rgba(21,110,99,0.35)] hover:brightness-110 transition cursor-pointer flex items-center gap-2 active:scale-95"
                     >
                       <span>Xác Minh OTP</span>
                       <ShieldCheck className="w-4 h-4" />
@@ -2034,32 +2007,32 @@ export default function App() {
 
               {/* STEP 3: ENTER NEW PASSWORD */}
               {forgotStep === 3 && (
-                <form onSubmit={handleSaveNewPassword} className="space-y-4">
-                  <div className="bg-emerald-950/40 border border-emerald-500/30 rounded-2xl p-3.5 text-xs text-emerald-200 font-semibold flex items-center gap-2.5 text-left">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                <form onSubmit={handleSaveNewPassword} className="space-y-5">
+                  <div className="bg-[#e4f5f1] border border-[#b2e3d8] rounded-2xl p-4 text-xs text-[#0f6456] font-semibold flex items-center gap-3 text-left shadow-xs">
+                    <CheckCircle2 className="w-6 h-6 text-[#156e63] shrink-0" />
                     <span>Xác minh thành công cho tài khoản <strong>{forgotMatchedUser?.name}</strong>. Vui lòng thiết lập mật khẩu mới bên dưới.</span>
                   </div>
 
-                  <div className="space-y-3">
+                  <div className="bg-white border border-[#e8ded0] rounded-2xl p-4 shadow-xs space-y-4">
                     <div>
-                      <label className="block text-xs font-extrabold uppercase text-slate-300 mb-1 tracking-wider">
+                      <label className="block text-xs font-extrabold uppercase text-[#237a6e] mb-1.5 tracking-wider">
                         Mật khẩu mới:
                       </label>
                       <div className="relative">
-                        <Lock className="w-4 h-4 text-emerald-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                        <Lock className="w-4 h-4 text-[#237a6e] absolute left-3.5 top-1/2 -translate-y-1/2" />
                         <input
                           type={showNewPassword ? "text" : "password"}
                           value={newPasswordInput}
                           onChange={(e) => setNewPasswordInput(e.target.value)}
                           placeholder="Nhập ít nhất 6 ký tự"
-                          className="w-full bg-[#0b0c24] border border-emerald-500/50 rounded-xl py-2.5 pl-10 pr-10 text-xs font-extrabold text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 shadow-inner"
+                          className="w-full bg-[#faf7f0] border border-[#d8cbba] rounded-2xl py-3 pl-10 pr-10 text-xs font-extrabold text-[#3d2514] placeholder:text-[#ab9886] focus:outline-none focus:border-[#237a6e] focus:ring-2 focus:ring-[#237a6e]/20 shadow-inner"
                           autoFocus
                           required
                         />
                         <button
                           type="button"
                           onClick={() => setShowNewPassword(!showNewPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition"
+                          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#8a7563] hover:text-[#3d2514] transition"
                         >
                           {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
@@ -2067,37 +2040,31 @@ export default function App() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-extrabold uppercase text-slate-300 mb-1 tracking-wider">
+                      <label className="block text-xs font-extrabold uppercase text-[#237a6e] mb-1.5 tracking-wider">
                         Xác nhận mật khẩu mới:
                       </label>
                       <div className="relative">
-                        <Lock className="w-4 h-4 text-emerald-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                        <Lock className="w-4 h-4 text-[#237a6e] absolute left-3.5 top-1/2 -translate-y-1/2" />
                         <input
                           type={showNewPassword ? "text" : "password"}
                           value={confirmNewPasswordInput}
                           onChange={(e) => setConfirmNewPasswordInput(e.target.value)}
                           placeholder="Nhập lại mật khẩu mới"
-                          className="w-full bg-[#0b0c24] border border-emerald-500/50 rounded-xl py-2.5 pl-10 pr-10 text-xs font-extrabold text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 shadow-inner"
+                          className="w-full bg-[#faf7f0] border border-[#d8cbba] rounded-2xl py-3 pl-10 pr-10 text-xs font-extrabold text-[#3d2514] placeholder:text-[#ab9886] focus:outline-none focus:border-[#237a6e] focus:ring-2 focus:ring-[#237a6e]/20 shadow-inner"
                           required
                         />
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-800/80">
-                    <button
-                      type="button"
-                      onClick={() => setIsForgotPasswordModalOpen(false)}
-                      className="px-4 py-2 rounded-xl text-xs font-bold text-slate-300 hover:bg-white/10 transition cursor-pointer"
-                    >
-                      Hủy bỏ
-                    </button>
+                  {/* Actions Footer - Big Full Width 3D Capsule Pill Button "Xong & Lưu Mật Khẩu Mới" */}
+                  <div className="pt-2">
                     <button
                       type="submit"
-                      className="px-5 py-2 rounded-xl text-xs font-black bg-emerald-600 hover:bg-emerald-500 text-white shadow-md transition cursor-pointer flex items-center gap-1.5 active:scale-95 border border-emerald-400/30"
+                      className="w-full h-12 rounded-full text-sm font-black bg-gradient-to-b from-[#3ba89b] via-[#24877b] to-[#156e63] text-white border border-[#135c53] shadow-[0_5px_15px_rgba(21,110,99,0.4)] hover:brightness-110 transition cursor-pointer flex items-center justify-center gap-2 active:scale-98"
                     >
-                      <span>Lưu Mật Khẩu Mới</span>
-                      <CheckCircle2 className="w-4 h-4" />
+                      <CheckCircle2 className="w-5 h-5" />
+                      <span>Xong & Lưu Mật Khẩu Mới</span>
                     </button>
                   </div>
                 </form>
