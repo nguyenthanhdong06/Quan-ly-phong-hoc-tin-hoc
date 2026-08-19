@@ -1811,7 +1811,9 @@ export default function App() {
             <div className="bg-gradient-to-r from-[#ecdcc7] via-[#e5d3bc] to-[#ded0bb] px-6 py-4 border-b border-[#d8c7b0] flex items-center justify-between select-none">
               
               <div className="flex items-center gap-2.5">
-                <span className="text-amber-600 text-xl">🔑</span>
+                <div className="p-1.5 bg-[#f4bf3b] text-[#422e00] rounded-xl border border-[#dca31f] shadow-xs flex items-center justify-center">
+                  <KeyRound className="w-4 h-4 text-[#422e00]" />
+                </div>
                 <h3 className="font-extrabold text-base text-[#4a2e16] tracking-wide">
                   Khôi Phục & Đổi Mật Khẩu Nhanh
                 </h3>
