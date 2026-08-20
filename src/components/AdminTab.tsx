@@ -4,6 +4,7 @@ import { UserCheck, Trash2, ShieldAlert, Heart, HardDrive, Cpu, Cloud, Check, Wi
 import { safeSetLocalStorage } from '../utils/safeStorage';
 import { saveSupabaseState, SQL_INITIALIZATION_QUERY } from '../supabaseClient';
 import { sendOtpToUser } from '../services/emailSmsOtpService';
+import { encryptVaultData } from '../utils/security';
 
 interface AdminTabProps {
   members: Member[];
@@ -60,16 +61,33 @@ export default function AdminTab({
   const [isCreateAccountViewOpen, setIsCreateAccountViewOpen] = useState(false);
   const [highlightedMemberId, setHighlightedMemberId] = useState<string | null>(null);
 
-  const handleSaveOtpConfig = (e: React.FormEvent) => {
+  const handleSaveOtpConfig = async (e: React.FormEvent) => {
     e.preventDefault();
-    localStorage.setItem('school_otp_provider', otpProvider);
-    localStorage.setItem('school_email_api_key', emailApiKey.trim());
-    localStorage.setItem('school_email_service_id', emailServiceId.trim());
-    localStorage.setItem('school_email_template_id', emailTemplateId.trim());
-    localStorage.setItem('school_sender_email', senderEmail.trim());
-    localStorage.setItem('school_sms_api_key', smsApiKey.trim());
+    const configPayload = {
+      provider: otpProvider,
+      apiKey: emailApiKey.trim(),
+      serviceId: emailServiceId.trim(),
+      templateId: emailTemplateId.trim(),
+      senderEmail: senderEmail.trim(),
+      smsApiKey: smsApiKey.trim()
+    };
 
-    showToast('⚙️ Đã lưu cấu hình API Key Email & SMS OTP thành công!', 'success');
+    localStorage.setItem('school_otp_provider', configPayload.provider);
+    localStorage.setItem('school_email_api_key', configPayload.apiKey);
+    localStorage.setItem('school_email_service_id', configPayload.serviceId);
+    localStorage.setItem('school_email_template_id', configPayload.templateId);
+    localStorage.setItem('school_sender_email', configPayload.senderEmail);
+    localStorage.setItem('school_sms_api_key', configPayload.smsApiKey);
+
+    // Mã hóa bảo mật và đẩy cấu hình EmailJS lên Supabase Cloud Vault
+    const encryptedVaultPayload = encryptVaultData(configPayload);
+    const cloudSaved = await saveSupabaseState('school_otp_config', encryptedVaultPayload);
+
+    if (cloudSaved) {
+      showToast('🔐 Đã mã hóa & đồng bộ cấu hình EmailJS lên Supabase Cloud Vault! Mọi thiết bị khác sẽ tự động sử dụng mà không cần cấu hình lại.', 'success');
+    } else {
+      showToast('⚙️ Đã lưu cấu hình EmailJS cục bộ trên thiết bị này!', 'success');
+    }
   };
 
   const handleTestSendEmail = async () => {

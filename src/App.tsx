@@ -52,7 +52,7 @@ import { CalendarCheck } from 'lucide-react';
 // Supabase services
 import { supabase, loadAllSupabaseStates, saveSupabaseState, setSupabaseOnline, isRecentLocalSave } from './supabaseClient';
 import { safeSetLocalStorage } from './utils/safeStorage';
-import { verifyPassword, sanitizeInput } from './utils/security';
+import { verifyPassword, sanitizeInput, decryptVaultData } from './utils/security';
 import { createSessionId, setLocalSession, getLocalSession, clearLocalSession } from './features/auth/multiDeviceSession';
 import { sendOtpToUser, OtpSendResult } from './services/emailSmsOtpService';
 import { initRamAutoOptimizer } from './utils/ramOptimizer';
@@ -441,6 +441,19 @@ export default function App() {
           if (dbStates['school_lab_maintenance_logs']) setLabMaintenanceLogs(dbStates['school_lab_maintenance_logs']);
           if (dbStates['school_labs']) setLabs(dbStates['school_labs']);
 
+          // Tự động giải mã Cloud Vault EmailJS cho thiết bị mới
+          if (dbStates['school_otp_config']) {
+            const otpVault = decryptVaultData(dbStates['school_otp_config']);
+            if (otpVault) {
+              if (otpVault.provider) safeSetLocalStorage('school_otp_provider', otpVault.provider);
+              if (otpVault.apiKey) safeSetLocalStorage('school_email_api_key', otpVault.apiKey);
+              if (otpVault.serviceId) safeSetLocalStorage('school_email_service_id', otpVault.serviceId);
+              if (otpVault.templateId) safeSetLocalStorage('school_email_template_id', otpVault.templateId);
+              if (otpVault.senderEmail) safeSetLocalStorage('school_sender_email', otpVault.senderEmail);
+              if (otpVault.smsApiKey) safeSetLocalStorage('school_sms_api_key', otpVault.smsApiKey);
+            }
+          }
+
 
           if (dbStates['custom_avatars_list'] && Array.isArray(dbStates['custom_avatars_list'])) {
             safeSetLocalStorage('custom_avatars_list', dbStates['custom_avatars_list']);
@@ -512,6 +525,17 @@ export default function App() {
         case 'school_lab_incidents': setLabIncidents(prev => isIdentical(prev) ? prev : value); break;
         case 'school_lab_maintenance_logs': setLabMaintenanceLogs(prev => isIdentical(prev) ? prev : value); break;
         case 'school_labs': setLabs(prev => isIdentical(prev) ? prev : value); break;
+        case 'school_otp_config':
+          const otpVault = decryptVaultData(value);
+          if (otpVault) {
+            if (otpVault.provider) safeSetLocalStorage('school_otp_provider', otpVault.provider);
+            if (otpVault.apiKey) safeSetLocalStorage('school_email_api_key', otpVault.apiKey);
+            if (otpVault.serviceId) safeSetLocalStorage('school_email_service_id', otpVault.serviceId);
+            if (otpVault.templateId) safeSetLocalStorage('school_email_template_id', otpVault.templateId);
+            if (otpVault.senderEmail) safeSetLocalStorage('school_sender_email', otpVault.senderEmail);
+            if (otpVault.smsApiKey) safeSetLocalStorage('school_sms_api_key', otpVault.smsApiKey);
+          }
+          break;
         case 'custom_avatars_list':
           if (Array.isArray(value)) {
             window.dispatchEvent(new CustomEvent('custom_avatars_updated', { detail: value }));

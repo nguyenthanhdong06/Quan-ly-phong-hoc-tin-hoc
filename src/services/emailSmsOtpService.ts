@@ -1,8 +1,5 @@
-/**
- * Module Dịch Vụ Gửi Mã Xác Minh OTP qua Email / SMS
- * Hỗ trợ gửi Email/SMS thật qua EmailJS / Resend API / Webhook SMTP Server.
- * Khớp 100% các biến trong Mẫu EmailJS Template của Thầy.
- */
+import { supabase } from '../supabaseClient';
+import { decryptVaultData } from '../utils/security';
 
 export interface OtpSendResult {
   success: boolean;
@@ -19,12 +16,41 @@ export async function sendOtpToUser(
   phone: string | undefined,
   otpCode: string
 ): Promise<OtpSendResult> {
-  const provider = localStorage.getItem('school_otp_provider') || 'emailjs';
-  const apiKey = (localStorage.getItem('school_email_api_key') || '').trim();
-  const serviceId = (localStorage.getItem('school_email_service_id') || '').trim();
-  const templateId = (localStorage.getItem('school_email_template_id') || '').trim();
-  const senderEmail = (localStorage.getItem('school_sender_email') || 'nguyenthanhdong.hutech@gmail.com').trim();
-  const smsApiKey = (localStorage.getItem('school_sms_api_key') || '').trim();
+  let provider = localStorage.getItem('school_otp_provider') || 'emailjs';
+  let apiKey = (localStorage.getItem('school_email_api_key') || '').trim();
+  let serviceId = (localStorage.getItem('school_email_service_id') || '').trim();
+  let templateId = (localStorage.getItem('school_email_template_id') || '').trim();
+  let senderEmail = (localStorage.getItem('school_sender_email') || 'nguyenthanhdong.hutech@gmail.com').trim();
+  let smsApiKey = (localStorage.getItem('school_sms_api_key') || '').trim();
+
+  // ĐỒNG BỘ TỰ ĐỘNG TỪ SUPABASE CLOUD VAULT KHI VÀO TRÊN THIẾT BỊ MỚI
+  if (!apiKey || !serviceId || !templateId) {
+    try {
+      const { data } = await supabase.from('school_states').select('*').eq('key', 'school_otp_config').maybeSingle();
+      if (data && data.value) {
+        const decrypted = decryptVaultData(data.value);
+        if (decrypted) {
+          if (decrypted.provider) provider = decrypted.provider;
+          if (decrypted.apiKey) apiKey = decrypted.apiKey;
+          if (decrypted.serviceId) serviceId = decrypted.serviceId;
+          if (decrypted.templateId) templateId = decrypted.templateId;
+          if (decrypted.senderEmail) senderEmail = decrypted.senderEmail;
+          if (decrypted.smsApiKey) smsApiKey = decrypted.smsApiKey;
+
+          // Tự động lưu cache cắm sẵn cho thiết bị mới
+          localStorage.setItem('school_otp_provider', provider);
+          localStorage.setItem('school_email_api_key', apiKey);
+          localStorage.setItem('school_email_service_id', serviceId);
+          localStorage.setItem('school_email_template_id', templateId);
+          localStorage.setItem('school_sender_email', senderEmail);
+          localStorage.setItem('school_sms_api_key', smsApiKey);
+          console.log('🔓 [Supabase Cloud Vault] Đã tự động giải mã & nạp cấu hình EmailJS thành công!');
+        }
+      }
+    } catch (vaultErr) {
+      console.warn('Vault auto-sync fetch warning:', vaultErr);
+    }
+  }
 
   const targetEmail = (email || `${username.toLowerCase()}@school.edu.vn`).trim();
   const targetPhone = (phone || '0987.654.321').trim();
