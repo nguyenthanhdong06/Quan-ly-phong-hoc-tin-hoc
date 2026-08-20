@@ -275,6 +275,7 @@ export default function App() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [otpInfoResult, setOtpInfoResult] = useState<OtpSendResult | null>(null);
   const [showOtpTestPreview, setShowOtpTestPreview] = useState(false);
+  const [otpFailedAttempts, setOtpFailedAttempts] = useState(0);
 
   // OTP Countdown Timer
   useEffect(() => {
@@ -299,6 +300,7 @@ export default function App() {
     setConfirmNewPasswordInput('');
     setOtpInfoResult(null);
     setShowOtpTestPreview(false);
+    setOtpFailedAttempts(0);
     setIsForgotPasswordModalOpen(true);
   };
 
@@ -328,16 +330,31 @@ export default function App() {
     setOtpTimer(60);
     setOtpInput('');
     setShowOtpTestPreview(false);
+    setOtpFailedAttempts(0);
     showToast(`🔒 Đã phát lệnh gửi mã OTP tới Email/SMS của thầy/cô ${matched.name}!`, 'success');
   };
 
   const handleVerifyOtpCode = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (otpInput.trim() !== generatedOtp) {
-      showToast('Mã xác minh (OTP) không chính xác! Vui lòng kiểm tra lại.', 'error');
+    
+    if (otpFailedAttempts >= 5) {
+      showToast('⛔ Bạn đã nhập sai mã OTP quá 5/5 lần! Vui lòng bấm "Gửi lại mã" để lấy mã xác minh mới.', 'error');
       return;
     }
+
+    if (otpInput.trim() !== generatedOtp) {
+      const nextFailed = otpFailedAttempts + 1;
+      setOtpFailedAttempts(nextFailed);
+      if (nextFailed >= 5) {
+        showToast('⛔ Bạn đã nhập sai OTP 5/5 lần! Mã OTP này đã bị khóa để chống dò mã. Vui lòng bấm "Gửi lại mã".', 'error');
+      } else {
+        showToast(`Mã xác minh (OTP) không chính xác! (Đã sai ${nextFailed}/5 lần). Vui lòng kiểm tra lại.`, 'error');
+      }
+      return;
+    }
+
     showToast('Mã xác minh chính xác! Vui lòng nhập mật khẩu mới.', 'success');
+    setOtpFailedAttempts(0);
     setForgotStep(3);
   };
 
@@ -1959,38 +1976,67 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Input Card */}
-                  <div className="bg-white border border-[#e8ded0] rounded-2xl p-4 shadow-xs space-y-2">
-                    <label className="block text-xs font-extrabold uppercase text-[#237a6e] mb-1 tracking-wider">
-                      Nhập mã xác minh OTP (6 chữ số):
-                    </label>
-                    <input
-                      type="text"
-                      maxLength={6}
-                      value={otpInput}
-                      onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, ''))}
-                      placeholder="Nhập 6 chữ số OTP"
-                      className="w-full bg-[#faf7f0] border border-[#d8cbba] rounded-2xl py-3 px-4 text-center font-mono text-xl tracking-[0.4em] font-black text-[#237a6e] placeholder:text-[#ab9886] placeholder:tracking-normal placeholder:text-xs placeholder:font-sans focus:outline-none focus:border-[#237a6e] focus:ring-2 focus:ring-[#237a6e]/20 shadow-inner"
-                      autoFocus
-                      required
-                    />
+                  {/* Input Card with Brute-force Protection Banner */}
+                  <div className="bg-white border border-[#e8ded0] rounded-2xl p-4 shadow-xs space-y-3">
+                    
+                    {/* Failed attempts warning banner */}
+                    {otpFailedAttempts > 0 && (
+                      <div className={`p-3 rounded-2xl text-xs font-bold flex items-center justify-between animate-fadeIn text-left ${
+                        otpFailedAttempts >= 5 
+                          ? 'bg-rose-100 border border-rose-300 text-rose-900' 
+                          : 'bg-amber-50 border border-amber-200 text-amber-900'
+                      }`}>
+                        <span className="flex items-center gap-1.5">
+                          {otpFailedAttempts >= 5 ? '⛔ CHỐNG DÒ MÃ:' : '⚠️ CẢNH BÁO:'} 
+                          {otpFailedAttempts >= 5 
+                            ? 'Mã OTP đã bị khóa do nhập sai 5/5 lần!' 
+                            : `Đã nhập sai mã OTP ${otpFailedAttempts}/5 lần`}
+                        </span>
+                        <span className="font-extrabold text-[10px] px-2.5 py-0.5 rounded-full bg-white border border-slate-200 shadow-2xs shrink-0">
+                          {5 - otpFailedAttempts > 0 ? `Còn ${5 - otpFailedAttempts} lượt` : 'Đã khóa'}
+                        </span>
+                      </div>
+                    )}
 
-                    <div className="flex items-center justify-between text-xs text-[#7a6452] pt-1">
-                      <span>
-                        {otpTimer > 0 ? (
-                          <>Mã có hiệu lực trong <strong className="text-[#237a6e] font-mono text-sm">{otpTimer}s</strong></>
-                        ) : (
-                          <span className="text-red-600 font-bold">Mã OTP đã hết hạn!</span>
-                        )}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleSendOtpCode()}
-                        className="text-xs font-extrabold text-[#237a6e] hover:underline flex items-center gap-1 cursor-pointer"
-                      >
-                        <RefreshCw className="w-3.5 h-3.5" />
-                        Gửi lại mã
-                      </button>
+                    <div className="space-y-2">
+                      <label className="block text-xs font-extrabold uppercase text-[#237a6e] mb-1 tracking-wider text-left">
+                        Nhập mã xác minh OTP (6 chữ số):
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={6}
+                        disabled={otpFailedAttempts >= 5}
+                        value={otpInput}
+                        onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, ''))}
+                        placeholder={otpFailedAttempts >= 5 ? "ĐÃ BỊ KHÓA OTP (ĐÃ SAI 5/5 LẦN)" : "Nhập 6 chữ số OTP"}
+                        className={`w-full bg-[#faf7f0] border rounded-2xl py-3 px-4 text-center font-mono text-xl tracking-[0.4em] font-black text-[#237a6e] placeholder:text-[#ab9886] placeholder:tracking-normal placeholder:text-xs placeholder:font-sans focus:outline-none focus:ring-2 shadow-inner transition ${
+                          otpFailedAttempts >= 5
+                            ? 'border-rose-400 bg-rose-50/50 text-rose-800 focus:ring-rose-400/20'
+                            : (otpFailedAttempts > 0
+                                ? 'border-amber-400 focus:ring-amber-400/20'
+                                : 'border-[#d8cbba] focus:border-[#237a6e] focus:ring-[#237a6e]/20')
+                        }`}
+                        autoFocus
+                        required
+                      />
+
+                      <div className="flex items-center justify-between text-xs text-[#7a6452] pt-1">
+                        <span>
+                          {otpTimer > 0 ? (
+                            <>Mã có hiệu lực trong <strong className="text-[#237a6e] font-mono text-sm">{otpTimer}s</strong></>
+                          ) : (
+                            <span className="text-red-600 font-bold">Mã OTP đã hết hạn!</span>
+                          )}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleSendOtpCode()}
+                          className="text-xs font-extrabold text-[#237a6e] hover:underline flex items-center gap-1 cursor-pointer"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5" />
+                          Gửi lại mã
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -2005,7 +2051,8 @@ export default function App() {
                     </button>
                     <button
                       type="submit"
-                      className="px-7 py-3 rounded-full text-xs font-black bg-gradient-to-b from-[#3ba89b] via-[#24877b] to-[#156e63] text-white border border-[#135c53] shadow-[0_4px_12px_rgba(21,110,99,0.35)] hover:brightness-110 transition cursor-pointer flex items-center gap-2 active:scale-95"
+                      disabled={otpFailedAttempts >= 5}
+                      className="px-7 py-3 rounded-full text-xs font-black bg-gradient-to-b from-[#3ba89b] via-[#24877b] to-[#156e63] text-white border border-[#135c53] shadow-[0_4px_12px_rgba(21,110,99,0.35)] hover:brightness-110 transition cursor-pointer flex items-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <span>Xác Minh OTP</span>
                       <ShieldCheck className="w-4 h-4" />
