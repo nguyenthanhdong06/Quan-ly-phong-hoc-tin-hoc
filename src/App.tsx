@@ -47,7 +47,7 @@ import ComputerReportTab from './components/ComputerReportTab';
 import { KnowledgeGardenTab } from './components/KnowledgeGardenTab';
 import CuteMiniRobot from './components/CuteMiniRobot';
 import { SciFi3DPopupFrame } from './components/SciFi3DPopupFrame';
-import { CalendarCheck } from 'lucide-react';
+import { CalendarCheck, ShieldAlert } from 'lucide-react';
 
 // Supabase services
 import { supabase, loadAllSupabaseStates, saveSupabaseState, setSupabaseOnline, isRecentLocalSave } from './supabaseClient';
@@ -276,6 +276,8 @@ export default function App() {
   const [otpInfoResult, setOtpInfoResult] = useState<OtpSendResult | null>(null);
   const [showOtpTestPreview, setShowOtpTestPreview] = useState(false);
   const [otpFailedAttempts, setOtpFailedAttempts] = useState(0);
+  const [lockoutRemainingSeconds, setLockoutRemainingSeconds] = useState(0);
+  const [currentLockTier, setCurrentLockTier] = useState(1);
 
   // OTP Countdown Timer
   useEffect(() => {
@@ -290,6 +292,90 @@ export default function App() {
     };
   }, [isForgotPasswordModalOpen, forgotStep, otpTimer]);
 
+  // Lockout Countdown Timer Effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    if (lockoutRemainingSeconds > 0) {
+      interval = setInterval(() => {
+        setLockoutRemainingSeconds(prev => (prev <= 1 ? 0 : prev - 1));
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [lockoutRemainingSeconds]);
+
+  // Helper: Get Active Exponential Lockout Status
+  const getActiveOtpLockout = (username?: string) => {
+    try {
+      const raw = localStorage.getItem('school_otp_lockout_info');
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      if (username && data.username !== username.toLowerCase()) return null;
+      const now = Date.now();
+      if (data.lockUntil > now) {
+        return {
+          isLocked: true,
+          remainingSeconds: Math.ceil((data.lockUntil - now) / 1000),
+          tier: data.tier || 1,
+          lockUntil: data.lockUntil
+        };
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
+  // Helper: Escalate Exponential Lockout Tier (5 mins -> 15 mins -> 60 mins)
+  const escalateOtpLockout = (username: string, teacherName: string) => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    let currentTier = 1;
+    try {
+      const raw = localStorage.getItem('school_otp_lockout_info');
+      if (raw) {
+        const data = JSON.parse(raw);
+        if (data.username === username.toLowerCase() && data.date === todayStr) {
+          currentTier = Math.min(3, (data.tier || 1) + 1);
+        }
+      }
+    } catch {
+      currentTier = 1;
+    }
+
+    // Tier 1: 5 mins, Tier 2: 15 mins, Tier 3: 60 mins (1 hour)
+    const lockMinutes = currentTier === 1 ? 5 : (currentTier === 2 ? 15 : 60);
+    const lockDurationMs = lockMinutes * 60 * 1000;
+    const lockUntil = Date.now() + lockDurationMs;
+
+    const newLockData = {
+      username: username.toLowerCase(),
+      tier: currentTier,
+      lockUntil,
+      date: todayStr
+    };
+
+    localStorage.setItem('school_otp_lockout_info', JSON.stringify(newLockData));
+    setCurrentLockTier(currentTier);
+    setLockoutRemainingSeconds(lockMinutes * 60);
+
+    const tierStr = currentTier === 1 ? '5 PHÚT (CẤP 1)' : (currentTier === 2 ? '15 PHÚT (CẤP 2)' : '1 GIỜ (CẤP 3)');
+    sendSecurityAlertToAdmin(teacherName, username, 5, `KHÓA LỮY THỪA ${tierStr}`);
+
+    return { tier: currentTier, lockMinutes };
+  };
+
+  const formatLockoutTime = (totalSeconds: number) => {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    if (mins >= 60) {
+      const hrs = Math.floor(mins / 60);
+      const remMins = mins % 60;
+      return `${hrs}h ${remMins}m ${secs}s`;
+    }
+    return `${mins}m ${secs.toString().padStart(2, '0')}s`;
+  };
+
   const handleOpenForgotPasswordModal = () => {
     setForgotStep(1);
     setForgotUsernameInput(loginForm.username || '');
@@ -301,6 +387,16 @@ export default function App() {
     setOtpInfoResult(null);
     setShowOtpTestPreview(false);
     setOtpFailedAttempts(0);
+
+    // Check active lockout
+    const activeLock = getActiveOtpLockout();
+    if (activeLock && activeLock.isLocked) {
+      setLockoutRemainingSeconds(activeLock.remainingSeconds);
+      setCurrentLockTier(activeLock.tier);
+    } else {
+      setLockoutRemainingSeconds(0);
+    }
+
     setIsForgotPasswordModalOpen(true);
   };
 
@@ -314,6 +410,16 @@ export default function App() {
     const matched = members.find(m => m.username.trim().toLowerCase() === cleanUser);
     if (!matched) {
       showToast(`Không tìm thấy tài khoản "${forgotUsernameInput}" trong hệ thống!`, 'error');
+      return;
+    }
+
+    // 🛡️ CHỐNG DÒ MÃ LŨY THỪA: Kiểm tra xem tài khoản có đang bị khóa 5p/15p/1h không
+    const activeLock = getActiveOtpLockout(matched.username);
+    if (activeLock && activeLock.isLocked) {
+      setLockoutRemainingSeconds(activeLock.remainingSeconds);
+      setCurrentLockTier(activeLock.tier);
+      const minsText = activeLock.tier === 1 ? '5 phút' : (activeLock.tier === 2 ? '15 phút' : '1 giờ');
+      showToast(`⛔ Tài khoản đang bị KHÓA KHẨN CẤP CẤP ${activeLock.tier} (${minsText}) do vi phạm sai OTP! Vui lòng chờ hết thời gian khóa.`, 'error');
       return;
     }
 
@@ -354,9 +460,14 @@ export default function App() {
 
   const handleVerifyOtpCode = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+
+    if (lockoutRemainingSeconds > 0) {
+      showToast(`⛔ Tài khoản đang trong thời gian tạm khóa! Vui lòng chờ hết ${formatLockoutTime(lockoutRemainingSeconds)}.`, 'error');
+      return;
+    }
     
     if (otpFailedAttempts >= 5) {
-      showToast('⛔ Bạn đã nhập sai mã OTP quá 5/5 lần! Vui lòng bấm "Gửi lại mã" để lấy mã xác minh mới.', 'error');
+      showToast('⛔ Bạn đã nhập sai mã OTP quá 5/5 lần! Hệ thống đã kích hoạt thời gian khóa lũy thừa.', 'error');
       return;
     }
 
@@ -364,10 +475,10 @@ export default function App() {
       const nextFailed = otpFailedAttempts + 1;
       setOtpFailedAttempts(nextFailed);
       if (nextFailed >= 5) {
-        showToast('⛔ Nhập sai OTP 5/5 lần! Đã tự động phát thư cảnh báo an ninh tới Admin và khóa mã xác thực này.', 'error');
-        // 🚨 TỰ ĐỘNG GỬI EMAIL CẢNH BÁO AN NINH CHO ADMIN
         if (forgotMatchedUser) {
-          sendSecurityAlertToAdmin(forgotMatchedUser.name, forgotMatchedUser.username, nextFailed);
+          const { tier, lockMinutes } = escalateOtpLockout(forgotMatchedUser.username, forgotMatchedUser.name);
+          const durationStr = lockMinutes === 60 ? '1 GIỜ' : `${lockMinutes} PHÚT`;
+          showToast(`⛔ NHẬP SAI OTP 5/5 LẦN! TỰ ĐỘNG KHÓA LŨY THỪA CẤP ${tier} (${durationStr}). Đã tự động gửi email cảnh báo an ninh tới Admin!`, 'error');
         }
       } else {
         showToast(`Mã xác minh (OTP) không chính xác! (Đã sai ${nextFailed}/5 lần). Vui lòng kiểm tra lại.`, 'error');
@@ -2001,23 +2112,42 @@ export default function App() {
                   {/* Input Card with Brute-force Protection Banner */}
                   <div className="bg-white border border-[#e8ded0] rounded-2xl p-4 shadow-xs space-y-3">
                     
-                    {/* Failed attempts warning banner */}
-                    {otpFailedAttempts > 0 && (
-                      <div className={`p-3 rounded-2xl text-xs font-bold flex items-center justify-between animate-fadeIn text-left ${
-                        otpFailedAttempts >= 5 
-                          ? 'bg-rose-100 border border-rose-300 text-rose-900' 
-                          : 'bg-amber-50 border border-amber-200 text-amber-900'
-                      }`}>
-                        <span className="flex items-center gap-1.5">
-                          {otpFailedAttempts >= 5 ? '⛔ CHỐNG DÒ MÃ:' : '⚠️ CẢNH BÁO:'} 
-                          {otpFailedAttempts >= 5 
-                            ? 'Mã OTP đã bị khóa do nhập sai 5/5 lần!' 
-                            : `Đã nhập sai mã OTP ${otpFailedAttempts}/5 lần`}
-                        </span>
-                        <span className="font-extrabold text-[10px] px-2.5 py-0.5 rounded-full bg-white border border-slate-200 shadow-2xs shrink-0">
-                          {5 - otpFailedAttempts > 0 ? `Còn ${5 - otpFailedAttempts} lượt` : 'Đã khóa'}
+                    {/* Active Exponential Lockout Banner or Failed Attempts Banner */}
+                    {lockoutRemainingSeconds > 0 ? (
+                      <div className="p-3.5 bg-rose-100 border border-rose-300 rounded-2xl text-xs font-bold text-rose-950 flex items-center justify-between text-left animate-fadeIn shadow-xs">
+                        <div className="flex items-center gap-2">
+                          <ShieldAlert className="w-5 h-5 text-rose-700 shrink-0" />
+                          <div className="space-y-0.5">
+                            <span className="font-extrabold block text-rose-900">
+                              ⛔ TẠM KHÓA KHẨN CẤP (CẤP {currentLockTier}/3)
+                            </span>
+                            <span className="text-[11px] text-rose-800 font-medium block">
+                              Đã vi phạm sai OTP 5/5 lần. Khóa {currentLockTier === 1 ? '5 phút' : currentLockTier === 2 ? '15 phút' : '1 giờ'}.
+                            </span>
+                          </div>
+                        </div>
+                        <span className="font-extrabold font-mono text-xs px-3 py-1.5 rounded-xl bg-rose-800 text-white shadow-sm shrink-0 border border-rose-900 tracking-wider">
+                          {formatLockoutTime(lockoutRemainingSeconds)}
                         </span>
                       </div>
+                    ) : (
+                      otpFailedAttempts > 0 && (
+                        <div className={`p-3 rounded-2xl text-xs font-bold flex items-center justify-between animate-fadeIn text-left ${
+                          otpFailedAttempts >= 5 
+                            ? 'bg-rose-100 border border-rose-300 text-rose-900' 
+                            : 'bg-amber-50 border border-amber-200 text-amber-900'
+                        }`}>
+                          <span className="flex items-center gap-1.5">
+                            {otpFailedAttempts >= 5 ? '⛔ CHỐNG DÒ MÃ:' : '⚠️ CẢNH BÁO:'} 
+                            {otpFailedAttempts >= 5 
+                              ? 'Mã OTP đã bị khóa do nhập sai 5/5 lần!' 
+                              : `Đã nhập sai mã OTP ${otpFailedAttempts}/5 lần`}
+                          </span>
+                          <span className="font-extrabold text-[10px] px-2.5 py-0.5 rounded-full bg-white border border-slate-200 shadow-2xs shrink-0">
+                            {5 - otpFailedAttempts > 0 ? `Còn ${5 - otpFailedAttempts} lượt` : 'Đã khóa'}
+                          </span>
+                        </div>
+                      )
                     )}
 
                     <div className="space-y-2">
@@ -2027,13 +2157,17 @@ export default function App() {
                       <input
                         type="text"
                         maxLength={6}
-                        disabled={otpFailedAttempts >= 5}
+                        disabled={lockoutRemainingSeconds > 0 || otpFailedAttempts >= 5}
                         value={otpInput}
                         onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, ''))}
-                        placeholder={otpFailedAttempts >= 5 ? "ĐÃ BỊ KHÓA OTP (ĐÃ SAI 5/5 LẦN)" : "Nhập 6 chữ số OTP"}
+                        placeholder={
+                          lockoutRemainingSeconds > 0
+                            ? `ĐANG KHÓA ${formatLockoutTime(lockoutRemainingSeconds)}`
+                            : (otpFailedAttempts >= 5 ? "ĐÃ BỊ KHÓA OTP (ĐÃ SAI 5/5 LẦN)" : "Nhập 6 chữ số OTP")
+                        }
                         className={`w-full bg-[#faf7f0] border rounded-2xl py-3 px-4 text-center font-mono text-xl tracking-[0.4em] font-black text-[#237a6e] placeholder:text-[#ab9886] placeholder:tracking-normal placeholder:text-xs placeholder:font-sans focus:outline-none focus:ring-2 shadow-inner transition ${
-                          otpFailedAttempts >= 5
-                            ? 'border-rose-400 bg-rose-50/50 text-rose-800 focus:ring-rose-400/20'
+                          lockoutRemainingSeconds > 0 || otpFailedAttempts >= 5
+                            ? 'border-rose-400 bg-rose-50/60 text-rose-900 focus:ring-rose-400/20'
                             : (otpFailedAttempts > 0
                                 ? 'border-amber-400 focus:ring-amber-400/20'
                                 : 'border-[#d8cbba] focus:border-[#237a6e] focus:ring-[#237a6e]/20')
@@ -2052,8 +2186,9 @@ export default function App() {
                         </span>
                         <button
                           type="button"
+                          disabled={lockoutRemainingSeconds > 0}
                           onClick={() => handleSendOtpCode()}
-                          className="text-xs font-extrabold text-[#237a6e] hover:underline flex items-center gap-1 cursor-pointer"
+                          className="text-xs font-extrabold text-[#237a6e] hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-40 disabled:no-underline disabled:cursor-not-allowed"
                         >
                           <RefreshCw className="w-3.5 h-3.5" />
                           Gửi lại mã
@@ -2073,7 +2208,7 @@ export default function App() {
                     </button>
                     <button
                       type="submit"
-                      disabled={otpFailedAttempts >= 5}
+                      disabled={lockoutRemainingSeconds > 0 || otpFailedAttempts >= 5}
                       className="px-7 py-3 rounded-full text-xs font-black bg-gradient-to-b from-[#3ba89b] via-[#24877b] to-[#156e63] text-white border border-[#135c53] shadow-[0_4px_12px_rgba(21,110,99,0.35)] hover:brightness-110 transition cursor-pointer flex items-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <span>Xác Minh OTP</span>

@@ -331,21 +331,21 @@ export async function sendSecurityAlertToAdmin(
   teacherName: string,
   username: string,
   failedAttemptsCount: number,
+  lockTierInfo?: string,
   configOverrides?: ConfigOverrides
 ): Promise<boolean> {
   try {
     let senderEmail = (configOverrides?.senderEmail !== undefined ? configOverrides.senderEmail : (localStorage.getItem('school_sender_email') || 'nguyenthanhdong.hutech@gmail.com')).trim();
 
-    const alertMessage = `🚨 CẢNH BÁO AN NINH PHÒNG MÁY! Phát hiện hành vi nhập sai mã OTP ${failedAttemptsCount} lần liên tiếp trên tài khoản giáo viên "${teacherName}" (Username: ${username}) lúc ${new Date().toLocaleTimeString('vi-VN')}. Hệ thống đã tự động khóa xác thực OTP để bảo vệ an toàn.`;
-
-    console.log('🚨 [Security Alert Engine] Đang tự động phát thư cảnh báo tới Admin:', senderEmail);
+    const tierDetail = lockTierInfo ? `(${lockTierInfo})` : `(Đã sai ${failedAttemptsCount}/5 lần)`;
+    console.log(`🚨 [Security Alert Engine] Đang tự động phát thư cảnh báo Lũy thừa ${tierDetail} tới Admin:`, senderEmail);
 
     const alertResult = await sendOtpToUser(
       username,
       `[CẢNH BÁO AN NINH ADMIN] ${teacherName}`,
       senderEmail,
       undefined,
-      `ALERT-${failedAttemptsCount}`,
+      `ALERT-${failedAttemptsCount}-${lockTierInfo || 'LOCK'}`,
       configOverrides
     );
 
