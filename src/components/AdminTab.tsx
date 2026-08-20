@@ -105,6 +105,10 @@ export default function AdminTab({
   const [showNewPassword, setShowNewPassword] = useState(false);
 
   const handleOpenChangePassword = (member: Member) => {
+    if (!isRootAdmin && (member.id === 'u-1' || member.role.includes('Quản trị hệ thống'))) {
+      showToast('⚠️ Quyền Quản trị viên không được phép sửa mật khẩu của Quản trị hệ thống (Admin).', 'error');
+      return;
+    }
     setChangePasswordUser(member);
     setNewPasswordInput('');
     setShowNewPassword(false);
@@ -133,6 +137,10 @@ export default function AdminTab({
   };
 
   const handleResetToDefaultPassword = async (member: Member) => {
+    if (!isRootAdmin && (member.id === 'u-1' || member.role.includes('Quản trị hệ thống'))) {
+      showToast('⚠️ Quyền Quản trị viên không được phép reset mật khẩu của Quản trị hệ thống (Admin).', 'error');
+      return;
+    }
     if (window.confirm(`Xác nhận reset mật khẩu của tài khoản "${member.name}" (${member.username}) về mặc định (phongmay@123)?`)) {
       const defaultPass = 'phongmay@123';
       const updatedMembers = members.map(m =>
@@ -370,12 +378,19 @@ export default function AdminTab({
     }, 250);
   };
 
-  const handleDeleteMember = (id: string, name: string) => {
-    if (id === 'u-1') {
-      showToast('Thầy cô không thể xóa tài khoản Quản trị viên tối cao này!', 'error');
+  const handleDeleteMember = async (id: string, name: string) => {
+    if (!isRootAdmin) {
+      showToast('⚠️ Quyền Quản trị viên không được phép xóa tài khoản cán bộ giáo viên. Thao tác xóa chỉ dành cho Quản trị hệ thống (Admin).', 'error');
       return;
     }
-    setMembers(prev => prev.filter(m => m.id !== id));
+    if (id === 'u-1') {
+      showToast('Thầy cô không thể xóa tài khoản Quản trị hệ thống tối cao này!', 'error');
+      return;
+    }
+    const updatedMembers = members.filter(m => m.id !== id);
+    setMembers(updatedMembers);
+    safeSetLocalStorage('school_members', updatedMembers);
+    await saveSupabaseState('school_members', updatedMembers);
     showToast(`Đã hủy quyền truy cập hệ thống của: ${name}`);
   };
 
@@ -390,6 +405,10 @@ export default function AdminTab({
 
   // Delete all students from system
   const handleDeleteAllStudents = () => {
+    if (!isRootAdmin) {
+      showToast('⚠️ Quyền Quản trị viên không được phép xóa toàn bộ dữ liệu học sinh!', 'error');
+      return;
+    }
     setStudents([]);
     setIsDeleteConfirmOpen(false);
     showToast('Đã xóa toàn bộ danh sách học sinh trên hệ thống thành công!', 'success');
@@ -403,50 +422,61 @@ export default function AdminTab({
     setTimeout(() => setCopiedSql(false), 3000);
   };
 
+  // Phân biệt Root Admin (Quản trị hệ thống) và Sub-Admin (Quản trị viên)
+  const isRootAdmin = currentUser?.id === 'u-1' || currentUser?.role?.includes('Quản trị hệ thống');
+
   const SUB_TABS = [
     {
       id: 'giang_day',
       label: 'Phân công giảng dạy',
       icon: Calendar,
       activeClass: 'bg-[#ff9f00] hover:bg-[#e68e00] text-white border-transparent shadow-xs shadow-[#ff9f00]/20',
-      inactiveClass: 'bg-[#ff9f00]/8 text-[#d48200] hover:bg-[#ff9f00]/15 border-transparent'
+      inactiveClass: 'bg-[#ff9f00]/8 text-[#d48200] hover:bg-[#ff9f00]/15 border-transparent',
+      rootOnly: false
     },
     {
       id: 'phan_quyen',
       label: 'Phân quyền',
       icon: UserCheck,
       activeClass: 'bg-[#00a36c] hover:bg-[#008f5e] text-white border-transparent shadow-xs shadow-[#00a36c]/20',
-      inactiveClass: 'bg-[#00a36c]/8 text-[#00875a] hover:bg-[#00a36c]/15 border-transparent'
+      inactiveClass: 'bg-[#00a36c]/8 text-[#00875a] hover:bg-[#00a36c]/15 border-transparent',
+      rootOnly: false
     },
     {
       id: 'danh_ngon',
       label: 'Danh ngôn',
       icon: Sparkles,
       activeClass: 'bg-[#5837fa] hover:bg-[#472bd1] text-white border-transparent shadow-xs shadow-[#5837fa]/20',
-      inactiveClass: 'bg-[#5837fa]/8 text-[#472bd1] hover:bg-[#5837fa]/15 border-transparent'
+      inactiveClass: 'bg-[#5837fa]/8 text-[#472bd1] hover:bg-[#5837fa]/15 border-transparent',
+      rootOnly: false
     },
     {
       id: 'email_sms',
       label: 'Cấu hình Email & SMS OTP',
       icon: Mail,
       activeClass: 'bg-[#2563eb] hover:bg-[#1d4ed8] text-white border-transparent shadow-xs shadow-[#2563eb]/20',
-      inactiveClass: 'bg-[#2563eb]/8 text-[#1d4ed8] hover:bg-[#2563eb]/15 border-transparent'
+      inactiveClass: 'bg-[#2563eb]/8 text-[#1d4ed8] hover:bg-[#2563eb]/15 border-transparent',
+      rootOnly: true
     },
     {
       id: 'he_thong',
       label: 'Hệ thống quan trọng',
       icon: ShieldAlert,
       activeClass: 'bg-[#9c13f7] hover:bg-[#850ee0] text-white border-transparent shadow-xs shadow-[#9c13f7]/20',
-      inactiveClass: 'bg-[#9c13f7]/8 text-[#850ee0] hover:bg-[#9c13f7]/15 border-transparent'
+      inactiveClass: 'bg-[#9c13f7]/8 text-[#850ee0] hover:bg-[#9c13f7]/15 border-transparent',
+      rootOnly: true
     },
     {
       id: 'database',
       label: 'Cơ sở dữ liệu',
       icon: Database,
       activeClass: 'bg-[#1d5fa3] hover:bg-[#18508a] text-white border-transparent shadow-xs shadow-[#1d5fa3]/20',
-      inactiveClass: 'bg-[#1d5fa3]/8 text-[#18508a] hover:bg-[#1d5fa3]/15 border-transparent'
+      inactiveClass: 'bg-[#1d5fa3]/8 text-[#18508a] hover:bg-[#1d5fa3]/15 border-transparent',
+      rootOnly: true
     }
   ] as const;
+
+  const visibleSubTabs = SUB_TABS.filter(tab => !tab.rootOnly || isRootAdmin);
 
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -454,13 +484,13 @@ export default function AdminTab({
       {/* Horizontal Sub-tabs Navigation */}
       <div className="bg-slate-50/30 p-2 rounded-2xl border border-slate-100/70 mb-6 overflow-x-auto">
         <div className="flex flex-row items-center gap-2.5 min-w-max">
-          {SUB_TABS.map((tab) => {
+          {visibleSubTabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeSubTab === tab.id;
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveSubTab(tab.id)}
+                onClick={() => setActiveSubTab(tab.id as any)}
                 className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-black text-xs uppercase tracking-wider border transition-all duration-200 cursor-pointer select-none ${
                   isActive 
                     ? `${tab.activeClass} transform scale-[1.02] -translate-y-[0.5px]` 
