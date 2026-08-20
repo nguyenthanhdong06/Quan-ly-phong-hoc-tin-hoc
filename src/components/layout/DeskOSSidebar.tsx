@@ -246,7 +246,12 @@ export const DeskOSSidebar: React.FC<DeskOSSidebarProps> = ({
                 onLogout();
                 onClose();
               }}
-              className="flex items-center gap-1.5 px-3.5 py-1 rounded-full font-black text-xs text-white bg-gradient-to-b from-[#ff3b30] via-[#e61c24] to-[#c40e15] hover:from-[#ff5248] hover:via-[#f02b33] hover:to-[#d6151c] border border-[#b00b12] shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_3px_6px_rgba(230,28,36,0.35)] transition-all cursor-pointer shrink-0 active:scale-95 active:translate-y-0.5 select-none drop-shadow-xs"
+              style={{
+                background: 'linear-gradient(180deg, #ff3535 0%, #dc2626 50%, #991b1b 100%)',
+                borderColor: '#7f1d1d',
+                boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 3px 6px rgba(220, 38, 38, 0.4)'
+              }}
+              className="flex items-center gap-1.5 px-3.5 py-1 rounded-full font-black text-xs text-white border transition-all cursor-pointer shrink-0 active:scale-95 active:translate-y-0.5 select-none drop-shadow-xs hover:brightness-110"
               title="Đăng xuất khỏi hệ thống"
             >
               <LogOut className="w-3.5 h-3.5 drop-shadow-xs" />
