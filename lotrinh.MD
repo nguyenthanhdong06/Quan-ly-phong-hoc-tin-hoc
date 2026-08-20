@@ -151,6 +151,7 @@
     3. **Phân cấp vai trò Quản trị viên**: Khóa quyền tạo thêm Root Admin ngang hàng; chỉ cho phép tạo **Quản trị viên (Sub-Admin - Cấp dưới Quản trị hệ thống)** chuyên trách quản lý Phòng máy, Thời khóa biểu & Sự cố.
     4. **Hiển thị ứng dụng & Khóa bảo mật**: Quản trị viên truy cập đầy đủ các ứng dụng quản lý chính. Tự động ẩn các tab cấu hình nhạy cảm (*API Key Email/SMS, Cơ sở dữ liệu Cloud, SQL Scripts*).
     5. **Chống xóa dữ liệu hệ thống**: Khóa toàn bộ quyền xóa tài khoản giáo viên, xóa dữ liệu học sinh và xóa nhật ký hệ thống đối với tài khoản Quản trị viên.
+    6. **Mã hóa & Tự động đồng bộ Supabase Cloud Vault (`school_otp_config`)**: Tích hợp hai hàm mã hóa `encryptVaultData` và `decryptVaultData` tự động đẩy và tải cấu hình EmailJS (`Public Key`, `Service ID`, `Template ID`) lên điện toán đám mây Supabase. Giúp Thầy không cần nhập lại cấu hình khi đăng nhập trên bất kỳ máy tính, điện thoại hay môi trường Vercel nào.
 
 ---
 
