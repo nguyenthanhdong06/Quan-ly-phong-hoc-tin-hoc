@@ -1627,24 +1627,25 @@ export default function AdminTab({
       )}
 
       {/* 5. CẤU HÌNH API KEY EMAIL & SMS OTP */}
+      {/* CẤU HÌNH GỬI MÃ XÁC MINH OTP - KHƯ VƯỜN TRI THỨC STYLING (CARAMEL & CREAM 3D WARM DESIGN) */}
       {activeSubTab === 'email_sms' && (
-        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 text-left space-y-6 animate-fadeIn">
+        <div className="bg-[#ebdcc4] border-2 border-[#d6c4a8] rounded-3xl p-6 shadow-[0_20px_50px_rgba(80,55,25,0.15)] text-left space-y-6 animate-fadeIn">
           
           {/* Header Banner */}
-          <div className="border-b border-slate-100 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="bg-gradient-to-r from-[#ecdcc7] via-[#e5d3bc] to-[#ded0bb] p-4 rounded-2xl border border-[#d6c4a8] shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 select-none">
             <div className="flex items-center gap-3">
-              <div className="bg-blue-50 p-3 rounded-2xl text-blue-600 border border-blue-100">
-                <Mail className="w-6 h-6 animate-bounce" />
+              <div className="bg-[#f4bf3b] p-3 rounded-2xl text-[#422e00] border border-[#dca31f] shadow-xs shrink-0">
+                <Mail className="w-6 h-6 animate-bounce text-[#422e00]" />
               </div>
               <div>
-                <h3 className="font-black text-slate-800 text-base uppercase tracking-wide flex items-center gap-2">
+                <h3 className="font-extrabold text-[#4a2e16] text-base uppercase tracking-wide flex items-center gap-2">
                   <span>Cấu Hình Cổng Gửi Mã Xác Minh OTP (Email & SMS)</span>
-                  <span className="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-2.5 py-0.5 rounded-full border border-emerald-200">
+                  <span className="text-[10px] bg-[#f5e6ca] text-[#713f12] font-black px-3 py-1 rounded-full border border-[#d6c4a8] shadow-2xs">
                     Miễn phí 100%
                   </span>
                 </h3>
-                <p className="text-[11px] text-slate-500 font-medium mt-0.5">
-                  Thiết lập API Key từ EmailJS hoặc Resend API để hệ thống tự động gửi tin nhắn mã OTP thực tế về hòm thư Email & Số điện thoại Giáo viên
+                <p className="text-xs text-[#78350f] font-semibold mt-0.5">
+                  Thiết lập Cổng Gmail Tự Động hoặc EmailJS/Resend API để hệ thống phát mã OTP thật về hòm thư Email của Giáo viên
                 </p>
               </div>
             </div>
@@ -1653,10 +1654,10 @@ export default function AdminTab({
               type="button"
               onClick={handleTestSendEmail}
               disabled={isTestingEmail}
-              className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md transition cursor-pointer active:scale-95 disabled:opacity-50 shrink-0"
+              className="flex items-center gap-2 bg-gradient-to-b from-[#287866] to-[#1d5c4e] hover:from-[#318f7a] hover:to-[#226e5e] text-white font-black text-xs px-5 py-2.5 rounded-full border border-[#16473c] shadow-md transition-all cursor-pointer active:scale-95 disabled:opacity-50 shrink-0 select-none"
             >
               <Send className={`w-4 h-4 ${isTestingEmail ? 'animate-spin' : ''}`} />
-              <span>{isTestingEmail ? 'Đang gửi Email test...' : 'Gửi Email OTP Thử Nghiệm'}</span>
+              <span>{isTestingEmail ? 'Đang phát thư thử nghiệm...' : '✉️ Gửi Email OTP Thử Nghiệm'}</span>
             </button>
           </div>
 
@@ -1664,7 +1665,7 @@ export default function AdminTab({
             
             {/* Provider Selector Cards */}
             <div className="space-y-2">
-              <label className="block text-xs font-black uppercase text-slate-700 tracking-wider">
+              <label className="block text-xs font-black uppercase text-[#4a2e16] tracking-wider mb-2">
                 1. Chọn Nhà Cung Cấp Cổng Email / SMS OTP:
               </label>
 
@@ -1673,17 +1674,17 @@ export default function AdminTab({
                 {/* Option 1: Gmail Automatic Gateway (Google Apps Script) */}
                 <div
                   onClick={() => setOtpProvider('gmail_script')}
-                  className={`p-4 rounded-2xl border-2 cursor-pointer transition flex flex-col justify-between ${
+                  className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex flex-col justify-between ${
                     otpProvider === 'gmail_script'
-                      ? 'border-emerald-600 bg-emerald-50/60 shadow-sm ring-2 ring-emerald-500/20'
-                      : 'border-slate-200 bg-slate-50/50 hover:bg-slate-100'
+                      ? 'border-[#287866] bg-[#f0fdf4] text-[#16473c] shadow-md ring-2 ring-[#287866]/20'
+                      : 'border-[#d6c4a8] bg-[#fbf7ee] hover:bg-[#f5e6ca] text-[#4a2e16]'
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-black text-xs text-emerald-950">Gmail Tự Động (Google Script)</span>
-                    <span className="text-[10px] bg-emerald-100 text-emerald-800 font-black px-2 py-0.5 rounded">Trực Tiếp Gmail</span>
+                    <span className="font-black text-xs">Gmail Tự Động (Google Script)</span>
+                    <span className="text-[10px] bg-[#dcfce7] text-[#166534] font-black px-2 py-0.5 rounded-full border border-[#bbf7d0]">Trực Tiếp Gmail</span>
                   </div>
-                  <p className="text-[11px] text-slate-600 mt-2 font-medium">
+                  <p className="text-[11px] opacity-80 mt-2 font-semibold leading-relaxed">
                     Gửi Email OTP thật 100% qua Gmail nguyenthanhdong.hutech@gmail.com. Không giới hạn 200 lượt.
                   </p>
                 </div>
@@ -1691,17 +1692,17 @@ export default function AdminTab({
                 {/* Option 2: EmailJS */}
                 <div
                   onClick={() => setOtpProvider('emailjs')}
-                  className={`p-4 rounded-2xl border-2 cursor-pointer transition flex flex-col justify-between ${
+                  className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex flex-col justify-between ${
                     otpProvider === 'emailjs'
-                      ? 'border-blue-600 bg-blue-50/50 shadow-sm'
-                      : 'border-slate-200 bg-slate-50/50 hover:bg-slate-100'
+                      ? 'border-[#287866] bg-[#f0fdf4] text-[#16473c] shadow-md ring-2 ring-[#287866]/20'
+                      : 'border-[#d6c4a8] bg-[#fbf7ee] hover:bg-[#f5e6ca] text-[#4a2e16]'
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-black text-xs text-blue-900">EmailJS Gateway</span>
-                    <span className="text-[10px] bg-blue-100 text-blue-800 font-black px-2 py-0.5 rounded">Gói Miễn Phí</span>
+                    <span className="font-black text-xs">EmailJS Gateway</span>
+                    <span className="text-[10px] bg-blue-100 text-blue-900 font-black px-2 py-0.5 rounded-full border border-blue-200">Gói Miễn Phí</span>
                   </div>
-                  <p className="text-[11px] text-slate-500 mt-2 font-medium">
+                  <p className="text-[11px] opacity-80 mt-2 font-semibold leading-relaxed">
                     200 email/tháng miễn phí. Kết nối trực tiếp với Gmail, Outlook hoặc Email trường học.
                   </p>
                 </div>
@@ -1709,17 +1710,17 @@ export default function AdminTab({
                 {/* Option 3: Resend */}
                 <div
                   onClick={() => setOtpProvider('resend')}
-                  className={`p-4 rounded-2xl border-2 cursor-pointer transition flex flex-col justify-between ${
+                  className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex flex-col justify-between ${
                     otpProvider === 'resend'
-                      ? 'border-blue-600 bg-blue-50/50 shadow-sm'
-                      : 'border-slate-200 bg-slate-50/50 hover:bg-slate-100'
+                      ? 'border-[#287866] bg-[#f0fdf4] text-[#16473c] shadow-md ring-2 ring-[#287866]/20'
+                      : 'border-[#d6c4a8] bg-[#fbf7ee] hover:bg-[#f5e6ca] text-[#4a2e16]'
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-black text-xs text-indigo-900">Resend API</span>
-                    <span className="text-[10px] bg-indigo-100 text-indigo-800 font-black px-2 py-0.5 rounded">3,000 Email/tháng</span>
+                    <span className="font-black text-xs">Resend API</span>
+                    <span className="text-[10px] bg-purple-100 text-purple-900 font-black px-2 py-0.5 rounded-full border border-purple-200">3,000 Email/tháng</span>
                   </div>
-                  <p className="text-[11px] text-slate-500 mt-2 font-medium">
+                  <p className="text-[11px] opacity-80 mt-2 font-semibold leading-relaxed">
                     3,000 email/tháng siêu tốc. Khuyên dùng cho trường học giao dịch lớn.
                   </p>
                 </div>
@@ -1727,17 +1728,17 @@ export default function AdminTab({
                 {/* Option 4: Custom Webhook */}
                 <div
                   onClick={() => setOtpProvider('webhook')}
-                  className={`p-4 rounded-2xl border-2 cursor-pointer transition flex flex-col justify-between ${
+                  className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex flex-col justify-between ${
                     otpProvider === 'webhook'
-                      ? 'border-blue-600 bg-blue-50/50 shadow-sm'
-                      : 'border-slate-200 bg-slate-50/50 hover:bg-slate-100'
+                      ? 'border-[#287866] bg-[#f0fdf4] text-[#16473c] shadow-md ring-2 ring-[#287866]/20'
+                      : 'border-[#d6c4a8] bg-[#fbf7ee] hover:bg-[#f5e6ca] text-[#4a2e16]'
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-black text-xs text-slate-900">SMS Gateway / Webhook</span>
-                    <span className="text-[10px] bg-slate-200 text-slate-700 font-black px-2 py-0.5 rounded">Tùy biến</span>
+                    <span className="font-black text-xs">SMS Gateway / Webhook</span>
+                    <span className="text-[10px] bg-amber-100 text-amber-900 font-black px-2 py-0.5 rounded-full border border-amber-200">Tùy biến</span>
                   </div>
-                  <p className="text-[11px] text-slate-500 mt-2 font-medium">
+                  <p className="text-[11px] opacity-80 mt-2 font-semibold leading-relaxed">
                     Kết nối Cổng nhắn tin SMS Viettel/Zalo ZNS của Nhà trường qua Webhook HTTP POST.
                   </p>
                 </div>
@@ -1745,10 +1746,10 @@ export default function AdminTab({
               </div>
             </div>
 
-            {/* API Credentials Input Form */}
-            <div className="bg-slate-50/80 p-5 rounded-2xl border border-slate-200/80 space-y-4">
-              <h4 className="font-extrabold text-xs text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                <Key className="w-4 h-4 text-blue-600" />
+            {/* API Credentials Input Form Card */}
+            <div className="bg-[#fbf7ee] border-2 border-[#e5dacf] p-5 rounded-2xl shadow-xs space-y-4">
+              <h4 className="font-extrabold text-xs text-[#4a2e16] uppercase tracking-wider flex items-center gap-2 pb-2 border-b border-[#e5dacf]">
+                <Key className="w-4 h-4 text-[#d97706]" />
                 2. Điền API Key & Thông Số Cấu Hình ({otpProvider.toUpperCase()}):
               </h4>
 
@@ -1756,7 +1757,7 @@ export default function AdminTab({
                 
                 {/* API Key / WebApp Exec URL */}
                 <div>
-                  <label className="block text-[11px] font-black uppercase text-slate-600 mb-1">
+                  <label className="block text-[11px] font-black uppercase text-[#5c4326] mb-1">
                     {otpProvider === 'gmail_script' 
                       ? 'Google Web App Exec URL (Hoặc EmailJS Public Key): *' 
                       : 'API Key / Public Key: *'}
@@ -1770,9 +1771,9 @@ export default function AdminTab({
                         ? 'https://script.google.com/macros/s/AKfycb.../exec' 
                         : (otpProvider === 'resend' ? 're_123456789...' : 'user_live_xxx...')
                     }
-                    className="w-full bg-white border border-slate-300 rounded-xl py-2.5 px-3 text-xs font-mono font-bold text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full bg-white border border-[#d6c4a8] rounded-xl p-2.5 text-xs font-mono font-bold text-[#3d2514] focus:outline-none focus:ring-2 focus:ring-[#287866] shadow-2xs"
                   />
-                  <p className="text-[10px] text-slate-500 mt-1">
+                  <p className="text-[10px] text-[#78350f] font-semibold mt-1">
                     {otpProvider === 'gmail_script'
                       ? '* Dán URL Web App triển khai từ Google Apps Script (Hoặc để trống để dùng Cổng Gmail tự động hóa tự kết nối).'
                       : (otpProvider === 'resend' 
@@ -1783,7 +1784,7 @@ export default function AdminTab({
 
                 {/* Email Sender Address */}
                 <div>
-                  <label className="block text-[11px] font-black uppercase text-slate-600 mb-1">
+                  <label className="block text-[11px] font-black uppercase text-[#5c4326] mb-1">
                     Địa chỉ Email Gửi Đi Mặc Định (Sender):
                   </label>
                   <input
@@ -1791,9 +1792,9 @@ export default function AdminTab({
                     value={senderEmail}
                     onChange={(e) => setSenderEmail(e.target.value)}
                     placeholder="thlongdinh.otp@gmail.com"
-                    className="w-full bg-white border border-slate-300 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full bg-white border border-[#d6c4a8] rounded-xl p-2.5 text-xs font-bold text-[#3d2514] focus:outline-none focus:ring-2 focus:ring-[#287866] shadow-2xs"
                   />
-                  <p className="text-[10px] text-slate-400 mt-1">
+                  <p className="text-[10px] text-[#78350f] font-semibold mt-1">
                     * Email dùng để phát tin nhắn OTP đến hộp thư của Giáo viên.
                   </p>
                 </div>
@@ -1802,7 +1803,7 @@ export default function AdminTab({
                 {otpProvider === 'emailjs' && (
                   <>
                     <div>
-                      <label className="block text-[11px] font-black uppercase text-slate-600 mb-1">
+                      <label className="block text-[11px] font-black uppercase text-[#5c4326] mb-1">
                         EmailJS Service ID:
                       </label>
                       <input
@@ -1810,12 +1811,12 @@ export default function AdminTab({
                         value={emailServiceId}
                         onChange={(e) => setEmailServiceId(e.target.value)}
                         placeholder="service_gmail"
-                        className="w-full bg-white border border-slate-300 rounded-xl py-2.5 px-3 text-xs font-mono font-bold text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                        className="w-full bg-white border border-[#d6c4a8] rounded-xl p-2.5 text-xs font-mono font-bold text-[#3d2514] focus:outline-none focus:ring-2 focus:ring-[#287866] shadow-2xs"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-black uppercase text-slate-600 mb-1">
+                      <label className="block text-[11px] font-black uppercase text-[#5c4326] mb-1">
                         EmailJS Template ID:
                       </label>
                       <input
@@ -1823,7 +1824,7 @@ export default function AdminTab({
                         value={emailTemplateId}
                         onChange={(e) => setEmailTemplateId(e.target.value)}
                         placeholder="template_otp"
-                        className="w-full bg-white border border-slate-300 rounded-xl py-2.5 px-3 text-xs font-mono font-bold text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                        className="w-full bg-white border border-[#d6c4a8] rounded-xl p-2.5 text-xs font-mono font-bold text-[#3d2514] focus:outline-none focus:ring-2 focus:ring-[#287866] shadow-2xs"
                       />
                     </div>
                   </>
@@ -1831,7 +1832,7 @@ export default function AdminTab({
 
                 {/* SMS API Key */}
                 <div>
-                  <label className="block text-[11px] font-black uppercase text-slate-600 mb-1">
+                  <label className="block text-[11px] font-black uppercase text-[#5c4326] mb-1">
                     SMS Gateway API Key (Tùy chọn):
                   </label>
                   <input
@@ -1839,9 +1840,9 @@ export default function AdminTab({
                     value={smsApiKey}
                     onChange={(e) => setSmsApiKey(e.target.value)}
                     placeholder="sms_key_optional..."
-                    className="w-full bg-white border border-slate-300 rounded-xl py-2.5 px-3 text-xs font-mono font-bold text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full bg-white border border-[#d6c4a8] rounded-xl p-2.5 text-xs font-mono font-bold text-[#3d2514] focus:outline-none focus:ring-2 focus:ring-[#287866] shadow-2xs"
                   />
-                  <p className="text-[10px] text-slate-400 mt-1">
+                  <p className="text-[10px] text-[#78350f] font-semibold mt-1">
                     * Điền API Key nếu trường sử dụng thêm dịch vụ gửi SMS Brandname trực tiếp về di động.
                   </p>
                 </div>
@@ -1849,54 +1850,55 @@ export default function AdminTab({
               </div>
             </div>
 
-              {/* Google Apps Script Gmail Gateway Helper Box */}
-              {otpProvider === 'gmail_script' && (
-                <div className="bg-emerald-50/70 border border-emerald-200 p-4 rounded-2xl space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-200/60 pb-2">
-                    <div>
-                      <h5 className="font-black text-xs text-emerald-950 uppercase tracking-wider flex items-center gap-1.5">
-                        <span>⚡ MÃ NGUỒN CỔNG GỬI GMAIL TỰ ĐỘNG KHÔNG GIỚI HẠN (GOOGLE APPS SCRIPT)</span>
-                      </h5>
-                      <p className="text-[10px] text-emerald-800 font-semibold mt-0.5">
-                        Tạo dự án mới tại <a href="https://script.google.com" target="_blank" rel="noreferrer" className="underline font-black text-emerald-900">https://script.google.com</a> ➔ Dán mã này ➔ Triển khai dạng Web App (Quyền: Anyone).
-                      </p>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={handleCopyGoogleScript}
-                      className="bg-emerald-700 hover:bg-emerald-800 text-white font-black text-xs px-3.5 py-2 rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer shrink-0 active:scale-95"
-                    >
-                      <FileCode className="w-4 h-4 text-emerald-200" />
-                      <span>{copiedScript ? '✅ Đã sao chép!' : 'Sao chép mã Google Script'}</span>
-                    </button>
+            {/* Google Apps Script Gmail Gateway Helper Box */}
+            {otpProvider === 'gmail_script' && (
+              <div className="bg-[#f4ebd9] border-2 border-[#dca31f] p-4 rounded-2xl space-y-3 shadow-xs">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#e5dacf] pb-2">
+                  <div>
+                    <h5 className="font-black text-xs text-[#422e00] uppercase tracking-wider flex items-center gap-1.5">
+                      <span>⚡ MÃ NGUỒN CỔNG GỬI GMAIL TỰ ĐỘNG KHÔNG GIỚI HẠN (GOOGLE APPS SCRIPT)</span>
+                    </h5>
+                    <p className="text-[10px] text-[#78350f] font-semibold mt-0.5">
+                      Tạo dự án mới tại <a href="https://script.google.com" target="_blank" rel="noreferrer" className="underline font-black text-[#422e00]">https://script.google.com</a> ➔ Dán mã này ➔ Triển khai dạng Web App (Quyền: Anyone).
+                    </p>
                   </div>
 
-                  <div className="bg-slate-900 text-emerald-400 p-3 rounded-xl font-mono text-[10px] max-h-36 overflow-y-auto leading-relaxed border border-slate-800 select-all">
-                    <pre>{GOOGLE_APPS_SCRIPT_GMAIL_TEMPLATE}</pre>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCopyGoogleScript}
+                    className="bg-gradient-to-b from-[#287866] to-[#1d5c4e] hover:from-[#318f7a] hover:to-[#226e5e] text-white font-black text-xs px-4 py-2 rounded-full border border-[#16473c] shadow-sm transition flex items-center gap-1.5 cursor-pointer shrink-0 active:scale-95"
+                  >
+                    <FileCode className="w-4 h-4 text-emerald-200" />
+                    <span>{copiedScript ? '✅ Đã sao chép!' : 'Sao chép mã Google Script'}</span>
+                  </button>
                 </div>
-              )}
 
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-200">
-                <button
-                  type="button"
-                  onClick={handleTestSendEmail}
-                  disabled={isTestingEmail}
-                  className="flex items-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 font-extrabold text-xs px-4 py-2.5 rounded-xl transition cursor-pointer active:scale-95 disabled:opacity-50"
-                >
-                  <Send className="w-3.5 h-3.5 text-blue-600" />
-                  <span>{isTestingEmail ? 'Đang phát thư thử nghiệm...' : '✉️ Gửi Email OTP Thử Nghiệm qua Gmail'}</span>
-                </button>
-
-                <button
-                  type="submit"
-                  className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition cursor-pointer active:scale-95"
-                >
-                  <Save className="w-4 h-4" />
-                  <span>🔐 Lưu & Đồng Bộ Cấu Hình Gmail OTP Lên Cloud</span>
-                </button>
+                <div className="bg-[#2d1b0e] text-[#fde047] p-3 rounded-xl font-mono text-[10px] max-h-36 overflow-y-auto leading-relaxed border border-[#4a2e16] select-all shadow-inner">
+                  <pre>{GOOGLE_APPS_SCRIPT_GMAIL_TEMPLATE}</pre>
+                </div>
               </div>
+            )}
+
+            {/* Action Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-[#d6c4a8]">
+              <button
+                type="button"
+                onClick={handleTestSendEmail}
+                disabled={isTestingEmail}
+                className="flex items-center gap-2 bg-gradient-to-b from-[#e5a823] to-[#c78b0f] hover:from-[#f3b52d] hover:to-[#d69612] text-white font-black text-xs px-5 py-2.5 rounded-full border border-[#9e6d0a] shadow-md transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+              >
+                <Send className={`w-3.5 h-3.5 ${isTestingEmail ? 'animate-spin' : ''}`} />
+                <span>{isTestingEmail ? 'Đang phát thư thử nghiệm...' : '✉️ Gửi Email OTP Thử Nghiệm qua Gmail'}</span>
+              </button>
+
+              <button
+                type="submit"
+                className="flex items-center gap-2 bg-gradient-to-b from-[#287866] to-[#1d5c4e] hover:from-[#318f7a] hover:to-[#226e5e] text-white font-black text-xs px-6 py-3 rounded-full border border-[#16473c] shadow-lg transition-all cursor-pointer active:scale-95"
+              >
+                <Save className="w-4 h-4" />
+                <span>🔐 Lưu & Đồng Bộ Cấu Hình Gmail OTP Lên Cloud</span>
+              </button>
+            </div>
 
           </form>
 
