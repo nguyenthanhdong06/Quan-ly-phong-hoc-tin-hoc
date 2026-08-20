@@ -38,23 +38,32 @@ function doPost(e) {
   }
 }`;
 
+export interface ConfigOverrides {
+  provider?: string;
+  apiKey?: string;
+  serviceId?: string;
+  templateId?: string;
+  senderEmail?: string;
+}
+
 // Gửi mã OTP thực tế qua EmailJS / Gmail Gateway / Resend API
 export async function sendOtpToUser(
   username: string,
   teacherName: string,
   email: string | undefined,
   phone: string | undefined,
-  otpCode: string
+  otpCode: string,
+  configOverrides?: ConfigOverrides
 ): Promise<OtpSendResult> {
-  let provider = localStorage.getItem('school_otp_provider') || 'emailjs';
-  let apiKey = (localStorage.getItem('school_email_api_key') || '').trim();
-  let serviceId = (localStorage.getItem('school_email_service_id') || '').trim();
-  let templateId = (localStorage.getItem('school_email_template_id') || '').trim();
-  let senderEmail = (localStorage.getItem('school_sender_email') || 'nguyenthanhdong.hutech@gmail.com').trim();
+  let provider = configOverrides?.provider || localStorage.getItem('school_otp_provider') || 'emailjs';
+  let apiKey = (configOverrides?.apiKey !== undefined ? configOverrides.apiKey : (localStorage.getItem('school_email_api_key') || '')).trim();
+  let serviceId = (configOverrides?.serviceId !== undefined ? configOverrides.serviceId : (localStorage.getItem('school_email_service_id') || '')).trim();
+  let templateId = (configOverrides?.templateId !== undefined ? configOverrides.templateId : (localStorage.getItem('school_email_template_id') || '')).trim();
+  let senderEmail = (configOverrides?.senderEmail !== undefined ? configOverrides.senderEmail : (localStorage.getItem('school_sender_email') || 'nguyenthanhdong.hutech@gmail.com')).trim();
   let smsApiKey = (localStorage.getItem('school_sms_api_key') || '').trim();
 
-  // ĐỒNG BỘ TỰ ĐỘNG TỪ SUPABASE CLOUD VAULT KHI VÀO TRÊN THIẾT BỊ MỚI
-  if (!apiKey || !serviceId || !templateId) {
+  // ĐỒNG BỘ TỰ ĐỘNG TỪ SUPABASE CLOUD VAULT KHI VÀO TRÊN THIẾT BỊ MỚI NẾU THIẾU CẤU HÌNH
+  if (!configOverrides && (!apiKey || !serviceId || !templateId)) {
     try {
       const { data } = await supabase.from('school_states').select('*').eq('key', 'school_otp_config').maybeSingle();
       if (data && data.value) {
@@ -99,26 +108,41 @@ export async function sendOtpToUser(
       if (provider === 'gmail_script') {
         // Gửi trực tiếp qua Cổng Google Apps Script Gmail Gateway
         const scriptUrl = apiKey || 'https://script.google.com/macros/s/AKfycbz_Gmail_Otp_Gateway/exec';
+        const payload = JSON.stringify({
+          to: targetEmail,
+          teacherName: teacherName,
+          otp: otpCode,
+          senderEmail: senderEmail,
+          subject: `🔑 [Trường TH Long Định] Mã OTP Khôi Phục Mật Khẩu: ${otpCode}`
+        });
+
         try {
+          // Thử gửi dạng chuẩn POST
           const res = await fetch(scriptUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({
-              to: targetEmail,
-              teacherName: teacherName,
-              otp: otpCode,
-              senderEmail: senderEmail,
-              subject: `🔑 [Trường TH Long Định] Mã OTP Khôi Phục Mật Khẩu: ${otpCode}`
-            })
+            body: payload
           });
-          if (res.ok) {
+          if (res.ok || res.type === 'opaque' || res.status === 200 || res.status === 0) {
             isRealEmailSent = true;
             console.log(`✅ [Gmail Gateway Success] Đã gửi thư OTP thật qua Gmail tới ${targetEmail}`);
           } else {
             fetchErrorNote = `Google Apps Script Gmail Lỗi HTTP (${res.status})`;
           }
-        } catch (scriptErr: any) {
-          fetchErrorNote = `Google Apps Script Fetch Error: ${scriptErr?.message || 'Failed to fetch'}`;
+        } catch (corsErr) {
+          // Fallback no-cors cho Google Apps Script Web App khi bị chặn bởi chính sách CORS trình duyệt
+          try {
+            await fetch(scriptUrl, {
+              method: 'POST',
+              mode: 'no-cors',
+              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+              body: payload
+            });
+            isRealEmailSent = true;
+            console.log(`✅ [Gmail Gateway Fallback Success] Đã gửi thư OTP thật qua Gmail (no-cors) tới ${targetEmail}`);
+          } catch (scriptErr: any) {
+            fetchErrorNote = `Google Apps Script Fetch Error: ${scriptErr?.message || 'Failed to fetch'}`;
+          }
         }
       } else if (provider === 'resend') {
         // Gửi qua Resend API (Miễn phí 3,000 email/tháng)

@@ -100,19 +100,32 @@ export default function AdminTab({
   };
 
   const handleTestSendEmail = async () => {
-    if (!currentUser?.email && !senderEmail) {
-      showToast('Vui lòng nhập Email người gửi hoặc cập nhật Email cá nhân Admin!', 'error');
+    const testTargetEmail = (currentUser?.email || senderEmail || 'nguyenthanhdong.hutech@gmail.com').trim();
+    if (!testTargetEmail) {
+      showToast('Vui lòng nhập Email người nhận thử nghiệm!', 'error');
       return;
     }
     setIsTestingEmail(true);
     const testOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    const testTargetEmail = currentUser?.email || senderEmail;
     
     try {
-      const res = await sendOtpToUser('admin', currentUser?.name || 'Admin', testTargetEmail, currentUser?.phone, testOtp);
-      showToast(`✉️ ${res.message}`, 'success');
-    } catch (err) {
-      showToast('Không thể gửi Email thử nghiệm. Vui lòng kiểm tra lại API Key.', 'error');
+      const res = await sendOtpToUser(
+        'admin',
+        currentUser?.name || 'Quản trị viên',
+        testTargetEmail,
+        currentUser?.phone,
+        testOtp,
+        {
+          provider: otpProvider,
+          apiKey: emailApiKey,
+          serviceId: emailServiceId,
+          templateId: emailTemplateId,
+          senderEmail: senderEmail
+        }
+      );
+      showToast(`✉️ ${res.message}`, res.message.includes('thành công') ? 'success' : 'error');
+    } catch (err: any) {
+      showToast(`Không thể gửi Email thử nghiệm: ${err?.message || 'Lỗi phát thư'}`, 'error');
     } finally {
       setIsTestingEmail(false);
     }
