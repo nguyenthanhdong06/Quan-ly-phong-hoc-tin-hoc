@@ -8,7 +8,37 @@ export interface OtpSendResult {
   sentTime: string;
 }
 
-// Gửi mã OTP thực tế qua EmailJS / Resend API
+export const GOOGLE_APPS_SCRIPT_GMAIL_TEMPLATE = `// MÃ NGUỒN GOOGLE APPS SCRIPT - GỬI EMAIL THẬT TỰ ĐỘNG QUA GMAIL TRỰC TIẾP
+// HƯỚNG DẪN: Tạo dự án mới tại https://script.google.com -> Dán mã này -> Triển khai dạng Web App (Quyền: Anyone).
+
+function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    var toEmail = data.to;
+    var teacherName = data.teacherName || 'Giáo viên';
+    var otpCode = data.otp;
+    var subject = data.subject || ("🔑 [Trường TH Long Định] Mã OTP Khôi phục mật khẩu: " + otpCode);
+    
+    var htmlBody = 
+      '<div style="font-family: Arial, sans-serif; padding: 25px; background: #fffbf0; border: 2px solid #cbb89d; border-radius: 16px; color: #3d2514;">' +
+        '<h2 style="color: #237a6e; margin-top: 0;">🏫 TRƯỜNG TIỂU HỌC LONG ĐỊNH</h2>' +
+        '<h4 style="color: #d97706;">HỆ THỐNG XÁC THỰC MẬT KHẨU TỰ ĐỘNG QUA GMAIL</h4>' +
+        '<p>Kính gửi <strong>Thầy/Cô ' + teacherName + '</strong>,</p>' +
+        '<p>Hệ thống nhận được yêu cầu khôi phục mật khẩu mới cho tài khoản của Thầy/Cô. Mã xác minh OTP 6 chữ số là:</p>' +
+        '<div style="font-size: 32px; font-weight: 900; color: #15803d; letter-spacing: 6px; margin: 20px 0; padding: 15px; background: #ffffff; border: 1px solid #bbf7d0; text-align: center; border-radius: 12px;">' + otpCode + '</div>' +
+        '<p style="font-size: 13px; color: #991b1b; font-weight: bold;">⚠️ Mã OTP có hiệu lực trong 5 phút. Vui lòng không chia sẻ mã này cho bất kỳ ai.</p>' +
+        '<hr style="border: none; border-top: 1px dashed #cbb89d; margin: 20px 0;"/>' +
+        '<p style="font-size: 11px; color: #78350f;">Trân trọng,<br/><strong>Ban Quản trị Phòng máy Tin học - Trường TH Long Định</strong></p>' +
+      '</div>';
+    
+    GmailApp.sendEmail(toEmail, subject, "", { htmlBody: htmlBody });
+    return ContentService.createTextOutput(JSON.stringify({ success: true, message: "Sent successfully" })).setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ success: false, error: err.toString() })).setMimeType(ContentService.MimeType.JSON);
+  }
+}`;
+
+// Gửi mã OTP thực tế qua EmailJS / Gmail Gateway / Resend API
 export async function sendOtpToUser(
   username: string,
   teacherName: string,
@@ -65,8 +95,32 @@ export async function sendOtpToUser(
   let fetchErrorNote = '';
 
   try {
-    if (apiKey) {
-      if (provider === 'resend') {
+    if (apiKey || provider === 'gmail_script') {
+      if (provider === 'gmail_script') {
+        // Gửi trực tiếp qua Cổng Google Apps Script Gmail Gateway
+        const scriptUrl = apiKey || 'https://script.google.com/macros/s/AKfycbz_Gmail_Otp_Gateway/exec';
+        try {
+          const res = await fetch(scriptUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+              to: targetEmail,
+              teacherName: teacherName,
+              otp: otpCode,
+              senderEmail: senderEmail,
+              subject: `🔑 [Trường TH Long Định] Mã OTP Khôi Phục Mật Khẩu: ${otpCode}`
+            })
+          });
+          if (res.ok) {
+            isRealEmailSent = true;
+            console.log(`✅ [Gmail Gateway Success] Đã gửi thư OTP thật qua Gmail tới ${targetEmail}`);
+          } else {
+            fetchErrorNote = `Google Apps Script Gmail Lỗi HTTP (${res.status})`;
+          }
+        } catch (scriptErr: any) {
+          fetchErrorNote = `Google Apps Script Fetch Error: ${scriptErr?.message || 'Failed to fetch'}`;
+        }
+      } else if (provider === 'resend') {
         // Gửi qua Resend API (Miễn phí 3,000 email/tháng)
         const res = await fetch('https://api.resend.com/emails', {
           method: 'POST',

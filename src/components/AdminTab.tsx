@@ -3,7 +3,7 @@ import { Member, Computer, Student, ClassItem, MotivationalQuote } from '../type
 import { UserCheck, Trash2, ShieldAlert, Heart, HardDrive, Cpu, Cloud, Check, Wifi, AlertTriangle, RefreshCw, Database, FileCode, CheckCircle2, X, Calendar, Plus, Clock, User, Sparkles, Settings, FileText, Printer, Save, Key, Lock, Eye, EyeOff, RotateCcw, Mail, Send, ArrowRight, ArrowLeft } from 'lucide-react';
 import { safeSetLocalStorage } from '../utils/safeStorage';
 import { saveSupabaseState, SQL_INITIALIZATION_QUERY } from '../supabaseClient';
-import { sendOtpToUser } from '../services/emailSmsOtpService';
+import { sendOtpToUser, GOOGLE_APPS_SCRIPT_GMAIL_TEMPLATE } from '../services/emailSmsOtpService';
 import { encryptVaultData } from '../utils/security';
 
 interface AdminTabProps {
@@ -88,6 +88,15 @@ export default function AdminTab({
     } else {
       showToast('⚙️ Đã lưu cấu hình EmailJS cục bộ trên thiết bị này!', 'success');
     }
+  };
+
+  const [copiedScript, setCopiedScript] = useState(false);
+
+  const handleCopyGoogleScript = () => {
+    navigator.clipboard.writeText(GOOGLE_APPS_SCRIPT_GMAIL_TEMPLATE);
+    setCopiedScript(true);
+    showToast('⚡ Đã sao chép mã nguồn Google Apps Script gửi Gmail tự động thành công!');
+    setTimeout(() => setCopiedScript(false), 3000);
   };
 
   const handleTestSendEmail = async () => {
@@ -1646,9 +1655,27 @@ export default function AdminTab({
                 1. Chọn Nhà Cung Cấp Cổng Email / SMS OTP:
               </label>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                 
-                {/* Option 1: EmailJS */}
+                {/* Option 1: Gmail Automatic Gateway (Google Apps Script) */}
+                <div
+                  onClick={() => setOtpProvider('gmail_script')}
+                  className={`p-4 rounded-2xl border-2 cursor-pointer transition flex flex-col justify-between ${
+                    otpProvider === 'gmail_script'
+                      ? 'border-emerald-600 bg-emerald-50/60 shadow-sm ring-2 ring-emerald-500/20'
+                      : 'border-slate-200 bg-slate-50/50 hover:bg-slate-100'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-black text-xs text-emerald-950">Gmail Tự Động (Google Script)</span>
+                    <span className="text-[10px] bg-emerald-100 text-emerald-800 font-black px-2 py-0.5 rounded">Trực Tiếp Gmail</span>
+                  </div>
+                  <p className="text-[11px] text-slate-600 mt-2 font-medium">
+                    Gửi Email OTP thật 100% qua Gmail nguyenthanhdong.hutech@gmail.com. Không giới hạn 200 lượt.
+                  </p>
+                </div>
+
+                {/* Option 2: EmailJS */}
                 <div
                   onClick={() => setOtpProvider('emailjs')}
                   className={`p-4 rounded-2xl border-2 cursor-pointer transition flex flex-col justify-between ${
@@ -1666,7 +1693,7 @@ export default function AdminTab({
                   </p>
                 </div>
 
-                {/* Option 2: Resend */}
+                {/* Option 3: Resend */}
                 <div
                   onClick={() => setOtpProvider('resend')}
                   className={`p-4 rounded-2xl border-2 cursor-pointer transition flex flex-col justify-between ${
@@ -1684,7 +1711,7 @@ export default function AdminTab({
                   </p>
                 </div>
 
-                {/* Option 3: Custom Webhook */}
+                {/* Option 4: Custom Webhook */}
                 <div
                   onClick={() => setOtpProvider('webhook')}
                   className={`p-4 rounded-2xl border-2 cursor-pointer transition flex flex-col justify-between ${
@@ -1802,16 +1829,54 @@ export default function AdminTab({
               </div>
             </div>
 
-            {/* Save Button */}
-            <div className="flex justify-end pt-2">
-              <button
-                type="submit"
-                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition cursor-pointer active:scale-95"
-              >
-                <Save className="w-4 h-4" />
-                <span>Lưu Cấu Hình Cổng Email & SMS OTP</span>
-              </button>
-            </div>
+              {/* Google Apps Script Gmail Gateway Helper Box */}
+              {otpProvider === 'gmail_script' && (
+                <div className="bg-emerald-50/70 border border-emerald-200 p-4 rounded-2xl space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-200/60 pb-2">
+                    <div>
+                      <h5 className="font-black text-xs text-emerald-950 uppercase tracking-wider flex items-center gap-1.5">
+                        <span>⚡ MÃ NGUỒN CỔNG GỬI GMAIL TỰ ĐỘNG KHÔNG GIỚI HẠN (GOOGLE APPS SCRIPT)</span>
+                      </h5>
+                      <p className="text-[10px] text-emerald-800 font-semibold mt-0.5">
+                        Tạo dự án mới tại <a href="https://script.google.com" target="_blank" rel="noreferrer" className="underline font-black text-emerald-900">https://script.google.com</a> ➔ Dán mã này ➔ Triển khai dạng Web App (Quyền: Anyone).
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleCopyGoogleScript}
+                      className="bg-emerald-700 hover:bg-emerald-800 text-white font-black text-xs px-3.5 py-2 rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer shrink-0 active:scale-95"
+                    >
+                      <FileCode className="w-4 h-4 text-emerald-200" />
+                      <span>{copiedScript ? '✅ Đã sao chép!' : 'Sao chép mã Google Script'}</span>
+                    </button>
+                  </div>
+
+                  <div className="bg-slate-900 text-emerald-400 p-3 rounded-xl font-mono text-[10px] max-h-36 overflow-y-auto leading-relaxed border border-slate-800 select-all">
+                    <pre>{GOOGLE_APPS_SCRIPT_GMAIL_TEMPLATE}</pre>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={handleTestSendEmail}
+                  disabled={isTestingEmail}
+                  className="flex items-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 font-extrabold text-xs px-4 py-2.5 rounded-xl transition cursor-pointer active:scale-95 disabled:opacity-50"
+                >
+                  <Send className="w-3.5 h-3.5 text-blue-600" />
+                  <span>{isTestingEmail ? 'Đang phát thư thử nghiệm...' : '✉️ Gửi Email OTP Thử Nghiệm qua Gmail'}</span>
+                </button>
+
+                <button
+                  type="submit"
+                  className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition cursor-pointer active:scale-95"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>🔐 Lưu & Đồng Bộ Cấu Hình Gmail OTP Lên Cloud</span>
+                </button>
+              </div>
 
           </form>
 
