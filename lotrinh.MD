@@ -149,6 +149,8 @@
     1. **Nút "➕ Thêm tài khoản" & Inline View 100%**: Di chuyển form tạo tài khoản sang màn hình Inline View 100% full-width có nút "⬅️ Quay về danh sách", giúp Bảng Thành viên Giáo viên lấy 100% không gian hiển thị rộng rãi. Khi tạo xong tự động thoát Inline View và cuộn/highlight tập trung (focus) dòng tài khoản vừa tạo.
     2. **Đổi tên vai trò**: Chuẩn hóa tên vai trò Root Admin thành **"Quản trị hệ thống (Admin)"**.
     3. **Phân cấp vai trò Quản trị viên**: Khóa quyền tạo thêm Root Admin ngang hàng; chỉ cho phép tạo **Quản trị viên (Sub-Admin - Cấp dưới Quản trị hệ thống)** chuyên trách quản lý Phòng máy, Thời khóa biểu & Sự cố.
+    4. **Hiển thị ứng dụng & Khóa bảo mật**: Quản trị viên truy cập đầy đủ các ứng dụng quản lý chính. Tự động ẩn các tab cấu hình nhạy cảm (*API Key Email/SMS, Cơ sở dữ liệu Cloud, SQL Scripts*).
+    5. **Chống xóa dữ liệu hệ thống**: Khóa toàn bộ quyền xóa tài khoản giáo viên, xóa dữ liệu học sinh và xóa nhật ký hệ thống đối với tài khoản Quản trị viên.
 
 ---
 
