@@ -52,7 +52,7 @@ export default function AdminTab({
   const [emailApiKey, setEmailApiKey] = useState<string>(() => localStorage.getItem('school_email_api_key') || '');
   const [emailServiceId, setEmailServiceId] = useState<string>(() => localStorage.getItem('school_email_service_id') || '');
   const [emailTemplateId, setEmailTemplateId] = useState<string>(() => localStorage.getItem('school_email_template_id') || '');
-  const [senderEmail, setSenderEmail] = useState<string>(() => localStorage.getItem('school_sender_email') || 'thlongdinh.otp@gmail.com');
+  const [senderEmail, setSenderEmail] = useState<string>(() => localStorage.getItem('school_sender_email') || 'nguyenthanhdong.hutech@gmail.com');
   const [smsApiKey, setSmsApiKey] = useState<string>(() => localStorage.getItem('school_sms_api_key') || '');
   const [isTestingEmail, setIsTestingEmail] = useState(false);
 
