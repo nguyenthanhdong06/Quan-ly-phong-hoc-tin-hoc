@@ -357,8 +357,8 @@ export default function AdminTab({
 
     // Bảo vệ quyền Quản trị hệ thống (Admin): Chỉ có Root Admin độc quyền, không tạo mới ngang hàng
     let assignedRole = newRole;
-    if (assignedRole === 'Quản trị hệ thống (Admin)' || assignedRole.includes('Quản trị hệ thống')) {
-      assignedRole = 'Quản trị viên';
+    if (assignedRole === 'Quản trị hệ thống (Admin)' || assignedRole.includes('Quản trị hệ thống') || assignedRole === 'Quản trị viên') {
+      assignedRole = 'Giáo viên bộ môn';
     }
 
     const item: Member = {
@@ -1004,7 +1004,6 @@ export default function AdminTab({
                       className="w-full bg-slate-50/50 border border-slate-300 rounded-xl p-3 text-xs font-extrabold text-slate-800 focus:bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none cursor-pointer"
                     >
                       <option value="Giáo viên bộ môn">Giáo viên bộ môn (Chấm điểm + Điểm danh + Quản lý Lớp)</option>
-                      <option value="Quản trị viên">Quản trị viên (Cấp dưới Quản trị hệ thống - Quản lý Phòng máy, TKB, Sự cố)</option>
                       <option value="Giáo viên Chủ nhiệm">Giáo viên Chủ nhiệm</option>
                       <option value="Tổ trưởng chuyên môn">Tổ trưởng chuyên môn</option>
                     </select>
@@ -1144,15 +1143,15 @@ export default function AdminTab({
                             <p className="text-[10px] text-slate-400">{member.phone}</p>
                           </td>
                           <td className="py-3.5 px-4 whitespace-nowrap">
-                            <span className={`px-3 py-1 rounded-full font-extrabold text-[11px] whitespace-nowrap inline-flex items-center gap-1 shadow-2xs ${
-                              isRootAdmin 
-                                ? 'bg-amber-100 text-amber-900 border border-amber-300' 
-                                : member.role.includes('Quản trị viên')
-                                ? 'bg-indigo-100 text-indigo-900 border border-indigo-200'
-                                : 'bg-slate-100 text-slate-700 border border-slate-200'
-                            }`}>
-                              {member.role === 'Giáo viên Quản trị hệ thống (Admin)' ? 'Quản trị hệ thống (Admin)' : member.role}
-                            </span>
+                            { (member.id === 'u-1' || member.role.includes('Quản trị hệ thống') || member.role === 'Admin') ? (
+                              <span className="inline-flex items-center gap-1 bg-[#fef9c3] text-[#713f12] border border-[#fde047] font-black text-[11px] px-3.5 py-0.5 rounded-full shadow-2xs tracking-tight whitespace-nowrap select-none">
+                                Quản trị hệ thống (Admin)
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 border border-slate-200 font-extrabold text-[11px] px-3 py-0.5 rounded-full shadow-2xs whitespace-nowrap">
+                                {member.role}
+                              </span>
+                            )}
                           </td>
 
                           {/* Quản lý Mật Khẩu: Đổi Mật Khẩu & Reset về mặc định (phongmay@123) */}

@@ -1968,7 +1968,13 @@ export default function DashboardTab({
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs font-black text-slate-800 truncate">{currentUser ? currentUser.name : 'Giáo viên thực hành'}</p>
-                    <p className="text-[10px] text-slate-400 font-medium">{currentUser ? currentUser.role : 'Quản trị viên hệ thống'}</p>
+                    {(currentUser?.role?.includes('Quản trị hệ thống') || currentUser?.role === 'Admin' || currentUser?.id === 'u-1') ? (
+                      <span className="inline-block bg-[#fef9c3] text-[#713f12] border border-[#fde047] font-black text-[10px] px-2.5 py-0.5 rounded-full shadow-2xs mt-0.5 select-none">
+                        Quản trị hệ thống (Admin)
+                      </span>
+                    ) : (
+                      <p className="text-[10px] text-slate-400 font-medium">{currentUser ? currentUser.role : 'Giáo viên Tin học'}</p>
+                    )}
                   </div>
                 </div>
               </div>

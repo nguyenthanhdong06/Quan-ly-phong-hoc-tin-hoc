@@ -8,7 +8,8 @@ interface DeskOSMacWidgetProps {
 
 export const DeskOSMacWidget: React.FC<DeskOSMacWidgetProps> = ({ currentUser }) => {
   const teacherName = currentUser ? currentUser.name : 'Quý thầy cô';
-  const roleName = currentUser?.role === 'Admin' ? 'Quản trị viên (Admin)' : currentUser?.role || 'Giáo viên Tin học';
+  const isRootUser = currentUser?.role?.includes('Quản trị hệ thống') || currentUser?.role === 'Admin' || currentUser?.id === 'u-1';
+  const roleName = isRootUser ? 'Quản trị hệ thống (Admin)' : currentUser?.role || 'Giáo viên Tin học';
   const firstLetter = teacherName.charAt(0).toUpperCase();
 
   return (
@@ -58,9 +59,15 @@ export const DeskOSMacWidget: React.FC<DeskOSMacWidgetProps> = ({ currentUser })
           Xin chào, {teacherName} 👏
         </h2>
         <div className="flex items-center gap-1.5 mt-0.5">
-          <span className="bg-amber-100 border border-amber-300 text-amber-800 text-[10px] font-black px-2 py-0.2 rounded-full shadow-2xs">
-            {roleName}
-          </span>
+          {isRootUser ? (
+            <span className="bg-[#fef9c3] text-[#713f12] border border-[#fde047] text-[11px] font-black px-3.5 py-0.5 rounded-full shadow-2xs tracking-tight select-none">
+              Quản trị hệ thống (Admin)
+            </span>
+          ) : (
+            <span className="bg-amber-100 border border-amber-300 text-amber-800 text-[10px] font-black px-2 py-0.2 rounded-full shadow-2xs">
+              {roleName}
+            </span>
+          )}
           <span className="text-[11px] font-bold text-[#806443]">• Trường TH Long Định</span>
         </div>
 

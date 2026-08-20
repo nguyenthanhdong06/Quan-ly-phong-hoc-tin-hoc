@@ -232,7 +232,13 @@ export const DeskOSSidebar: React.FC<DeskOSSidebarProps> = ({
               </div>
               <div className="truncate">
                 <p className="font-black text-xs text-[#42301c] truncate leading-tight">{currentUser?.name || 'Giáo viên'}</p>
-                <p className="text-[10px] font-bold text-[#806443] truncate leading-none">{currentUser?.role || 'User'}</p>
+                {(currentUser?.role?.includes('Quản trị hệ thống') || currentUser?.role === 'Admin' || currentUser?.id === 'u-1') ? (
+                  <span className="inline-block bg-[#fef9c3] text-[#713f12] border border-[#fde047] font-black text-[9px] px-2 py-0.2 rounded-full shadow-2xs mt-0.5 select-none">
+                    Quản trị hệ thống (Admin)
+                  </span>
+                ) : (
+                  <p className="text-[10px] font-bold text-[#806443] truncate leading-none mt-0.5">{currentUser?.role || 'User'}</p>
+                )}
               </div>
             </div>
 
