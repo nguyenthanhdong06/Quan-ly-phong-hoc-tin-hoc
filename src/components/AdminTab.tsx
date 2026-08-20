@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Member, Computer, Student, ClassItem, MotivationalQuote } from '../types';
-import { UserCheck, Trash2, ShieldAlert, Heart, HardDrive, Cpu, Cloud, Check, Wifi, AlertTriangle, RefreshCw, Database, FileCode, CheckCircle2, X, Calendar, Plus, Clock, User, Sparkles, Settings, FileText, Printer, Save, Key, Lock, Eye, EyeOff, RotateCcw, Mail, Send, ArrowRight } from 'lucide-react';
+import { UserCheck, Trash2, ShieldAlert, Heart, HardDrive, Cpu, Cloud, Check, Wifi, AlertTriangle, RefreshCw, Database, FileCode, CheckCircle2, X, Calendar, Plus, Clock, User, Sparkles, Settings, FileText, Printer, Save, Key, Lock, Eye, EyeOff, RotateCcw, Mail, Send, ArrowRight, ArrowLeft } from 'lucide-react';
 import { safeSetLocalStorage } from '../utils/safeStorage';
 import { saveSupabaseState, SQL_INITIALIZATION_QUERY } from '../supabaseClient';
 import { sendOtpToUser } from '../services/emailSmsOtpService';
@@ -55,6 +55,10 @@ export default function AdminTab({
   const [senderEmail, setSenderEmail] = useState<string>(() => localStorage.getItem('school_sender_email') || 'nguyenthanhdong.hutech@gmail.com');
   const [smsApiKey, setSmsApiKey] = useState<string>(() => localStorage.getItem('school_sms_api_key') || '');
   const [isTestingEmail, setIsTestingEmail] = useState(false);
+
+  // States for Create Account Inline View & Highlight focus
+  const [isCreateAccountViewOpen, setIsCreateAccountViewOpen] = useState(false);
+  const [highlightedMemberId, setHighlightedMemberId] = useState<string | null>(null);
 
   const handleSaveOtpConfig = (e: React.FormEvent) => {
     e.preventDefault();
@@ -310,7 +314,7 @@ export default function AdminTab({
   };
 
 
-  const handleAddMember = (e: React.FormEvent) => {
+  const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName.trim() || !newEmail.trim()) {
       showToast('Họ tên và địa chỉ Email không được để trống!', 'error');
@@ -325,22 +329,45 @@ export default function AdminTab({
       return;
     }
 
+    // Bảo vệ quyền Quản trị hệ thống (Admin): Chỉ có Root Admin độc quyền, không tạo mới ngang hàng
+    let assignedRole = newRole;
+    if (assignedRole === 'Quản trị hệ thống (Admin)' || assignedRole.includes('Quản trị hệ thống')) {
+      assignedRole = 'Quản trị viên';
+    }
+
     const item: Member = {
       id: `u-${Date.now()}`,
       name: newName.trim(),
-      role: newRole,
+      role: assignedRole,
       email: newEmail.trim(),
       phone: newPhone.trim() || 'Chưa cung cấp',
       username: usernameClean,
       password: 'phongmay@123'
     };
 
-    setMembers(prev => [...prev, item]);
+    const updatedMembers = [...members, item];
+    setMembers(updatedMembers);
+    safeSetLocalStorage('school_members', updatedMembers);
+    await saveSupabaseState('school_members', updatedMembers);
+
+    // Reset Form
     setNewName('');
     setNewRole('Giáo viên bộ môn');
     setNewEmail('');
     setNewPhone('');
-    showToast(`Đã thêm thành viên giáo viên ${item.name} và cấp quyền thành công!`);
+
+    // Đóng chế độ tạo inline view & focus tới tài khoản mới tạo
+    setHighlightedMemberId(item.id);
+    setIsCreateAccountViewOpen(false);
+    showToast(`🎉 Đã tạo thành công tài khoản cho Giáo viên ${item.name} (${item.username})!`, 'success');
+
+    // Tự động cuộn và highlight dòng tài khoản mới trong danh sách
+    setTimeout(() => {
+      const rowElem = document.getElementById(`member-row-${item.id}`);
+      if (rowElem) {
+        rowElem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 250);
   };
 
   const handleDeleteMember = (id: string, name: string) => {
@@ -863,158 +890,267 @@ export default function AdminTab({
       </div>
       )}
 
-      {/* 2. QUẢN LÝ THÀNH VIÊN VÀ QUYỀN HẠN TRUY CẬP (2-Column Grid) */}
+      {/* 2. QUẢN LÝ THÀNH VIÊN VÀ QUYỀN HẠN TRUY CẬP (INLINE VIEW & FULL TABLE) */}
       {activeSubTab === 'phan_quyen' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fadeIn">
-        
-        {/* Left column: add registration form */}
-        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4 h-fit text-left">
-          <h4 className="font-black text-slate-800 text-sm uppercase tracking-wide border-b pb-2 flex items-center gap-2">
-            <UserCheck className="w-5 h-5 text-amber-500" />
-            Cấp quyền giảng dạy mới
-          </h4>
+        <div className="space-y-6 animate-fadeIn text-left">
+          {isCreateAccountViewOpen ? (
+            /* --- INLINE VIEW 100% FULL WIDTH: FORM TẠO TÀI KHOẢN MỚI --- */
+            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 space-y-6 animate-fadeIn max-w-4xl mx-auto">
+              
+              {/* Inline View Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="bg-amber-50 p-3 rounded-2xl text-amber-600 border border-amber-100">
+                    <UserCheck className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-slate-800 text-base uppercase tracking-wide flex items-center gap-2">
+                      <span>Cấp Quyền & Tạo Tài Khoản Giáo Viên Mới</span>
+                      <span className="text-[10px] bg-amber-100 text-amber-900 font-extrabold px-2.5 py-0.5 rounded-full border border-amber-200">
+                        Chế độ Inline View 100%
+                      </span>
+                    </h3>
+                    <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                      Nhập thông tin Giáo viên và thiết lập phân quyền cấp dưới trong Nhà trường
+                    </p>
+                  </div>
+                </div>
 
-          <form onSubmit={handleAddMember} className="space-y-3.5 text-xs">
-            <div>
-              <label className="block font-bold text-slate-500 mb-1">Họ và Tên Giáo viên</label>
-              <input
-                type="text"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                placeholder="Nhập họ và tên đầy đủ..."
-                className="w-full border border-slate-200 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                required
-              />
+                <button
+                  type="button"
+                  onClick={() => setIsCreateAccountViewOpen(false)}
+                  className="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs px-4 py-2.5 rounded-xl transition cursor-pointer active:scale-95 shrink-0"
+                >
+                  <ArrowLeft className="w-4 h-4 text-slate-600" />
+                  <span>Quay về danh sách</span>
+                </button>
+              </div>
+
+              {/* Form Body */}
+              <form onSubmit={handleAddMember} className="space-y-5 text-xs">
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Họ và Tên */}
+                  <div>
+                    <label className="block font-black uppercase text-slate-600 text-[11px] mb-1.5">
+                      Họ và Tên Giáo viên *
+                    </label>
+                    <input
+                      type="text"
+                      value={newName}
+                      onChange={(e) => setNewName(e.target.value)}
+                      placeholder="Nhập đầy đủ họ và tên (Ví dụ: Nguyễn Văn An)..."
+                      className="w-full bg-slate-50/50 border border-slate-300 rounded-xl p-3 text-xs font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                      required
+                    />
+                  </div>
+
+                  {/* Quyền Hạn Hệ Thống (Phân Cấp) */}
+                  <div>
+                    <label className="block font-black uppercase text-slate-600 text-[11px] mb-1.5">
+                      Phân quyền & Vai trò *
+                    </label>
+                    <select
+                      value={newRole}
+                      onChange={(e) => setNewRole(e.target.value)}
+                      className="w-full bg-slate-50/50 border border-slate-300 rounded-xl p-3 text-xs font-extrabold text-slate-800 focus:bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none cursor-pointer"
+                    >
+                      <option value="Giáo viên bộ môn">Giáo viên bộ môn (Chấm điểm + Điểm danh + Quản lý Lớp)</option>
+                      <option value="Quản trị viên">Quản trị viên (Cấp dưới Quản trị hệ thống - Quản lý Phòng máy, TKB, Sự cố)</option>
+                      <option value="Giáo viên Chủ nhiệm">Giáo viên Chủ nhiệm</option>
+                      <option value="Tổ trưởng chuyên môn">Tổ trưởng chuyên môn</option>
+                    </select>
+                    <p className="text-[10px] text-amber-700 font-medium mt-1">
+                      📌 *Lưu ý: Quyền "Quản trị hệ thống (Admin)" là cấp cao nhất độc quyền, không được cấp cho tài khoản tạo mới.
+                    </p>
+                  </div>
+
+                  {/* Email Trường học / Gmail */}
+                  <div>
+                    <label className="block font-black uppercase text-slate-600 text-[11px] mb-1.5">
+                      Địa chỉ Email *
+                    </label>
+                    <input
+                      type="email"
+                      value={newEmail}
+                      onChange={(e) => setNewEmail(e.target.value)}
+                      placeholder="Ví dụ: nguyenvanan@gmail.com"
+                      className="w-full bg-slate-50/50 border border-slate-300 rounded-xl p-3 text-xs font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                      required
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      Tên đăng nhập (Username) sẽ tự động lấy từ phần đầu Email.
+                    </p>
+                  </div>
+
+                  {/* Số Điện Thoại */}
+                  <div>
+                    <label className="block font-black uppercase text-slate-600 text-[11px] mb-1.5">
+                      Số điện thoại liên hệ
+                    </label>
+                    <input
+                      type="text"
+                      value={newPhone}
+                      onChange={(e) => setNewPhone(e.target.value)}
+                      placeholder="Nhập số điện thoại (Ví dụ: 0912.345.678)..."
+                      className="w-full bg-slate-50/50 border border-slate-300 rounded-xl p-3 text-xs font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Form Footer Action Buttons */}
+                <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setIsCreateAccountViewOpen(false)}
+                    className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-5 py-3 rounded-xl transition text-xs cursor-pointer"
+                  >
+                    Hủy bỏ
+                  </button>
+                  <button
+                    type="submit"
+                    className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black px-6 py-3 rounded-xl shadow-md transition text-xs cursor-pointer flex items-center gap-2 active:scale-95"
+                  >
+                    <Plus className="w-4 h-4 text-slate-950" />
+                    <span>Tạo tài khoản & Cấp quyền ngay</span>
+                  </button>
+                </div>
+
+              </form>
+
             </div>
+          ) : (
+            /* --- FULL WIDTH 100% TABLE VIEW: THÀNH VIÊN GIÁO VIÊN --- */
+            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 space-y-5 text-left">
+              
+              {/* Header Banner with "➕ Thêm tài khoản" Button */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="bg-amber-50 p-3 rounded-2xl text-amber-600 border border-amber-100">
+                    <ShieldAlert className="w-6 h-6 text-amber-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-slate-800 text-base uppercase tracking-wide flex items-center gap-2">
+                      <span>Thành Viên Giáo Viên Trong Nhà Trường</span>
+                      <span className="text-[10px] bg-slate-100 text-slate-700 font-extrabold px-2.5 py-0.5 rounded-full border border-slate-200">
+                        {members.length} tài khoản
+                      </span>
+                    </h3>
+                    <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                      Danh sách tài khoản cán bộ giáo viên, quản lý mật khẩu và phân quyền hệ thống
+                    </p>
+                  </div>
+                </div>
 
-            <div>
-              <label className="block font-bold text-slate-500 mb-1">Quyền hạn hệ thống</label>
-              <select
-                value={newRole}
-                onChange={(e) => setNewRole(e.target.value)}
-                className="w-full border border-slate-200 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white font-semibold text-slate-700"
-              >
-                <option value="Giáo viên bộ môn">Giáo viên bộ môn (Chấm điểm + Điểm danh)</option>
-                <option value="Quản trị viên">Quản trị viên (Toàn quyền)</option>
-              </select>
-            </div>
+                <button
+                  type="button"
+                  onClick={() => setIsCreateAccountViewOpen(true)}
+                  className="flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black text-xs px-5 py-3 rounded-2xl shadow-md transition cursor-pointer active:scale-95 shrink-0"
+                >
+                  <Plus className="w-4 h-4 text-slate-950" />
+                  <span>Thêm tài khoản</span>
+                </button>
+              </div>
 
-            <div>
-              <label className="block font-bold text-slate-500 mb-1">Email trường học</label>
-              <input
-                type="email"
-                value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
-                placeholder="Ví dụ: hotengv@school.edu.vn"
-                className="w-full border border-slate-200 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block font-bold text-slate-500 mb-1">Số điện thoại liên hệ</label>
-              <input
-                type="text"
-                value={newPhone}
-                onChange={(e) => setNewPhone(e.target.value)}
-                placeholder="Chưa cung cấp số"
-                className="w-full border border-slate-200 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none"
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-lg transition text-xs"
-            >
-              + Tạo tài khoản & Gửi thư nhận việc
-            </button>
-          </form>
-        </div>
-
-        {/* Right column: list existing teachers - Pure Table without maintenance clutter */}
-        <div className="lg:col-span-2 bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4 text-left">
-          
-          <div>
-            <h3 className="font-black text-slate-800 text-sm uppercase tracking-wide border-b pb-2 flex items-center gap-2">
-              <ShieldAlert className="w-5 h-5 text-amber-500" />
-              Thành viên giáo viên trong Nhà trường
-            </h3>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-slate-100/90 border-b border-slate-200 text-slate-700 font-extrabold text-[11px] uppercase tracking-wider whitespace-nowrap">
-                    <th className="py-3 px-4 whitespace-nowrap">THÔNG TIN GIÁO VIÊN</th>
-                    <th className="py-3 px-4 whitespace-nowrap">ĐỊA CHỈ EMAIL / PHONE</th>
-                    <th className="py-3 px-4 whitespace-nowrap">PHÂN QUYỀN</th>
-                    <th className="py-3 px-4 text-center whitespace-nowrap">QUẢN LÝ MẬT KHẨU</th>
-                    <th className="py-3 px-4 text-center whitespace-nowrap">THAO TÁC</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {members.map(member => (
-                    <tr key={member.id} className="hover:bg-slate-50/50">
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        <p className="font-extrabold text-slate-800">{member.name}</p>
-                        <p className="text-[10px] text-slate-400">Username: <strong className="text-slate-600 font-mono">{member.username}</strong></p>
-                      </td>
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        <p className="font-semibold text-slate-700">{member.email}</p>
-                        <p className="text-[10px] text-slate-400">{member.phone}</p>
-                      </td>
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        <span className={`px-3 py-1 rounded-full font-bold text-[11px] whitespace-nowrap inline-flex items-center gap-1 shadow-2xs ${
-                          member.role.includes('Admin') ? 'bg-amber-100 text-amber-900 border border-amber-200' : 'bg-slate-100 text-slate-700 border border-slate-200'
-                        }`}>
-                          {member.role}
-                        </span>
-                      </td>
-
-                      {/* Quản lý Mật Khẩu: Đổi Mật Khẩu & Reset về mặc định (phongmay@123) */}
-                      <td className="py-3 px-4 text-center">
-                        <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                          <button
-                            onClick={() => handleOpenChangePassword(member)}
-                            className="inline-flex items-center gap-1 bg-amber-50 hover:bg-amber-100 text-amber-800 text-[11px] font-bold px-2.5 py-1 rounded-lg border border-amber-200 transition cursor-pointer active:scale-95 shadow-2xs"
-                            title="Đổi mật khẩu tài khoản này"
-                          >
-                            <Key className="w-3.5 h-3.5 text-amber-600" />
-                            Đổi MK
-                          </button>
-                          <button
-                            onClick={() => handleResetToDefaultPassword(member)}
-                            className="inline-flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold px-2.5 py-1 rounded-lg border border-slate-300 transition cursor-pointer active:scale-95 shadow-2xs"
-                            title="Reset mật khẩu về mặc định (phongmay@123)"
-                          >
-                            <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
-                            Reset MK
-                          </button>
-                        </div>
-                      </td>
-
-                      <td className="py-3 px-4 text-center">
-                        {member.id !== 'u-1' ? (
-                          <button
-                            onClick={() => handleDeleteMember(member.id, member.name)}
-                            className="text-slate-400 hover:text-red-500 p-1.5 hover:bg-red-50 rounded transition inline-block focus:outline-none"
-                            title="Xóa thành viên"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        ) : (
-                          <span className="text-[10px] italic text-slate-400 font-medium">Không thể xóa</span>
-                        )}
-                      </td>
+              {/* Full Width Table */}
+              <div className="overflow-x-auto rounded-2xl border border-slate-200">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-slate-100/90 border-b border-slate-200 text-slate-700 font-extrabold text-[11px] uppercase tracking-wider whitespace-nowrap">
+                      <th className="py-3.5 px-4 whitespace-nowrap">THÔNG TIN GIÁO VIÊN</th>
+                      <th className="py-3.5 px-4 whitespace-nowrap">ĐỊA CHỈ EMAIL / SỐ ĐIỆN THOẠI</th>
+                      <th className="py-3.5 px-4 whitespace-nowrap">PHÂN QUYỀN HỆ THỐNG</th>
+                      <th className="py-3.5 px-4 text-center whitespace-nowrap">QUẢN LÝ MẬT KHẨU</th>
+                      <th className="py-3.5 px-4 text-center whitespace-nowrap">THAO TÁC</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {members.map(member => {
+                      const isHighlighted = member.id === highlightedMemberId;
+                      const isRootAdmin = member.id === 'u-1' || member.role.includes('Quản trị hệ thống');
+                      return (
+                        <tr
+                          key={member.id}
+                          id={`member-row-${member.id}`}
+                          className={`transition duration-300 ${
+                            isHighlighted
+                              ? 'bg-amber-100/80 border-2 border-amber-400 font-bold ring-2 ring-amber-300'
+                              : 'hover:bg-slate-50/70'
+                          }`}
+                        >
+                          <td className="py-3.5 px-4 whitespace-nowrap">
+                            <div className="flex items-center gap-2">
+                              <div>
+                                <p className="font-extrabold text-slate-800 text-xs flex items-center gap-1.5">
+                                  <span>{member.name}</span>
+                                  {isHighlighted && (
+                                    <span className="text-[9px] bg-amber-500 text-slate-950 font-black px-1.5 py-0.5 rounded">VỪA TẠO</span>
+                                  )}
+                                </p>
+                                <p className="text-[10px] text-slate-400">Username: <strong className="text-slate-600 font-mono">{member.username}</strong></p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-4 whitespace-nowrap">
+                            <p className="font-semibold text-slate-700">{member.email}</p>
+                            <p className="text-[10px] text-slate-400">{member.phone}</p>
+                          </td>
+                          <td className="py-3.5 px-4 whitespace-nowrap">
+                            <span className={`px-3 py-1 rounded-full font-extrabold text-[11px] whitespace-nowrap inline-flex items-center gap-1 shadow-2xs ${
+                              isRootAdmin 
+                                ? 'bg-amber-100 text-amber-900 border border-amber-300' 
+                                : member.role.includes('Quản trị viên')
+                                ? 'bg-indigo-100 text-indigo-900 border border-indigo-200'
+                                : 'bg-slate-100 text-slate-700 border border-slate-200'
+                            }`}>
+                              {member.role === 'Giáo viên Quản trị hệ thống (Admin)' ? 'Quản trị hệ thống (Admin)' : member.role}
+                            </span>
+                          </td>
+
+                          {/* Quản lý Mật Khẩu: Đổi Mật Khẩu & Reset về mặc định (phongmay@123) */}
+                          <td className="py-3.5 px-4 text-center">
+                            <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                              <button
+                                onClick={() => handleOpenChangePassword(member)}
+                                className="inline-flex items-center gap-1 bg-amber-50 hover:bg-amber-100 text-amber-800 text-[11px] font-bold px-2.5 py-1 rounded-lg border border-amber-200 transition cursor-pointer active:scale-95 shadow-2xs"
+                                title="Đổi mật khẩu tài khoản này"
+                              >
+                                <Key className="w-3.5 h-3.5 text-amber-600" />
+                                Đổi MK
+                              </button>
+                              <button
+                                onClick={() => handleResetToDefaultPassword(member)}
+                                className="inline-flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold px-2.5 py-1 rounded-lg border border-slate-300 transition cursor-pointer active:scale-95 shadow-2xs"
+                                title="Reset mật khẩu về mặc định (phongmay@123)"
+                              >
+                                <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+                                Reset MK
+                              </button>
+                            </div>
+                          </td>
+
+                          <td className="py-3.5 px-4 text-center">
+                            {!isRootAdmin ? (
+                              <button
+                                onClick={() => handleDeleteMember(member.id, member.name)}
+                                className="text-slate-400 hover:text-red-500 p-1.5 hover:bg-red-50 rounded transition inline-block focus:outline-none cursor-pointer"
+                                title="Xóa thành viên"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            ) : (
+                              <span className="text-[10px] italic text-slate-400 font-medium">Root Admin</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
-
+          )}
         </div>
-
-      </div>
       )}
 
       {/* MODAL ĐỔI MẬT KHẨU TÀI KHOẢN CHO ADMIN */}

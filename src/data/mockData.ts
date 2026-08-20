@@ -74,7 +74,7 @@ export const defaultDocuments: DocumentItem[] = [
 ];
 
 export const defaultMembers: Member[] = [
-  { id: 'u-1', name: 'Nguyễn Thanh Đồng', role: 'Quản trị viên (Admin)', email: 'dong.nt@school.edu.vn', phone: '0987.654.321', username: 'dong.nt', password: 'phongmay@123' },
+  { id: 'u-1', name: 'Nguyễn Thanh Đồng', role: 'Quản trị hệ thống (Admin)', email: 'nguyenthanhdong.hutech@gmail.com', phone: '0987.654.321', username: 'dong.nt', password: 'phongmay@123' },
   { id: 'u-2', name: 'Lê Hoài Nam', role: 'Giáo viên bộ môn', email: 'nam.lh@school.edu.vn', phone: '0912.345.678', username: 'nam.lh', password: 'phongmay@123' },
   { id: 'u-3', name: 'Phạm Hồng Hạnh', role: 'Giáo viên bộ môn', email: 'hanh.ph@school.edu.vn', phone: '0905.112.233', username: 'hanh.ph', password: 'phongmay@123' },
   { id: 'u-4', name: 'Vũ Minh Khôi', role: 'Giáo viên bộ môn', email: 'khoi.vm@school.edu.vn', phone: '0977.888.999', username: 'khoi.vm', password: 'phongmay@123' },
