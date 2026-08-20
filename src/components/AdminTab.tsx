@@ -1754,23 +1754,30 @@ export default function AdminTab({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 
-                {/* API Key */}
+                {/* API Key / WebApp Exec URL */}
                 <div>
                   <label className="block text-[11px] font-black uppercase text-slate-600 mb-1">
-                    API Key / Public Key: *
+                    {otpProvider === 'gmail_script' 
+                      ? 'Google Web App Exec URL (Hoặc EmailJS Public Key): *' 
+                      : 'API Key / Public Key: *'}
                   </label>
                   <input
-                    type="password"
+                    type="text"
                     value={emailApiKey}
                     onChange={(e) => setEmailApiKey(e.target.value)}
-                    placeholder={otpProvider === 'resend' ? 're_123456789...' : 'user_live_xxx...'}
+                    placeholder={
+                      otpProvider === 'gmail_script' 
+                        ? 'https://script.google.com/macros/s/AKfycb.../exec' 
+                        : (otpProvider === 'resend' ? 're_123456789...' : 'user_live_xxx...')
+                    }
                     className="w-full bg-white border border-slate-300 rounded-xl py-2.5 px-3 text-xs font-mono font-bold text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   />
-                  <p className="text-[10px] text-slate-400 mt-1">
-                    {otpProvider === 'resend' 
-                      ? '* Đăng ký miễn phí tại https://resend.com để lấy API Key' 
-                      : '* Đăng ký tài khoản EmailJS tại https://emailjs.com để lấy Public Key'
-                    }
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    {otpProvider === 'gmail_script'
+                      ? '* Dán URL Web App triển khai từ Google Apps Script (Hoặc để trống để dùng Cổng Gmail tự động hóa tự kết nối).'
+                      : (otpProvider === 'resend' 
+                          ? '* Đăng ký miễn phí tại https://resend.com để lấy API Key' 
+                          : '* Đăng ký tài khoản EmailJS tại https://emailjs.com để lấy Public Key')}
                   </p>
                 </div>
 

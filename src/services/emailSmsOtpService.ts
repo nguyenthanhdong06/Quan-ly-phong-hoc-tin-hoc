@@ -103,11 +103,62 @@ export async function sendOtpToUser(
   let isRealEmailSent = false;
   let fetchErrorNote = '';
 
+// Helper gửi mail dự phòng qua EmailJS Gmail Gateway
+async function sendViaEmailJS(
+  targetEmail: string,
+  teacherName: string,
+  otpCode: string,
+  senderEmail: string,
+  serviceId: string,
+  templateId: string,
+  apiKey: string
+): Promise<{ success: boolean; errorNote: string }> {
+  const finalServiceId = serviceId || 'service_school';
+  const finalTemplateId = templateId || 'template_otp';
+  const finalApiKey = apiKey && !apiKey.startsWith('http') ? apiKey : '';
+
+  if (!finalApiKey) {
+    return { success: false, errorNote: 'Chưa có EmailJS Public Key' };
+  }
+
+  try {
+    const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        service_id: finalServiceId,
+        template_id: finalTemplateId,
+        user_id: finalApiKey,
+        template_params: {
+          to_email: targetEmail,
+          teacher_name: teacherName,
+          otp: otpCode,
+          expire_minutes: '5',
+          title: 'Khôi phục mật khẩu',
+          name: teacherName || 'Quản trị phòng máy',
+          email: senderEmail,
+          to_name: teacherName,
+          otp_code: otpCode,
+          user_email: targetEmail,
+          sender_email: senderEmail
+        }
+      })
+    });
+    if (res.ok) {
+      return { success: true, errorNote: '' };
+    } else {
+      const errText = await res.text();
+      return { success: false, errorNote: `EmailJS Lỗi (${res.status}): ${errText}` };
+    }
+  } catch (err: any) {
+    return { success: false, errorNote: `EmailJS Connection Error: ${err?.message || 'Failed'}` };
+  }
+}
+
   try {
     if (apiKey || provider === 'gmail_script') {
       if (provider === 'gmail_script') {
-        // Gửi trực tiếp qua Cổng Google Apps Script Gmail Gateway
-        const scriptUrl = apiKey || 'https://script.google.com/macros/s/AKfycbz_Gmail_Otp_Gateway/exec';
+        const isCustomUrl = apiKey && apiKey.startsWith('http') && !apiKey.includes('AKfycbz_Gmail_Otp_Gateway');
         const payload = JSON.stringify({
           to: targetEmail,
           teacherName: teacherName,
@@ -116,32 +167,58 @@ export async function sendOtpToUser(
           subject: `🔑 [Trường TH Long Định] Mã OTP Khôi Phục Mật Khẩu: ${otpCode}`
         });
 
-        try {
-          // Thử gửi dạng chuẩn POST
-          const res = await fetch(scriptUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: payload
-          });
-          if (res.ok || res.type === 'opaque' || res.status === 200 || res.status === 0) {
-            isRealEmailSent = true;
-            console.log(`✅ [Gmail Gateway Success] Đã gửi thư OTP thật qua Gmail tới ${targetEmail}`);
-          } else {
-            fetchErrorNote = `Google Apps Script Gmail Lỗi HTTP (${res.status})`;
-          }
-        } catch (corsErr) {
-          // Fallback no-cors cho Google Apps Script Web App khi bị chặn bởi chính sách CORS trình duyệt
+        if (isCustomUrl) {
           try {
-            await fetch(scriptUrl, {
+            const res = await fetch(apiKey, {
               method: 'POST',
-              mode: 'no-cors',
               headers: { 'Content-Type': 'text/plain;charset=utf-8' },
               body: payload
             });
+
+            if (res.ok || res.status === 200) {
+              isRealEmailSent = true;
+              console.log(`✅ [Gmail Gateway Success] Đã gửi thư OTP thật qua Gmail tới ${targetEmail}`);
+            } else if (res.status === 404) {
+              fetchErrorNote = 'URL Google Script bị 404 (Cần chọn "Triển khai mới" -> Quyền truy cập: "Anyone")';
+            } else {
+              // Thử mode no-cors nếu CORS chặn
+              try {
+                await fetch(apiKey, {
+                  method: 'POST',
+                  mode: 'no-cors',
+                  headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                  body: payload
+                });
+                isRealEmailSent = true;
+              } catch (noCorsErr: any) {
+                fetchErrorNote = `Google Apps Script HTTP Lỗi (${res.status})`;
+              }
+            }
+          } catch (fetchErr) {
+            // Fallback no-cors
+            try {
+              await fetch(apiKey, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: payload
+              });
+              isRealEmailSent = true;
+            } catch (scriptErr: any) {
+              fetchErrorNote = `Google Apps Script Fetch Error: ${scriptErr?.message || 'Failed to fetch'}`;
+            }
+          }
+        }
+
+        // Nếu chưa cấu hình URL hợp lệ hoặc Google Script lỗi -> Tự động chuyển tiếp phát thư qua EmailJS Gmail Service
+        if (!isRealEmailSent) {
+          const emailJsBackup = await sendViaEmailJS(targetEmail, teacherName, otpCode, senderEmail, serviceId, templateId, apiKey);
+          if (emailJsBackup.success) {
             isRealEmailSent = true;
-            console.log(`✅ [Gmail Gateway Fallback Success] Đã gửi thư OTP thật qua Gmail (no-cors) tới ${targetEmail}`);
-          } catch (scriptErr: any) {
-            fetchErrorNote = `Google Apps Script Fetch Error: ${scriptErr?.message || 'Failed to fetch'}`;
+            fetchErrorNote = '';
+            console.log(`✅ [Gmail Smart Backup Success] Đã phát thư OTP qua Cổng EmailJS Gmail tới ${targetEmail}`);
+          } else if (!isCustomUrl) {
+            fetchErrorNote = 'Vui lòng dán Web App URL của Google Script vào ô API Key trong Quản trị!';
           }
         }
       } else if (provider === 'resend') {
