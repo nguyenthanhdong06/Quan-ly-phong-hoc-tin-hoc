@@ -1957,23 +1957,6 @@ export default function App() {
                         </p>
                       </div>
                     </div>
-
-                    {/* Collapsible Test Mode OTP Preview Box */}
-                    <div className="border-t border-[#eee4d8] pt-2 text-left">
-                      <button
-                        type="button"
-                        onClick={() => setShowOtpTestPreview(!showOtpTestPreview)}
-                        className="text-[11px] font-extrabold text-[#237a6e] hover:underline cursor-pointer flex items-center gap-1"
-                      >
-                        {showOtpTestPreview ? '🙈 Ẩn mã xem thử Dev/Test' : '👁️ Bấm xem thử mã OTP (Dành cho Dev/Test)'}
-                      </button>
-                      {showOtpTestPreview && generatedOtp && (
-                        <div className="mt-2.5 p-3 bg-[#fdf3d8] border border-[#f4bf3b] rounded-2xl text-center animate-fadeIn">
-                          <span className="text-[10px] text-[#5e4300] font-bold block uppercase tracking-wider">MÃ OTP TEST CỦA BẠN LÀ:</span>
-                          <span className="text-xl font-black font-mono tracking-[0.3em] text-[#422e00]">{generatedOtp}</span>
-                        </div>
-                      )}
-                    </div>
                   </div>
 
                   {/* Input Card */}
