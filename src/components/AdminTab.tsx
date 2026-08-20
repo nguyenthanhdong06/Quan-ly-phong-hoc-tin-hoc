@@ -545,33 +545,33 @@ export default function AdminTab({
         </div>
       </div>
 
-      {/* 1. THỜI KHÓA BIỂU GIẢNG DẠY (Ưu tiên số 1 - Đưa lên đầu làm màn hình trung tâm) */}
+      {/* 1. THỜI KHÓA BIỂU GIẢNG DẠY (KHO VƯỜN TRI THỨC CARAMEL STYLING) */}
       {activeSubTab === 'giang_day' && (
-        <div id="timetable-management-section" className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 text-left space-y-6 animate-fadeIn">
+        <div id="timetable-management-section" className="bg-[#ebdcc4] border-2 border-[#d6c4a8] rounded-3xl p-6 shadow-[0_20px_50px_rgba(80,55,25,0.15)] text-left space-y-6 animate-fadeIn">
         
         {/* Header bar */}
-        <div className="border-b pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="bg-gradient-to-r from-[#ecdcc7] via-[#e5d3bc] to-[#ded0bb] p-4 rounded-2xl border border-[#d6c4a8] shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 select-none">
           <div className="flex items-center gap-3">
-            <div className="bg-amber-50 p-2.5 rounded-2xl text-amber-600">
-              <Calendar className="w-6 h-6 text-amber-500 animate-pulse" />
+            <div className="bg-[#f4bf3b] p-3 rounded-2xl text-[#422e00] border border-[#dca31f] shadow-xs shrink-0">
+              <Calendar className="w-6 h-6 text-[#422e00] animate-pulse" />
             </div>
             <div>
-              <h3 className="font-black text-slate-800 text-base uppercase tracking-wider flex items-center gap-2">
-                THỜI KHÓA BIỂU GIẢNG DẠY
-                <span className="bg-amber-500 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-lg uppercase">
+              <h3 className="font-extrabold text-[#4a2e16] text-base uppercase tracking-wide flex items-center gap-2">
+                <span>THỜI KHÓA BIỂU GIẢNG DẠY</span>
+                <span className="text-[10px] bg-[#f5e6ca] text-[#713f12] font-black px-3 py-1 rounded-full border border-[#d6c4a8] shadow-2xs">
                   BẢNG PHÂN CÔNG ĐỐI CHIẾU
                 </span>
               </h3>
-              <p className="text-[11px] text-slate-500 font-semibold mt-0.5">
+              <p className="text-xs text-[#78350f] font-semibold mt-0.5">
                 Nhấp trực tiếp lên các ô tiết học để phân công môn học & lớp học. Phân công riêng biệt cho từng giáo viên.
               </p>
             </div>
           </div>
 
           {/* Teacher Selector dropdown */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 bg-slate-50 p-2 rounded-2xl border border-slate-100">
-            <span className="text-xs font-black text-slate-500 uppercase flex items-center gap-1 shrink-0 ml-1">
-              <User className="w-3.5 h-3.5 text-slate-400" /> Chọn Giáo viên phụ trách:
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 bg-[#fbf7ee] p-2.5 rounded-2xl border border-[#d6c4a8] shadow-2xs">
+            <span className="text-xs font-black text-[#5c4326] uppercase flex items-center gap-1 shrink-0 ml-1">
+              <User className="w-3.5 h-3.5 text-[#d97706]" /> Chọn Giáo viên phụ trách:
             </span>
             <select
               value={selectedTeacherUsername}
@@ -583,7 +583,7 @@ export default function AdminTab({
                 window.dispatchEvent(new Event('storage'));
                 showToast(`Đã chuyển sang xem TKB của giáo viên: ${members.find(m => m.username === newUsername)?.name || newUsername}`);
               }}
-              className="border border-slate-200 bg-white rounded-xl p-2 text-xs font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer min-w-[200px]"
+              className="border border-[#d6c4a8] bg-white rounded-xl p-2 text-xs font-black text-[#3d2514] focus:outline-none focus:ring-2 focus:ring-[#287866] cursor-pointer min-w-[200px] shadow-2xs"
             >
               {members.map((teacher) => (
                 <option key={teacher.id} value={teacher.username}>
@@ -595,33 +595,33 @@ export default function AdminTab({
         </div>
 
         {/* Informative block showing details of the selected teacher */}
-        <div className="bg-gradient-to-r from-amber-50/60 to-orange-50/40 p-4 rounded-2xl border border-amber-100/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="bg-[#fbf7ee] border-2 border-[#e5dacf] p-4 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-xs">
           <div className="space-y-1">
-            <h2 className="font-black text-slate-800 text-sm">
+            <h2 className="font-black text-[#4a2e16] text-sm">
               Giáo viên: {members.find(m => m.username === selectedTeacherUsername)?.name || 'Chưa rõ'}
             </h2>
-            <p className="text-[11px] text-slate-400 font-medium">
-              Chức danh chuyên môn: <strong className="text-slate-600">{members.find(m => m.username === selectedTeacherUsername)?.role || 'Giáo viên bộ môn'}</strong>
-              {' | '} Email liên lạc: <strong className="text-slate-600">{members.find(m => m.username === selectedTeacherUsername)?.email || 'dong.nt@school.edu.vn'}</strong>
+            <p className="text-xs text-[#78350f] font-semibold">
+              Chức danh chuyên môn: <strong className="text-[#3d2514]">{members.find(m => m.username === selectedTeacherUsername)?.role || 'Giáo viên bộ môn'}</strong>
+              {' | '} Email liên lạc: <strong className="text-[#3d2514]">{members.find(m => m.username === selectedTeacherUsername)?.email || 'dong.nt@school.edu.vn'}</strong>
             </p>
           </div>
         </div>
 
         {/* EDITABLE CONFIGURATION SECTION FOR TIMETABLE TITLE AND SIGNATURE TITLE */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-sm text-left space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-2.5">
+        <div className="bg-[#fbf7ee] border-2 border-[#e5dacf] p-4 rounded-2xl shadow-xs text-left space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e5dacf] pb-2.5">
             <div className="flex items-center gap-2">
-              <div className="bg-teal-600/10 text-teal-700 p-1.5 rounded-xl">
-                <Settings className="w-4 h-4 text-teal-700" />
+              <div className="bg-[#f4bf3b] text-[#422e00] p-1.5 rounded-xl border border-[#dca31f]">
+                <Settings className="w-4 h-4 text-[#422e00]" />
               </div>
               <div>
-                <h3 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-2">
+                <h3 className="text-xs font-black uppercase tracking-wider text-[#4a2e16] flex items-center gap-2">
                   <span>Cấu hình Tiêu đề & Mục ký tên thời khóa biểu</span>
-                  <span className="bg-teal-100 text-teal-800 text-[9px] font-extrabold px-2 py-0.5 rounded-full border border-teal-200">
+                  <span className="bg-[#f5e6ca] text-[#713f12] text-[9px] font-extrabold px-2.5 py-0.5 rounded-full border border-[#d6c4a8]">
                     Áp dụng riêng: {members.find(m => m.username === selectedTeacherUsername)?.name || selectedTeacherUsername}
                   </span>
                 </h3>
-                <p className="text-[10px] text-slate-500 font-medium">
+                <p className="text-[10px] text-[#78350f] font-semibold">
                   Tùy chỉnh tiêu đề và mục ký tên áp dụng riêng cho giáo viên đang chọn. Bấm nút Lưu để lưu cố định cho giáo viên này.
                 </p>
               </div>
@@ -630,7 +630,7 @@ export default function AdminTab({
             <button
               type="button"
               onClick={handleSaveTitleConfig}
-              className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-black text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 transition-all shadow-md shadow-emerald-600/20 cursor-pointer shrink-0"
+              className="bg-gradient-to-b from-[#287866] to-[#1d5c4e] hover:from-[#318f7a] hover:to-[#226e5e] text-white font-black text-xs px-4 py-2 rounded-full border border-[#16473c] shadow-md transition-all cursor-pointer active:scale-95 shrink-0 flex items-center gap-1.5"
             >
               <Save className="w-4 h-4" />
               <span>Lưu tiêu đề giáo viên</span>
@@ -1089,23 +1089,23 @@ export default function AdminTab({
 
             </div>
           ) : (
-            /* --- FULL WIDTH 100% TABLE VIEW: THÀNH VIÊN GIÁO VIÊN --- */
-            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 space-y-5 text-left">
+            /* --- FULL WIDTH 100% TABLE VIEW: THÀNH VIÊN GIÁO VIÊN (KHO VƯỜN TRI THỨC CARAMEL STYLING) --- */
+            <div className="bg-[#ebdcc4] border-2 border-[#d6c4a8] rounded-3xl p-6 shadow-[0_20px_50px_rgba(80,55,25,0.15)] space-y-5 text-left select-none">
               
               {/* Header Banner with "➕ Thêm tài khoản" Button */}
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+              <div className="bg-gradient-to-r from-[#ecdcc7] via-[#e5d3bc] to-[#ded0bb] p-4 rounded-2xl border border-[#d6c4a8] shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="bg-amber-50 p-3 rounded-2xl text-amber-600 border border-amber-100">
-                    <ShieldAlert className="w-6 h-6 text-amber-600" />
+                  <div className="bg-[#f4bf3b] p-3 rounded-2xl text-[#422e00] border border-[#dca31f] shadow-xs shrink-0">
+                    <ShieldAlert className="w-6 h-6 text-[#422e00]" />
                   </div>
                   <div>
-                    <h3 className="font-black text-slate-800 text-base uppercase tracking-wide flex items-center gap-2">
+                    <h3 className="font-extrabold text-[#4a2e16] text-base uppercase tracking-wide flex items-center gap-2">
                       <span>Thành Viên Giáo Viên Trong Nhà Trường</span>
-                      <span className="text-[10px] bg-slate-100 text-slate-700 font-extrabold px-2.5 py-0.5 rounded-full border border-slate-200">
+                      <span className="text-[10px] bg-[#f5e6ca] text-[#713f12] font-black px-3 py-1 rounded-full border border-[#d6c4a8] shadow-2xs">
                         {members.length} tài khoản
                       </span>
                     </h3>
-                    <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                    <p className="text-xs text-[#78350f] font-semibold mt-0.5">
                       Danh sách tài khoản cán bộ giáo viên, quản lý mật khẩu và phân quyền hệ thống
                     </p>
                   </div>
@@ -1114,18 +1114,18 @@ export default function AdminTab({
                 <button
                   type="button"
                   onClick={() => setIsCreateAccountViewOpen(true)}
-                  className="flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black text-xs px-5 py-3 rounded-2xl shadow-md transition cursor-pointer active:scale-95 shrink-0"
+                  className="flex items-center justify-center gap-2 bg-gradient-to-b from-[#287866] to-[#1d5c4e] hover:from-[#318f7a] hover:to-[#226e5e] text-white font-black text-xs px-5 py-2.5 rounded-full border border-[#16473c] shadow-md transition-all cursor-pointer active:scale-95 shrink-0"
                 >
-                  <Plus className="w-4 h-4 text-slate-950" />
+                  <Plus className="w-4 h-4 text-emerald-100" />
                   <span>Thêm tài khoản</span>
                 </button>
               </div>
 
               {/* Full Width Table */}
-              <div className="overflow-x-auto rounded-2xl border border-slate-200">
+              <div className="overflow-x-auto rounded-2xl border-2 border-[#d6c4a8] bg-white shadow-xs">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="bg-slate-100/90 border-b border-slate-200 text-slate-700 font-extrabold text-[11px] uppercase tracking-wider whitespace-nowrap">
+                    <tr className="bg-[#f5e6ca] border-b border-[#d6c4a8] text-[#5c4326] font-black text-[11px] uppercase tracking-wider whitespace-nowrap">
                       <th className="py-3.5 px-4 whitespace-nowrap">THÔNG TIN GIÁO VIÊN</th>
                       <th className="py-3.5 px-4 whitespace-nowrap">ĐỊA CHỈ EMAIL / SỐ ĐIỆN THOẠI</th>
                       <th className="py-3.5 px-4 whitespace-nowrap">PHÂN QUYỀN HỆ THỐNG</th>
@@ -1421,70 +1421,93 @@ export default function AdminTab({
       </div>
       )}
 
-      {/* 3. TÍNH NĂNG BẢO TRÌ PHÒNG MÁY & DANGER ZONE (Tách biệt khỏi Nhân sự) */}
+      {/* 3. TÍNH NĂNG BẢO TRÌ PHÒNG MÁY & DANGER ZONE (KHO VƯỜN TRI THỨC CARAMEL STYLING) */}
       {activeSubTab === 'he_thong' && (
-        <div id="maintenance-administration-section" className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left animate-fadeIn">
-        
-        {/* Card 1: Hardware Emergency Diagnostics */}
-        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">
-          <div className="flex items-center gap-2 border-b pb-2">
-            <div className="bg-emerald-50 p-2 rounded-xl text-emerald-600">
-              <Cpu className="w-5 h-5 text-emerald-600" />
-            </div>
-            <div>
-              <h4 className="font-black text-slate-800 text-sm uppercase tracking-wide">
-                Bảo dưỡng phòng thi khẩn cấp
-              </h4>
-              <p className="text-[10px] text-slate-400 font-semibold">Công cụ phòng Lab công nghệ cao</p>
+        <div className="bg-[#ebdcc4] border-2 border-[#d6c4a8] rounded-3xl p-6 shadow-[0_20px_50px_rgba(80,55,25,0.15)] text-left space-y-6 animate-fadeIn select-none">
+          
+          {/* Header Banner */}
+          <div className="bg-gradient-to-r from-[#ecdcc7] via-[#e5d3bc] to-[#ded0bb] p-4 rounded-2xl border border-[#d6c4a8] shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-[#f4bf3b] p-3 rounded-2xl text-[#422e00] border border-[#dca31f] shadow-xs shrink-0">
+                <Cpu className="w-6 h-6 text-[#422e00] animate-pulse" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-[#4a2e16] text-base uppercase tracking-wide flex items-center gap-2">
+                  <span>Hệ Thống Quan Trọng & Khôi Phục Khẩn Cấp</span>
+                  <span className="text-[10px] bg-[#f5e6ca] text-[#713f12] font-black px-3 py-1 rounded-full border border-[#d6c4a8] shadow-2xs">
+                    Bảo trì nâng cao
+                  </span>
+                </h3>
+                <p className="text-xs text-[#78350f] font-semibold mt-0.5">
+                  Các công cụ chẩn đoán thiết bị phần cứng phòng máy và khu vực quản trị dữ liệu học sinh
+                </p>
+              </div>
             </div>
           </div>
+
+          <div id="maintenance-administration-section" className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
           
-          <p className="text-xs text-slate-500 leading-relaxed font-semibold">
-            Trong trường hợp kết thúc đợt kiểm tra học kỳ hoặc đã hoàn thành công tác bảo trì kỹ thuật cho phòng thi, thầy cô có thể nhanh chóng khôi phục trạng thái hoạt động tốt cho toàn bộ 40 máy trong lớp học bằng phím tắt bên dưới.
-          </p>
-          
-          <div className="pt-2">
-            <button
-              onClick={handleResetComputers}
-              className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl transition shadow cursor-pointer flex items-center gap-1.5 hover:scale-[1.01]"
-            >
-              <Cpu className="w-4 h-4" />
-              Reset tất cả 40 máy sang "Hoạt động tốt"
-            </button>
+          {/* Card 1: Hardware Emergency Diagnostics */}
+          <div className="bg-[#fbf7ee] border-2 border-[#e5dacf] p-5 rounded-2xl shadow-xs space-y-4">
+            <div className="flex items-center gap-2 border-b border-[#e5dacf] pb-2">
+              <div className="bg-[#f4bf3b] p-2 rounded-xl text-[#422e00] border border-[#dca31f]">
+                <Cpu className="w-5 h-5 text-[#422e00]" />
+              </div>
+              <div>
+                <h4 className="font-black text-[#4a2e16] text-sm uppercase tracking-wide">
+                  Bảo dưỡng phòng thi khẩn cấp
+                </h4>
+                <p className="text-[10px] text-[#78350f] font-semibold">Công cụ phòng Lab công nghệ cao</p>
+              </div>
+            </div>
+            
+            <p className="text-xs text-[#5c4326] leading-relaxed font-semibold">
+              Trong trường hợp kết thúc đợt kiểm tra học kỳ hoặc đã hoàn thành công tác bảo trì kỹ thuật cho phòng thi, thầy cô có thể nhanh chóng khôi phục trạng thái hoạt động tốt cho toàn bộ 40 máy trong lớp học bằng phím tắt bên dưới.
+            </p>
+            
+            <div className="pt-2">
+              <button
+                onClick={handleResetComputers}
+                className="bg-gradient-to-b from-[#287866] to-[#1d5c4e] hover:from-[#318f7a] hover:to-[#226e5e] text-white font-black text-xs px-5 py-2.5 rounded-full border border-[#16473c] shadow-md transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
+              >
+                <Cpu className="w-4 h-4 text-emerald-200" />
+                <span>Reset tất cả 40 máy sang "Hoạt động tốt"</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Card 2: Danger Zone for Student Records reset */}
+          <div className="bg-[#fff5f5] border-2 border-[#fecaca] p-5 rounded-2xl shadow-xs space-y-4">
+            <div className="flex items-center gap-2 border-b border-[#fca5a5] pb-2">
+              <div className="bg-rose-100 p-2 rounded-xl text-rose-700 border border-rose-200">
+                <AlertTriangle className="w-5 h-5 text-rose-600 animate-pulse" />
+              </div>
+              <div>
+                <h4 className="font-black text-rose-900 text-sm uppercase tracking-wide">
+                  Khu vực giới hạn bảo mật (Danger Zone)
+                </h4>
+                <p className="text-[10px] text-rose-700 font-semibold">Hành động bảo mật cấp cao</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-rose-950 leading-relaxed font-semibold">
+              Hành động này sẽ <strong>xóa hoàn toàn</strong> danh sách học sinh ở tất cả các khối lớp đã thiết lập trong hệ thống. Quý thầy cô vui lòng cân nhắc kỹ trước khi thực hiện.
+            </p>
+            
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setIsDeleteConfirmOpen(true)}
+                className="bg-gradient-to-b from-[#ff3535] via-[#dc2626] to-[#991b1b] hover:from-[#ff4d4d] hover:to-[#b91c1c] text-white font-black text-xs px-5 py-2.5 rounded-full border border-[#991b1b] shadow-md transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
+              >
+                <Trash2 className="w-3.5 h-3.5 text-rose-100" />
+                <span>Xóa toàn bộ học sinh ({students.length} em)</span>
+              </button>
+            </div>
+          </div>
+
           </div>
         </div>
-
-        {/* Card 2: Danger Zone for Student Records reset */}
-        <div className="bg-white p-5 rounded-2xl shadow-sm border border-rose-100 bg-rose-50/10 space-y-4">
-          <div className="flex items-center gap-2 border-b pb-2">
-            <div className="bg-rose-50 p-2 rounded-xl text-rose-600">
-              <AlertTriangle className="w-5 h-5 text-rose-600 animate-pulse" />
-            </div>
-            <div>
-              <h4 className="font-black text-rose-800 text-sm uppercase tracking-wide">
-                Khu vực giới hạn bảo mật (Danger Zone)
-              </h4>
-              <p className="text-[10px] text-rose-400 font-semibold">Hành động bảo mật cấp cao</p>
-            </div>
-          </div>
-
-          <p className="text-xs text-slate-500 leading-relaxed font-semibold">
-            Hành động này sẽ <strong>xóa hoàn toàn</strong> danh sách học sinh ở tất cả các khối lớp đã thiết lập trong hệ thống. Quý thầy cô vui lòng cân nhắc kỹ trước khi thực hiện.
-          </p>
-          
-          <div className="pt-2">
-            <button
-              type="button"
-              onClick={() => setIsDeleteConfirmOpen(true)}
-              className="bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl transition shadow cursor-pointer flex items-center gap-1.5 hover:scale-[1.01]"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              Xóa toàn bộ học sinh ({students.length} em)
-            </button>
-          </div>
-        </div>
-
-      </div>
       )}
 
       {/* MODAL PHÂN CÔNG THỜI KHÓA BIỂU CHI TIẾT */}
@@ -1905,29 +1928,30 @@ export default function AdminTab({
         </div>
       )}
 
-      {/* 4. CẤU HÌNH KẾT NỐI CƠ SỞ DỮ LIỆU CLOUD (Nền tảng kỹ thuật - Ở cuối trang) */}
+      {/* 4. CẤU HÌNH KẾT NỐI CƠ SỞ DỮ LIỆU CLOUD (KHO VƯỜN TRI THỨC CARAMEL STYLING) */}
       {activeSubTab === 'database' && (
-        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 text-left space-y-6 animate-fadeIn">
+        <div className="bg-[#ebdcc4] border-2 border-[#d6c4a8] rounded-3xl p-6 shadow-[0_20px_50px_rgba(80,55,25,0.15)] text-left space-y-6 animate-fadeIn select-none">
         
-        <div className="border-b pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        {/* Header Banner */}
+        <div className="bg-gradient-to-r from-[#ecdcc7] via-[#e5d3bc] to-[#ded0bb] p-4 rounded-2xl border border-[#d6c4a8] shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="bg-emerald-50 p-2.5 rounded-xl text-emerald-600">
-              <Database className="w-6 h-6 animate-pulse" />
+            <div className="bg-[#f4bf3b] p-3 rounded-2xl text-[#422e00] border border-[#dca31f] shadow-xs shrink-0">
+              <Database className="w-6 h-6 text-[#422e00] animate-pulse" />
             </div>
             <div>
-              <h3 className="font-black text-slate-800 text-base uppercase tracking-wide">Cấu hình kết nối Cơ sở dữ liệu Supabase</h3>
-              <p className="text-[11px] text-slate-500 font-semibold mt-0.5">Trạng thái đồng nhất dữ liệu thời gian thực giữa Website và hệ quản trị Supabase Cloud</p>
+              <h3 className="font-extrabold text-[#4a2e16] text-base uppercase tracking-wide">Cấu hình kết nối Cơ sở dữ liệu Supabase</h3>
+              <p className="text-xs text-[#78350f] font-semibold mt-0.5">Trạng thái đồng nhất dữ liệu thời gian thực giữa Website và hệ quản trị Supabase Cloud</p>
             </div>
           </div>
 
           {/* Status badge */}
           <div className="flex items-center gap-2">
             {!supabaseError ? (
-              <span className="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-250 text-emerald-800 text-xs font-black px-3 py-1.5 rounded-xl">
-                <Check className="w-4 h-4 text-emerald-600 font-bold" /> ĐỒNG BỘ: HOẠT ĐỘNG
+              <span className="inline-flex items-center gap-1.5 bg-[#f0fdf4] border border-[#bbf7d0] text-[#166534] text-xs font-black px-3.5 py-1.5 rounded-full shadow-2xs">
+                <Check className="w-4 h-4 text-[#166534] font-bold" /> ĐỒNG BỘ: HOẠT ĐỘNG
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1.5 bg-rose-50 border border-rose-250 text-rose-800 text-xs font-black px-3 py-1.5 rounded-xl">
+              <span className="inline-flex items-center gap-1.5 bg-rose-50 border border-rose-250 text-rose-800 text-xs font-black px-3.5 py-1.5 rounded-full shadow-2xs">
                 <AlertTriangle className="w-4 h-4 text-rose-600" /> CẦN KHỞI TẠO SQL (BẢNG KHÔNG TỒN TẠI)
               </span>
             )}
@@ -1935,27 +1959,29 @@ export default function AdminTab({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <h4 className="font-bold text-sm text-slate-800 flex items-center gap-1.5">
-              <Cloud className="w-4.5 h-4.5 text-teal-600" /> Thông tin kết nối dự án (Project Credentials)
+          
+          {/* Card 1: Project Credentials & Cloud Sync */}
+          <div className="bg-[#fbf7ee] border-2 border-[#e5dacf] p-5 rounded-2xl shadow-xs space-y-4">
+            <h4 className="font-extrabold text-sm text-[#4a2e16] uppercase tracking-wider flex items-center gap-2 pb-2 border-b border-[#e5dacf]">
+              <Cloud className="w-4.5 h-4.5 text-[#d97706]" /> Thông tin kết nối dự án (Project Credentials)
             </h4>
 
-            <div className="space-y-3 font-mono text-xs text-left bg-slate-50 p-4 rounded-xl border">
+            <div className="space-y-3 font-mono text-xs text-left bg-white p-4 rounded-xl border border-[#d6c4a8] shadow-inner">
               <div>
-                <span className="block text-[9px] font-black uppercase text-slate-400 mb-1">Supabase Endpoint URL</span>
-                <span className="text-slate-700 break-all select-all font-semibold">https://teslhzdwnbhrreyyvybe.supabase.co</span>
+                <span className="block text-[9px] font-black uppercase text-[#78350f] mb-1">Supabase Endpoint URL</span>
+                <span className="text-[#3d2514] break-all select-all font-bold">https://teslhzdwnbhrreyyvybe.supabase.co</span>
               </div>
-              <div className="border-t pt-2">
-                <span className="block text-[9px] font-black uppercase text-slate-400 mb-1">Public Anon JWT Key</span>
-                <span className="text-slate-500 break-all text-[10px] select-all leading-tight font-semibold">
+              <div className="border-t border-[#ebdcc7] pt-2">
+                <span className="block text-[9px] font-black uppercase text-[#78350f] mb-1">Public Anon JWT Key</span>
+                <span className="text-[#5c4326] break-all text-[10px] select-all leading-tight font-bold">
                   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...JsjIY
                 </span>
               </div>
             </div>
 
-            <div className="space-y-3.5">
-              <h5 className="font-extrabold text-xs text-slate-700">Công cụ đồng bộ khẩn cấp (Manual Cloud Sync)</h5>
-              <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
+            <div className="space-y-3.5 pt-2">
+              <h5 className="font-black text-xs text-[#4a2e16] uppercase tracking-wider">Công cụ đồng bộ khẩn cấp (Manual Cloud Sync)</h5>
+              <p className="text-xs text-[#5c4326] leading-relaxed font-semibold">
                 Dữ liệu được lưu trữ tự động xuống <strong>LocalStorage</strong> để hoạt động siêu tốc, sau đó tức thì đồng bộ lên đám mây <strong>Supabase</strong>. Nếu thầy cô muốn cưỡng chế nạp hoặc tải thủ công dữ liệu:
               </p>
 
@@ -1964,38 +1990,39 @@ export default function AdminTab({
                   type="button"
                   onClick={onForceSync}
                   disabled={isSyncing}
-                  className="flex items-center gap-1.5 border border-slate-300 hover:border-slate-800 hover:bg-slate-50 text-slate-800 font-extrabold text-xs px-3.5 py-2 rounded-xl transition disabled:opacity-50 cursor-pointer"
+                  className="flex items-center gap-1.5 bg-gradient-to-b from-[#e5a823] to-[#c78b0f] hover:from-[#f3b52d] hover:to-[#d69612] text-white font-black text-xs px-4 py-2.5 rounded-full border border-[#9e6d0a] shadow-md transition-all cursor-pointer active:scale-95 disabled:opacity-50"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
-                  Tải dữ liệu từ Supabase về máy
+                  <span>Tải dữ liệu từ Supabase về máy</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={onForcePush}
                   disabled={isSyncing}
-                  className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs px-3.5 py-2 rounded-xl transition shadow disabled:opacity-50 cursor-pointer"
+                  className="flex items-center gap-1.5 bg-gradient-to-b from-[#287866] to-[#1d5c4e] hover:from-[#318f7a] hover:to-[#226e5e] text-white font-black text-xs px-4 py-2.5 rounded-full border border-[#16473c] shadow-md transition-all cursor-pointer active:scale-95 disabled:opacity-50"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
-                  Đẩy đè dữ liệu hiện tại lên đám mây Supabase
+                  <span>Đẩy đè dữ liệu hiện tại lên đám mây Supabase</span>
                 </button>
               </div>
             </div>
           </div>
 
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="font-bold text-sm text-slate-800 flex items-center gap-1.5">
-                <FileCode className="w-4.5 h-4.5 text-amber-500" /> Mã lệnh khởi tạo SQL (Execute in SQL Editor)
+          {/* Card 2: SQL Initialization Query */}
+          <div className="bg-[#fbf7ee] border-2 border-[#e5dacf] p-5 rounded-2xl shadow-xs space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-[#e5dacf]">
+              <h4 className="font-extrabold text-sm text-[#4a2e16] uppercase tracking-wider flex items-center gap-1.5">
+                <FileCode className="w-4.5 h-4.5 text-[#d97706]" /> Mã lệnh khởi tạo SQL (Execute in SQL Editor)
               </h4>
               <button
                 type="button"
                 onClick={handleCopySql}
-                className="text-xs text-amber-600 hover:text-amber-800 font-black flex items-center gap-1 border border-amber-200 hover:border-amber-400 bg-amber-50 px-3 py-1 rounded-lg transition-all cursor-pointer"
+                className="bg-gradient-to-b from-[#287866] to-[#1d5c4e] hover:from-[#318f7a] hover:to-[#226e5e] text-white font-black text-xs px-3.5 py-1.5 rounded-full border border-[#16473c] shadow-sm transition-all cursor-pointer flex items-center gap-1 active:scale-95"
               >
                 {copiedSql ? (
                   <>
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Đã sao chép!
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-200" /> Đã sao chép!
                   </>
                 ) : (
                   'Sao chép SQL'
@@ -2003,11 +2030,11 @@ export default function AdminTab({
               </button>
             </div>
 
-            <p className="text-[11px] text-slate-500 leading-relaxed font-semibold">
-              Để cơ sở dữ liệu hoạt động hoàn chỉnh, vui lòng nhấp nút <strong>"Sao chép SQL"</strong> ở phía trên, sau đó truy cập <a href="https://supabase.com" target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:underline font-extrabold">Supabase Dashboard</a> &rarr; dự án của bạn &rarr; menu <strong>SQL Editor</strong> &rarr; nhấn <strong>New query</strong> &rarr; Dán mã lệnh SQL này vào và nhấn nút <strong>Run</strong> để khởi tạo bảng <code>school_states</code>!
+            <p className="text-xs text-[#5c4326] leading-relaxed font-semibold">
+              Để cơ sở dữ liệu hoạt động hoàn chỉnh, vui lòng nhấp nút <strong>"Sao chép SQL"</strong> ở phía trên, sau đó truy cập <a href="https://supabase.com" target="_blank" rel="noopener noreferrer" className="text-[#d97706] hover:underline font-black">Supabase Dashboard</a> &rarr; dự án của bạn &rarr; menu <strong>SQL Editor</strong> &rarr; nhấn <strong>New query</strong> &rarr; Dán mã lệnh SQL này vào và nhấn nút <strong>Run</strong> để khởi tạo bảng <code>school_states</code>!
             </p>
 
-            <div className="bg-slate-900 text-slate-300 font-mono text-[9px] p-3.5 rounded-xl border border-slate-800 max-h-56 overflow-y-auto leading-relaxed select-all">
+            <div className="bg-[#2d1b0e] text-[#fde047] font-mono text-[9px] p-3.5 rounded-xl border border-[#4a2e16] max-h-56 overflow-y-auto leading-relaxed select-all shadow-inner">
               <pre className="whitespace-pre-wrap">{SQL_INITIALIZATION_QUERY}</pre>
             </div>
           </div>
