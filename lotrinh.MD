@@ -152,6 +152,7 @@
     4. **Hiển thị ứng dụng & Khóa bảo mật**: Quản trị viên truy cập đầy đủ các ứng dụng quản lý chính. Tự động ẩn các tab cấu hình nhạy cảm (*API Key Email/SMS, Cơ sở dữ liệu Cloud, SQL Scripts*).
     5. **Chống xóa dữ liệu hệ thống**: Khóa toàn bộ quyền xóa tài khoản giáo viên, xóa dữ liệu học sinh và xóa nhật ký hệ thống đối với tài khoản Quản trị viên.
     6. **Mã hóa & Tự động đồng bộ Supabase Cloud Vault (`school_otp_config`)**: Tích hợp hai hàm mã hóa `encryptVaultData` và `decryptVaultData` tự động đẩy và tải cấu hình EmailJS (`Public Key`, `Service ID`, `Template ID`) lên điện toán đám mây Supabase. Giúp Thầy không cần nhập lại cấu hình khi đăng nhập trên bất kỳ máy tính, điện thoại hay môi trường Vercel nào.
+    7. **Đồng bộ Thẻ danh hiệu 'Quản trị hệ thống (Admin)' & Loại bỏ tùy chọn 'Quản trị viên'**: Đồng bộ 100% kiểu dáng thẻ Pill màu vàng kem (`#fef9c3`), viền vàng (`#fde047`), chữ nâu đậm (`#713f12`) khớp mẫu ảnh cho vai trò Quản trị hệ thống trên toàn bộ ứng dụng (AdminTab, Sidebar, MacWidget, Dashboard). Đồng thời loại bỏ tùy chọn tạo tài khoản 'Quản trị viên' trong form tạo mới tài khoản.
 
 ---
 
