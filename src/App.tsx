@@ -54,7 +54,7 @@ import { supabase, loadAllSupabaseStates, saveSupabaseState, setSupabaseOnline, 
 import { safeSetLocalStorage } from './utils/safeStorage';
 import { verifyPassword, sanitizeInput, decryptVaultData } from './utils/security';
 import { createSessionId, setLocalSession, getLocalSession, clearLocalSession } from './features/auth/multiDeviceSession';
-import { sendOtpToUser, OtpSendResult } from './services/emailSmsOtpService';
+import { sendOtpToUser, sendSecurityAlertToAdmin, OtpSendResult } from './services/emailSmsOtpService';
 import { initRamAutoOptimizer } from './utils/ramOptimizer';
 
 // DeskOS Layout Components
@@ -317,6 +317,24 @@ export default function App() {
       return;
     }
 
+    // 🛡️ CHỐNG SPAM RATE LIMITING: Giới hạn tối đa 10 lần phát mã OTP/ngày theo thiết bị
+    const todayStr = new Date().toISOString().split('T')[0];
+    try {
+      const rawLimit = localStorage.getItem('school_otp_dispatch_limit');
+      let limitData = rawLimit ? JSON.parse(rawLimit) : { date: todayStr, count: 0 };
+      if (limitData.date !== todayStr) {
+        limitData = { date: todayStr, count: 0 };
+      }
+      if (limitData.count >= 10) {
+        showToast(`⛔ Thiết bị đã vượt quá giới hạn 10 lần phát mã OTP/ngày! Vui lòng thử lại vào ngày mai để chống spam email.`, 'error');
+        return;
+      }
+      limitData.count += 1;
+      localStorage.setItem('school_otp_dispatch_limit', JSON.stringify(limitData));
+    } catch (err) {
+      console.warn('Rate limit check error:', err);
+    }
+
     // Generate random 6-digit OTP code
     const randomOtp = Math.floor(100000 + Math.random() * 900000).toString();
     setGeneratedOtp(randomOtp);
@@ -346,7 +364,11 @@ export default function App() {
       const nextFailed = otpFailedAttempts + 1;
       setOtpFailedAttempts(nextFailed);
       if (nextFailed >= 5) {
-        showToast('⛔ Bạn đã nhập sai OTP 5/5 lần! Mã OTP này đã bị khóa để chống dò mã. Vui lòng bấm "Gửi lại mã".', 'error');
+        showToast('⛔ Nhập sai OTP 5/5 lần! Đã tự động phát thư cảnh báo an ninh tới Admin và khóa mã xác thực này.', 'error');
+        // 🚨 TỰ ĐỘNG GỬI EMAIL CẢNH BÁO AN NINH CHO ADMIN
+        if (forgotMatchedUser) {
+          sendSecurityAlertToAdmin(forgotMatchedUser.name, forgotMatchedUser.username, nextFailed);
+        }
       } else {
         showToast(`Mã xác minh (OTP) không chính xác! (Đã sai ${nextFailed}/5 lần). Vui lòng kiểm tra lại.`, 'error');
       }

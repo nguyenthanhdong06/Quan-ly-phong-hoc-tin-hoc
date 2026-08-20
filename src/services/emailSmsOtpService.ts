@@ -325,3 +325,33 @@ async function sendViaEmailJS(
     };
   }
 }
+
+// Gửi email cảnh báo an ninh cho Admin khi có IP / thiết bị nhập sai OTP quá 5 lần
+export async function sendSecurityAlertToAdmin(
+  teacherName: string,
+  username: string,
+  failedAttemptsCount: number,
+  configOverrides?: ConfigOverrides
+): Promise<boolean> {
+  try {
+    let senderEmail = (configOverrides?.senderEmail !== undefined ? configOverrides.senderEmail : (localStorage.getItem('school_sender_email') || 'nguyenthanhdong.hutech@gmail.com')).trim();
+
+    const alertMessage = `🚨 CẢNH BÁO AN NINH PHÒNG MÁY! Phát hiện hành vi nhập sai mã OTP ${failedAttemptsCount} lần liên tiếp trên tài khoản giáo viên "${teacherName}" (Username: ${username}) lúc ${new Date().toLocaleTimeString('vi-VN')}. Hệ thống đã tự động khóa xác thực OTP để bảo vệ an toàn.`;
+
+    console.log('🚨 [Security Alert Engine] Đang tự động phát thư cảnh báo tới Admin:', senderEmail);
+
+    const alertResult = await sendOtpToUser(
+      username,
+      `[CẢNH BÁO AN NINH ADMIN] ${teacherName}`,
+      senderEmail,
+      undefined,
+      `ALERT-${failedAttemptsCount}`,
+      configOverrides
+    );
+
+    return alertResult.success;
+  } catch (err) {
+    console.error('🚨 Error sending security alert email to Admin:', err);
+    return false;
+  }
+}
