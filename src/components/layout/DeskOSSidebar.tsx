@@ -224,21 +224,19 @@ export const DeskOSSidebar: React.FC<DeskOSSidebarProps> = ({
           {/* Separator */}
           <div className="my-0.5 border-t border-[#dfccb0]" />
 
-          {/* User Info & Logout Footer */}
-          <div className="flex items-center justify-between bg-[#f5e6ca] border border-[#d6c4a8] px-2.5 py-1 rounded-xl">
-            <div className="flex items-center gap-2 truncate pr-2">
-              <div className="w-6 h-6 rounded-full bg-amber-400 border border-amber-500 flex items-center justify-center font-black text-xs text-[#42301c] shrink-0 shadow-2xs">
+          {/* User Info & Logout Footer - Match Media Screenshot 100% */}
+          <div className="flex items-center justify-between bg-[#f5e6ca] border border-[#d6c4a8] px-3 py-1.5 rounded-full shadow-2xs">
+            <div className="flex items-center gap-2 truncate pr-1">
+              <div className="w-7 h-7 rounded-full bg-amber-400 border border-amber-500 flex items-center justify-center font-black text-xs text-[#42301c] shrink-0 shadow-2xs">
                 {currentUser ? currentUser.name.charAt(0).toUpperCase() : 'G'}
               </div>
               <div className="truncate">
-                <p className="font-black text-xs text-[#42301c] truncate leading-tight">{currentUser?.name || 'Giáo viên'}</p>
-                {(currentUser?.role?.includes('Quản trị hệ thống') || currentUser?.role === 'Admin' || currentUser?.id === 'u-1') ? (
-                  <span className="inline-block bg-[#fef9c3] text-[#713f12] border border-[#fde047] font-black text-[9px] px-2 py-0.2 rounded-full shadow-2xs mt-0.5 select-none">
-                    Quản trị hệ thống (Admin)
-                  </span>
-                ) : (
-                  <p className="text-[10px] font-bold text-[#806443] truncate leading-none mt-0.5">{currentUser?.role || 'User'}</p>
-                )}
+                <p className="font-black text-xs text-[#42301c] truncate leading-snug">{currentUser?.name || 'Giáo viên'}</p>
+                <p className="text-[11px] font-bold text-[#806443] truncate leading-tight mt-0.5">
+                  {(currentUser?.role?.includes('Quản trị hệ thống') || currentUser?.role === 'Admin' || currentUser?.id === 'u-1') 
+                    ? 'Quản trị hệ thống (Admin)' 
+                    : (currentUser?.role || 'Giáo viên bộ môn')}
+                </p>
               </div>
             </div>
 
@@ -248,10 +246,10 @@ export const DeskOSSidebar: React.FC<DeskOSSidebarProps> = ({
                 onLogout();
                 onClose();
               }}
-              className="flex items-center gap-1 px-2.5 py-0.5 rounded-lg font-black text-xs bg-rose-600 hover:bg-rose-700 text-white shadow-2xs border border-rose-700 transition-all cursor-pointer shrink-0 active:scale-95"
+              className="flex items-center gap-1.5 px-3.5 py-1 rounded-full font-black text-xs text-white bg-gradient-to-b from-[#e54d4d] to-[#c92a2a] hover:from-[#f05555] hover:to-[#d63030] border border-[#a81c1c] shadow-[inset_0_1px_0_rgba(255,255,255,0.4),0_2px_4px_rgba(0,0,0,0.2)] transition-all cursor-pointer shrink-0 active:scale-95 active:translate-y-0.5 select-none"
               title="Đăng xuất khỏi hệ thống"
             >
-              <LogOut className="w-3 h-3" />
+              <LogOut className="w-3.5 h-3.5" />
               <span>Thoát</span>
             </button>
           </div>
