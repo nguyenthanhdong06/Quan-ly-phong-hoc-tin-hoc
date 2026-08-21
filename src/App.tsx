@@ -64,6 +64,17 @@ import { DeskOSAppGrid } from './components/layout/DeskOSAppGrid';
 import { DeskOSTaskbar } from './components/layout/DeskOSTaskbar';
 import { DeskOSWallpaperSelector, WALLPAPER_OPTIONS } from './components/layout/DeskOSWallpaperSelector';
 import { DeskOSMacWindow } from './components/layout/DeskOSMacWindow';
+import { DeskOSWorkspaceSwitcherModal } from './components/layout/DeskOSWorkspaceSwitcherModal';
+
+// Workspace Service for Multi-User Isolation
+import { 
+  getWorkspaceId, 
+  loadWorkspaceSeatingChart, 
+  loadWorkspaceEmulationState, 
+  getWorkspaceOwnerName,
+  saveWorkspaceState,
+  WORKSPACE_PREFIX 
+} from './services/workspaceService';
 
 
 // Icons import from Lucide
@@ -154,10 +165,20 @@ export default function App() {
   const [classes, setClasses] = useState<ClassItem[]>(() => safeParse('school_classes', defaultClasses));
   const [students, setStudents] = useState<Student[]>(() => safeParse('school_students', defaultStudents));
   const [computers, setComputers] = useState<Computer[]>(() => safeParse('school_computers', generateDefaultComputers()));
-  const [seatingChart, setSeatingChart] = useState<SeatingChart>(() => safeParse('school_seating_chart', defaultSeating));
-  const [attendanceData, setAttendanceData] = useState<AttendanceData>(() => loadDayPartitionedAttendance(undefined, defaultAttendance));
-  const [evaluationData, setEvaluationData] = useState<EvaluationData>(() => loadDayPartitionedEvaluation(undefined, defaultEvaluation));
-  const [emulationDataState, setEmulationDataState] = useState<EmulationDataState>(() => safeParse('school_emulation_state', defaultEmulation));
+  
+  // Authentication session
+  const [currentUser, setCurrentUser] = useState<Member | null>(() => safeParse('school_current_user', null, true));
+  
+  // 🏢 Active Workspace ID (Multi-User Isolation)
+  const [activeWorkspaceId, setActiveWorkspaceId] = useState<string>(() => getWorkspaceId(safeParse('school_current_user', null, true)));
+  const [isWorkspaceSwitcherOpen, setIsWorkspaceSwitcherOpen] = useState(false);
+
+  // User-Scoped Workspace States
+  const [seatingChart, setSeatingChart] = useState<SeatingChart>(() => loadWorkspaceSeatingChart(activeWorkspaceId));
+  const [attendanceData, setAttendanceData] = useState<AttendanceData>(() => loadDayPartitionedAttendance(undefined, defaultAttendance, activeWorkspaceId));
+  const [evaluationData, setEvaluationData] = useState<EvaluationData>(() => loadDayPartitionedEvaluation(undefined, defaultEvaluation, activeWorkspaceId));
+  const [emulationDataState, setEmulationDataState] = useState<EmulationDataState>(() => loadWorkspaceEmulationState(activeWorkspaceId));
+
   const [documents, setDocuments] = useState<DocumentItem[]>(() => safeParse('school_documents', defaultDocuments));
   const [members, setMembers] = useState<Member[]>(() => safeParse('school_members', defaultMembers));
   const [timetableData, setTimetableData] = useState<TimetableData>(() => safeParse('school_timetable_data', defaultTimetable));
@@ -170,6 +191,10 @@ export default function App() {
     { id: 'lab2', name: 'Phòng Lab 02', code: 'P.202', totalPCs: 40, status: 'Active', location: 'Tầng 2 - Nhà A', gridRows: 5, gridCols: 8 },
     { id: 'lab3', name: 'Phòng Lab 03', code: 'P.301', totalPCs: 32, status: 'Maintenance', location: 'Tầng 3 - Nhà B', gridRows: 4, gridCols: 8 },
   ]));
+
+  const activeWorkspaceOwnerName = useMemo(() => {
+    return getWorkspaceOwnerName(activeWorkspaceId, members);
+  }, [activeWorkspaceId, members]);
 
 
   // --- SUPABASE CLOUD STATUS STATES ---
@@ -225,8 +250,6 @@ export default function App() {
     return new Date().toISOString().split('T')[0];
   });
 
-  // Authentication session
-  const [currentUser, setCurrentUser] = useState<Member | null>(() => safeParse('school_current_user', null, true));
   
   // Cài đặt tự động đăng xuất do không hoạt động (phút) - 0 là tắt
   const [inactivityLimit, setInactivityLimit] = useState<number>(() => {
@@ -578,10 +601,13 @@ export default function App() {
           if (dbStates['school_classes']) setClasses(dbStates['school_classes']);
           if (dbStates['school_students']) setStudents(dbStates['school_students']);
           if (dbStates['school_computers']) setComputers(dbStates['school_computers']);
-          if (dbStates['school_seating_chart']) setSeatingChart(dbStates['school_seating_chart']);
-          setAttendanceData(loadDayPartitionedAttendance(dbStates, defaultAttendance));
-          setEvaluationData(loadDayPartitionedEvaluation(dbStates, defaultEvaluation));
-          if (dbStates['school_emulation_state']) setEmulationDataState(dbStates['school_emulation_state']);
+          
+          // 🏢 User-Scoped Workspace States
+          setSeatingChart(loadWorkspaceSeatingChart(activeWorkspaceId, dbStates));
+          setAttendanceData(loadDayPartitionedAttendance(dbStates, defaultAttendance, activeWorkspaceId));
+          setEvaluationData(loadDayPartitionedEvaluation(dbStates, defaultEvaluation, activeWorkspaceId));
+          setEmulationDataState(loadWorkspaceEmulationState(activeWorkspaceId, dbStates));
+
           if (dbStates['school_documents']) setDocuments(dbStates['school_documents']);
           if (dbStates['school_members']) setMembers(dbStates['school_members']);
           if (dbStates['school_timetable_data']) setTimetableData(dbStates['school_timetable_data']);
@@ -627,6 +653,21 @@ export default function App() {
     syncFromSupabase();
   }, []);
 
+  // --- RE-HYDRATE WORKSPACE ON USER / WORKSPACE SWITCH ---
+  useEffect(() => {
+    if (!isLoaded) return;
+    setSeatingChart(loadWorkspaceSeatingChart(activeWorkspaceId));
+    setAttendanceData(loadDayPartitionedAttendance(undefined, defaultAttendance, activeWorkspaceId));
+    setEvaluationData(loadDayPartitionedEvaluation(undefined, defaultEvaluation, activeWorkspaceId));
+    setEmulationDataState(loadWorkspaceEmulationState(activeWorkspaceId));
+  }, [activeWorkspaceId, isLoaded]);
+
+  // Sync activeWorkspaceId when currentUser changes
+  useEffect(() => {
+    const newWs = getWorkspaceId(currentUser);
+    setActiveWorkspaceId(newWs);
+  }, [currentUser]);
+
   // --- 🧠 AUTOMATIC 30-MINUTE RAM & CACHE OPTIMIZER ---
   useEffect(() => {
     const cleanup = initRamAutoOptimizer((msg, type) => {
@@ -650,23 +691,40 @@ export default function App() {
         }
       };
 
-      if (key.startsWith('school_attendance_')) {
-        setAttendanceData(prev => applyPartitionedAttendanceUpdate(prev, key, value));
+      const scopedPrefix = `${activeWorkspaceId}_`;
+
+      // 1. Workspace-scoped data checks
+      if (key === `${scopedPrefix}school_seating_chart` || key === 'school_seating_chart') {
+        setSeatingChart(prev => isIdentical(prev) ? prev : value);
         return;
       }
 
-      if (key.startsWith('school_evaluation_')) {
-        setEvaluationData(prev => applyPartitionedEvaluationUpdate(prev, key, value));
+      if (key.startsWith(`${scopedPrefix}school_attendance_`) || key.startsWith('school_attendance_')) {
+        setAttendanceData(prev => applyPartitionedAttendanceUpdate(prev, key, value, activeWorkspaceId));
         return;
       }
 
+      if (key.startsWith(`${scopedPrefix}school_evaluation_`) || key.startsWith('school_evaluation_')) {
+        setEvaluationData(prev => applyPartitionedEvaluationUpdate(prev, key, value, activeWorkspaceId));
+        return;
+      }
+
+      if (key === `${scopedPrefix}school_emulation_state` || key === 'school_emulation_state') {
+        setEmulationDataState(prev => isIdentical(prev) ? prev : value);
+        return;
+      }
+
+      // Ignore incoming updates belonging to other teacher workspaces to avoid interference
+      if (key.startsWith('ws_') && !key.startsWith(scopedPrefix)) {
+        return;
+      }
+
+      // 2. Global Shared Master Data
       switch (key) {
         case 'school_grades': setGrades(prev => isIdentical(prev) ? prev : value); break;
         case 'school_classes': setClasses(prev => isIdentical(prev) ? prev : value); break;
         case 'school_students': setStudents(prev => isIdentical(prev) ? prev : value); break;
         case 'school_computers': setComputers(prev => isIdentical(prev) ? prev : value); break;
-        case 'school_seating_chart': setSeatingChart(prev => isIdentical(prev) ? prev : value); break;
-        case 'school_emulation_state': setEmulationDataState(prev => isIdentical(prev) ? prev : value); break;
         case 'school_documents': setDocuments(prev => isIdentical(prev) ? prev : value); break;
         case 'school_members': setMembers(prev => isIdentical(prev) ? prev : value); break;
         case 'school_timetable_data': setTimetableData(prev => isIdentical(prev) ? prev : value); break;
@@ -819,45 +877,51 @@ export default function App() {
   const seatingDebounceRef = React.useRef<NodeJS.Timeout | null>(null);
   const attendanceDebounceRef = React.useRef<NodeJS.Timeout | null>(null);
   const evaluationDebounceRef = React.useRef<NodeJS.Timeout | null>(null);
+  const emulationDebounceRef = React.useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    safeSetLocalStorage('school_seating_chart', seatingChart);
+    const scopedKey = `${activeWorkspaceId}_school_seating_chart`;
+    safeSetLocalStorage(scopedKey, seatingChart);
     if (isLoaded) {
       if (seatingDebounceRef.current) clearTimeout(seatingDebounceRef.current);
       seatingDebounceRef.current = setTimeout(() => {
-        saveSupabaseState('school_seating_chart', seatingChart);
+        saveSupabaseState(scopedKey, seatingChart);
       }, 800);
     }
-  }, [seatingChart, isLoaded]);
+  }, [seatingChart, activeWorkspaceId, isLoaded]);
 
   useEffect(() => {
     if (isLoaded) {
       if (attendanceDebounceRef.current) clearTimeout(attendanceDebounceRef.current);
       attendanceDebounceRef.current = setTimeout(() => {
-        saveDayPartitionedAttendance(attendanceData, selectedDate);
+        saveDayPartitionedAttendance(attendanceData, selectedDate, activeWorkspaceId);
       }, 800);
     } else {
-      safeSetLocalStorage('school_attendance_data', attendanceData);
+      safeSetLocalStorage(`${activeWorkspaceId}_school_attendance_data`, attendanceData);
     }
-  }, [attendanceData, selectedDate, isLoaded]);
+  }, [attendanceData, selectedDate, activeWorkspaceId, isLoaded]);
 
   useEffect(() => {
     if (isLoaded) {
       if (evaluationDebounceRef.current) clearTimeout(evaluationDebounceRef.current);
       evaluationDebounceRef.current = setTimeout(() => {
-        saveDayPartitionedEvaluation(evaluationData, selectedDate);
+        saveDayPartitionedEvaluation(evaluationData, selectedDate, activeWorkspaceId);
       }, 800);
     } else {
-      safeSetLocalStorage('school_evaluation_data', evaluationData);
+      safeSetLocalStorage(`${activeWorkspaceId}_school_evaluation_data`, evaluationData);
     }
-  }, [evaluationData, selectedDate, isLoaded]);
+  }, [evaluationData, selectedDate, activeWorkspaceId, isLoaded]);
 
   useEffect(() => {
-    safeSetLocalStorage('school_emulation_state', emulationDataState);
+    const scopedKey = `${activeWorkspaceId}_school_emulation_state`;
+    safeSetLocalStorage(scopedKey, emulationDataState);
     if (isLoaded) {
-      saveSupabaseState('school_emulation_state', emulationDataState);
+      if (emulationDebounceRef.current) clearTimeout(emulationDebounceRef.current);
+      emulationDebounceRef.current = setTimeout(() => {
+        saveSupabaseState(scopedKey, emulationDataState);
+      }, 800);
     }
-  }, [emulationDataState, isLoaded]);
+  }, [emulationDataState, activeWorkspaceId, isLoaded]);
 
   useEffect(() => {
     safeSetLocalStorage('school_documents', documents);
@@ -1074,10 +1138,13 @@ export default function App() {
         if (dbStates['school_classes']) setClasses(dbStates['school_classes']);
         if (dbStates['school_students']) setStudents(dbStates['school_students']);
         if (dbStates['school_computers']) setComputers(dbStates['school_computers']);
-        if (dbStates['school_seating_chart']) setSeatingChart(dbStates['school_seating_chart']);
-        setAttendanceData(loadDayPartitionedAttendance(dbStates, defaultAttendance));
-        setEvaluationData(loadDayPartitionedEvaluation(dbStates, defaultEvaluation));
-        if (dbStates['school_emulation_state']) setEmulationDataState(dbStates['school_emulation_state']);
+        
+        // 🏢 User-Scoped Workspace States
+        setSeatingChart(loadWorkspaceSeatingChart(activeWorkspaceId, dbStates));
+        setAttendanceData(loadDayPartitionedAttendance(dbStates, defaultAttendance, activeWorkspaceId));
+        setEvaluationData(loadDayPartitionedEvaluation(dbStates, defaultEvaluation, activeWorkspaceId));
+        setEmulationDataState(loadWorkspaceEmulationState(activeWorkspaceId, dbStates));
+
         if (dbStates['school_documents']) setDocuments(dbStates['school_documents']);
         if (dbStates['school_members']) setMembers(dbStates['school_members']);
         if (dbStates['school_timetable_data']) setTimetableData(dbStates['school_timetable_data']);
@@ -1111,10 +1178,10 @@ export default function App() {
         saveSupabaseState('school_classes', classes),
         saveSupabaseState('school_students', students),
         saveSupabaseState('school_computers', computers),
-        saveSupabaseState('school_seating_chart', seatingChart),
-        saveDayPartitionedAttendance(attendanceData),
-        saveDayPartitionedEvaluation(evaluationData),
-        saveSupabaseState('school_emulation_state', emulationDataState),
+        saveWorkspaceState('school_seating_chart', activeWorkspaceId, seatingChart),
+        saveDayPartitionedAttendance(attendanceData, undefined, activeWorkspaceId),
+        saveDayPartitionedEvaluation(evaluationData, undefined, activeWorkspaceId),
+        saveWorkspaceState('school_emulation_state', activeWorkspaceId, emulationDataState),
         saveSupabaseState('school_documents', documents),
         saveSupabaseState('school_members', members),
         saveSupabaseState('school_timetable_data', timetableData),
@@ -1540,7 +1607,12 @@ export default function App() {
         {activeTab === 'dashboard' && (
           <div className="space-y-4 sm:space-y-6 animate-fadeIn h-full overflow-y-auto custom-scrollbar p-2 sm:p-4 pb-16">
             {/* Mac-style Welcome Window Widget */}
-            <DeskOSMacWidget currentUser={currentUser} />
+            <DeskOSMacWidget 
+              currentUser={currentUser} 
+              activeWorkspaceOwnerName={activeWorkspaceOwnerName}
+              onOpenWorkspaceSwitcher={() => setIsWorkspaceSwitcherOpen(true)}
+              isAdmin={isAdmin}
+            />
 
             {/* App Launcher Grid */}
             <DeskOSAppGrid
@@ -1644,6 +1716,8 @@ export default function App() {
                 classes={userAssignedClasses}
                 onSelectClass={setSelectedClass}
                 showToast={showToast}
+                currentUser={currentUser}
+                workspaceId={activeWorkspaceId}
               />
             )}
 
@@ -1781,6 +1855,21 @@ export default function App() {
         onLogout={handleLogout}
         isOpen={isStartMenuOpen}
         onClose={() => setIsStartMenuOpen(false)}
+        activeWorkspaceOwnerName={activeWorkspaceOwnerName}
+        onOpenWorkspaceSwitcher={() => setIsWorkspaceSwitcherOpen(true)}
+      />
+
+      {/* Admin Workspace Switcher Modal */}
+      <DeskOSWorkspaceSwitcherModal
+        isOpen={isWorkspaceSwitcherOpen}
+        onClose={() => setIsWorkspaceSwitcherOpen(false)}
+        members={members}
+        currentUser={currentUser}
+        activeWorkspaceId={activeWorkspaceId}
+        onSelectWorkspace={(wsId) => {
+          setActiveWorkspaceId(wsId);
+          showToast(`Đã chuyển sang không gian: ${getWorkspaceOwnerName(wsId, members)}`, 'success');
+        }}
       />
 
       {/* DeskOS Wallpaper Selector Modal */}

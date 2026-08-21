@@ -3,58 +3,80 @@ import { safeSetLocalStorage } from './safeStorage';
 import { saveSupabaseState } from '../supabaseClient';
 
 /**
- * 📦 GÓI GỌN PAYLOAD ĐIỂM DANH THEO NGÀY (DAY-PARTITIONED ATTENDANCE UTILITY)
- * Tách nhỏ key lưu trữ theo từng ngày (school_attendance_YYYY-MM-DD)
- * Giúp dung lượng Payload truyền tải qua Supabase Cloud & WebSocket nhẹ x10 đến x100 lần!
+ * 📦 GÓI GỌN PAYLOAD ĐIỂM DANH THEO NGÀY & PHÂN LẬP THEO WORKSPACE
+ * Tách nhỏ key lưu trữ theo từng ngày (ws_USER_school_attendance_YYYY-MM-DD)
+ * Giúp dung lượng Payload truyền tải nhẹ x10 đến x100 lần, đồng thời
+ * cô lập hoàn toàn sổ điểm danh của từng giáo viên!
  */
 
 /**
- * Lưu dữ liệu điểm danh phân mảnh nhẹ theo từng ngày
+ * Lưu dữ liệu điểm danh phân mảnh nhẹ theo từng ngày và không gian làm việc
  */
-export function saveDayPartitionedAttendance(attendanceData: AttendanceData, targetDate?: string) {
+export function saveDayPartitionedAttendance(
+  attendanceData: AttendanceData,
+  targetDate?: string,
+  workspaceId: string = 'ws_default'
+) {
   if (!attendanceData) return;
 
+  const prefix = `${workspaceId}_`;
   const datesToSave = targetDate ? [targetDate] : Object.keys(attendanceData);
 
   datesToSave.forEach(dateKey => {
     const dayPayload = attendanceData[dateKey];
     if (dayPayload && Object.keys(dayPayload).length > 0) {
-      const partitionedKey = `school_attendance_${dateKey}`;
+      const partitionedKey = `${prefix}school_attendance_${dateKey}`;
       safeSetLocalStorage(partitionedKey, dayPayload);
       saveSupabaseState(partitionedKey, dayPayload);
     }
   });
 
-  // Luôn ghi đè bản sao dự phòng tổng vào localStorage
-  safeSetLocalStorage('school_attendance_data', attendanceData);
+  // Ghi đè bản sao dự phòng tổng của workspace vào localStorage
+  safeSetLocalStorage(`${prefix}school_attendance_data`, attendanceData);
 }
 
 /**
- * Tải và hợp nhất toàn bộ dữ liệu điểm danh phân mảnh từ Supabase/LocalStorage
+ * Tải và hợp nhất toàn bộ dữ liệu điểm danh phân mảnh cho một Workspace cụ thể
  */
-export function loadDayPartitionedAttendance(dbStates?: Record<string, any>, fallbackData: AttendanceData = {}): AttendanceData {
+export function loadDayPartitionedAttendance(
+  dbStates?: Record<string, any>,
+  fallbackData: AttendanceData = {},
+  workspaceId: string = 'ws_default'
+): AttendanceData {
+  const prefix = `${workspaceId}_`;
   const merged: AttendanceData = { ...fallbackData };
 
-  // 1. Tải bản sao dự phòng monolithic (nếu có)
-  const legacyCloud = dbStates?.['school_attendance_data'];
-  if (legacyCloud && typeof legacyCloud === 'object') {
-    Object.assign(merged, legacyCloud);
+  // 1. Tải bản sao dự phòng của Workspace (hoặc bản cũ nếu chưa có workspace)
+  const scopedCloud = dbStates?.[`${prefix}school_attendance_data`];
+  if (scopedCloud && typeof scopedCloud === 'object') {
+    Object.assign(merged, scopedCloud);
   } else {
     try {
-      const savedLegacy = localStorage.getItem('school_attendance_data');
-      if (savedLegacy) {
-        Object.assign(merged, JSON.parse(savedLegacy));
+      const scopedLocal = localStorage.getItem(`${prefix}school_attendance_data`);
+      if (scopedLocal) {
+        Object.assign(merged, JSON.parse(scopedLocal));
+      } else {
+        // Fallback đọc bản monolithic cũ nếu workspace chưa có dữ liệu riêng
+        const legacyCloud = dbStates?.['school_attendance_data'];
+        if (legacyCloud && typeof legacyCloud === 'object') {
+          Object.assign(merged, legacyCloud);
+        } else {
+          const savedLegacy = localStorage.getItem('school_attendance_data');
+          if (savedLegacy) {
+            Object.assign(merged, JSON.parse(savedLegacy));
+          }
+        }
       }
     } catch (e) {
-      console.warn('Cannot parse legacy attendance data:', e);
+      console.warn('Cannot parse attendance fallback data:', e);
     }
   }
 
-  // 2. Quét toàn bộ key phân mảnh school_attendance_YYYY-MM-DD từ Supabase dbStates
+  // 2. Quét các key phân mảnh ws_USER_school_attendance_YYYY-MM-DD từ Supabase dbStates
   if (dbStates) {
     Object.keys(dbStates).forEach(key => {
-      if (key.startsWith('school_attendance_') && key !== 'school_attendance_data') {
-        const dateKey = key.replace('school_attendance_', '');
+      if (key.startsWith(`${prefix}school_attendance_`) && key !== `${prefix}school_attendance_data`) {
+        const dateKey = key.replace(`${prefix}school_attendance_`, '');
         if (dateKey && dbStates[key] && typeof dbStates[key] === 'object') {
           merged[dateKey] = dbStates[key];
         }
@@ -62,41 +84,46 @@ export function loadDayPartitionedAttendance(dbStates?: Record<string, any>, fal
     });
   }
 
-  // 3. Quét toàn bộ key phân mảnh school_attendance_YYYY-MM-DD từ LocalStorage
+  // 3. Quét các key phân mảnh ws_USER_school_attendance_YYYY-MM-DD từ LocalStorage
   try {
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && key.startsWith('school_attendance_') && key !== 'school_attendance_data') {
-        const dateKey = key.replace('school_attendance_', '');
+      if (key && key.startsWith(`${prefix}school_attendance_`) && key !== `${prefix}school_attendance_data`) {
+        const dateKey = key.replace(`${prefix}school_attendance_`, '');
         const rawVal = localStorage.getItem(key);
         if (dateKey && rawVal) {
-          merged[dateKey] = JSON.parse(rawVal);
+          try {
+            merged[dateKey] = JSON.parse(rawVal);
+          } catch (err) {}
         }
       }
     }
   } catch (e) {
-    console.warn('Cannot scan localStorage attendance partitions:', e);
+    console.warn('Cannot scan localStorage workspace attendance partitions:', e);
   }
 
   return merged;
 }
 
 /**
- * Cập nhật Realtime state điểm danh theo ngày khi nhận được payload từ WebSocket
+ * Cập nhật Realtime state điểm danh theo ngày khi nhận được payload từ WebSocket cho đúng Workspace
  */
 export function applyPartitionedAttendanceUpdate(
   prev: AttendanceData,
   key: string,
-  value: any
+  value: any,
+  workspaceId: string = 'ws_default'
 ): AttendanceData {
   if (!value || typeof value !== 'object') return prev;
 
-  if (key === 'school_attendance_data') {
+  const prefix = `${workspaceId}_`;
+
+  if (key === `${prefix}school_attendance_data` || key === 'school_attendance_data') {
     return { ...prev, ...value };
   }
 
-  if (key.startsWith('school_attendance_')) {
-    const dateKey = key.replace('school_attendance_', '');
+  if (key.startsWith(`${prefix}school_attendance_`)) {
+    const dateKey = key.replace(`${prefix}school_attendance_`, '');
     if (dateKey) {
       return {
         ...prev,

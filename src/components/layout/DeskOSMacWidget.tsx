@@ -1,12 +1,20 @@
 import React from 'react';
-import { Laptop, ShieldCheck } from 'lucide-react';
+import { Laptop, ShieldCheck, Home, ArrowLeftRight } from 'lucide-react';
 import { Member } from '../../types';
 
 interface DeskOSMacWidgetProps {
   currentUser: Member | null;
+  activeWorkspaceOwnerName?: string;
+  onOpenWorkspaceSwitcher?: () => void;
+  isAdmin?: boolean;
 }
 
-export const DeskOSMacWidget: React.FC<DeskOSMacWidgetProps> = ({ currentUser }) => {
+export const DeskOSMacWidget: React.FC<DeskOSMacWidgetProps> = ({ 
+  currentUser, 
+  activeWorkspaceOwnerName,
+  onOpenWorkspaceSwitcher,
+  isAdmin 
+}) => {
   const teacherName = currentUser ? currentUser.name : 'Quý thầy cô';
   const isRootUser = currentUser?.role?.includes('Quản trị hệ thống') || currentUser?.role === 'Admin' || currentUser?.id === 'u-1';
   const roleName = isRootUser ? 'Quản trị hệ thống (Admin)' : currentUser?.role || 'Giáo viên Tin học';
@@ -58,7 +66,7 @@ export const DeskOSMacWidget: React.FC<DeskOSMacWidgetProps> = ({ currentUser })
         <h2 className="text-sm sm:text-base font-black text-[#42301c] tracking-tight leading-snug">
           Xin chào, {teacherName} 👏
         </h2>
-        <div className="flex items-center gap-1.5 mt-0.5">
+        <div className="flex flex-wrap items-center justify-center gap-1.5 mt-0.5">
           {isRootUser ? (
             <span className="bg-[#fef9c3] text-[#713f12] border border-[#fde047] text-[11px] font-black px-3.5 py-0.5 rounded-full shadow-2xs tracking-tight select-none">
               Quản trị hệ thống (Admin)
@@ -71,7 +79,28 @@ export const DeskOSMacWidget: React.FC<DeskOSMacWidgetProps> = ({ currentUser })
           <span className="text-[11px] font-bold text-[#806443]">• Trường TH Long Định</span>
         </div>
 
-        <p className="text-[11px] font-bold text-[#967650] mt-1.5 flex items-center gap-1">
+        {/* 🏢 User-Scoped Workspace Indicator Badge */}
+        {activeWorkspaceOwnerName && (
+          <div className="mt-1.5 flex items-center gap-1.5 bg-[#f5e6ca] border border-[#d6c4a8] px-3 py-0.5 rounded-full shadow-2xs">
+            <Home className="w-3 h-3 text-emerald-700 shrink-0" />
+            <span className="text-[10.5px] font-black text-[#4a3219]">
+              Không gian: <span className="text-emerald-800 font-extrabold">{activeWorkspaceOwnerName}</span> (Độc lập 100%)
+            </span>
+            {isAdmin && onOpenWorkspaceSwitcher && (
+              <button
+                type="button"
+                onClick={onOpenWorkspaceSwitcher}
+                className="ml-1 text-[10px] bg-emerald-700 hover:bg-emerald-800 text-white px-2 py-0.2 rounded-full font-black flex items-center gap-1 transition cursor-pointer shadow-2xs"
+                title="Đổi không gian làm việc để kiểm tra"
+              >
+                <ArrowLeftRight className="w-2.5 h-2.5" />
+                <span>Đổi</span>
+              </button>
+            )}
+          </div>
+        )}
+
+        <p className="text-[11px] font-bold text-[#967650] mt-1 flex items-center gap-1">
           <span>🎓</span>
           <span>Kéo thả hoặc nhấp chọn ứng dụng bên dưới để bắt đầu</span>
         </p>

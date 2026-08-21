@@ -23,7 +23,7 @@ import {
   ExternalLink,
   UploadCloud
 } from 'lucide-react';
-import { Student, ClassItem, GardenStudentData, GardenReward, WaterLog, CustomSeedSet } from '../types';
+import { Student, ClassItem, GardenStudentData, GardenReward, WaterLog, CustomSeedSet, Member } from '../types';
 import { triggerStarsConfetti } from '../utils/confetti';
 import { 
   playStarRewardSound, 
@@ -38,6 +38,8 @@ interface KnowledgeGardenTabProps {
   classes: ClassItem[];
   onSelectClass?: (classId: string) => void;
   showToast: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
+  currentUser?: Member | null;
+  workspaceId?: string;
 }
 
 import { extractGoogleDriveFileId, convertGoogleDriveUrl, getGoogleDriveFallbackUrls } from '../utils/googleDriveImageHelper';
@@ -112,7 +114,9 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
   selectedClass,
   classes,
   onSelectClass,
-  showToast
+  showToast,
+  currentUser,
+  workspaceId
 }) => {
   // 1. STATE MANAGEMENT - Mặc định load 'class' (Vườn Cả Lớp)
   const [activeTab, setActiveTab] = useState<'student' | 'class' | 'reward' | 'teacher'>('class');
@@ -121,15 +125,28 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
   // Grade Filter: 'ALL' | '3' | '4' | '5'
   const [gradeFilter, setGradeFilter] = useState<'ALL' | '3' | '4' | '5'>('ALL');
 
-  // Custom Garden Data for Students (stored in localStorage)
+  const currentWsId = workspaceId || (currentUser ? `ws_${currentUser.id || currentUser.username}` : 'ws_default');
+  const gardenStorageKey = `${currentWsId}_garden_data_v2`;
+
+  // Custom Garden Data for Students (stored in localStorage per workspace)
   const [gardenData, setGardenData] = useState<{ [studentId: string]: GardenStudentData }>(() => {
     try {
-      const saved = localStorage.getItem('deskos_garden_data_v2');
+      const saved = localStorage.getItem(gardenStorageKey) || localStorage.getItem('deskos_garden_data_v2');
       return saved ? JSON.parse(saved) : {};
     } catch (e) {
       return {};
     }
   });
+
+  // Re-hydrate when workspace changes
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(gardenStorageKey) || localStorage.getItem('deskos_garden_data_v2');
+      if (saved) {
+        setGardenData(JSON.parse(saved));
+      }
+    } catch (e) {}
+  }, [gardenStorageKey]);
 
   // Rewards Store Items
   const [rewards, setRewards] = useState<GardenReward[]>(() => {
@@ -263,9 +280,10 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
   // 2. EFFECT: PERSIST DATA & INITIALIZE CLASS STUDENTS
   useEffect(() => {
     try {
-      localStorage.setItem('deskos_garden_data_v2', JSON.stringify(gardenData));
+      localStorage.setItem(gardenStorageKey, JSON.stringify(gardenData));
+      saveSupabaseState(`${currentWsId}_school_garden_data`, gardenData);
     } catch (e) {}
-  }, [gardenData]);
+  }, [gardenData, gardenStorageKey, currentWsId]);
 
   useEffect(() => {
     try {
