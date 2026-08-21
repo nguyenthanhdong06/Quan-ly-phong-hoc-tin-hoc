@@ -1,22 +1,25 @@
-import React, { useState, useEffect, useRef } from 'react';
-import {
-  Home,
-  Users,
-  Layers,
-  Award,
-  Sparkles,
-  ClipboardCheck,
-  Tv,
-  Calendar,
-  Grid,
-  Gamepad2,
-  FolderLock,
+import React, { useEffect, useRef, useState } from 'react';
+import { 
+  LayoutDashboard, 
+  Users, 
+  School, 
+  ClipboardCheck, 
+  Star, 
+  Trophy, 
+  Monitor, 
+  Calendar, 
+  FolderOpen, 
+  Gamepad2, 
+  Settings, 
   LogOut,
+  Sparkles,
   ChevronRight,
+  HelpCircle,
+  Image as ImageIcon,
+  FileText,
   SlidersHorizontal,
   Sprout,
-  CalendarCheck,
-  ArrowLeftRight
+  CalendarCheck
 } from 'lucide-react';
 import { Member } from '../../types';
 import { playButtonClickSound } from '../../utils/audioEffects';
@@ -30,8 +33,6 @@ interface DeskOSSidebarProps {
   onLogout: () => void;
   isOpen: boolean;
   onClose: () => void;
-  activeWorkspaceOwnerName?: string;
-  onOpenWorkspaceSwitcher?: () => void;
 }
 
 export const DeskOSSidebar: React.FC<DeskOSSidebarProps> = ({
@@ -41,114 +42,119 @@ export const DeskOSSidebar: React.FC<DeskOSSidebarProps> = ({
   onLogout,
   isOpen,
   onClose,
-  activeWorkspaceOwnerName,
-  onOpenWorkspaceSwitcher,
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const isAdmin = currentUser?.role.includes('Admin');
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const username = currentUser?.username || currentUser?.name || 'default_user';
 
-  // State for user's hidden items loaded from Supabase / localStorage
+  // Per-Teacher Personalized Hidden Menu Items state
   const [hiddenItemIds, setHiddenItemIds] = useState<string[]>([]);
 
-  // Load hidden menu items when user changes or modal opens
+  // Load teacher-specific menu preferences when user changes or component opens
   useEffect(() => {
-    loadUserHiddenMenuItems(username).then((loaded) => {
-      setHiddenItemIds(loaded);
+    let isMounted = true;
+    loadUserHiddenMenuItems(username).then((items) => {
+      if (isMounted) {
+        setHiddenItemIds(items);
+      }
     });
-
-    const handleConfigChange = () => {
-      loadUserHiddenMenuItems(username).then((loaded) => {
-        setHiddenItemIds(loaded);
-      });
+    return () => {
+      isMounted = false;
     };
+  }, [username, isOpen]);
 
-    window.addEventListener('deskos_menu_config_changed', handleConfigChange);
-    return () => window.removeEventListener('deskos_menu_config_changed', handleConfigChange);
-  }, [username]);
-
-  const allMenuItems = [
-    { id: 'dashboard', label: 'Bàn Làm Việc Tổng Quan', icon: Home, color: 'text-amber-700 bg-amber-100 border-amber-300' },
-    { id: 'attendance', label: 'Sổ Điểm Danh Lớp Học', icon: ClipboardCheck, color: 'text-emerald-700 bg-emerald-100 border-emerald-300' },
-    { id: 'evaluation', label: 'Đánh Giá & Nhận Xét', icon: Award, color: 'text-rose-700 bg-rose-100 border-rose-300' },
-    { id: 'knowledge-garden', label: 'Khu Vườn Tri Thức', icon: Sprout, color: 'text-emerald-800 bg-emerald-100 border-emerald-300' },
-    { id: 'emulation', label: 'Bảng Vàng Thi Đua', icon: Sparkles, color: 'text-yellow-800 bg-yellow-100 border-yellow-300' },
-    { id: 'lab-room', label: 'Sơ Đồ Phòng Máy', icon: Tv, color: 'text-cyan-800 bg-cyan-100 border-cyan-300' },
-    { id: 'timetable', label: 'Lịch Báo Giảng & TKB', icon: Calendar, color: 'text-purple-700 bg-purple-100 border-purple-300' },
-    { id: 'lab-booking', label: 'Đăng Ký Mượn Phòng', icon: CalendarCheck, color: 'text-teal-700 bg-teal-100 border-teal-300' },
-    { id: 'classes-management', label: 'Danh Sách Lớp Học', icon: Layers, color: 'text-indigo-700 bg-indigo-100 border-indigo-300' },
-    { id: 'students', label: 'Hồ Sơ Học Sinh', icon: Users, color: 'text-blue-700 bg-blue-100 border-blue-300' },
-    { id: 'interactive-games', label: 'Trò Chơi Tương Tác', icon: Gamepad2, color: 'text-orange-700 bg-orange-100 border-orange-300' },
-    { id: 'avatar-gallery', label: 'Kho Ảnh Đại Diện', icon: Grid, color: 'text-pink-700 bg-pink-100 border-pink-300' },
-    ...(isAdmin ? [{ id: 'admin', label: 'Quản Trị Hệ Thống', icon: FolderLock, color: 'text-amber-800 bg-amber-200 border-amber-400' }] : [])
-  ];
-
-  const visibleMenuItems = allMenuItems.filter(item => !hiddenItemIds.includes(item.id));
-
-  // Toggle item visibility
-  const handleToggleItem = async (id: string) => {
-    let nextHidden: string[];
-    if (hiddenItemIds.includes(id)) {
-      nextHidden = hiddenItemIds.filter(i => i !== id);
-    } else {
-      nextHidden = [...hiddenItemIds, id];
-    }
-    setHiddenItemIds(nextHidden);
-    await saveUserHiddenMenuItems(username, nextHidden);
-  };
-
-  // Reset to default
-  const handleResetDefault = async () => {
-    setHiddenItemIds([]);
-    await saveUserHiddenMenuItems(username, []);
-  };
-
-  // Close on Escape
+  // Handle click outside to close menu (ignoring the start button and config modal)
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
-
-  // Click outside to close (Desktop/Mobile)
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
       if (
-        isOpen &&
-        menuRef.current &&
-        !menuRef.current.contains(e.target as Node) &&
-        !(e.target as HTMLElement).closest('#deskos-start-btn')
+        menuRef.current && 
+        !menuRef.current.contains(target) && 
+        !target.closest('#start-menu-button') &&
+        !target.closest('.fixed.inset-0')
       ) {
-        onClose();
+        if (isOpen && !isConfigModalOpen) {
+          onClose();
+        }
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen, onClose]);
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen, isConfigModalOpen, onClose]);
 
   if (!isOpen) return null;
 
+  const allMenuItems = [
+    { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard, color: 'bg-[#bae6fd] text-[#0369a1] border-[#7dd3fc]' },
+    { id: 'students', label: 'Quản lý Học sinh', icon: Users, color: 'bg-[#bbf7d0] text-[#15803d] border-[#86efac]' },
+    ...(isAdmin ? [{ id: 'classes-management', label: 'Quản lý Lớp học', icon: School, color: 'bg-[#fef08a] text-[#a16207] border-[#fde047]' }] : []),
+    { id: 'attendance', label: 'Điểm danh Học sinh', icon: ClipboardCheck, color: 'bg-[#ddd6fe] text-[#6d28d9] border-[#c4b5fd]' },
+    { id: 'evaluation', label: 'Đánh giá Tiết học', icon: Star, color: 'bg-[#fbcfe8] text-[#be185d] border-[#f472b6]' },
+    { id: 'emulation', label: 'Thi đua Phòng máy', icon: Trophy, color: 'bg-[#fef08a] text-[#854d0e] border-[#fde047]' },
+    { id: 'knowledge-garden', label: 'Khu Vườn Tri Thức', icon: Sprout, color: 'bg-[#dcfce7] text-[#15803d] border-[#86efac]' },
+    { id: 'lab-room', label: 'Phòng Lab', icon: Monitor, color: 'bg-[#ccfbf1] text-[#0f766e] border-[#99f6e4]' },
+    { id: 'timetable', label: 'Thời khóa biểu', icon: Calendar, color: 'bg-[#bfdbfe] text-[#1d4ed8] border-[#93c5fd]' },
+    { id: 'lab-booking', label: 'Đăng ký Phòng máy', icon: CalendarCheck, color: 'bg-[#c7d2fe] text-[#3730a3] border-[#a5b4fc]' },
+    { id: 'resources', label: 'Kho tài nguyên Giáo án', icon: FolderOpen, color: 'bg-[#fed7aa] text-[#c2410c] border-[#fdba74]' },
+    { id: 'personal-questions', label: 'Kho câu hỏi', icon: HelpCircle, color: 'bg-[#a7f3d0] text-[#047857] border-[#6ee7b7]' },
+    { id: 'avatar-gallery', label: 'Kho avatar', icon: ImageIcon, color: 'bg-[#fbcfe8] text-[#be185d] border-[#f472b6]' },
+    { id: 'computer-report', label: 'Báo cáo phòng máy', icon: FileText, color: 'bg-[#a5f3fc] text-[#0891b2] border-[#67e8f9]' },
+    { id: 'interactive-games', label: 'Trò chơi Tương tác', icon: Gamepad2, color: 'bg-[#e9d5ff] text-[#7e22ce] border-[#d8b4fe]' },
+  ];
+
+  if (isAdmin) {
+    allMenuItems.push({ id: 'admin', label: 'Quản trị Hệ thống', icon: Settings, color: 'bg-[#e2e8f0] text-[#334155] border-[#cbd5e1]' });
+  }
+
+  // Filter visible items based on current teacher's preference
+  const visibleMenuItems = allMenuItems.filter((item) => !hiddenItemIds.includes(item.id));
+
+  const handleToggleItem = (id: string) => {
+    let updated: string[];
+    if (hiddenItemIds.includes(id)) {
+      updated = hiddenItemIds.filter((hId) => hId !== id);
+    } else {
+      if (hiddenItemIds.length >= allMenuItems.length - 1) {
+        return;
+      }
+      updated = [...hiddenItemIds, id];
+    }
+    setHiddenItemIds(updated);
+    saveUserHiddenMenuItems(username, updated);
+  };
+
+  const handleResetDefault = () => {
+    setHiddenItemIds([]);
+    saveUserHiddenMenuItems(username, []);
+  };
+
+  const handleItemClick = (id: string) => {
+    playButtonClickSound();
+    setActiveTab(id);
+    onClose();
+  };
+
   return (
     <>
-      <div
+      <div 
         ref={menuRef}
-        className="fixed bottom-14 left-2 sm:left-4 z-50 w-[300px] sm:w-[330px] bg-[#ebdcc4] border-2 border-[#d6c4a8] rounded-2xl shadow-[0_15px_35px_rgba(70,45,15,0.3)] overflow-hidden animate-in slide-in-from-bottom-5 duration-200 select-none text-[#42301c]"
-        style={{
-          fontFamily: "'Nunito', 'Segoe UI', sans-serif"
-        }}
+        className="fixed bottom-14 left-4 z-50 w-72 sm:w-80 bg-[#ebdcc4] border-2 border-[#d6c4a8] rounded-2xl shadow-[0_20px_50px_rgba(80,55,25,0.35)] overflow-hidden select-none animate-in fade-in slide-in-from-bottom-3 duration-200"
       >
-        {/* Top Header Strip - Warm Caramel */}
-        <div className="bg-[#dfccb0] px-4 py-2.5 border-b border-[#c8b598] flex items-center justify-between">
+        {/* Start Menu Header with Config Button & Teacher Name */}
+        <div className="bg-gradient-to-r from-[#d9c4a5] via-[#e4d1b3] to-[#ebdcc4] px-3.5 py-2 border-b border-[#c8b598] flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 border border-emerald-600 shadow-2xs" />
-            <span className="font-black text-xs text-[#5c4326] tracking-wide">
-              Tin Học OS - Ứng Dụng
-            </span>
+            <div className="w-5.5 h-5.5 rounded-lg bg-amber-500/20 border border-amber-600/30 flex items-center justify-center shadow-2xs">
+              <Sparkles className="w-3.5 h-3.5 text-amber-900" />
+            </div>
+            <div>
+              <h3 className="font-black text-[#42301c] text-xs uppercase tracking-wider">Phòng Tin Học OS</h3>
+            </div>
           </div>
 
           <button
@@ -156,15 +162,25 @@ export const DeskOSSidebar: React.FC<DeskOSSidebarProps> = ({
               playButtonClickSound();
               setIsConfigModalOpen(true);
             }}
-            className="p-1 rounded-lg hover:bg-black/5 text-[#6e5334] transition-colors cursor-pointer"
-            title="Tùy chỉnh danh sách ứng dụng hiển thị"
+            className={`btn-plain flex items-center gap-1 px-2 py-0.5 rounded-full font-bold text-[10px] border transition-colors cursor-pointer ${
+              hiddenItemIds.length > 0
+                ? 'bg-amber-500 text-white border-amber-600 shadow-2xs'
+                : 'bg-amber-200/90 hover:bg-amber-300 text-amber-900 border-amber-300'
+            }`}
+            title={`Tùy chỉnh Menu cá nhân của ${username} (Đang ẩn ${hiddenItemIds.length} mục)`}
           >
-            <SlidersHorizontal className="w-3.5 h-3.5" />
+            <SlidersHorizontal className="w-3 h-3" />
+            <span>Tùy chỉnh</span>
+            {hiddenItemIds.length > 0 && (
+              <span className="bg-rose-600 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full border border-white/60 shadow-2xs animate-pulse">
+                {hiddenItemIds.length}
+              </span>
+            )}
           </button>
         </div>
 
-        {/* Menu Apps List */}
-        <div className="p-2 space-y-1 max-h-[62vh] overflow-y-auto custom-scrollbar">
+        {/* Menu Content (1-Column Vertical List) */}
+        <div className="p-1.5 bg-white/80 backdrop-blur-xs flex flex-col gap-0.5">
           {visibleMenuItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -172,18 +188,15 @@ export const DeskOSSidebar: React.FC<DeskOSSidebarProps> = ({
             return (
               <button
                 key={item.id}
-                onClick={() => {
-                  playButtonClickSound();
-                  setActiveTab(item.id);
-                  onClose();
-                }}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all cursor-pointer group active:scale-98 ${
+                onClick={() => handleItemClick(item.id)}
+                className={`btn-plain w-full !flex !items-center !justify-between px-2.5 py-1 rounded-xl font-bold text-xs transition-all duration-150 cursor-pointer !shadow-none ${
                   isActive
-                    ? 'bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-sm font-black'
-                    : 'hover:bg-white/60 text-[#42301c]'
+                    ? '!bg-amber-500 !text-white border border-amber-600 font-black translate-x-1'
+                    : '!text-[#5c4326] !bg-white/70 hover:!bg-white hover:!text-black border border-[#e4d5bf]'
                 }`}
               >
-                <div className="flex items-center gap-2.5 truncate">
+                {/* Left-aligned Icon & Text */}
+                <div className="flex items-center gap-2.5 flex-1 min-w-0">
                   <div className={`w-5.5 h-5.5 rounded-lg flex items-center justify-center border shrink-0 ${
                     isActive ? 'bg-white/20 text-white border-transparent' : item.color
                   }`}>
@@ -210,30 +223,6 @@ export const DeskOSSidebar: React.FC<DeskOSSidebarProps> = ({
 
           {/* Separator */}
           <div className="my-0.5 border-t border-[#dfccb0]" />
-
-          {/* 🏢 User Workspace Indicator in Sidebar */}
-          {activeWorkspaceOwnerName && (
-            <div className="flex items-center justify-between bg-[#fffbf0] border border-[#d6c4a8] px-3 py-1 rounded-xl text-[10.5px] font-black text-[#5c4326]">
-              <div className="flex items-center gap-1.5 truncate">
-                <Home className="w-3 h-3 text-emerald-700 shrink-0" />
-                <span className="truncate">Không gian: <span className="text-emerald-800 font-extrabold">{activeWorkspaceOwnerName}</span></span>
-              </div>
-              {isAdmin && onOpenWorkspaceSwitcher && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onOpenWorkspaceSwitcher();
-                    onClose();
-                  }}
-                  className="ml-1 px-2 py-0.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-md text-[9px] font-black cursor-pointer shadow-2xs flex items-center gap-0.5"
-                  title="Chuyển đổi không gian làm việc"
-                >
-                  <ArrowLeftRight className="w-2 h-2" />
-                  <span>Đổi</span>
-                </button>
-              )}
-            </div>
-          )}
 
           {/* User Info & Logout Footer - Match Media Screenshot 100% */}
           <div className="flex items-center justify-between bg-[#f5e6ca] border border-[#d6c4a8] px-3 py-1.5 rounded-full shadow-2xs">

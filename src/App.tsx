@@ -64,14 +64,12 @@ import { DeskOSAppGrid } from './components/layout/DeskOSAppGrid';
 import { DeskOSTaskbar } from './components/layout/DeskOSTaskbar';
 import { DeskOSWallpaperSelector, WALLPAPER_OPTIONS } from './components/layout/DeskOSWallpaperSelector';
 import { DeskOSMacWindow } from './components/layout/DeskOSMacWindow';
-import { DeskOSWorkspaceSwitcherModal } from './components/layout/DeskOSWorkspaceSwitcherModal';
 
 // Workspace Service for Multi-User Isolation
 import { 
   getWorkspaceId, 
   loadWorkspaceSeatingChart, 
   loadWorkspaceEmulationState, 
-  getWorkspaceOwnerName,
   saveWorkspaceState,
   WORKSPACE_PREFIX 
 } from './services/workspaceService';
@@ -171,7 +169,6 @@ export default function App() {
   
   // 🏢 Active Workspace ID (Multi-User Isolation)
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string>(() => getWorkspaceId(safeParse('school_current_user', null, true)));
-  const [isWorkspaceSwitcherOpen, setIsWorkspaceSwitcherOpen] = useState(false);
 
   // User-Scoped Workspace States
   const [seatingChart, setSeatingChart] = useState<SeatingChart>(() => loadWorkspaceSeatingChart(activeWorkspaceId));
@@ -191,10 +188,6 @@ export default function App() {
     { id: 'lab2', name: 'Phòng Lab 02', code: 'P.202', totalPCs: 40, status: 'Active', location: 'Tầng 2 - Nhà A', gridRows: 5, gridCols: 8 },
     { id: 'lab3', name: 'Phòng Lab 03', code: 'P.301', totalPCs: 32, status: 'Maintenance', location: 'Tầng 3 - Nhà B', gridRows: 4, gridCols: 8 },
   ]));
-
-  const activeWorkspaceOwnerName = useMemo(() => {
-    return getWorkspaceOwnerName(activeWorkspaceId, members);
-  }, [activeWorkspaceId, members]);
 
 
   // --- SUPABASE CLOUD STATUS STATES ---
@@ -1642,12 +1635,7 @@ export default function App() {
         {activeTab === 'dashboard' && (
           <div className="space-y-4 sm:space-y-6 animate-fadeIn h-full overflow-y-auto custom-scrollbar p-2 sm:p-4 pb-16">
             {/* Mac-style Welcome Window Widget */}
-            <DeskOSMacWidget 
-              currentUser={currentUser} 
-              activeWorkspaceOwnerName={activeWorkspaceOwnerName}
-              onOpenWorkspaceSwitcher={() => setIsWorkspaceSwitcherOpen(true)}
-              isAdmin={isAdmin}
-            />
+            <DeskOSMacWidget currentUser={currentUser} />
 
             {/* App Launcher Grid */}
             <DeskOSAppGrid
@@ -1890,21 +1878,6 @@ export default function App() {
         onLogout={handleLogout}
         isOpen={isStartMenuOpen}
         onClose={() => setIsStartMenuOpen(false)}
-        activeWorkspaceOwnerName={activeWorkspaceOwnerName}
-        onOpenWorkspaceSwitcher={() => setIsWorkspaceSwitcherOpen(true)}
-      />
-
-      {/* Admin Workspace Switcher Modal */}
-      <DeskOSWorkspaceSwitcherModal
-        isOpen={isWorkspaceSwitcherOpen}
-        onClose={() => setIsWorkspaceSwitcherOpen(false)}
-        members={members}
-        currentUser={currentUser}
-        activeWorkspaceId={activeWorkspaceId}
-        onSelectWorkspace={(wsId) => {
-          switchWorkspaceState(wsId);
-          showToast(`Đã chuyển sang không gian: ${getWorkspaceOwnerName(wsId, members)}`, 'success');
-        }}
       />
 
       {/* DeskOS Wallpaper Selector Modal */}
