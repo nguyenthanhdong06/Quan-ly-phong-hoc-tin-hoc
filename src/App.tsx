@@ -277,6 +277,18 @@ export default function App() {
   });
   const [loginForm, setLoginForm] = useState({ username: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
+  const usernameInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Auto-focus username input whenever login screen is shown
+  useEffect(() => {
+    if (!currentUser || isLoginModalOpen) {
+      const timer = setTimeout(() => {
+        usernameInputRef.current?.focus();
+        usernameInputRef.current?.select();
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [currentUser, isLoginModalOpen]);
 
   // --- FORGOT PASSWORD RECOVERY STATE ---
   const [isForgotPasswordModalOpen, setIsForgotPasswordModalOpen] = useState(false);
@@ -1049,10 +1061,11 @@ export default function App() {
   // --- AUTH SERVICES ---
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanUsername = sanitizeInput(loginForm.username).toLowerCase();
+    const cleanUsername = sanitizeInput(loginForm.username).toLowerCase().trim();
     const inputPassword = loginForm.password;
 
-    const foundUser = members.find(
+    const allMembers = members && members.length > 0 ? members : safeParse('school_members', defaultMembers);
+    const foundUser = allMembers.find(
       (m) => m.username.trim().toLowerCase() === cleanUsername
     );
 
@@ -1063,7 +1076,7 @@ export default function App() {
         const newSessionId = createSessionId();
         setLocalSession(newSessionId);
 
-        const updatedUser = { ...foundUser, activeSessionId: newSessionId };
+        const updatedUser = { ...foundUser, activeSessionId: newSessionId, lastLogin: new Date().toISOString() };
         safeSetLocalStorage('school_current_user', updatedUser);
         sessionStorage.setItem('school_current_user', JSON.stringify(updatedUser));
         setCurrentUser(updatedUser);
@@ -1074,7 +1087,8 @@ export default function App() {
 
         // Cập nhật mảng members với activeSessionId mới
         setMembers((prev) => {
-          const next = prev.map((m) => (m.id === foundUser.id ? updatedUser : m));
+          const currentList = prev && prev.length > 0 ? prev : allMembers;
+          const next = currentList.map((m) => (m.id === foundUser.id ? updatedUser : m));
           safeSetLocalStorage('school_members', next);
           saveSupabaseState('school_members', next);
           return next;
@@ -1105,6 +1119,11 @@ export default function App() {
     setIsSupabaseModalOpen(false);
     setIsForgotPasswordModalOpen(false);
     setActiveTab('dashboard');
+
+    setTimeout(() => {
+      usernameInputRef.current?.focus();
+      usernameInputRef.current?.select();
+    }, 150);
   };
 
   // --- EFFECT: INACTIVITY SECURITY AUTO LOGOUT ---
@@ -1957,12 +1976,12 @@ export default function App() {
                   }}
                 >
                   <input
+                    ref={usernameInputRef}
                     type="text"
                     value={loginForm.username}
-                    onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
+                    onChange={(e) => setLoginForm(prev => ({ ...prev, username: e.target.value }))}
                     placeholder="tên đăng nhập"
-                    className="w-full h-full bg-transparent border-none outline-none text-slate-900 font-black text-xs sm:text-sm placeholder:text-slate-400 placeholder:font-bold px-3 font-mono leading-none flex items-center select-text cursor-text"
-                    autoFocus
+                    className="w-full h-full bg-transparent border-none outline-none text-white font-extrabold text-xs sm:text-sm placeholder:text-white/80 placeholder:font-medium px-3 font-mono leading-none flex items-center select-text cursor-text"
                     autoComplete="username"
                     required
                   />
@@ -1981,19 +2000,19 @@ export default function App() {
                   <input
                     type={showPassword ? "text" : "password"}
                     value={loginForm.password}
-                    onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+                    onChange={(e) => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
                     placeholder="mật khẩu"
-                    className="w-full h-full bg-transparent border-none outline-none text-slate-900 font-black text-xs sm:text-sm placeholder:text-slate-400 placeholder:font-bold px-3 font-mono leading-none flex items-center select-text cursor-text"
+                    className="w-full h-full bg-transparent border-none outline-none text-white font-extrabold text-xs sm:text-sm placeholder:text-white/80 placeholder:font-medium px-3 font-mono leading-none flex items-center select-text cursor-text"
                     autoComplete="current-password"
                     required
                   />
                 </div>
 
-                {/* Eye Toggle Password Visibility Button (Dark Tone Icon) */}
+                {/* Eye Toggle Password Visibility Button - Phục hồi sắc nét không làm mờ */}
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="btn-raw absolute flex items-center justify-center cursor-pointer text-slate-600 hover:text-slate-900 transition-colors z-40"
+                  className="btn-raw absolute flex items-center justify-center cursor-pointer text-white hover:text-amber-300 transition-colors z-40"
                   style={{
                     top: '53.8%',
                     height: '6.2%',
@@ -2002,7 +2021,11 @@ export default function App() {
                   }}
                   title={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4 text-slate-600" /> : <Eye className="w-4 h-4 text-slate-600" />}
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4 text-white drop-shadow-md stroke-[2.5]" />
+                  ) : (
+                    <Eye className="w-4 h-4 text-white drop-shadow-md stroke-[2.5]" />
+                  )}
                 </button>
 
                 {/* ================================================================= */}
