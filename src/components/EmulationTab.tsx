@@ -560,7 +560,7 @@ export default function EmulationTab({
     ];
 
     return (
-      <div className="w-full min-h-[85vh] bg-[#fffbf0] rounded-3xl border border-[#cbb89d] p-6 sm:p-8 space-y-6 shadow-sm relative text-left animate-fadeIn">
+      <div className="w-full min-h-[85vh] bg-[#fffbf0] rounded-3xl border-2 border-[#cbb89d] p-6 sm:p-8 space-y-6 shadow-sm relative text-left animate-fadeIn">
         <FireworksCelebration
           isOpen={celebration.isOpen}
           onClose={() => setCelebration(prev => ({ ...prev, isOpen: false }))}
@@ -572,28 +572,28 @@ export default function EmulationTab({
         />
 
         {/* Header with Return Button */}
-        <div className="border-b border-[#cbb89d]/70 pb-4 flex items-center justify-between gap-4">
+        <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-5 py-4 flex items-center justify-between gap-4 -mx-6 -mt-6 sm:-mx-8 sm:-mt-8 mb-6 rounded-t-[22px]">
           <div>
-            <span className="bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
-              CỬA HÀNG ĐỔI THƯỞNG STICKER
+            <span className="bg-white/80 text-emerald-800 border border-[#cbb89d] text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
+              🎁 CỬA HÀNG ĐỔI THƯỞNG STICKER
             </span>
-            <h3 className="text-xl sm:text-2xl font-black text-slate-900 mt-2">
+            <h3 className="text-xl sm:text-2xl font-black text-[#3d2b17] mt-2">
               Đổi Quà Tích Lũy Cho: {s.name} (Lớp {s.classId})
             </h3>
           </div>
           <button
             type="button"
             onClick={() => { setSelectedStudentForReward(null); scrollToFormTop(); }}
-            className="text-xs text-slate-700 hover:text-slate-900 font-bold px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 transition cursor-pointer flex items-center gap-1.5 active:scale-95 shadow-2xs shrink-0"
+            className="text-xs text-[#3d2b17] hover:bg-white/90 font-bold px-4 py-2.5 rounded-xl border border-[#cbb89d] bg-white transition cursor-pointer flex items-center gap-1.5 active:scale-95 shadow-2xs shrink-0"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-4 h-4 text-[#3d2b17]" />
             <span>Quay lại danh sách đổi thưởng</span>
           </button>
         </div>
 
         {/* View Content */}
         <div className="space-y-6 text-left">
-          <div className="flex justify-center py-2 bg-white/80 rounded-2xl border border-amber-200/60 p-4 shadow-inner">
+          <div className="flex justify-center py-2 bg-white rounded-2xl border border-[#cbb89d] p-4 shadow-inner">
             <StudentCard3D
               student={s}
               classStudents={classStudents}
@@ -732,7 +732,7 @@ export default function EmulationTab({
     const filteredClassSts = sortedClassSts.filter(s => s.name.toLowerCase().includes(classSearchTerm.toLowerCase()));
 
     return (
-      <div className="w-full min-h-[85vh] bg-[#fffbf0] rounded-3xl border border-[#cbb89d] p-6 sm:p-8 space-y-6 shadow-sm relative text-left animate-fadeIn">
+      <div className="w-full min-h-[85vh] bg-[#fffbf0] rounded-3xl border-2 border-[#cbb89d] p-6 sm:p-8 space-y-6 shadow-sm relative text-left animate-fadeIn">
         <FireworksCelebration
           isOpen={celebration.isOpen}
           onClose={() => setCelebration(prev => ({ ...prev, isOpen: false }))}
@@ -744,32 +744,32 @@ export default function EmulationTab({
         />
 
         {/* Header with Return Button */}
-        <div className="border-b border-[#cbb89d]/70 pb-4 flex items-center justify-between gap-4">
+        <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-5 py-4 flex items-center justify-between gap-4 -mx-6 -mt-6 sm:-mx-8 sm:-mt-8 mb-6 rounded-t-[22px]">
           <div>
-            <span className="bg-indigo-100 text-indigo-900 border border-indigo-200 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
-              BẢNG VINH DANH CHI TIẾT LỚP
+            <span className="bg-white/80 text-emerald-800 border border-[#cbb89d] text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
+              🏆 BẢNG VINH DANH CHI TIẾT LỚP
             </span>
-            <h3 className="text-xl sm:text-2xl font-black text-slate-900 mt-2 flex items-center gap-2">
-              <Trophy className="w-6 h-6 text-amber-500" />
+            <h3 className="text-xl sm:text-2xl font-black text-[#3d2b17] mt-2 flex items-center gap-2">
+              <Trophy className="w-6 h-6 text-amber-600" />
               Chi Tiết Thi Đua Lớp {classes?.find(c => c.id === viewingDetailClassId)?.name || viewingDetailClassId}
             </h3>
-            <p className="text-xs text-slate-500 font-semibold mt-1">
+            <p className="text-xs text-[#5c4327] font-bold mt-1">
               Khối {classes?.find(c => c.id === viewingDetailClassId)?.gradeId} • GVCN: {classes?.find(c => c.id === viewingDetailClassId)?.teacher || 'Đang cập nhật'}
             </p>
           </div>
           <button
             type="button"
             onClick={() => { setViewingDetailClassId(null); setClassSearchTerm(''); scrollToFormTop(); }}
-            className="text-xs text-slate-700 hover:text-slate-900 font-bold px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 transition cursor-pointer flex items-center gap-1.5 active:scale-95 shadow-2xs shrink-0"
+            className="text-xs text-[#3d2b17] hover:bg-white/90 font-bold px-4 py-2.5 rounded-xl border border-[#cbb89d] bg-white transition cursor-pointer flex items-center gap-1.5 active:scale-95 shadow-2xs shrink-0"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-4 h-4 text-[#3d2b17]" />
             <span>Quay lại bảng so sánh thi đua</span>
           </button>
         </div>
 
         {/* Search Student filter inside view */}
         <div className="p-1 text-left">
-          <div className="relative">
+          <div className="relative max-w-sm">
             <span className="absolute inset-y-0 left-0 flex items-center pl-3">
               <Search className="w-3.5 h-3.5 text-slate-400" />
             </span>
@@ -778,26 +778,26 @@ export default function EmulationTab({
               value={classSearchTerm}
               onChange={(e) => setClassSearchTerm(e.target.value)}
               placeholder="Tìm kiếm học sinh trong lớp..."
-              className="w-full text-xs pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs"
+              className="w-full text-xs pl-9 pr-4 py-2.5 bg-white border border-[#cbb89d] rounded-xl focus:outline-none focus:border-emerald-500 shadow-2xs font-bold text-slate-800"
             />
           </div>
         </div>
 
-        {/* Content */}
+        {/* Content Table */}
         <div className="space-y-4">
-          <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+          <div className="overflow-x-auto rounded-2xl border border-[#cbb89d] bg-white">
             <table className="w-full text-xs text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[9px] whitespace-nowrap">
-                  <th className="p-3 text-center w-12 whitespace-nowrap">Hạng</th>
-                  <th className="p-3 whitespace-nowrap">Tên Học Sinh</th>
-                  <th className="p-3 text-right whitespace-nowrap">Tổng Sao Tích Lũy</th>
-                  <th className="p-3 text-right whitespace-nowrap">Sticker Đã Đổi</th>
-                  <th className="p-3 text-right whitespace-nowrap">Sao Còn Lại</th>
-                  <th className="p-3 pl-4 whitespace-nowrap">Huy Hiệu Sở Hữu</th>
+                <tr className="bg-[#e8d7c0] border-b border-[#cbb89d] text-[#3d2b17] font-black uppercase text-[10px] tracking-wider whitespace-nowrap">
+                  <th className="p-3.5 text-center w-12 whitespace-nowrap">Hạng</th>
+                  <th className="p-3.5 whitespace-nowrap">Tên Học Sinh</th>
+                  <th className="p-3.5 text-right whitespace-nowrap">Tổng Sao Tích Lũy</th>
+                  <th className="p-3.5 text-right whitespace-nowrap">Sticker Đã Đổi</th>
+                  <th className="p-3.5 text-right whitespace-nowrap">Sao Còn Lại</th>
+                  <th className="p-3.5 pl-4 whitespace-nowrap">Huy Hiệu Sở Hữu</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-150 font-semibold text-slate-700">
+              <tbody className="divide-y divide-slate-100 font-bold text-slate-700">
                 {filteredClassSts.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="p-6 text-center text-slate-400 font-bold">
@@ -806,32 +806,32 @@ export default function EmulationTab({
                   </tr>
                 ) : (
                   filteredClassSts.map((st, idx) => (
-                    <tr key={st.id} className="hover:bg-slate-50/50">
-                      <td className="p-3 text-center">
-                        <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[9px] ${
-                          idx === 0 ? 'bg-amber-100 text-amber-700 font-extrabold' : 'bg-slate-100 text-slate-600'
+                    <tr key={st.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="p-3.5 text-center">
+                        <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-black ${
+                          idx === 0 ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-slate-100 text-slate-600'
                         }`}>
                           {idx + 1}
                         </span>
                       </td>
-                      <td className="p-3 font-extrabold text-slate-900 flex items-center gap-1.5 text-left whitespace-nowrap">
+                      <td className="p-3.5 font-black text-slate-900 flex items-center gap-2 text-left whitespace-nowrap">
                         <span>{getStudentAvatar(st.id, students).emoji}</span>
                         <span>{st.name}</span>
                       </td>
-                      <td className="p-3 text-right text-slate-900">
+                      <td className="p-3.5 text-right text-amber-600 font-black">
                         {st.cumulativeStars} ⭐
                       </td>
-                      <td className="p-3 text-right text-pink-600">
+                      <td className="p-3.5 text-right text-pink-600 font-black">
                         {st.exchangedStickers} quà
                       </td>
-                      <td className="p-3 text-right text-emerald-600">
+                      <td className="p-3.5 text-right text-emerald-600 font-black">
                         {st.currentStars} ⭐
                       </td>
-                      <td className="p-3 pl-4">
+                      <td className="p-3.5 pl-4">
                         {st.badges.length > 0 ? (
                           <div className="flex flex-wrap gap-1">
                             {st.badges.map((b, i) => (
-                              <span key={i} className="bg-slate-100 text-slate-600 text-[8px] font-black px-1.5 py-0.5 rounded border border-slate-200">
+                              <span key={i} className="bg-[#fffbf0] text-[#5c4327] text-[9px] font-black px-2 py-0.5 rounded-lg border border-[#cbb89d]">
                                 {b}
                               </span>
                             ))}
@@ -856,9 +856,9 @@ export default function EmulationTab({
               setClassSearchTerm('');
               scrollToFormTop();
             }}
-            className="px-6 py-3 rounded-2xl border border-slate-300 bg-white text-slate-700 font-extrabold hover:bg-slate-50 transition cursor-pointer flex items-center gap-2 active:scale-95 text-xs uppercase shadow-2xs"
+            className="px-6 py-2.5 rounded-2xl border border-[#cbb89d] bg-white text-[#3d2b17] font-black hover:bg-slate-50 transition cursor-pointer flex items-center gap-2 active:scale-95 text-xs uppercase shadow-2xs"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-4 h-4 text-[#3d2b17]" />
             <span>Quay Lại</span>
           </button>
         </div>
@@ -1101,32 +1101,62 @@ export default function EmulationTab({
   // DEFAULT CASE: TRANG CHÍNH ỨNG DỤNG THI ĐUA
   // =========================================================================
   return (
-    <div className="space-y-6">
-
-      {/* Promotional Banner with Blinking status warning */}
-      <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white p-4 sm:p-5 rounded-2xl shadow-sm relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-left">
-        <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-xl"></div>
-        
-        <div className="flex items-center gap-3 relative z-10">
-          <div className="bg-white/20 p-2.5 rounded-xl text-yellow-100 text-2xl shadow-inner shrink-0">
-            🏆
-          </div>
-          <div>
-            <h2 className="text-lg font-black uppercase tracking-wide">Cửa Hàng Học Tập • Đổi Sao Lấy Quà</h2>
-            <p className="text-xs text-amber-100 font-medium">Tích lũy sao vàng hàng tháng đổi lấy sticker huy hiệu rực rỡ.</p>
-            
+    <div className="space-y-4 sm:space-y-6 text-slate-800 pb-10">
+      
+      {/* 🌟 1. DESKOS IMAC WARM BEIGE CARD HEADER STRIP (CHUẨN VƯỜN TRI THỨC) */}
+      <div className="border-2 border-[#cbb89d] rounded-3xl bg-[#fffbf0] overflow-hidden shadow-sm">
+        <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-5 py-3 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+          <div className="flex items-center gap-2 text-left">
+            <span className="font-bold text-xs text-[#5c4327]">Đang chọn:</span>
+            <span className="font-black text-xs text-emerald-800 bg-white/80 px-2.5 py-1 rounded-lg border border-[#cbb89d]">
+              Lớp {selectedClass} • Khối {selectedGradeId}
+            </span>
             {isRedemptionPeriod && (
-              <div className="mt-1.5 inline-flex items-center gap-1 bg-red-600/90 text-white text-[10px] font-black px-2.5 py-0.5 rounded-md border border-white/20">
+              <span className="inline-flex items-center gap-1 bg-red-600/90 text-white text-[10px] font-black px-2.5 py-1 rounded-lg border border-red-700 shadow-2xs">
                 <span className="animate-ping inline-block w-1.5 h-1.5 bg-yellow-300 rounded-full mr-1 shrink-0" />
-                <span>🔔 ĐỔI QUÀ (MỞ CỬA TỪ NGÀY 1 ĐẾN 15 HÀNG THÁNG)</span>
-              </div>
+                <span>🔔 ĐỔI QUÀ (1-15 HÀNG THÁNG)</span>
+              </span>
             )}
           </div>
-        </div>
 
-        <div className="bg-white/15 border border-white/20 px-4 py-1.5 rounded-xl text-center relative z-10 w-full md:w-auto shrink-0 flex md:flex-col justify-between md:justify-center items-center gap-2">
-          <span className="text-[10px] font-bold text-amber-100 uppercase tracking-wider block">Bản tin học kỳ</span>
-          <span className="text-sm font-black text-yellow-250 block">{activeMonthYearLabel}</span>
+          {/* Navigation Tab Buttons */}
+          <nav className="flex items-center gap-1 bg-[#e4d3ba] p-1 rounded-xl border border-[#cbb89d] overflow-x-auto max-w-full">
+            <button
+              onClick={() => {
+                playButtonClickSound();
+                setActiveSubTab('comparison');
+              }}
+              className={`px-3.5 py-1.5 rounded-lg font-black text-xs transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                activeSubTab === 'comparison'
+                  ? 'bg-emerald-700 text-white shadow-xs'
+                  : 'text-[#3d2b17] hover:bg-[#d5c3aa]'
+              }`}
+            >
+              <BarChart3 className="w-3.5 h-3.5" />
+              <span>📊 So Sánh Thi Đua Khối</span>
+            </button>
+            <button
+              onClick={() => {
+                playButtonClickSound();
+                setActiveSubTab('redemption');
+              }}
+              className={`px-3.5 py-1.5 rounded-lg font-black text-xs transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                activeSubTab === 'redemption'
+                  ? 'bg-emerald-700 text-white shadow-xs'
+                  : 'text-[#3d2b17] hover:bg-[#d5c3aa]'
+              }`}
+            >
+              <ShoppingBag className="w-3.5 h-3.5" />
+              <span>🎁 Cửa Hàng Đổi Thưởng</span>
+            </button>
+            <button
+              onClick={handleOpenMonthlyHallOfFame}
+              className="px-3.5 py-1.5 rounded-lg font-black text-xs transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer text-[#3d2b17] hover:bg-[#d5c3aa]"
+            >
+              <Trophy className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
+              <span>🏆 Bảng Vinh Danh Tháng</span>
+            </button>
+          </nav>
         </div>
       </div>
 
@@ -1164,164 +1194,126 @@ export default function EmulationTab({
         </div>
       )}
 
-      {/* Subtab navigation */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex bg-slate-100 p-1 rounded-2xl max-w-md border border-slate-200/60 shadow-inner flex-1">
-          <button
-            onClick={() => {
-              playButtonClickSound();
-              setActiveSubTab('comparison');
-            }}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-black uppercase transition-all duration-150 cursor-pointer ${
-              activeSubTab === 'comparison'
-                ? 'bg-white text-blue-600 shadow-md border border-slate-200/50'
-                : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <BarChart3 className="w-4 h-4" />
-            So Sánh Thi Đua Khối
-          </button>
-          <button
-            onClick={() => {
-              playButtonClickSound();
-              setActiveSubTab('redemption');
-            }}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-black uppercase transition-all duration-150 cursor-pointer ${
-              activeSubTab === 'redemption'
-                ? 'bg-white text-blue-600 shadow-md border border-slate-200/50'
-                : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <ShoppingBag className="w-4 h-4" />
-            Cửa Hàng Đổi Thưởng
-          </button>
-        </div>
-
-        {/* Honor Showcase Trigger Button */}
-        <button
-          onClick={handleOpenMonthlyHallOfFame}
-          className="bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-600 hover:to-yellow-600 text-white font-black text-xs px-4 py-2.5 rounded-2xl shadow-md border border-amber-300 flex items-center gap-2 transition-all cursor-pointer active:scale-95 group"
-          title="Mở Bảng Vinh Danh 3 Học Sinh Xuất Sắc Nhất Tháng"
-        >
-          <Trophy className="w-4 h-4 text-amber-100 group-hover:rotate-12 transition-transform animate-pulse" />
-          <span>🏆 BẢNG VINH DANH THÁNG</span>
-        </button>
-      </div>
-
       {activeSubTab === 'comparison' ? (
         <div className="space-y-6">
-          {/* Grade Selector */}
-          <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-5 rounded-3xl border border-slate-150 shadow-sm text-left">
-            <div>
-              <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-1.5">
-                <Trophy className="w-5 h-5 text-amber-500" />
-                So Sánh Thi Đua Cấp Khối
-              </h3>
-              <p className="text-[11px] text-slate-400 font-medium">Theo dõi, vinh danh và so sánh tổng điểm thi đua hàng tuần giữa các lớp trong cùng một khối</p>
-            </div>
-            <div className="flex gap-2">
-              {allGrades.map((g) => (
-                <button
-                  key={g.id}
-                  onClick={() => setSelectedGradeId(g.id)}
-                  className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition-all border cursor-pointer ${
-                    selectedGradeId === g.id
-                      ? 'bg-blue-600 text-white border-blue-700 shadow-sm'
-                      : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200'
-                  }`}
-                >
-                  {g.name}
-                </button>
-              ))}
+          
+          {/* Grade Selector & Header Bar */}
+          <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs">
+            <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h3 className="font-black text-xs sm:text-sm text-[#3d2b17] uppercase tracking-wider flex items-center gap-2">
+                  <Trophy className="w-4 h-4 text-amber-600" />
+                  <span>SO SÁNH THI ĐUA CẤP KHỐI • KHỐI {selectedGradeId}</span>
+                </h3>
+                <p className="text-[11px] font-bold text-[#5c4327]">Theo dõi, vinh danh và so sánh tổng điểm thi đua hàng tuần giữa các lớp</p>
+              </div>
+              <div className="flex items-center gap-1 bg-[#e4d3ba] p-1 rounded-xl border border-[#cbb89d]">
+                <span className="text-[10px] font-black text-[#5c4327] px-1.5 flex items-center gap-1">
+                  Chọn Khối:
+                </span>
+                {allGrades.map((g) => (
+                  <button
+                    key={g.id}
+                    onClick={() => setSelectedGradeId(g.id)}
+                    className={`px-3 py-1 rounded-lg text-xs font-black uppercase transition-all cursor-pointer ${
+                      selectedGradeId === g.id
+                        ? 'bg-emerald-700 text-white shadow-xs'
+                        : 'text-[#3d2b17] hover:bg-[#d5c3aa]'
+                    }`}
+                  >
+                    {g.name}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
           {/* Grade Emulation Overview Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-left">
             {/* Top Class */}
-            <div className="bg-white p-5 rounded-2xl border border-slate-150 shadow-xs flex items-center gap-4">
-              <div className="p-3 bg-amber-50 rounded-2xl text-amber-500 border border-amber-200/50">
+            <div className="bg-white p-4.5 rounded-2xl border border-[#cbb89d] shadow-xs flex items-center gap-4">
+              <div className="p-3 bg-amber-50 rounded-2xl text-amber-600 border border-amber-200">
                 <Trophy className="w-6 h-6 animate-pulse" />
               </div>
-              <div className="space-y-1">
-                <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Lớp dẫn đầu khối</span>
+              <div className="space-y-0.5">
+                <span className="text-[10px] text-[#5c4327] font-black uppercase block tracking-wider">Lớp dẫn đầu khối</span>
                 <strong className="text-base text-slate-900 font-black block">
                   {topClass ? `Lớp ${topClass.name}` : 'N/A'}
                 </strong>
-                <span className="text-[10px] text-emerald-600 font-extrabold block">
+                <span className="text-[11px] text-emerald-700 font-black block">
                   {topClass ? `${topClass.averageStars} ⭐ / học sinh` : '--'}
                 </span>
               </div>
             </div>
 
             {/* Total Grade Stars */}
-            <div className="bg-white p-5 rounded-2xl border border-slate-150 shadow-xs flex items-center gap-4">
-              <div className="p-3 bg-yellow-50 rounded-2xl text-yellow-500 border border-yellow-200/50">
-                <Star className="w-6 h-6 fill-yellow-500" />
+            <div className="bg-white p-4.5 rounded-2xl border border-[#cbb89d] shadow-xs flex items-center gap-4">
+              <div className="p-3 bg-yellow-50 rounded-2xl text-yellow-600 border border-yellow-200">
+                <Star className="w-6 h-6 fill-yellow-500 text-yellow-500" />
               </div>
-              <div className="space-y-1">
-                <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Tổng sao tích lũy khối</span>
+              <div className="space-y-0.5">
+                <span className="text-[10px] text-[#5c4327] font-black uppercase block tracking-wider">Tổng sao tích lũy khối</span>
                 <strong className="text-base text-slate-900 font-black block">
                   {gradeTotalStars} ⭐
                 </strong>
-                <span className="text-[10px] text-slate-400 font-semibold block">
+                <span className="text-[10px] text-slate-500 font-bold block">
                   Từ {gradeTotalStudents} học sinh
                 </span>
               </div>
             </div>
 
             {/* Total Stickers Exchanged */}
-            <div className="bg-white p-5 rounded-2xl border border-slate-150 shadow-xs flex items-center gap-4">
-              <div className="p-3 bg-pink-50 rounded-2xl text-pink-500 border border-pink-200/50">
+            <div className="bg-white p-4.5 rounded-2xl border border-[#cbb89d] shadow-xs flex items-center gap-4">
+              <div className="p-3 bg-pink-50 rounded-2xl text-pink-600 border border-pink-200">
                 <ShoppingBag className="w-6 h-6" />
               </div>
-              <div className="space-y-1">
-                <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Sticker đã trao tay</span>
+              <div className="space-y-0.5">
+                <span className="text-[10px] text-[#5c4327] font-black uppercase block tracking-wider">Sticker đã trao tay</span>
                 <strong className="text-base text-slate-900 font-black block">
                   {gradeTotalStickers} quà
                 </strong>
-                <span className="text-[10px] text-pink-600 font-semibold block">
+                <span className="text-[10px] text-pink-600 font-bold block">
                   Phần thưởng đổi sao
                 </span>
               </div>
             </div>
 
             {/* Grade MVP */}
-            <div className="bg-white p-5 rounded-2xl border border-slate-150 shadow-xs flex items-center gap-4">
-              <div className="p-3 bg-teal-50 rounded-2xl text-teal-600 border border-teal-200/50">
+            <div className="bg-white p-4.5 rounded-2xl border border-[#cbb89d] shadow-xs flex items-center gap-4">
+              <div className="p-3 bg-emerald-50 rounded-2xl text-emerald-700 border border-emerald-200">
                 <Sparkles className="w-6 h-6" />
               </div>
-              <div className="space-y-1 overflow-hidden">
-                <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">Siêu sao khối {selectedGradeId}</span>
+              <div className="space-y-0.5 overflow-hidden">
+                <span className="text-[10px] text-[#5c4327] font-black uppercase block tracking-wider">Siêu sao khối {selectedGradeId}</span>
                 <strong className="text-xs text-slate-900 font-black block truncate">
                   {gradeMVP ? gradeMVP.name : 'N/A'}
                 </strong>
-                <span className="text-[10px] text-teal-600 font-extrabold block truncate">
+                <span className="text-[10px] text-emerald-700 font-black block truncate">
                   {gradeMVP ? `${gradeMVP.cumulativeStars} ⭐ (Lớp ${classes?.find(c => c.id === gradeMVP.classId)?.name || ''})` : '--'}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Interactive Chart & detailed comparison layout */}
+          {/* Interactive Chart & Detailed comparison layout */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
             {/* Visual Chart - Left */}
-            <div className="lg:col-span-2 bg-white p-6 rounded-3xl border border-slate-150 shadow-sm space-y-6 text-left">
-              <div className="flex justify-between items-center border-b pb-3">
+            <div className="lg:col-span-2 border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs text-left">
+              <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex justify-between items-center">
                 <div>
-                  <h4 className="font-extrabold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-1.5">
-                    <TrendingUp className="w-4 h-4 text-indigo-500" />
+                  <h4 className="font-black text-[#3d2b17] text-xs sm:text-sm uppercase tracking-wider flex items-center gap-1.5">
+                    <TrendingUp className="w-4 h-4 text-emerald-700" />
                     Biểu Đồ So Sánh Sao Trung Bình / Học Sinh
                   </h4>
-                  <p className="text-[11px] text-slate-400 font-medium">Chỉ số công bằng nhất thể hiện phong trào thi đua của tập thể lớp</p>
+                  <p className="text-[11px] text-[#5c4327] font-bold">Chỉ số công bằng nhất thể hiện phong trào thi đua của tập thể lớp</p>
                 </div>
-                <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 border border-indigo-150 px-2.5 py-1 rounded-full uppercase">
+                <span className="text-[10px] font-black text-emerald-800 bg-white/80 border border-[#cbb89d] px-2.5 py-1 rounded-full uppercase">
                   Sao trung bình
                 </span>
               </div>
 
-              <div className="space-y-5">
+              <div className="p-5 bg-white space-y-4">
                 {classComparisonList.length === 0 ? (
                   <div className="py-12 text-center text-slate-400 font-bold text-xs">
                     Chưa có lớp học nào được phân công trong khối này.
@@ -1331,37 +1323,41 @@ export default function EmulationTab({
                     const maxAverage = Math.max(...classComparisonList.map(c => c.averageStars), 1);
                     const percent = Math.min(100, Math.round((classData.averageStars / maxAverage) * 100));
                     
-                    let barColor = 'bg-gradient-to-r from-blue-500 to-indigo-500';
+                    let barColor = 'bg-gradient-to-r from-emerald-500 to-teal-600';
                     let rankBadge = 'bg-slate-100 text-slate-600';
                     if (index === 0) {
                       barColor = 'bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500';
-                      rankBadge = 'bg-amber-100 text-amber-700 font-black';
+                      rankBadge = 'bg-amber-100 text-amber-700 font-black border border-amber-300';
                     } else if (index === 1) {
                       barColor = 'bg-gradient-to-r from-slate-400 to-slate-500';
-                      rankBadge = 'bg-slate-250 text-slate-700 font-black';
+                      rankBadge = 'bg-slate-200 text-slate-700 font-black border border-slate-300';
                     } else if (index === 2) {
                       barColor = 'bg-gradient-to-r from-orange-400 to-orange-500';
-                      rankBadge = 'bg-orange-100 text-orange-700 font-black';
+                      rankBadge = 'bg-orange-100 text-orange-700 font-black border border-orange-300';
                     }
 
                     return (
                       <div key={classData.id} className="space-y-1.5">
-                        <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center justify-between text-xs font-bold">
                           <div className="flex items-center gap-2">
-                            <span className={`w-5 h-5 flex items-center justify-center rounded-full text-[10px] font-extrabold ${rankBadge}`}>
+                            <span className={`w-5 h-5 flex items-center justify-center rounded-full text-[10px] font-black ${rankBadge}`}>
                               {index + 1}
                             </span>
-                            <span className="font-extrabold text-slate-700">Lớp {classData.name}</span>
-                            <span className="text-[10px] text-slate-400 font-bold">({classData.studentCount} HS)</span>
-                            {index === 0 && <span className="text-[9px] font-black text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/50 flex items-center gap-0.5 uppercase tracking-wide">🏆 Dẫn đầu</span>}
+                            <span className="font-black text-slate-800">Lớp {classData.name}</span>
+                            <span className="text-[10px] text-slate-400">({classData.studentCount} HS)</span>
+                            {index === 0 && (
+                              <span className="text-[9px] font-black text-amber-800 bg-amber-100 px-2 py-0.5 rounded-md border border-amber-300 flex items-center gap-0.5 uppercase tracking-wide">
+                                🏆 Dẫn đầu
+                              </span>
+                            )}
                           </div>
                           <div className="flex items-center gap-3">
-                            <span className="font-black text-slate-800 text-xs">{classData.averageStars} ⭐ / HS</span>
+                            <span className="font-black text-slate-900 text-xs">{classData.averageStars} ⭐ / HS</span>
                             <span className="text-[10px] text-slate-400 font-bold">(Tổng: {classData.totalStars} ⭐)</span>
                           </div>
                         </div>
                         
-                        <div className="h-4.5 w-full bg-slate-50 rounded-full overflow-hidden border border-slate-150/50 flex shadow-inner">
+                        <div className="h-4.5 w-full bg-[#faf7f0] rounded-full overflow-hidden border border-[#d8cbba] flex shadow-inner">
                           <div 
                             className={`h-full ${barColor} rounded-full transition-all duration-1000 ease-out`} 
                             style={{ width: `${percent}%` }}
@@ -1375,30 +1371,30 @@ export default function EmulationTab({
             </div>
 
             {/* Quick guide / Emulation rules info - Right */}
-            <div className="bg-slate-50 p-6 rounded-3xl border border-slate-200 text-xs text-left flex flex-col justify-between space-y-4">
+            <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] p-5 text-xs text-left flex flex-col justify-between space-y-4 shadow-xs">
               <div>
-                <h4 className="font-extrabold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-1.5 border-b pb-2.5 mb-3">
-                  <HelpCircle className="w-4 h-4 text-blue-500" />
+                <h4 className="font-black text-[#3d2b17] text-xs sm:text-sm uppercase tracking-wider flex items-center gap-1.5 border-b border-[#cbb89d] pb-2.5 mb-3">
+                  <HelpCircle className="w-4 h-4 text-emerald-700" />
                   QUY CHẾ THI ĐUA KHỐI
                 </h4>
-                <div className="space-y-3.5 text-slate-600 font-medium">
-                  <p className="leading-relaxed">
+                <div className="space-y-3 text-[#5c4327] font-medium leading-relaxed">
+                  <p>
                     🌟 <strong>Sao vàng danh dự:</strong> Điểm số thi đua của lớp được tích lũy từ hoạt động xây dựng bài, làm bài tập đầy đủ và các dự án tin học của học sinh.
                   </p>
-                  <p className="leading-relaxed">
+                  <p>
                     📊 <strong>Công thức so sánh:</strong> 
-                    <span className="block mt-1 bg-white px-3 py-1.5 rounded-lg border border-slate-200/80 font-mono text-[10px] text-indigo-700 font-extrabold text-center">
+                    <span className="block mt-1 bg-white px-3 py-1.5 rounded-xl border border-[#cbb89d] font-mono text-[10px] text-emerald-800 font-black text-center">
                       Sao Trung Bình = Tổng Sao / Sĩ Số Lớp
                     </span>
                     Việc chia trung bình giúp việc so sánh công bằng tuyệt đối giữa các lớp có sĩ số khác nhau.
                   </p>
-                  <p className="leading-relaxed">
+                  <p>
                     🏵️ <strong>Kỷ luật tích cực:</strong> Học sinh giữ kỷ luật tốt, không bị nhắc nhở sẽ giữ vững điểm số thi đua tuần cho lớp học.
                   </p>
                 </div>
               </div>
-              <div className="bg-amber-100/50 border border-amber-200/50 p-3.5 rounded-2xl text-[11px] text-amber-900 font-semibold">
-                <span className="font-bold text-amber-800 block mb-0.5">💡 Lưu ý quan trọng:</span>
+              <div className="bg-amber-100/70 border border-amber-300 p-3.5 rounded-2xl text-[11px] text-amber-950 font-bold">
+                <span className="font-black text-amber-900 block mb-0.5">💡 Lưu ý quan trọng:</span>
                 Nhà trường sẽ tổ chức trao cờ luân lưu cho lớp dẫn đầu khối vào lễ chào cờ thứ Hai tuần kế tiếp.
               </div>
             </div>
@@ -1406,498 +1402,510 @@ export default function EmulationTab({
           </div>
 
           {/* Detailed table of comparison */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-150 shadow-sm space-y-4 text-left">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3">
+          <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs space-y-0 text-left">
+            <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
               <div>
-                <h4 className="font-extrabold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-1.5">
-                  <Award className="w-4 h-4 text-emerald-500" />
-                  Bảng Điểm Thi Đua Khối Chi Tiết
+                <h4 className="font-black text-[#3d2b17] text-xs sm:text-sm uppercase tracking-wider flex items-center gap-1.5">
+                  <Award className="w-4 h-4 text-emerald-700" />
+                  BẢNG ĐIỂM THI ĐUA KHỐI CHI TIẾT
                 </h4>
-                <p className="text-[11px] text-slate-400 font-medium">Bảng phân tích và xếp hạng chính xác kết quả tích lũy</p>
+                <p className="text-[11px] text-[#5c4327] font-bold">Bảng phân tích và xếp hạng chính xác kết quả tích lũy</p>
               </div>
             </div>
 
-            <div className="overflow-x-auto rounded-2xl border border-slate-200">
-              <table className="w-full text-xs text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[10px] whitespace-nowrap">
-                    <th className="p-3 pl-4 text-center w-14 whitespace-nowrap">Hạng</th>
-                    <th className="p-3 whitespace-nowrap">Lớp</th>
-                    <th className="p-3 text-center whitespace-nowrap">Sĩ Số</th>
-                    <th className="p-3 text-right whitespace-nowrap">Tổng Sao Vàng</th>
-                    <th className="p-3 text-right whitespace-nowrap">Sao Trung Bình / HS</th>
-                    <th className="p-3 text-center whitespace-nowrap">Sticker Đã Đổi</th>
-                    <th className="p-3 pl-6 whitespace-nowrap">Học Sinh Đứng Đầu Lớp</th>
-                    <th className="p-3 text-center pr-4 whitespace-nowrap">Hành Động</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-150 font-semibold text-slate-700">
-                  {classComparisonList.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="p-8 text-center text-slate-400 font-bold">
-                        Chưa có dữ liệu thi đua trong khối này.
-                      </td>
+            <div className="p-4 sm:p-5 bg-[#fffbf0]">
+              <div className="overflow-x-auto rounded-2xl border border-[#cbb89d] bg-white">
+                <table className="w-full text-xs text-left border-collapse">
+                  <thead>
+                    <tr className="bg-[#e8d7c0] border-b border-[#cbb89d] text-[#3d2b17] font-black uppercase text-[10px] tracking-wider whitespace-nowrap">
+                      <th className="p-3.5 pl-4 text-center w-14 whitespace-nowrap">Hạng</th>
+                      <th className="p-3.5 whitespace-nowrap">Lớp</th>
+                      <th className="p-3.5 text-center whitespace-nowrap">Sĩ Số</th>
+                      <th className="p-3.5 text-right whitespace-nowrap">Tổng Sao Vàng</th>
+                      <th className="p-3.5 text-right whitespace-nowrap">Sao Trung Bình / HS</th>
+                      <th className="p-3.5 text-center whitespace-nowrap">Sticker Đã Đổi</th>
+                      <th className="p-3.5 pl-6 whitespace-nowrap">Học Sinh Đứng Đầu Lớp</th>
+                      <th className="p-3.5 text-center pr-4 whitespace-nowrap">Hành Động</th>
                     </tr>
-                  ) : (
-                    classComparisonList.map((classData, index) => {
-                      let rowBg = 'hover:bg-slate-50/50';
-                      let badgeClass = 'bg-slate-100 text-slate-600';
-                      if (index === 0) {
-                        rowBg = 'bg-amber-50/10 hover:bg-amber-50/20';
-                        badgeClass = 'bg-amber-100 text-amber-700 font-black border border-amber-200/50';
-                      } else if (index === 1) {
-                        badgeClass = 'bg-slate-200 text-slate-700 font-black border border-slate-300';
-                      } else if (index === 2) {
-                        badgeClass = 'bg-orange-100 text-orange-700 font-black border border-orange-200';
-                      }
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 font-bold text-slate-700">
+                    {classComparisonList.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="p-8 text-center text-slate-400 font-bold">
+                          Chưa có dữ liệu thi đua trong khối này.
+                        </td>
+                      </tr>
+                    ) : (
+                      classComparisonList.map((classData, index) => {
+                        let rowBg = 'hover:bg-slate-50/80';
+                        let badgeClass = 'bg-slate-100 text-slate-600';
+                        if (index === 0) {
+                          rowBg = 'bg-amber-50/30 hover:bg-amber-50/60';
+                          badgeClass = 'bg-amber-100 text-amber-800 font-black border border-amber-300';
+                        } else if (index === 1) {
+                          badgeClass = 'bg-slate-200 text-slate-800 font-black border border-slate-300';
+                        } else if (index === 2) {
+                          badgeClass = 'bg-orange-100 text-orange-800 font-black border border-orange-300';
+                        }
 
-                      return (
-                        <tr key={classData.id} className={`transition-colors ${rowBg}`}>
-                          <td className="p-3 text-center">
-                            <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-[10px] ${badgeClass}`}>
-                              {index + 1}
-                            </span>
-                          </td>
-                          <td className="p-3 font-extrabold text-slate-900">
-                            Lớp {classData.name}
-                          </td>
-                          <td className="p-3 text-center font-bold text-slate-500">
-                            {classData.studentCount} HS
-                          </td>
-                          <td className="p-3 text-right text-slate-900 font-extrabold">
-                            {classData.totalStars} ⭐
-                          </td>
-                          <td className="p-3 text-right text-emerald-600 font-black">
-                            {classData.averageStars} ⭐
-                          </td>
-                          <td className="p-3 text-center text-pink-600 font-bold">
-                            {classData.totalStickers} Sticker
-                          </td>
-                          <td className="p-3 pl-6 text-slate-600">
-                            {classData.topStudent ? (
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-sm">👑</span>
-                                <span className="font-extrabold text-slate-800">{classData.topStudent.name}</span>
-                                <span className="bg-amber-500 text-white text-[9.5px] font-black px-1.5 py-0.5 rounded-md border border-yellow-300">
-                                  {classData.topStudentStars} ⭐
-                                </span>
-                              </div>
-                            ) : (
-                              <span className="text-slate-400">--</span>
-                            )}
-                          </td>
-                          <td className="p-3 text-center pr-4">
-                            <button
-                              onClick={() => {
-                                setViewingDetailClassId(classData.id);
-                                setClassSearchTerm('');
-                                scrollToFormTop();
-                              }}
-                              className="bg-blue-50 hover:bg-blue-100 text-blue-600 px-3.5 py-1.5 rounded-xl border border-blue-150 font-black text-[10px] uppercase transition-all cursor-pointer"
-                            >
-                              Xem Chi Tiết
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
+                        return (
+                          <tr key={classData.id} className={`transition-colors ${rowBg}`}>
+                            <td className="p-3.5 text-center">
+                              <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-black ${badgeClass}`}>
+                                {index + 1}
+                              </span>
+                            </td>
+                            <td className="p-3.5 font-black text-slate-900">
+                              Lớp {classData.name}
+                            </td>
+                            <td className="p-3.5 text-center font-bold text-slate-500">
+                              {classData.studentCount} HS
+                            </td>
+                            <td className="p-3.5 text-right text-slate-900 font-black">
+                              {classData.totalStars} ⭐
+                            </td>
+                            <td className="p-3.5 text-right text-emerald-700 font-black">
+                              {classData.averageStars} ⭐
+                            </td>
+                            <td className="p-3.5 text-center text-pink-600 font-black">
+                              {classData.totalStickers} Sticker
+                            </td>
+                            <td className="p-3.5 pl-6 text-slate-600">
+                              {classData.topStudent ? (
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-sm">👑</span>
+                                  <span className="font-black text-slate-800">{classData.topStudent.name}</span>
+                                  <span className="bg-amber-500 text-white text-[9.5px] font-black px-1.5 py-0.5 rounded-md border border-yellow-300">
+                                    {classData.topStudentStars} ⭐
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-slate-400">--</span>
+                              )}
+                            </td>
+                            <td className="p-3.5 text-center pr-4">
+                              <button
+                                onClick={() => {
+                                  setViewingDetailClassId(classData.id);
+                                  setClassSearchTerm('');
+                                  scrollToFormTop();
+                                }}
+                                className="px-3 py-1.5 rounded-xl bg-sky-50 text-sky-700 hover:bg-sky-100 font-black text-[10px] uppercase border border-sky-200 shadow-2xs transition-all cursor-pointer"
+                              >
+                                Xem Chi Tiết
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
 
           {/* Wall of Fame Grade Top 10 */}
-          <div className="bg-gradient-to-br from-amber-50/50 via-white to-amber-50/20 text-slate-800 p-6 rounded-[32px] border border-amber-500/20 shadow-md space-y-4 text-left relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-48 h-48 bg-amber-400/10 rounded-full blur-3xl pointer-events-none"></div>
-            <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-orange-200/15 rounded-full blur-3xl pointer-events-none"></div>
-
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-amber-500/15 pb-3">
+          <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs text-left">
+            <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
               <div>
-                <h4 className="font-extrabold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-1.5">
-                  <Sparkles className="w-5 h-5 text-amber-500 animate-pulse" />
+                <h4 className="font-black text-[#3d2b17] text-xs sm:text-sm uppercase tracking-wider flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-amber-600 animate-pulse" />
                   BẢNG VÀNG VINH DANH KHỐI {selectedGradeId}
                 </h4>
-                <p className="text-[11px] text-slate-500 font-medium">Top 10 học sinh tích lũy sao vàng xuất sắc nhất toàn khối</p>
+                <p className="text-[11px] text-[#5c4327] font-bold">Top 10 học sinh tích lũy sao vàng xuất sắc nhất toàn khối</p>
               </div>
-              <span className="text-[10px] font-black text-amber-700 bg-amber-100 border border-amber-200 px-3.5 py-1.5 rounded-full uppercase flex items-center gap-1 shrink-0">
+              <span className="text-[10px] font-black text-amber-900 bg-amber-100 border border-amber-300 px-3.5 py-1 rounded-full uppercase flex items-center gap-1 shrink-0">
                 ✨ SIÊU SAO HỌC ĐƯỜNG
               </span>
             </div>
 
-            {/* Bộ lọc thời gian cho Bảng Vàng */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-amber-500/5 p-3 rounded-2xl border border-amber-500/10">
-              <div className="flex items-center gap-1.5">
-                <TrendingUp className="w-4 h-4 text-amber-600" />
-                <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Thời gian thi đua:</span>
-              </div>
-              <div className="flex items-center gap-1 bg-slate-100/80 p-1 rounded-xl border border-slate-200 self-stretch sm:self-auto justify-between sm:justify-start">
-                <button
-                  onClick={() => setEmulationPeriod('week')}
-                  className={`px-3 py-1.5 rounded-lg text-[10px] sm:text-[11px] font-extrabold uppercase transition-all duration-200 flex items-center gap-1 cursor-pointer flex-1 sm:flex-none justify-center ${
-                    emulationPeriod === 'week'
-                      ? 'bg-amber-500 text-white shadow-xs'
-                      : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50'
-                  }`}
-                >
-                  <Calendar className="w-3 h-3" />
-                  Tuần này
-                </button>
-                <button
-                  onClick={() => setEmulationPeriod('month')}
-                  className={`px-3 py-1.5 rounded-lg text-[10px] sm:text-[11px] font-extrabold uppercase transition-all duration-200 flex items-center gap-1 cursor-pointer flex-1 sm:flex-none justify-center ${
-                    emulationPeriod === 'month'
-                      ? 'bg-amber-500 text-white shadow-xs'
-                      : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50'
-                  }`}
-                >
-                  <Clock className="w-3 h-3" />
-                  Tháng này
-                </button>
-                <button
-                  onClick={() => setEmulationPeriod('semester')}
-                  className={`px-3 py-1.5 rounded-lg text-[10px] sm:text-[11px] font-extrabold uppercase transition-all duration-200 flex items-center gap-1 cursor-pointer flex-1 sm:flex-none justify-center ${
-                    emulationPeriod === 'semester'
-                      ? 'bg-amber-500 text-white shadow-xs'
-                      : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50'
-                  }`}
-                >
-                  <Trophy className="w-3 h-3" />
-                  Học kỳ
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {topStudentsInGrade.length === 0 ? (
-                <div className="col-span-2 py-8 text-center text-slate-400 font-bold text-xs">
-                  Chưa có dữ liệu học sinh trong khối này.
+            <div className="p-4 sm:p-5 bg-[#fffbf0] space-y-4">
+              {/* Bộ lọc thời gian cho Bảng Vàng */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#e8d7c0]/50 p-3 rounded-2xl border border-[#cbb89d]">
+                <div className="flex items-center gap-1.5">
+                  <TrendingUp className="w-4 h-4 text-amber-700" />
+                  <span className="text-[11px] font-black text-[#3d2b17] uppercase tracking-wider">Thời gian thi đua:</span>
                 </div>
-              ) : (
-                topStudentsInGrade.map((student, idx) => {
-                  const studentClass = classes?.find(c => c.id === student.classId);
-                  
-                  let rankColor = 'w-7 h-7 bg-slate-100 text-slate-600 border border-slate-200/80 font-bold';
-                  let borderColor = 'border-slate-200/60';
-                  let cardBg = 'bg-white hover:bg-amber-50/20';
-                  if (idx === 0) {
-                    rankColor = 'w-9 h-9 bg-gradient-to-br from-yellow-300 via-amber-400 to-orange-500 text-amber-950 font-black shadow-md ring-4 ring-amber-400/20 text-sm';
-                    borderColor = 'border-amber-400/40 shadow-[0_0_12px_rgba(251,191,36,0.12)]';
-                    cardBg = 'bg-amber-50/15 hover:bg-amber-50/30';
-                  } else if (idx === 1) {
-                    rankColor = 'w-8 h-8 bg-gradient-to-br from-slate-100 via-slate-200 to-slate-300 text-slate-800 font-black border border-slate-300 shadow-xs';
-                    borderColor = 'border-slate-300/50';
-                    cardBg = 'bg-slate-50/10 hover:bg-slate-100/30';
-                  } else if (idx === 2) {
-                    rankColor = 'w-8 h-8 bg-gradient-to-br from-amber-200 via-orange-300 to-amber-600 text-white font-black border border-orange-300/50 shadow-xs';
-                    borderColor = 'border-orange-300/40';
-                    cardBg = 'bg-orange-50/10 hover:bg-orange-50/20';
-                  }
+                <div className="flex items-center gap-1 bg-[#e4d3ba] p-1 rounded-xl border border-[#cbb89d] self-stretch sm:self-auto justify-between sm:justify-start">
+                  <button
+                    onClick={() => setEmulationPeriod('week')}
+                    className={`px-3 py-1.5 rounded-lg text-[10px] sm:text-[11px] font-black uppercase transition-all duration-200 flex items-center gap-1 cursor-pointer flex-1 sm:flex-none justify-center ${
+                      emulationPeriod === 'week'
+                        ? 'bg-emerald-700 text-white shadow-xs'
+                        : 'text-[#3d2b17] hover:bg-[#d5c3aa]'
+                    }`}
+                  >
+                    <Calendar className="w-3 h-3" />
+                    Tuần này
+                  </button>
+                  <button
+                    onClick={() => setEmulationPeriod('month')}
+                    className={`px-3 py-1.5 rounded-lg text-[10px] sm:text-[11px] font-black uppercase transition-all duration-200 flex items-center gap-1 cursor-pointer flex-1 sm:flex-none justify-center ${
+                      emulationPeriod === 'month'
+                        ? 'bg-emerald-700 text-white shadow-xs'
+                        : 'text-[#3d2b17] hover:bg-[#d5c3aa]'
+                    }`}
+                  >
+                    <Clock className="w-3 h-3" />
+                    Tháng này
+                  </button>
+                  <button
+                    onClick={() => setEmulationPeriod('semester')}
+                    className={`px-3 py-1.5 rounded-lg text-[10px] sm:text-[11px] font-black uppercase transition-all duration-200 flex items-center gap-1 cursor-pointer flex-1 sm:flex-none justify-center ${
+                      emulationPeriod === 'semester'
+                        ? 'bg-emerald-700 text-white shadow-xs'
+                        : 'text-[#3d2b17] hover:bg-[#d5c3aa]'
+                    }`}
+                  >
+                    <Trophy className="w-3 h-3" />
+                    Học kỳ
+                  </button>
+                </div>
+              </div>
 
-                  return (
-                    <div 
-                      key={student.id} 
-                      className={`${cardBg} border ${borderColor} rounded-2xl p-3 flex items-center justify-between transition-all shadow-4xs`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className={`flex items-center justify-center rounded-full shrink-0 ${rankColor}`}>
-                          {idx + 1}
-                        </span>
-                        <span className="text-lg">
-                          {getStudentAvatar(student.id, students).emoji}
-                        </span>
-                        <div>
-                          <strong className="text-xs font-extrabold block text-slate-800">{student.name}</strong>
-                          <span className="text-[10px] text-slate-500">Lớp {studentClass ? studentClass.name : student.classId}</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {topStudentsInGrade.length === 0 ? (
+                  <div className="col-span-2 py-8 text-center text-slate-400 font-bold text-xs">
+                    Chưa có dữ liệu học sinh trong khối này.
+                  </div>
+                ) : (
+                  topStudentsInGrade.map((student, idx) => {
+                    const studentClass = classes?.find(c => c.id === student.classId);
+                    
+                    let rankColor = 'w-7 h-7 bg-slate-100 text-slate-600 border border-slate-200/80 font-bold';
+                    let borderColor = 'border-[#cbb89d]';
+                    let cardBg = 'bg-white hover:bg-amber-50/20';
+                    if (idx === 0) {
+                      rankColor = 'w-9 h-9 bg-gradient-to-br from-yellow-300 via-amber-400 to-orange-500 text-amber-950 font-black shadow-md ring-4 ring-amber-400/20 text-sm';
+                      borderColor = 'border-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.15)]';
+                      cardBg = 'bg-amber-50/30 hover:bg-amber-50/50';
+                    } else if (idx === 1) {
+                      rankColor = 'w-8 h-8 bg-gradient-to-br from-slate-100 via-slate-200 to-slate-300 text-slate-800 font-black border border-slate-300 shadow-xs';
+                      borderColor = 'border-slate-300';
+                      cardBg = 'bg-slate-50/30 hover:bg-slate-100/50';
+                    } else if (idx === 2) {
+                      rankColor = 'w-8 h-8 bg-gradient-to-br from-amber-200 via-orange-300 to-amber-600 text-white font-black border border-orange-300 shadow-xs';
+                      borderColor = 'border-orange-300';
+                      cardBg = 'bg-orange-50/30 hover:bg-orange-50/50';
+                    }
+
+                    return (
+                      <div 
+                        key={student.id} 
+                        className={`${cardBg} border ${borderColor} rounded-2xl p-3 flex items-center justify-between transition-all shadow-2xs`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className={`flex items-center justify-center rounded-full shrink-0 ${rankColor}`}>
+                            {idx + 1}
+                          </span>
+                          <span className="text-lg">
+                            {getStudentAvatar(student.id, students).emoji}
+                          </span>
+                          <div>
+                            <strong className="text-xs font-black block text-slate-800">{student.name}</strong>
+                            <span className="text-[10px] text-slate-500 font-bold">Lớp {studentClass ? studentClass.name : student.classId}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-black text-amber-600 flex items-center gap-0.5">
+                            {student.cumulativeStars} <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500 inline" />
+                          </span>
+                          {student.exchangedStickers > 0 && (
+                            <span className="bg-pink-100 text-pink-700 text-[8px] font-black px-1.5 py-0.5 rounded border border-pink-200 uppercase">
+                              🎁 {student.exchangedStickers} Sticker
+                            </span>
+                          )}
                         </div>
                       </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-black text-amber-600 flex items-center gap-0.5">
-                          {student.cumulativeStars} <Star className="w-3 h-3 fill-amber-500 text-amber-500 inline" />
-                        </span>
-                        {student.exchangedStickers > 0 && (
-                          <span className="bg-pink-100 text-pink-700 text-[8px] font-black px-1.5 py-0.5 rounded border border-pink-200 uppercase">
-                            🎁 {student.exchangedStickers} Sticker
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })
-              )}
+                    );
+                  })
+                )}
+              </div>
             </div>
           </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         
-        {/* Left Column: Guidelines */}
-        <div className="lg:col-span-1 space-y-4">
-          
-          <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">
-            <h4 className="font-extrabold text-slate-800 text-sm border-b pb-2 flex items-center gap-1.5 text-left">
-              <ShoppingBag className="w-4 h-4 text-amber-500" />
-              QUY CHẾ ĐỔI STICKER
-            </h4>
-            <p className="text-[11px] text-slate-400 leading-relaxed text-left">
-              Học sinh đạt thành tích tốt sẽ dùng quỹ sao vàng tích lũy đổi trực tiếp các loại sticker thực tế:
-            </p>
-
-            <div className="grid grid-cols-2 gap-3">
+          {/* Left Column: Guidelines */}
+          <div className="lg:col-span-1 space-y-4">
+            
+            <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs space-y-0 text-left">
+              <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex items-center gap-1.5">
+                <ShoppingBag className="w-4 h-4 text-emerald-700" />
+                <h4 className="font-black text-[#3d2b17] text-xs uppercase tracking-wider">
+                  QUY CHẾ ĐỔI STICKER
+                </h4>
+              </div>
               
-              {/* Sticker 1 */}
-              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 flex flex-col items-center text-center justify-between min-h-[145px] group hover:border-emerald-400 hover:bg-emerald-50/10 transition-all">
-                <div className="my-1 flex items-center justify-center">
-                  <StickerAvatar 
-                    emoji="👍" 
-                    studentId="👍Sticker Chăm Ngoan" 
-                    size="w-12 h-12" 
-                    className="transform group-hover:scale-105 transition-transform"
-                  />
-                </div>
-                <div className="w-full">
-                  <strong className="text-[10px] font-black text-slate-800 block leading-tight uppercase tracking-wider">Chăm Ngoan</strong>
-                  <span className="text-[9px] text-emerald-600 font-extrabold block mt-1.5">Phí: 5 ⭐</span>
-                </div>
-              </div>
+              <div className="p-4 bg-[#fffbf0] space-y-4">
+                <p className="text-[11px] text-[#5c4327] font-bold leading-relaxed text-left">
+                  Học sinh đạt thành tích tốt sẽ dùng quỹ sao vàng tích lũy đổi trực tiếp các loại sticker thực tế:
+                </p>
 
-              {/* Sticker 2 */}
-              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 flex flex-col items-center text-center justify-between min-h-[145px] group hover:border-blue-400 hover:bg-blue-50/10 transition-all">
-                <div className="my-1 flex items-center justify-center">
-                  <StickerAvatar 
-                    emoji="⚡" 
-                    studentId="⚡Sticker Siêu Nhân Tin Học" 
-                    size="w-12 h-12" 
-                    className="transform group-hover:scale-105 transition-transform"
-                  />
-                </div>
-                <div className="w-full">
-                  <strong className="text-[10px] font-black text-slate-800 block leading-tight uppercase tracking-wider">Siêu Nhân</strong>
-                  <span className="text-[9px] text-blue-600 font-extrabold block mt-1.5">Phí: 10 ⭐</span>
-                </div>
-              </div>
-
-              {/* Sticker 3 */}
-              <div className="bg-slate-50 p-2.5 rounded-xl border border-indigo-100 bg-indigo-50/10 flex flex-col items-center text-center justify-between min-h-[145px] group hover:border-indigo-400 hover:bg-indigo-50/20 transition-all">
-                <div className="my-1 flex items-center justify-center">
-                  <StickerAvatar 
-                    emoji="🛡️" 
-                    studentId="🛡️Sticker Chiến Binh" 
-                    size="w-12 h-12" 
-                    className="transform group-hover:scale-105 transition-transform"
-                  />
-                </div>
-                <div className="w-full">
-                  <strong className="text-[10px] font-black text-slate-800 block leading-tight uppercase tracking-wider">Chiến Binh</strong>
-                  <span className="text-[9px] text-indigo-600 font-extrabold block mt-1.5">Phí: 15 ⭐</span>
-                </div>
-              </div>
-
-              {/* Sticker 4 */}
-              <div className="bg-slate-50 p-2.5 rounded-xl border border-amber-200 bg-amber-50/10 flex flex-col items-center text-center justify-between min-h-[145px] group hover:border-rose-400 hover:bg-rose-50/20 transition-all">
-                <div className="my-1 flex items-center justify-center">
-                  <StickerAvatar 
-                    emoji="🎖️" 
-                    studentId="🎖️Sticker Siêu Sao Tin Học" 
-                    size="w-12 h-12" 
-                    className="transform group-hover:scale-105 transition-transform"
-                  />
-                </div>
-                <div className="w-full">
-                  <strong className="text-[10px] font-black text-slate-800 block leading-tight uppercase tracking-wider">Siêu Sao</strong>
-                  <span className="text-[9px] text-rose-600 font-extrabold block mt-1.5">Phí: 20 ⭐</span>
-                </div>
-              </div>
-
-            </div>
-          </div>
-
-          <div className="bg-amber-50 p-4 rounded-2xl border border-amber-200 text-[11px] text-amber-900 text-left">
-            <strong className="text-amber-800 block mb-1">💡 Hướng dẫn dành cho thầy cô:</strong>
-            <p className="leading-relaxed">
-              Vào cuối tháng, giáo viên sẽ trao tận tay sticker thực tế cho học sinh theo đúng lịch sử đổi quà trên hệ thống.
-            </p>
-          </div>
-
-        </div>
-
-        {/* Right list: Student star list & exchange center */}
-        <div className="lg:col-span-3 bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">
-          
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3">
-            <div className="text-left">
-              <h3 className="font-extrabold text-slate-800 text-sm">Góc Quầy Đổi Thưởng: Lớp <span className="bg-amber-500 text-white text-[11px] font-black px-2 py-0.5 rounded-lg border border-yellow-300">{selectedClass}</span></h3>
-              <p className="text-[11px] text-slate-400">Ấn vào học sinh để mở quầy đổi quà sticker rực rỡ</p>
-            </div>
-            <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full uppercase">Sổ Thi Đua Chuyên Cần</span>
-          </div>
-
-          {/* Quick Search */}
-          <div className="relative">
-            <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-              <Search className="w-3.5 h-3.5 text-slate-400" />
-            </span>
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Tìm tên học sinh cần đổi quà..."
-              className="w-full text-xs pl-9 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500"
-            />
-          </div>
-
-          {/* Grid of student evaluation cards */}
-          {paginatedStudents.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-h-[500px] overflow-y-auto pr-1">
-              {paginatedStudents.map((s) => {
-                const seatId = Object.keys(seatingChart[selectedClass] || {}).find(k => seatingChart[selectedClass][k] === s.id);
-                const seatObj = seatId ? computers.find(c => c.id === seatId) : null;
-                
-                const stars = getStudentCurrentStars(s.id);
-                const avatar = getStudentAvatar(s.id, students);
-                const badge = getStudentBadge(stars);
-
-                return (
-                  <div 
-                    key={s.id} 
-                    onClick={() => {
-                      setSelectedStudentForReward(s);
-                      scrollToFormTop();
-                    }}
-                    className="bg-white p-4 rounded-3xl border border-amber-300/80 shadow-[0_6px_0_0_#f59e0b,0_10px_20px_rgba(245,158,11,0.2)] hover:shadow-[0_9px_0_0_#d97706,0_15px_25px_rgba(245,158,11,0.3)] hover:-translate-y-1 active:translate-y-0.5 active:shadow-[0_2px_0_0_#b45309] transition-all flex flex-col items-center justify-center relative text-center select-none cursor-pointer group duration-150 min-h-[180px] h-[180px] overflow-hidden"
-                  >
-                    {/* Honey Beehive Frame Decoration */}
-                    <HoneyBeeCardFrameDecoration />
-
-                    {/* Star count badge at Top-Right - Inside dashed yellow border */}
-                    <div className="absolute top-3.5 right-3.5 z-10 text-amber-600 font-extrabold text-[12px] flex items-center gap-1 select-none drop-shadow-2xs">
-                      <span className="font-black">{stars}</span>
-                      <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500 shrink-0" />
-                    </div>
-
-                    {/* Circular Avatar with Achievement Badge Frame */}
-                    <div className="relative my-1 shrink-0 z-10">
+                <div className="grid grid-cols-2 gap-3">
+                  
+                  {/* Sticker 1 */}
+                  <div className="bg-white p-2.5 rounded-xl border border-[#cbb89d] flex flex-col items-center text-center justify-between min-h-[145px] group hover:border-emerald-500 hover:bg-emerald-50/10 transition-all shadow-2xs">
+                    <div className="my-1 flex items-center justify-center">
                       <StickerAvatar 
-                        emoji={avatar.emoji} 
-                        studentId={s.id} 
-                        bg={avatar.bg}
-                        size="w-18 h-18" 
-                        className={`${badge ? badge.ringClass : ''}`}
-                        avatarUrl={s.avatarUrl}
+                        emoji="👍" 
+                        studentId="👍Sticker Chăm Ngoan" 
+                        size="w-12 h-12" 
+                        className="transform group-hover:scale-105 transition-transform"
                       />
-                      {badge && (
-                        <span className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 z-20 px-1.5 py-0.5 rounded-full text-[7.5px] font-black border uppercase tracking-wider whitespace-nowrap shadow-md flex items-center gap-0.5 scale-90 group-hover:scale-95 transition-all ${badge.badgeClass}`}>
-                          <span>{badge.emoji}</span>
-                          <span>{badge.label}</span>
-                        </span>
-                      )}
                     </div>
-
-                    {/* Full Name & Code */}
-                    <div className="flex flex-col items-center justify-center mt-2 max-w-full z-10">
-                      <strong className="text-xs font-extrabold text-slate-800 leading-tight truncate w-full" title={s.name}>
-                        {formatDisplayName(s.name)}
-                      </strong>
+                    <div className="w-full">
+                      <strong className="text-[10px] font-black text-slate-800 block leading-tight uppercase tracking-wider">Chăm Ngoan</strong>
+                      <span className="text-[9px] text-emerald-700 font-black block mt-1.5">Phí: 5 ⭐</span>
                     </div>
-
-                    {/* Machine Pill Badge instead of Level */}
-                    <span className="inline-block bg-indigo-50/90 text-indigo-600 border border-indigo-100/60 px-3 py-0.5 rounded-full text-[10px] font-black mt-1.5 z-10">
-                      {seatObj ? `💻 ${seatObj.name}` : 'Chưa xếp máy'}
-                    </span>
                   </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="py-12 text-center text-slate-400 text-xs font-semibold">
-              Không có học sinh nào đạt đủ điều kiện đổi quà (từ 5 sao trở lên) hoặc không tìm thấy học sinh phù hợp.
-            </div>
-          )}
 
-          {/* Pagination Controls styled matching screenshot */}
-          {filteredStudents.length > 0 && (
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-slate-100 text-xs font-semibold text-slate-500">
-              <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-                {/* Page size selector */}
-                <div className="flex items-center gap-2">
-                  <span>Hiển thị</span>
-                  <select
-                    value={pageSize}
-                    onChange={(e) => setPageSize(Number(e.target.value))}
-                    className="bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 font-bold text-slate-700 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
-                  >
-                    <option value={5}>5</option>
-                    <option value={10}>10</option>
-                    <option value={20}>20</option>
-                    <option value={30}>30</option>
-                    <option value={50}>50</option>
-                  </select>
-                  <span>học sinh / trang</span>
-                </div>
+                  {/* Sticker 2 */}
+                  <div className="bg-white p-2.5 rounded-xl border border-[#cbb89d] flex flex-col items-center text-center justify-between min-h-[145px] group hover:border-blue-500 hover:bg-blue-50/10 transition-all shadow-2xs">
+                    <div className="my-1 flex items-center justify-center">
+                      <StickerAvatar 
+                        emoji="⚡" 
+                        studentId="⚡Sticker Siêu Nhân Tin Học" 
+                        size="w-12 h-12" 
+                        className="transform group-hover:scale-105 transition-transform"
+                      />
+                    </div>
+                    <div className="w-full">
+                      <strong className="text-[10px] font-black text-slate-800 block leading-tight uppercase tracking-wider">Siêu Nhân</strong>
+                      <span className="text-[9px] text-blue-700 font-black block mt-1.5">Phí: 10 ⭐</span>
+                    </div>
+                  </div>
 
-                {/* Items range status */}
-                <div>
-                  <span>Hiển thị </span>
-                  <span className="font-bold text-slate-700">
-                    {Math.min((currentPage - 1) * pageSize + 1, totalStudents)} - {Math.min(currentPage * pageSize, totalStudents)}
-                  </span>
-                  <span> trên </span>
-                  <strong className="text-amber-600 font-extrabold">{totalStudents}</strong>
-                  <span> học sinh</span>
+                  {/* Sticker 3 */}
+                  <div className="bg-white p-2.5 rounded-xl border border-[#cbb89d] flex flex-col items-center text-center justify-between min-h-[145px] group hover:border-indigo-500 hover:bg-indigo-50/10 transition-all shadow-2xs">
+                    <div className="my-1 flex items-center justify-center">
+                      <StickerAvatar 
+                        emoji="🛡️" 
+                        studentId="🛡️Sticker Chiến Binh" 
+                        size="w-12 h-12" 
+                        className="transform group-hover:scale-105 transition-transform"
+                      />
+                    </div>
+                    <div className="w-full">
+                      <strong className="text-[10px] font-black text-slate-800 block leading-tight uppercase tracking-wider">Chiến Binh</strong>
+                      <span className="text-[9px] text-indigo-700 font-black block mt-1.5">Phí: 15 ⭐</span>
+                    </div>
+                  </div>
+
+                  {/* Sticker 4 */}
+                  <div className="bg-white p-2.5 rounded-xl border border-[#cbb89d] flex flex-col items-center text-center justify-between min-h-[145px] group hover:border-rose-500 hover:bg-rose-50/10 transition-all shadow-2xs">
+                    <div className="my-1 flex items-center justify-center">
+                      <StickerAvatar 
+                        emoji="🎖️" 
+                        studentId="🎖️Sticker Siêu Sao Tin Học" 
+                        size="w-12 h-12" 
+                        className="transform group-hover:scale-105 transition-transform"
+                      />
+                    </div>
+                    <div className="w-full">
+                      <strong className="text-[10px] font-black text-slate-800 block leading-tight uppercase tracking-wider">Siêu Sao</strong>
+                      <span className="text-[9px] text-rose-700 font-black block mt-1.5">Phí: 20 ⭐</span>
+                    </div>
+                  </div>
+
                 </div>
               </div>
+            </div>
 
-              {/* Pagination buttons */}
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <button
-                  type="button"
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
-                  className={`px-3.5 py-1.5 rounded-full border text-xs font-bold transition flex items-center gap-1 ${
-                    currentPage === 1
-                      ? 'bg-slate-50 text-slate-350 border-slate-150 cursor-not-allowed'
-                      : 'bg-white hover:bg-slate-50 text-slate-600 border-slate-200 cursor-pointer'
-                  }`}
-                >
-                  ‹ Trước
-                </button>
+            <div className="bg-[#e8d7c0]/50 p-4 rounded-2xl border border-[#cbb89d] text-[11px] text-[#5c4327] text-left">
+              <strong className="text-[#3d2b17] font-black block mb-1">💡 Hướng dẫn dành cho thầy cô:</strong>
+              <p className="leading-relaxed font-bold">
+                Vào cuối tháng, giáo viên sẽ trao tận tay sticker thực tế cho học sinh theo đúng lịch sử đổi quà trên hệ thống.
+              </p>
+            </div>
 
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => {
-                  const isActive = pageNum === currentPage;
-                  return (
+          </div>
+
+          {/* Right list: Student star list & exchange center */}
+          <div className="lg:col-span-3 border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs text-left">
+            
+            <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+              <div className="text-left">
+                <h3 className="font-black text-[#3d2b17] text-xs sm:text-sm uppercase tracking-wider">
+                  Góc Quầy Đổi Thưởng: Lớp <span className="bg-white/80 text-emerald-800 text-[11px] font-black px-2 py-0.5 rounded-lg border border-[#cbb89d]">{selectedClass}</span>
+                </h3>
+                <p className="text-[11px] text-[#5c4327] font-bold">Ấn vào học sinh để mở quầy đổi quà sticker rực rỡ</p>
+              </div>
+              <span className="text-[10px] font-black text-[#5c4327] bg-[#e4d3ba] border border-[#cbb89d] px-3 py-1 rounded-full uppercase">
+                Sổ Thi Đua Chuyên Cần
+              </span>
+            </div>
+
+            <div className="p-4 sm:p-5 bg-[#fffbf0] space-y-4">
+              {/* Quick Search */}
+              <div className="relative max-w-sm">
+                <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                  <Search className="w-3.5 h-3.5 text-slate-400" />
+                </span>
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Tìm tên học sinh cần đổi quà..."
+                  className="w-full text-xs pl-9 pr-4 py-2 border border-[#cbb89d] rounded-xl bg-white focus:outline-none focus:border-emerald-500 font-bold text-slate-800 shadow-2xs"
+                />
+              </div>
+
+              {/* Grid of student evaluation cards */}
+              {paginatedStudents.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-h-[500px] overflow-y-auto pr-1">
+                  {paginatedStudents.map((s) => {
+                    const seatId = Object.keys(seatingChart[selectedClass] || {}).find(k => seatingChart[selectedClass][k] === s.id);
+                    const seatObj = seatId ? computers.find(c => c.id === seatId) : null;
+                    
+                    const stars = getStudentCurrentStars(s.id);
+                    const avatar = getStudentAvatar(s.id, students);
+                    const badge = getStudentBadge(stars);
+
+                    return (
+                      <div 
+                        key={s.id} 
+                        onClick={() => {
+                          setSelectedStudentForReward(s);
+                          scrollToFormTop();
+                        }}
+                        className="bg-white p-4 rounded-3xl border border-amber-300/80 shadow-[0_6px_0_0_#f59e0b,0_10px_20px_rgba(245,158,11,0.2)] hover:shadow-[0_9px_0_0_#d97706,0_15px_25px_rgba(245,158,11,0.3)] hover:-translate-y-1 active:translate-y-0.5 active:shadow-[0_2px_0_0_#b45309] transition-all flex flex-col items-center justify-center relative text-center select-none cursor-pointer group duration-150 min-h-[180px] h-[180px] overflow-hidden"
+                      >
+                        {/* Honey Beehive Frame Decoration */}
+                        <HoneyBeeCardFrameDecoration />
+
+                        {/* Star count badge at Top-Right - Inside dashed yellow border */}
+                        <div className="absolute top-3.5 right-3.5 z-10 text-amber-600 font-extrabold text-[12px] flex items-center gap-1 select-none drop-shadow-2xs">
+                          <span className="font-black">{stars}</span>
+                          <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500 shrink-0" />
+                        </div>
+
+                        {/* Circular Avatar with Achievement Badge Frame */}
+                        <div className="relative my-1 shrink-0 z-10">
+                          <StickerAvatar 
+                            emoji={avatar.emoji} 
+                            studentId={s.id} 
+                            bg={avatar.bg}
+                            size="w-18 h-18" 
+                            className={`${badge ? badge.ringClass : ''}`}
+                            avatarUrl={s.avatarUrl}
+                          />
+                          {badge && (
+                            <span className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 z-20 px-1.5 py-0.5 rounded-full text-[7.5px] font-black border uppercase tracking-wider whitespace-nowrap shadow-md flex items-center gap-0.5 scale-90 group-hover:scale-95 transition-all ${badge.badgeClass}`}>
+                              <span>{badge.emoji}</span>
+                              <span>{badge.label}</span>
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Full Name & Code */}
+                        <div className="flex flex-col items-center justify-center mt-2 max-w-full z-10">
+                          <strong className="text-xs font-extrabold text-slate-800 leading-tight truncate w-full" title={s.name}>
+                            {formatDisplayName(s.name)}
+                          </strong>
+                        </div>
+
+                        {/* Machine Pill Badge instead of Level */}
+                        <span className="inline-block bg-[#fffbf0] text-[#5c4327] border border-[#cbb89d] px-3 py-0.5 rounded-full text-[10px] font-black mt-1.5 z-10">
+                          {seatObj ? `💻 ${seatObj.name}` : 'Chưa xếp máy'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="py-12 text-center text-slate-400 text-xs font-semibold">
+                  Không có học sinh nào đạt đủ điều kiện đổi quà (từ 5 sao trở lên) hoặc không tìm thấy học sinh phù hợp.
+                </div>
+              )}
+
+              {/* Pagination Controls */}
+              {filteredStudents.length > 0 && (
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-[#cbb89d]/60 text-xs font-bold text-[#5c4327]">
+                  <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                    {/* Page size selector */}
+                    <div className="flex items-center gap-2">
+                      <span>Hiển thị</span>
+                      <select
+                        value={pageSize}
+                        onChange={(e) => setPageSize(Number(e.target.value))}
+                        className="bg-white border border-[#cbb89d] rounded-xl px-2.5 py-1.5 font-bold text-slate-700 text-xs focus:outline-none focus:border-emerald-500 cursor-pointer"
+                      >
+                        <option value={5}>5</option>
+                        <option value={10}>10</option>
+                        <option value={20}>20</option>
+                        <option value={30}>30</option>
+                        <option value={50}>50</option>
+                      </select>
+                      <span>học sinh / trang</span>
+                    </div>
+
+                    {/* Items range status */}
+                    <div>
+                      <span>Hiển thị </span>
+                      <span className="font-black text-[#3d2b17]">
+                        {Math.min((currentPage - 1) * pageSize + 1, totalStudents)} - {Math.min(currentPage * pageSize, totalStudents)}
+                      </span>
+                      <span> trên </span>
+                      <strong className="text-amber-700 font-black">{totalStudents}</strong>
+                      <span> học sinh</span>
+                    </div>
+                  </div>
+
+                  {/* Pagination buttons */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     <button
-                      key={pageNum}
                       type="button"
-                      onClick={() => setCurrentPage(pageNum)}
-                      className={`w-8 h-8 rounded-full border text-xs font-black transition flex items-center justify-center ${
-                        isActive
-                          ? 'bg-amber-500 border-amber-500 text-white shadow-sm'
-                          : 'bg-white hover:bg-slate-50 text-slate-600 border-slate-200 cursor-pointer'
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className={`px-3.5 py-1.5 rounded-full border text-xs font-black transition flex items-center gap-1 ${
+                        currentPage === 1
+                          ? 'bg-white/50 text-slate-300 border-[#cbb89d]/40 cursor-not-allowed'
+                          : 'bg-white hover:bg-slate-50 text-[#3d2b17] border-[#cbb89d] cursor-pointer'
                       }`}
                     >
-                      {pageNum}
+                      ‹ Trước
                     </button>
-                  );
-                })}
 
-                <button
-                  type="button"
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
-                  className={`px-3.5 py-1.5 rounded-full border text-xs font-bold transition flex items-center gap-1 ${
-                    currentPage === totalPages
-                      ? 'bg-slate-50 text-slate-350 border-slate-150 cursor-not-allowed'
-                      : 'bg-white hover:bg-slate-50 text-slate-600 border-slate-200 cursor-pointer'
-                  }`}
-                >
-                  Sau ›
-                </button>
-              </div>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => {
+                      const isActive = pageNum === currentPage;
+                      return (
+                        <button
+                          key={pageNum}
+                          type="button"
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`w-8 h-8 rounded-full border text-xs font-black transition flex items-center justify-center ${
+                            isActive
+                              ? 'bg-emerald-700 border-emerald-700 text-white shadow-xs'
+                              : 'bg-white hover:bg-slate-50 text-[#3d2b17] border-[#cbb89d] cursor-pointer'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                      className={`px-3.5 py-1.5 rounded-full border text-xs font-black transition flex items-center gap-1 ${
+                        currentPage === totalPages
+                          ? 'bg-white/50 text-slate-300 border-[#cbb89d]/40 cursor-not-allowed'
+                          : 'bg-white hover:bg-slate-50 text-[#3d2b17] border-[#cbb89d] cursor-pointer'
+                      }`}
+                    >
+                      Sau ›
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
-      </div>
       )}
     </div>
   );
