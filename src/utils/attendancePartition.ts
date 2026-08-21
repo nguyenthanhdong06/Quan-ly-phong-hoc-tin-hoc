@@ -46,7 +46,7 @@ export function loadDayPartitionedAttendance(
   const prefix = `${workspaceId}_`;
   const merged: AttendanceData = { ...fallbackData };
 
-  // 1. Tải bản sao dự phòng của Workspace (hoặc bản cũ nếu chưa có workspace)
+  // 1. Tải bản sao dự phòng của Workspace
   const scopedCloud = dbStates?.[`${prefix}school_attendance_data`];
   if (scopedCloud && typeof scopedCloud === 'object') {
     Object.assign(merged, scopedCloud);
@@ -55,17 +55,6 @@ export function loadDayPartitionedAttendance(
       const scopedLocal = localStorage.getItem(`${prefix}school_attendance_data`);
       if (scopedLocal) {
         Object.assign(merged, JSON.parse(scopedLocal));
-      } else {
-        // Fallback đọc bản monolithic cũ nếu workspace chưa có dữ liệu riêng
-        const legacyCloud = dbStates?.['school_attendance_data'];
-        if (legacyCloud && typeof legacyCloud === 'object') {
-          Object.assign(merged, legacyCloud);
-        } else {
-          const savedLegacy = localStorage.getItem('school_attendance_data');
-          if (savedLegacy) {
-            Object.assign(merged, JSON.parse(savedLegacy));
-          }
-        }
       }
     } catch (e) {
       console.warn('Cannot parse attendance fallback data:', e);
@@ -118,7 +107,7 @@ export function applyPartitionedAttendanceUpdate(
 
   const prefix = `${workspaceId}_`;
 
-  if (key === `${prefix}school_attendance_data` || key === 'school_attendance_data') {
+  if (key === `${prefix}school_attendance_data`) {
     return { ...prev, ...value };
   }
 

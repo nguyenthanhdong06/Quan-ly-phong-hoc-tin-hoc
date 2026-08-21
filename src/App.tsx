@@ -589,6 +589,48 @@ export default function App() {
     };
   }, []);
 
+  // --- 🏢 WORKSPACE REFS & SYNCHRONOUS SWITCHER ---
+  const latestDbStatesRef = React.useRef<Record<string, any>>({});
+  const currentWsRef = React.useRef<string>(activeWorkspaceId);
+  currentWsRef.current = activeWorkspaceId;
+
+  // Synchronous Workspace State Switcher (Prevents Old User Debounce Overwrite Race Conditions)
+  const switchWorkspaceState = (targetWsId: string) => {
+    // 1. Hủy ngay lập tức mọi pending debounce timer của user/workspace trước
+    if (seatingDebounceRef.current) {
+      clearTimeout(seatingDebounceRef.current);
+      seatingDebounceRef.current = null;
+    }
+    if (attendanceDebounceRef.current) {
+      clearTimeout(attendanceDebounceRef.current);
+      attendanceDebounceRef.current = null;
+    }
+    if (evaluationDebounceRef.current) {
+      clearTimeout(evaluationDebounceRef.current);
+      evaluationDebounceRef.current = null;
+    }
+    if (emulationDebounceRef.current) {
+      clearTimeout(emulationDebounceRef.current);
+      emulationDebounceRef.current = null;
+    }
+
+    // 2. Chuyển Workspace pointer ngay lập tức
+    currentWsRef.current = targetWsId;
+
+    // 3. Tải dữ liệu tương ứng của Workspace mới từ Supabase cache & LocalStorage
+    const newSeating = loadWorkspaceSeatingChart(targetWsId, latestDbStatesRef.current);
+    const newAttendance = loadDayPartitionedAttendance(latestDbStatesRef.current, {}, targetWsId);
+    const newEvaluation = loadDayPartitionedEvaluation(latestDbStatesRef.current, {}, targetWsId);
+    const newEmulation = loadWorkspaceEmulationState(targetWsId, latestDbStatesRef.current);
+
+    // 4. Batch update states đồng loạt vào React
+    setActiveWorkspaceId(targetWsId);
+    setSeatingChart(newSeating);
+    setAttendanceData(newAttendance);
+    setEvaluationData(newEvaluation);
+    setEmulationDataState(newEmulation);
+  };
+
   // --- INITIAL EFFECT: FETCH FROM SUPABASE ---
   useEffect(() => {
     async function syncFromSupabase() {
@@ -597,6 +639,8 @@ export default function App() {
       try {
         const dbStates = await loadAllSupabaseStates();
         if (dbStates && Object.keys(dbStates).length > 0) {
+          latestDbStatesRef.current = dbStates;
+
           if (dbStates['school_grades']) setGrades(dbStates['school_grades']);
           if (dbStates['school_classes']) setClasses(dbStates['school_classes']);
           if (dbStates['school_students']) setStudents(dbStates['school_students']);
@@ -604,8 +648,8 @@ export default function App() {
           
           // 🏢 User-Scoped Workspace States
           setSeatingChart(loadWorkspaceSeatingChart(activeWorkspaceId, dbStates));
-          setAttendanceData(loadDayPartitionedAttendance(dbStates, defaultAttendance, activeWorkspaceId));
-          setEvaluationData(loadDayPartitionedEvaluation(dbStates, defaultEvaluation, activeWorkspaceId));
+          setAttendanceData(loadDayPartitionedAttendance(dbStates, {}, activeWorkspaceId));
+          setEvaluationData(loadDayPartitionedEvaluation(dbStates, {}, activeWorkspaceId));
           setEmulationDataState(loadWorkspaceEmulationState(activeWorkspaceId, dbStates));
 
           if (dbStates['school_documents']) setDocuments(dbStates['school_documents']);
@@ -630,7 +674,6 @@ export default function App() {
             }
           }
 
-
           if (dbStates['custom_avatars_list'] && Array.isArray(dbStates['custom_avatars_list'])) {
             safeSetLocalStorage('custom_avatars_list', dbStates['custom_avatars_list']);
             window.dispatchEvent(new CustomEvent('custom_avatars_updated', { detail: dbStates['custom_avatars_list'] }));
@@ -653,21 +696,6 @@ export default function App() {
     syncFromSupabase();
   }, []);
 
-  // --- RE-HYDRATE WORKSPACE ON USER / WORKSPACE SWITCH ---
-  useEffect(() => {
-    if (!isLoaded) return;
-    setSeatingChart(loadWorkspaceSeatingChart(activeWorkspaceId));
-    setAttendanceData(loadDayPartitionedAttendance(undefined, defaultAttendance, activeWorkspaceId));
-    setEvaluationData(loadDayPartitionedEvaluation(undefined, defaultEvaluation, activeWorkspaceId));
-    setEmulationDataState(loadWorkspaceEmulationState(activeWorkspaceId));
-  }, [activeWorkspaceId, isLoaded]);
-
-  // Sync activeWorkspaceId when currentUser changes
-  useEffect(() => {
-    const newWs = getWorkspaceId(currentUser);
-    setActiveWorkspaceId(newWs);
-  }, [currentUser]);
-
   // --- 🧠 AUTOMATIC 30-MINUTE RAM & CACHE OPTIMIZER ---
   useEffect(() => {
     const cleanup = initRamAutoOptimizer((msg, type) => {
@@ -683,6 +711,8 @@ export default function App() {
     // Helper to update local state from incoming Cloud payload with Deep Equality Check to skip WebSocket Echo re-renders
     const applyCloudState = (key: string, value: any) => {
       safeSetLocalStorage(key, value);
+      latestDbStatesRef.current[key] = value;
+
       const isIdentical = (prev: any) => {
         try {
           return JSON.stringify(prev) === JSON.stringify(value);
@@ -691,25 +721,25 @@ export default function App() {
         }
       };
 
-      const scopedPrefix = `${activeWorkspaceId}_`;
+      const scopedPrefix = `${currentWsRef.current}_`;
 
       // 1. Workspace-scoped data checks
-      if (key === `${scopedPrefix}school_seating_chart` || key === 'school_seating_chart') {
+      if (key === `${scopedPrefix}school_seating_chart`) {
         setSeatingChart(prev => isIdentical(prev) ? prev : value);
         return;
       }
 
-      if (key.startsWith(`${scopedPrefix}school_attendance_`) || key.startsWith('school_attendance_')) {
-        setAttendanceData(prev => applyPartitionedAttendanceUpdate(prev, key, value, activeWorkspaceId));
+      if (key.startsWith(`${scopedPrefix}school_attendance_`)) {
+        setAttendanceData(prev => applyPartitionedAttendanceUpdate(prev, key, value, currentWsRef.current));
         return;
       }
 
-      if (key.startsWith(`${scopedPrefix}school_evaluation_`) || key.startsWith('school_evaluation_')) {
-        setEvaluationData(prev => applyPartitionedEvaluationUpdate(prev, key, value, activeWorkspaceId));
+      if (key.startsWith(`${scopedPrefix}school_evaluation_`)) {
+        setEvaluationData(prev => applyPartitionedEvaluationUpdate(prev, key, value, currentWsRef.current));
         return;
       }
 
-      if (key === `${scopedPrefix}school_emulation_state` || key === 'school_emulation_state') {
+      if (key === `${scopedPrefix}school_emulation_state`) {
         setEmulationDataState(prev => isIdentical(prev) ? prev : value);
         return;
       }
@@ -880,48 +910,44 @@ export default function App() {
   const emulationDebounceRef = React.useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    const scopedKey = `${activeWorkspaceId}_school_seating_chart`;
+    if (!isLoaded) return;
+    const wsId = currentWsRef.current;
+    const scopedKey = `${wsId}_school_seating_chart`;
     safeSetLocalStorage(scopedKey, seatingChart);
-    if (isLoaded) {
-      if (seatingDebounceRef.current) clearTimeout(seatingDebounceRef.current);
-      seatingDebounceRef.current = setTimeout(() => {
-        saveSupabaseState(scopedKey, seatingChart);
-      }, 800);
-    }
-  }, [seatingChart, activeWorkspaceId, isLoaded]);
+    if (seatingDebounceRef.current) clearTimeout(seatingDebounceRef.current);
+    seatingDebounceRef.current = setTimeout(() => {
+      saveSupabaseState(scopedKey, seatingChart);
+    }, 800);
+  }, [seatingChart, isLoaded]);
 
   useEffect(() => {
-    if (isLoaded) {
-      if (attendanceDebounceRef.current) clearTimeout(attendanceDebounceRef.current);
-      attendanceDebounceRef.current = setTimeout(() => {
-        saveDayPartitionedAttendance(attendanceData, selectedDate, activeWorkspaceId);
-      }, 800);
-    } else {
-      safeSetLocalStorage(`${activeWorkspaceId}_school_attendance_data`, attendanceData);
-    }
-  }, [attendanceData, selectedDate, activeWorkspaceId, isLoaded]);
+    if (!isLoaded) return;
+    const wsId = currentWsRef.current;
+    if (attendanceDebounceRef.current) clearTimeout(attendanceDebounceRef.current);
+    attendanceDebounceRef.current = setTimeout(() => {
+      saveDayPartitionedAttendance(attendanceData, selectedDate, wsId);
+    }, 800);
+  }, [attendanceData, selectedDate, isLoaded]);
 
   useEffect(() => {
-    if (isLoaded) {
-      if (evaluationDebounceRef.current) clearTimeout(evaluationDebounceRef.current);
-      evaluationDebounceRef.current = setTimeout(() => {
-        saveDayPartitionedEvaluation(evaluationData, selectedDate, activeWorkspaceId);
-      }, 800);
-    } else {
-      safeSetLocalStorage(`${activeWorkspaceId}_school_evaluation_data`, evaluationData);
-    }
-  }, [evaluationData, selectedDate, activeWorkspaceId, isLoaded]);
+    if (!isLoaded) return;
+    const wsId = currentWsRef.current;
+    if (evaluationDebounceRef.current) clearTimeout(evaluationDebounceRef.current);
+    evaluationDebounceRef.current = setTimeout(() => {
+      saveDayPartitionedEvaluation(evaluationData, selectedDate, wsId);
+    }, 800);
+  }, [evaluationData, selectedDate, isLoaded]);
 
   useEffect(() => {
-    const scopedKey = `${activeWorkspaceId}_school_emulation_state`;
+    if (!isLoaded) return;
+    const wsId = currentWsRef.current;
+    const scopedKey = `${wsId}_school_emulation_state`;
     safeSetLocalStorage(scopedKey, emulationDataState);
-    if (isLoaded) {
-      if (emulationDebounceRef.current) clearTimeout(emulationDebounceRef.current);
-      emulationDebounceRef.current = setTimeout(() => {
-        saveSupabaseState(scopedKey, emulationDataState);
-      }, 800);
-    }
-  }, [emulationDataState, activeWorkspaceId, isLoaded]);
+    if (emulationDebounceRef.current) clearTimeout(emulationDebounceRef.current);
+    emulationDebounceRef.current = setTimeout(() => {
+      saveSupabaseState(scopedKey, emulationDataState);
+    }, 800);
+  }, [emulationDataState, isLoaded]);
 
   useEffect(() => {
     safeSetLocalStorage('school_documents', documents);
@@ -1045,7 +1071,13 @@ export default function App() {
         setLocalSession(newSessionId);
 
         const updatedUser = { ...foundUser, activeSessionId: newSessionId };
+        safeSetLocalStorage('school_current_user', updatedUser);
+        sessionStorage.setItem('school_current_user', JSON.stringify(updatedUser));
         setCurrentUser(updatedUser);
+
+        // Chuyển không gian làm việc đồng bộ ngay lập tức cho User mới
+        const targetWsId = getWorkspaceId(updatedUser);
+        switchWorkspaceState(targetWsId);
 
         // Cập nhật mảng members với activeSessionId mới
         setMembers((prev) => {
@@ -1069,7 +1101,10 @@ export default function App() {
       showToast(`Hẹn gặp lại thầy/cô ${currentUser.name}!`);
     }
     clearLocalSession(); // Clear session ID from LocalStorage
+    sessionStorage.removeItem('school_current_user');
+    localStorage.removeItem('school_current_user');
     setCurrentUser(null);
+    switchWorkspaceState('ws_default');
     setLoginForm({ username: '', password: '' }); // Clear credentials on logout to allow entering any other account
     setShowPassword(false);
     setIsLoginModalOpen(true);
@@ -1867,7 +1902,7 @@ export default function App() {
         currentUser={currentUser}
         activeWorkspaceId={activeWorkspaceId}
         onSelectWorkspace={(wsId) => {
-          setActiveWorkspaceId(wsId);
+          switchWorkspaceState(wsId);
           showToast(`Đã chuyển sang không gian: ${getWorkspaceOwnerName(wsId, members)}`, 'success');
         }}
       />

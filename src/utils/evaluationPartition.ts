@@ -46,7 +46,7 @@ export function loadDayPartitionedEvaluation(
   const prefix = `${workspaceId}_`;
   const merged: EvaluationData = { ...fallbackData };
 
-  // 1. Tải bản sao dự phòng của Workspace (hoặc bản cũ nếu chưa có workspace)
+  // 1. Tải bản sao dự phòng của Workspace
   const scopedCloud = dbStates?.[`${prefix}school_evaluation_data`];
   if (scopedCloud && typeof scopedCloud === 'object') {
     Object.assign(merged, scopedCloud);
@@ -55,17 +55,6 @@ export function loadDayPartitionedEvaluation(
       const scopedLocal = localStorage.getItem(`${prefix}school_evaluation_data`);
       if (scopedLocal) {
         Object.assign(merged, JSON.parse(scopedLocal));
-      } else {
-        // Fallback đọc bản monolithic cũ nếu workspace chưa có dữ liệu riêng
-        const legacyCloud = dbStates?.['school_evaluation_data'];
-        if (legacyCloud && typeof legacyCloud === 'object') {
-          Object.assign(merged, legacyCloud);
-        } else {
-          const savedLegacy = localStorage.getItem('school_evaluation_data');
-          if (savedLegacy) {
-            Object.assign(merged, JSON.parse(savedLegacy));
-          }
-        }
       }
     } catch (e) {
       console.warn('Cannot parse evaluation fallback data:', e);
@@ -118,7 +107,7 @@ export function applyPartitionedEvaluationUpdate(
 
   const prefix = `${workspaceId}_`;
 
-  if (key === `${prefix}school_evaluation_data` || key === 'school_evaluation_data') {
+  if (key === `${prefix}school_evaluation_data`) {
     return { ...prev, ...value };
   }
 
