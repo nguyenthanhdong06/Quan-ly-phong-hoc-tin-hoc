@@ -1101,6 +1101,9 @@ export default function App() {
     setLoginForm({ username: '', password: '' }); // Clear credentials on logout to allow entering any other account
     setShowPassword(false);
     setIsLoginModalOpen(true);
+    setIsWarningModalOpen(false);
+    setIsSupabaseModalOpen(false);
+    setIsForgotPasswordModalOpen(false);
     setActiveTab('dashboard');
   };
 
@@ -1945,7 +1948,7 @@ export default function App() {
 
                 {/* VỊ TRÍ NHẬP "USER": CĂN CHÍNH GIỮA KHUNG TRẮNG BẦU (Center Y ≈ 43.1%) */}
                 <div 
-                  className="absolute flex items-center justify-center"
+                  className="absolute flex items-center justify-center z-30 pointer-events-auto"
                   style={{
                     top: '40.0%',
                     height: '6.2%',
@@ -1958,18 +1961,16 @@ export default function App() {
                     value={loginForm.username}
                     onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
                     placeholder="tên đăng nhập"
-                    className="w-full h-full bg-transparent border-none outline-none text-white font-extrabold text-xs sm:text-sm placeholder:text-white/80 placeholder:font-medium px-3 font-mono leading-none flex items-center select-text cursor-text"
+                    className="w-full h-full bg-transparent border-none outline-none text-slate-900 font-black text-xs sm:text-sm placeholder:text-slate-400 placeholder:font-bold px-3 font-mono leading-none flex items-center select-text cursor-text"
                     autoFocus
-                    autoComplete="off"
+                    autoComplete="username"
                     required
-                    readOnly={false}
-                    disabled={false}
                   />
                 </div>
 
                 {/* VỊ TRÍ NHẬP "PASSWORD": CĂN CHÍNH GIỮA KHUNG TRẮNG BẦU (Center Y ≈ 56.9%) */}
                 <div 
-                  className="absolute flex items-center justify-center"
+                  className="absolute flex items-center justify-center z-30 pointer-events-auto"
                   style={{
                     top: '53.8%',
                     height: '6.2%',
@@ -1982,19 +1983,17 @@ export default function App() {
                     value={loginForm.password}
                     onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
                     placeholder="mật khẩu"
-                    className="w-full h-full bg-transparent border-none outline-none text-white font-extrabold text-xs sm:text-sm placeholder:text-white/80 placeholder:font-medium px-3 font-mono leading-none flex items-center select-text cursor-text"
-                    autoComplete="off"
+                    className="w-full h-full bg-transparent border-none outline-none text-slate-900 font-black text-xs sm:text-sm placeholder:text-slate-400 placeholder:font-bold px-3 font-mono leading-none flex items-center select-text cursor-text"
+                    autoComplete="current-password"
                     required
-                    readOnly={false}
-                    disabled={false}
                   />
                 </div>
 
-                {/* Eye Toggle Password Visibility Button (White Tone Icon) */}
+                {/* Eye Toggle Password Visibility Button (Dark Tone Icon) */}
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="btn-raw absolute flex items-center justify-center cursor-pointer text-white hover:text-purple-200 transition-colors"
+                  className="btn-raw absolute flex items-center justify-center cursor-pointer text-slate-600 hover:text-slate-900 transition-colors z-40"
                   style={{
                     top: '53.8%',
                     height: '6.2%',
@@ -2003,7 +2002,7 @@ export default function App() {
                   }}
                   title={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4 text-white" /> : <Eye className="w-4 h-4 text-white" />}
+                  {showPassword ? <EyeOff className="w-4 h-4 text-slate-600" /> : <Eye className="w-4 h-4 text-slate-600" />}
                 </button>
 
                 {/* ================================================================= */}
