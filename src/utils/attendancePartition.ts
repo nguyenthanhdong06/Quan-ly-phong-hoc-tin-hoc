@@ -12,27 +12,33 @@ import { saveSupabaseState } from '../supabaseClient';
 /**
  * Lưu dữ liệu điểm danh phân mảnh nhẹ theo từng ngày và không gian làm việc
  */
-export function saveDayPartitionedAttendance(
+export async function saveDayPartitionedAttendance(
   attendanceData: AttendanceData,
   targetDate?: string,
   workspaceId: string = 'ws_default'
-) {
-  if (!attendanceData) return;
+): Promise<boolean> {
+  if (!attendanceData) return true;
 
   const prefix = `${workspaceId}_`;
   const datesToSave = targetDate ? [targetDate] : Object.keys(attendanceData);
+  const promises: Promise<boolean>[] = [];
 
   datesToSave.forEach(dateKey => {
     const dayPayload = attendanceData[dateKey];
     if (dayPayload && Object.keys(dayPayload).length > 0) {
       const partitionedKey = `${prefix}school_attendance_${dateKey}`;
       safeSetLocalStorage(partitionedKey, dayPayload);
-      saveSupabaseState(partitionedKey, dayPayload);
+      promises.push(saveSupabaseState(partitionedKey, dayPayload));
     }
   });
 
-  // Ghi đè bản sao dự phòng tổng của workspace vào localStorage
+  // Ghi đè bản sao dự phòng tổng của workspace vào localStorage và cloud
   safeSetLocalStorage(`${prefix}school_attendance_data`, attendanceData);
+  promises.push(saveSupabaseState(`${prefix}school_attendance_data`, attendanceData));
+
+  if (promises.length === 0) return true;
+  const results = await Promise.all(promises);
+  return results.every(r => r === true);
 }
 
 /**
