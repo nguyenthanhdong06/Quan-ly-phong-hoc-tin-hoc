@@ -33,7 +33,7 @@ import {
 import { supabase, saveSupabaseState } from '../supabaseClient';
 import { safeSetLocalStorage, safeGetLocalStorage } from '../utils/safeStorage';
 
-interface KnowledgeGardenTabProps {
+export interface KnowledgeGardenTabProps {
   students: Student[];
   selectedClass: string;
   classes: ClassItem[];
@@ -41,6 +41,12 @@ interface KnowledgeGardenTabProps {
   showToast: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
   currentUser?: Member | null;
   workspaceId?: string;
+  customSeedSets?: CustomSeedSet[];
+  setCustomSeedSets?: React.Dispatch<React.SetStateAction<CustomSeedSet[]>>;
+  gardenData?: { [studentId: string]: GardenStudentData };
+  setGardenData?: React.Dispatch<React.SetStateAction<{ [studentId: string]: GardenStudentData }>>;
+  rewards?: GardenReward[];
+  setRewards?: React.Dispatch<React.SetStateAction<GardenReward[]>>;
 }
 
 import { extractGoogleDriveFileId, convertGoogleDriveUrl, getGoogleDriveFallbackUrls } from '../utils/googleDriveImageHelper';
@@ -59,13 +65,13 @@ export const GARDEN_STAGES = [
 ];
 
 // Seed Option Mặc Định
-const DEFAULT_SEED_NAME = '🌸 Cây Hoa Đào';
+export const DEFAULT_SEED_NAME = '🌸 Cây Hoa Đào';
 
 // Mẫu Bộ Hạt Giống Mặc Định
-const DEFAULT_CUSTOM_SEED_SETS: CustomSeedSet[] = [];
+export const DEFAULT_CUSTOM_SEED_SETS: CustomSeedSet[] = [];
 
 // Danh Sách Quà Mặc Định
-const DEFAULT_REWARDS: GardenReward[] = [
+export const DEFAULT_REWARDS: GardenReward[] = [
   { id: 'rew-1', icon: '✏️', title: 'Bút chì màu dễ thương', cost: 100, type: 'WATER' },
   { id: 'rew-2', icon: '📓', title: 'Vở bài tập lò xo xinh xắn', cost: 200, type: 'WATER' },
   { id: 'rew-3', icon: '🎨', title: 'Bộ màu vẽ 24 màu sặc sỡ', cost: 350, type: 'HARVEST' },
@@ -117,7 +123,13 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
   onSelectClass,
   showToast,
   currentUser,
-  workspaceId
+  workspaceId,
+  customSeedSets: propCustomSeedSets,
+  setCustomSeedSets: propSetCustomSeedSets,
+  gardenData: propGardenData,
+  setGardenData: propSetGardenData,
+  rewards: propRewards,
+  setRewards: propSetRewards
 }) => {
   // 1. STATE MANAGEMENT - Mặc định load 'class' (Vườn Cả Lớp)
   const [activeTab, setActiveTab] = useState<'student' | 'class' | 'reward' | 'teacher'>('class');
@@ -129,8 +141,8 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
   const currentWsId = workspaceId || (currentUser ? `ws_${currentUser.id || currentUser.username}` : 'ws_default');
   const gardenStorageKey = `${currentWsId}_garden_data_v2`;
 
-  // Custom Garden Data for Students (stored in localStorage per workspace)
-  const [gardenData, setGardenData] = useState<{ [studentId: string]: GardenStudentData }>(() => {
+  // Local fallback states if not passed from root
+  const [localGardenData, setLocalGardenData] = useState<{ [studentId: string]: GardenStudentData }>(() => {
     try {
       const saved = localStorage.getItem(gardenStorageKey) || localStorage.getItem('deskos_garden_data_v2');
       return saved ? JSON.parse(saved) : {};
@@ -139,46 +151,10 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     }
   });
 
-  const [isCloudGardenLoaded, setIsCloudGardenLoaded] = useState<boolean>(false);
+  const gardenData = propGardenData || localGardenData;
+  const setGardenData = propSetGardenData || setLocalGardenData;
 
-  // 1. Re-hydrate from Supabase Cloud on mount and whenever Workspace changes
-  useEffect(() => {
-    let isMounted = true;
-    async function fetchGardenDataFromCloud() {
-      try {
-        const cloudKey = `${currentWsId}_school_garden_data`;
-        const { data, error } = await supabase
-          .from('school_states')
-          .select('value')
-          .eq('key', cloudKey)
-          .maybeSingle();
-
-        if (data && data.value && typeof data.value === 'object' && Object.keys(data.value).length > 0) {
-          if (isMounted) {
-            setGardenData(prev => {
-              const merged = { ...data.value, ...prev };
-              safeSetLocalStorage(gardenStorageKey, merged);
-              return merged;
-            });
-          }
-        }
-      } catch (err) {
-        console.warn('Error hydrating garden from Supabase:', err);
-      } finally {
-        if (isMounted) {
-          setIsCloudGardenLoaded(true);
-        }
-      }
-    }
-
-    fetchGardenDataFromCloud();
-    return () => {
-      isMounted = false;
-    };
-  }, [currentWsId, gardenStorageKey]);
-
-  // Rewards Store Items
-  const [rewards, setRewards] = useState<GardenReward[]>(() => {
+  const [localRewards, setLocalRewards] = useState<GardenReward[]>(() => {
     try {
       const saved = localStorage.getItem('deskos_garden_rewards_v2');
       return saved ? JSON.parse(saved) : DEFAULT_REWARDS;
@@ -187,24 +163,8 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     }
   });
 
-  // Hydrate rewards from Supabase
-  useEffect(() => {
-    async function fetchCloudRewards() {
-      try {
-        const { data } = await supabase
-          .from('school_states')
-          .select('value')
-          .eq('key', 'school_garden_rewards')
-          .maybeSingle();
-
-        if (data && Array.isArray(data.value) && data.value.length > 0) {
-          setRewards(data.value);
-          safeSetLocalStorage('deskos_garden_rewards_v2', data.value);
-        }
-      } catch (e) {}
-    }
-    fetchCloudRewards();
-  }, []);
+  const rewards = propRewards || localRewards;
+  const setRewards = propSetRewards || setLocalRewards;
 
   // Filters & Inputs
   const [classSearch, setClassSearch] = useState('');
@@ -212,7 +172,7 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
   const [teacherSearch, setTeacherSearch] = useState('');
 
   // Custom Seed Sets Collection (7 Levels)
-  const [customSeedSets, setCustomSeedSets] = useState<CustomSeedSet[]>(() => {
+  const [localCustomSeedSets, setLocalCustomSeedSets] = useState<CustomSeedSet[]>(() => {
     try {
       const saved = localStorage.getItem('deskos_custom_seed_sets_v1') || localStorage.getItem('school_custom_seed_sets');
       return saved ? JSON.parse(saved) : DEFAULT_CUSTOM_SEED_SETS;
@@ -221,25 +181,8 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     }
   });
 
-  // Hydrate custom seed sets from Supabase
-  useEffect(() => {
-    async function fetchCloudSeedSets() {
-      try {
-        const { data } = await supabase
-          .from('school_states')
-          .select('value')
-          .eq('key', 'school_custom_seed_sets')
-          .maybeSingle();
-
-        if (data && Array.isArray(data.value) && data.value.length > 0) {
-          setCustomSeedSets(data.value);
-          safeSetLocalStorage('deskos_custom_seed_sets_v1', data.value);
-          safeSetLocalStorage('school_custom_seed_sets', data.value);
-        }
-      } catch (e) {}
-    }
-    fetchCloudSeedSets();
-  }, []);
+  const customSeedSets = propCustomSeedSets || localCustomSeedSets;
+  const setCustomSeedSets = propSetCustomSeedSets || setLocalCustomSeedSets;
 
   // Seed Bank Modals State
   const [isSeedBankModalOpen, setIsSeedBankModalOpen] = useState<boolean>(false);
@@ -349,17 +292,18 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
 
   // 2. EFFECT: PERSIST DATA & INITIALIZE CLASS STUDENTS
   useEffect(() => {
-    // Only save when we have valid loaded state or non-empty data
-    if (!isCloudGardenLoaded && Object.keys(gardenData).length === 0) return;
+    if (Object.keys(gardenData).length === 0) return;
     try {
       safeSetLocalStorage(gardenStorageKey, gardenData);
       saveSupabaseState(`${currentWsId}_school_garden_data`, gardenData);
     } catch (e) {}
-  }, [gardenData, gardenStorageKey, currentWsId, isCloudGardenLoaded]);
+  }, [gardenData, gardenStorageKey, currentWsId]);
 
   useEffect(() => {
+    if (rewards.length === 0) return;
     try {
       safeSetLocalStorage('deskos_garden_rewards_v2', rewards);
+      safeSetLocalStorage('school_garden_rewards', rewards);
       saveSupabaseState('school_garden_rewards', rewards);
     } catch (e) {}
   }, [rewards]);

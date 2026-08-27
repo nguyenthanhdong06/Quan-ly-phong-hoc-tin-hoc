@@ -151,3 +151,19 @@ export function loadWorkspaceEmulationState(
     defaultEmulation
   );
 }
+
+/**
+ * Tải dữ liệu Vườn Tri Thức riêng cho Workspace
+ */
+export function loadWorkspaceGardenData(
+  workspaceId: string,
+  dbStates?: Record<string, any>,
+  fallbackValue: Record<string, any> = {}
+): Record<string, any> {
+  return loadWorkspaceState<Record<string, any>>(
+    'school_garden_data',
+    workspaceId,
+    dbStates,
+    safeGetLocalStorage('deskos_garden_data_v2', fallbackValue)
+  );
+}

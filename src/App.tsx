@@ -44,7 +44,8 @@ import {
 import { InteractiveGamesTab } from './components/InteractiveGamesTab';
 import { PersonalQuestionsTab } from './components/PersonalQuestionsTab';
 import ComputerReportTab from './components/ComputerReportTab';
-import { KnowledgeGardenTab } from './components/KnowledgeGardenTab';
+import { KnowledgeGardenTab, DEFAULT_REWARDS, DEFAULT_CUSTOM_SEED_SETS } from './components/KnowledgeGardenTab';
+import { CustomSeedSet, GardenReward, GardenStudentData } from './types';
 import CuteMiniRobot from './components/CuteMiniRobot';
 import { SciFi3DPopupFrame } from './components/SciFi3DPopupFrame';
 import { CalendarCheck, ShieldAlert } from 'lucide-react';
@@ -70,6 +71,7 @@ import {
   getWorkspaceId, 
   loadWorkspaceSeatingChart, 
   loadWorkspaceEmulationState, 
+  loadWorkspaceGardenData,
   saveWorkspaceState,
   WORKSPACE_PREFIX 
 } from './services/workspaceService';
@@ -175,6 +177,11 @@ export default function App() {
   const [attendanceData, setAttendanceData] = useState<AttendanceData>(() => loadDayPartitionedAttendance(undefined, defaultAttendance, activeWorkspaceId));
   const [evaluationData, setEvaluationData] = useState<EvaluationData>(() => loadDayPartitionedEvaluation(undefined, defaultEvaluation, activeWorkspaceId));
   const [emulationDataState, setEmulationDataState] = useState<EmulationDataState>(() => loadWorkspaceEmulationState(activeWorkspaceId));
+  const [gardenData, setGardenData] = useState<{ [studentId: string]: GardenStudentData }>(() => loadWorkspaceGardenData(activeWorkspaceId));
+
+  // Global Master States (Shared)
+  const [customSeedSets, setCustomSeedSets] = useState<CustomSeedSet[]>(() => safeParse('deskos_custom_seed_sets_v1', safeParse('school_custom_seed_sets', DEFAULT_CUSTOM_SEED_SETS)));
+  const [gardenRewards, setGardenRewards] = useState<GardenReward[]>(() => safeParse('deskos_garden_rewards_v2', safeParse('school_garden_rewards', DEFAULT_REWARDS)));
 
   const [documents, setDocuments] = useState<DocumentItem[]>(() => safeParse('school_documents', defaultDocuments));
   const [members, setMembers] = useState<Member[]>(() => safeParse('school_members', defaultMembers));
@@ -627,6 +634,7 @@ export default function App() {
     const newAttendance = loadDayPartitionedAttendance(latestDbStatesRef.current, {}, targetWsId);
     const newEvaluation = loadDayPartitionedEvaluation(latestDbStatesRef.current, {}, targetWsId);
     const newEmulation = loadWorkspaceEmulationState(targetWsId, latestDbStatesRef.current);
+    const newGardenData = loadWorkspaceGardenData(targetWsId, latestDbStatesRef.current);
 
     // 4. Batch update states đồng loạt vào React
     setActiveWorkspaceId(targetWsId);
@@ -634,6 +642,7 @@ export default function App() {
     setAttendanceData(newAttendance);
     setEvaluationData(newEvaluation);
     setEmulationDataState(newEmulation);
+    setGardenData(newGardenData);
   };
 
   // --- INITIAL EFFECT: FETCH FROM SUPABASE ---
@@ -687,13 +696,17 @@ export default function App() {
           // 🌳 Đồng bộ dữ liệu Vườn Tri Thức từ Cloud
           const scopedGardenKey = `${activeWorkspaceId}_school_garden_data`;
           if (dbStates[scopedGardenKey]) {
+            setGardenData(dbStates[scopedGardenKey]);
             safeSetLocalStorage(`${activeWorkspaceId}_garden_data_v2`, dbStates[scopedGardenKey]);
             safeSetLocalStorage('deskos_garden_data_v2', dbStates[scopedGardenKey]);
           }
-          if (dbStates['school_garden_rewards']) {
+          if (dbStates['school_garden_rewards'] && Array.isArray(dbStates['school_garden_rewards'])) {
+            setGardenRewards(dbStates['school_garden_rewards']);
             safeSetLocalStorage('deskos_garden_rewards_v2', dbStates['school_garden_rewards']);
+            safeSetLocalStorage('school_garden_rewards', dbStates['school_garden_rewards']);
           }
           if (dbStates['school_custom_seed_sets'] && Array.isArray(dbStates['school_custom_seed_sets']) && dbStates['school_custom_seed_sets'].length > 0) {
+            setCustomSeedSets(dbStates['school_custom_seed_sets']);
             safeSetLocalStorage('deskos_custom_seed_sets_v1', dbStates['school_custom_seed_sets']);
             safeSetLocalStorage('school_custom_seed_sets', dbStates['school_custom_seed_sets']);
             window.dispatchEvent(new CustomEvent('custom_seed_sets_updated', { detail: dbStates['school_custom_seed_sets'] }));
@@ -1138,9 +1151,9 @@ export default function App() {
         saveSupabaseState('school_timetable_data', timetableData),
         saveSupabaseState('school_quotes', quotes),
         saveSupabaseState('custom_avatars_list', loadCustomAvatars()),
-        saveSupabaseState(`${activeWorkspaceId}_school_garden_data`, safeParse(`${activeWorkspaceId}_garden_data_v2`, safeParse('deskos_garden_data_v2', {}))),
-        saveSupabaseState('school_garden_rewards', safeParse('deskos_garden_rewards_v2', [])),
-        saveSupabaseState('school_custom_seed_sets', safeParse('deskos_custom_seed_sets_v1', safeParse('school_custom_seed_sets', [])))
+        saveSupabaseState(`${activeWorkspaceId}_school_garden_data`, gardenData),
+        saveSupabaseState('school_garden_rewards', gardenRewards),
+        saveSupabaseState('school_custom_seed_sets', customSeedSets)
       ]);
       
       const allSuccess = results.every(r => r === true);
@@ -1667,6 +1680,12 @@ export default function App() {
                 showToast={showToast}
                 currentUser={currentUser}
                 workspaceId={activeWorkspaceId}
+                customSeedSets={customSeedSets}
+                setCustomSeedSets={setCustomSeedSets}
+                gardenData={gardenData}
+                setGardenData={setGardenData}
+                rewards={gardenRewards}
+                setRewards={setGardenRewards}
               />
             )}
 
