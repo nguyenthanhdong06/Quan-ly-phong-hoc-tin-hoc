@@ -13,8 +13,9 @@ if %errorlevel% equ 0 (
 ) else (
     echo [CHUA CHAY] May chu chua duoc khoi dong.
     echo Dang khoi dong may chu ngam...
-    wscript "%~dp0start-silent.vbs"
+    powershell.exe -WindowStyle Hidden -NoProfile -ExecutionPolicy Bypass -Command "& 'C:\Program Files\nodejs\node.exe' '%~dp0server.cjs'"
     timeout /t 2 >nul
-    echo Da gui lenh khoi chay!
+    echo Da khoi dong thanh cong! Dang mo trinh duyet...
+    start http://localhost:3000
 )
 pause
