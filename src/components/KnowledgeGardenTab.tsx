@@ -214,7 +214,7 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
   // Custom Seed Sets Collection (7 Levels)
   const [customSeedSets, setCustomSeedSets] = useState<CustomSeedSet[]>(() => {
     try {
-      const saved = localStorage.getItem('deskos_custom_seed_sets_v1');
+      const saved = localStorage.getItem('deskos_custom_seed_sets_v1') || localStorage.getItem('school_custom_seed_sets');
       return saved ? JSON.parse(saved) : DEFAULT_CUSTOM_SEED_SETS;
     } catch (e) {
       return DEFAULT_CUSTOM_SEED_SETS;
@@ -234,6 +234,7 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
         if (data && Array.isArray(data.value) && data.value.length > 0) {
           setCustomSeedSets(data.value);
           safeSetLocalStorage('deskos_custom_seed_sets_v1', data.value);
+          safeSetLocalStorage('school_custom_seed_sets', data.value);
         }
       } catch (e) {}
     }
@@ -255,7 +256,8 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
   useEffect(() => {
     if (customSeedSets.length === 0) return;
     try {
-      localStorage.setItem('deskos_custom_seed_sets_v1', JSON.stringify(customSeedSets));
+      safeSetLocalStorage('deskos_custom_seed_sets_v1', customSeedSets);
+      safeSetLocalStorage('school_custom_seed_sets', customSeedSets);
       saveSupabaseState('school_custom_seed_sets', customSeedSets);
     } catch (e) {}
   }, [customSeedSets]);
@@ -635,7 +637,8 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
 
     // 2. Persist to localStorage & Supabase synchronously
     try {
-      localStorage.setItem('deskos_custom_seed_sets_v1', JSON.stringify(nextSets));
+      safeSetLocalStorage('deskos_custom_seed_sets_v1', nextSets);
+      safeSetLocalStorage('school_custom_seed_sets', nextSets);
       saveSupabaseState('school_custom_seed_sets', nextSets);
     } catch (e) {
       console.warn('Persistence save error:', e);
@@ -675,7 +678,8 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     const nextSets = customSeedSets.filter(s => s.id !== id);
     setCustomSeedSets(nextSets);
     try {
-      localStorage.setItem('deskos_custom_seed_sets_v1', JSON.stringify(nextSets));
+      safeSetLocalStorage('deskos_custom_seed_sets_v1', nextSets);
+      safeSetLocalStorage('school_custom_seed_sets', nextSets);
       saveSupabaseState('school_custom_seed_sets', nextSets);
     } catch (e) {}
 

@@ -693,8 +693,9 @@ export default function App() {
           if (dbStates['school_garden_rewards']) {
             safeSetLocalStorage('deskos_garden_rewards_v2', dbStates['school_garden_rewards']);
           }
-          if (dbStates['school_custom_seed_sets']) {
+          if (dbStates['school_custom_seed_sets'] && Array.isArray(dbStates['school_custom_seed_sets']) && dbStates['school_custom_seed_sets'].length > 0) {
             safeSetLocalStorage('deskos_custom_seed_sets_v1', dbStates['school_custom_seed_sets']);
+            safeSetLocalStorage('school_custom_seed_sets', dbStates['school_custom_seed_sets']);
             window.dispatchEvent(new CustomEvent('custom_seed_sets_updated', { detail: dbStates['school_custom_seed_sets'] }));
           }
 
@@ -1139,7 +1140,7 @@ export default function App() {
         saveSupabaseState('custom_avatars_list', loadCustomAvatars()),
         saveSupabaseState(`${activeWorkspaceId}_school_garden_data`, safeParse(`${activeWorkspaceId}_garden_data_v2`, safeParse('deskos_garden_data_v2', {}))),
         saveSupabaseState('school_garden_rewards', safeParse('deskos_garden_rewards_v2', [])),
-        saveSupabaseState('school_custom_seed_sets', safeParse('deskos_custom_seed_sets_v1', []))
+        saveSupabaseState('school_custom_seed_sets', safeParse('deskos_custom_seed_sets_v1', safeParse('school_custom_seed_sets', [])))
       ]);
       
       const allSuccess = results.every(r => r === true);
