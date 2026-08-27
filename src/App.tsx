@@ -820,8 +820,12 @@ export default function App() {
         (payload: any) => {
           if (payload.new && payload.new.key) {
             const { key, value } = payload.new;
-            // 🚫 BỎ HOÀN TOÀN WEBSOCKET CHO ỨNG DỤNG 'ĐIỂM DANH': Bỏ qua 100% payload điểm danh
-            if (key.startsWith('school_attendance_') || key === 'school_attendance_data') {
+            // 🚫 BỎ HOÀN TOÀN WEBSOCKET CHO 'ĐIỂM DANH' VÀ 'VƯỜN TRI THỨC':
+            if (
+              key.startsWith('school_attendance_') || 
+              key === 'school_attendance_data' ||
+              key.includes('school_garden_data')
+            ) {
               return;
             }
             // 🛡️ CHỐNG LẶP ECHO WEBSOCKET: Bỏ qua nếu dữ liệu vừa được chính client này lưu xuống gần đây (dưới 3s)

@@ -277,33 +277,6 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     };
   }, []);
 
-  // ⚡ Realtime Supabase 2-way sync for gardenData between machines
-  useEffect(() => {
-    const cloudKey = `${currentWsId}_school_garden_data`;
-    const channel = supabase
-      .channel(`garden_realtime_${currentWsId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'school_states',
-          filter: `key=eq.${cloudKey}`
-        },
-        (payload: any) => {
-          if (payload.new && payload.new.value && typeof payload.new.value === 'object') {
-            setGardenData(payload.new.value);
-            safeSetLocalStorage(gardenStorageKey, payload.new.value);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [currentWsId, gardenStorageKey]);
-
   // Helper to fetch exact stage image URL based on student's assigned seed set
   const getStageImageUrl = (seedName: string, level: number): { url: string; fallback: string } => {
     const customSet = customSeedSets.find(s => s.name === seedName || s.id === seedName);
