@@ -30,7 +30,8 @@ import {
   playVictoryFanfareSound, 
   playWarningDeductSound
 } from '../utils/audioEffects';
-import { saveSupabaseState } from '../supabaseClient';
+import { supabase, saveSupabaseState } from '../supabaseClient';
+import { safeSetLocalStorage, safeGetLocalStorage } from '../utils/safeStorage';
 
 interface KnowledgeGardenTabProps {
   students: Student[];
@@ -138,15 +139,43 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     }
   });
 
-  // Re-hydrate when workspace changes
+  const [isCloudGardenLoaded, setIsCloudGardenLoaded] = useState<boolean>(false);
+
+  // 1. Re-hydrate from Supabase Cloud on mount and whenever Workspace changes
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(gardenStorageKey) || localStorage.getItem('deskos_garden_data_v2');
-      if (saved) {
-        setGardenData(JSON.parse(saved));
+    let isMounted = true;
+    async function fetchGardenDataFromCloud() {
+      try {
+        const cloudKey = `${currentWsId}_school_garden_data`;
+        const { data, error } = await supabase
+          .from('school_states')
+          .select('value')
+          .eq('key', cloudKey)
+          .maybeSingle();
+
+        if (data && data.value && typeof data.value === 'object' && Object.keys(data.value).length > 0) {
+          if (isMounted) {
+            setGardenData(prev => {
+              const merged = { ...data.value, ...prev };
+              safeSetLocalStorage(gardenStorageKey, merged);
+              return merged;
+            });
+          }
+        }
+      } catch (err) {
+        console.warn('Error hydrating garden from Supabase:', err);
+      } finally {
+        if (isMounted) {
+          setIsCloudGardenLoaded(true);
+        }
       }
-    } catch (e) {}
-  }, [gardenStorageKey]);
+    }
+
+    fetchGardenDataFromCloud();
+    return () => {
+      isMounted = false;
+    };
+  }, [currentWsId, gardenStorageKey]);
 
   // Rewards Store Items
   const [rewards, setRewards] = useState<GardenReward[]>(() => {
@@ -157,6 +186,25 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
       return DEFAULT_REWARDS;
     }
   });
+
+  // Hydrate rewards from Supabase
+  useEffect(() => {
+    async function fetchCloudRewards() {
+      try {
+        const { data } = await supabase
+          .from('school_states')
+          .select('value')
+          .eq('key', 'school_garden_rewards')
+          .maybeSingle();
+
+        if (data && Array.isArray(data.value) && data.value.length > 0) {
+          setRewards(data.value);
+          safeSetLocalStorage('deskos_garden_rewards_v2', data.value);
+        }
+      } catch (e) {}
+    }
+    fetchCloudRewards();
+  }, []);
 
   // Filters & Inputs
   const [classSearch, setClassSearch] = useState('');
@@ -173,6 +221,25 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     }
   });
 
+  // Hydrate custom seed sets from Supabase
+  useEffect(() => {
+    async function fetchCloudSeedSets() {
+      try {
+        const { data } = await supabase
+          .from('school_states')
+          .select('value')
+          .eq('key', 'school_custom_seed_sets')
+          .maybeSingle();
+
+        if (data && Array.isArray(data.value) && data.value.length > 0) {
+          setCustomSeedSets(data.value);
+          safeSetLocalStorage('deskos_custom_seed_sets_v1', data.value);
+        }
+      } catch (e) {}
+    }
+    fetchCloudSeedSets();
+  }, []);
+
   // Seed Bank Modals State
   const [isSeedBankModalOpen, setIsSeedBankModalOpen] = useState<boolean>(false);
   const [isSeedFormModalOpen, setIsSeedFormModalOpen] = useState<boolean>(false);
@@ -186,6 +253,7 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
 
   // Persist Custom Seed Sets
   useEffect(() => {
+    if (customSeedSets.length === 0) return;
     try {
       localStorage.setItem('deskos_custom_seed_sets_v1', JSON.stringify(customSeedSets));
       saveSupabaseState('school_custom_seed_sets', customSeedSets);
@@ -208,6 +276,33 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
       window.removeEventListener('custom_seed_sets_updated', handleRemoteSeedSetsUpdate);
     };
   }, []);
+
+  // ⚡ Realtime Supabase 2-way sync for gardenData between machines
+  useEffect(() => {
+    const cloudKey = `${currentWsId}_school_garden_data`;
+    const channel = supabase
+      .channel(`garden_realtime_${currentWsId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'school_states',
+          filter: `key=eq.${cloudKey}`
+        },
+        (payload: any) => {
+          if (payload.new && payload.new.value && typeof payload.new.value === 'object') {
+            setGardenData(payload.new.value);
+            safeSetLocalStorage(gardenStorageKey, payload.new.value);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentWsId, gardenStorageKey]);
 
   // Helper to fetch exact stage image URL based on student's assigned seed set
   const getStageImageUrl = (seedName: string, level: number): { url: string; fallback: string } => {
@@ -279,15 +374,18 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
 
   // 2. EFFECT: PERSIST DATA & INITIALIZE CLASS STUDENTS
   useEffect(() => {
+    // Only save when we have valid loaded state or non-empty data
+    if (!isCloudGardenLoaded && Object.keys(gardenData).length === 0) return;
     try {
-      localStorage.setItem(gardenStorageKey, JSON.stringify(gardenData));
+      safeSetLocalStorage(gardenStorageKey, gardenData);
       saveSupabaseState(`${currentWsId}_school_garden_data`, gardenData);
     } catch (e) {}
-  }, [gardenData, gardenStorageKey, currentWsId]);
+  }, [gardenData, gardenStorageKey, currentWsId, isCloudGardenLoaded]);
 
   useEffect(() => {
     try {
-      localStorage.setItem('deskos_garden_rewards_v2', JSON.stringify(rewards));
+      safeSetLocalStorage('deskos_garden_rewards_v2', rewards);
+      saveSupabaseState('school_garden_rewards', rewards);
     } catch (e) {}
   }, [rewards]);
 

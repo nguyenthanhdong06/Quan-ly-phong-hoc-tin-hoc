@@ -683,6 +683,21 @@ export default function App() {
             safeSetLocalStorage('custom_avatars_list', dbStates['custom_avatars_list']);
             window.dispatchEvent(new CustomEvent('custom_avatars_updated', { detail: dbStates['custom_avatars_list'] }));
           }
+
+          // 🌳 Đồng bộ dữ liệu Vườn Tri Thức từ Cloud
+          const scopedGardenKey = `${activeWorkspaceId}_school_garden_data`;
+          if (dbStates[scopedGardenKey]) {
+            safeSetLocalStorage(`${activeWorkspaceId}_garden_data_v2`, dbStates[scopedGardenKey]);
+            safeSetLocalStorage('deskos_garden_data_v2', dbStates[scopedGardenKey]);
+          }
+          if (dbStates['school_garden_rewards']) {
+            safeSetLocalStorage('deskos_garden_rewards_v2', dbStates['school_garden_rewards']);
+          }
+          if (dbStates['school_custom_seed_sets']) {
+            safeSetLocalStorage('deskos_custom_seed_sets_v1', dbStates['school_custom_seed_sets']);
+            window.dispatchEvent(new CustomEvent('custom_seed_sets_updated', { detail: dbStates['school_custom_seed_sets'] }));
+          }
+
           showToast('Đã đồng bộ hóa toàn bộ cơ sở dữ liệu từ Supabase Cloud!', 'success');
         } else {
           // If Supabase is empty, let the user know and let them push datasets themselves
@@ -1240,7 +1255,10 @@ export default function App() {
         saveSupabaseState('school_members', members),
         saveSupabaseState('school_timetable_data', timetableData),
         saveSupabaseState('school_quotes', quotes),
-        saveSupabaseState('custom_avatars_list', loadCustomAvatars())
+        saveSupabaseState('custom_avatars_list', loadCustomAvatars()),
+        saveSupabaseState(`${activeWorkspaceId}_school_garden_data`, safeParse(`${activeWorkspaceId}_garden_data_v2`, safeParse('deskos_garden_data_v2', {}))),
+        saveSupabaseState('school_garden_rewards', safeParse('deskos_garden_rewards_v2', [])),
+        saveSupabaseState('school_custom_seed_sets', safeParse('deskos_custom_seed_sets_v1', []))
       ]);
       
       const allSuccess = results.every(r => r === true);
