@@ -1,7 +1,10 @@
 {
-  "name": "react-example",
+  "name": "quan-ly-phong-tin-hoc",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "Hệ thống Quản lý phòng học Tin học - Trường TH Long Định",
+  "author": "TH Long Định",
+  "main": "electron/main.cjs",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
@@ -9,8 +12,11 @@
     "build": "vite build",
     "verify-assets": "node scripts/verify-assets.js",
     "preview": "vite preview",
-    "clean": "rm -rf dist server.js",
-    "lint": "tsc --noEmit"
+    "clean": "rm -rf dist server.js dist-electron release",
+    "lint": "tsc --noEmit",
+    "electron:dev": "concurrently -k \"npm run dev\" \"wait-on tcp:3000 && electron . --dev\"",
+    "electron:build": "npm run build && node scripts/package-desktop.cjs",
+    "electron:pack": "npm run build && node scripts/package-desktop.cjs"
   },
   "dependencies": {
     "@ant-design/icons": "^6.3.2",
@@ -29,14 +35,46 @@
     "vite": "^6.2.3"
   },
   "devDependencies": {
+    "@electron/packager": "^20.3.0",
     "@types/canvas-confetti": "^1.9.0",
     "@types/express": "^4.17.21",
     "@types/node": "^22.14.0",
     "autoprefixer": "^10.4.21",
+    "concurrently": "^10.0.5",
+    "cross-env": "^10.1.0",
+    "electron": "^44.0.0",
+    "electron-builder": "^26.15.3",
     "esbuild": "^0.25.0",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
-    "vite": "^6.2.3"
+    "vite": "^6.2.3",
+    "wait-on": "^9.1.0"
+  },
+  "build": {
+    "appId": "com.phongmaythlongdinh.app",
+    "productName": "QuanLyPhongHocTinHoc",
+    "asar": true,
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "public/**/*"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Quản Lý Phòng Tin Học"
+    }
   }
 }
