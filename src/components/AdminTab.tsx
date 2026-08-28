@@ -5,6 +5,7 @@ import { safeSetLocalStorage } from '../utils/safeStorage';
 import { saveSupabaseState, supabase, SQL_INITIALIZATION_QUERY } from '../supabaseClient';
 import { sendOtpToUser, GOOGLE_APPS_SCRIPT_GMAIL_TEMPLATE } from '../services/emailSmsOtpService';
 import { encryptVaultData } from '../utils/security';
+import { CloudKeysExplorer } from './CloudKeysExplorer';
 
 interface AdminTabProps {
   members: Member[];
@@ -2072,6 +2073,12 @@ export default function AdminTab({
               <pre className="whitespace-pre-wrap">{SQL_INITIALIZATION_QUERY}</pre>
             </div>
           </div>
+
+          {/* Card 3: Cloud Keys Explorer (Trình Tra Cứu & Khám Phá Khóa Dữ Liệu Supabase) */}
+          <div className="col-span-1 md:col-span-2 pt-2">
+            <CloudKeysExplorer showToast={showToast} currentUser={currentUser} />
+          </div>
+
         </div>
 
       </div>
