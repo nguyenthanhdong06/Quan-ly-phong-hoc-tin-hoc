@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Member, Computer, Student, ClassItem, MotivationalQuote } from '../types';
 import { UserCheck, Trash2, ShieldAlert, Heart, HardDrive, Cpu, Cloud, Check, Wifi, AlertTriangle, RefreshCw, Database, FileCode, CheckCircle2, X, Calendar, Plus, Clock, User, Sparkles, Settings, FileText, Printer, Save, Key, Lock, Eye, EyeOff, RotateCcw, Mail, Send, ArrowRight, ArrowLeft } from 'lucide-react';
 import { safeSetLocalStorage } from '../utils/safeStorage';
-import { saveSupabaseState, SQL_INITIALIZATION_QUERY } from '../supabaseClient';
+import { saveSupabaseState, supabase, SQL_INITIALIZATION_QUERY } from '../supabaseClient';
 import { sendOtpToUser, GOOGLE_APPS_SCRIPT_GMAIL_TEMPLATE } from '../services/emailSmsOtpService';
 import { encryptVaultData } from '../utils/security';
 
@@ -56,6 +56,29 @@ export default function AdminTab({
   const [senderEmail, setSenderEmail] = useState<string>(() => localStorage.getItem('school_sender_email') || 'nguyenthanhdong.hutech@gmail.com');
   const [smsApiKey, setSmsApiKey] = useState<string>(() => localStorage.getItem('school_sms_api_key') || '');
   const [isTestingEmail, setIsTestingEmail] = useState(false);
+
+  // Supabase Database Connection Tester
+  const [isTestingConn, setIsTestingConn] = useState(false);
+  const [testConnStatus, setTestConnStatus] = useState<'IDLE' | 'SUCCESS' | 'ERROR'>('IDLE');
+
+  const handleTestConnection = async () => {
+    setIsTestingConn(true);
+    try {
+      const { data, error } = await supabase.from('school_states').select('key').limit(1);
+      if (error) {
+        setTestConnStatus('ERROR');
+        showToast('Kết nối Supabase thất bại: ' + error.message, 'error');
+      } else {
+        setTestConnStatus('SUCCESS');
+        showToast('Kết nối Supabase Cloud hoàn toàn thông suốt (Bảng school_states sẵn sàng)!', 'success');
+      }
+    } catch (e: any) {
+      setTestConnStatus('ERROR');
+      showToast('Lỗi kết nối: ' + (e?.message || e), 'error');
+    } finally {
+      setIsTestingConn(false);
+    }
+  };
 
   // States for Create Account Inline View & Highlight focus
   const [isCreateAccountViewOpen, setIsCreateAccountViewOpen] = useState(false);
@@ -1946,13 +1969,24 @@ export default function AdminTab({
 
           {/* Status badge */}
           <div className="flex items-center gap-2">
-            {!supabaseError ? (
+            <button
+              type="button"
+              onClick={handleTestConnection}
+              disabled={isTestingConn}
+              className="inline-flex items-center gap-1 bg-white/90 hover:bg-white text-[#78350f] hover:text-[#4a2e16] text-[11px] font-black px-3 py-1.5 rounded-full border border-[#d6c4a8] shadow-2xs transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+              title="Nhấn để kiểm tra kết nối trực tiếp tới Supabase"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isTestingConn ? 'animate-spin' : ''}`} />
+              <span>Kiểm tra kết nối</span>
+            </button>
+
+            {testConnStatus === 'SUCCESS' || (!supabaseError && testConnStatus !== 'ERROR') ? (
               <span className="inline-flex items-center gap-1.5 bg-[#f0fdf4] border border-[#bbf7d0] text-[#166534] text-xs font-black px-3.5 py-1.5 rounded-full shadow-2xs">
                 <Check className="w-4 h-4 text-[#166534] font-bold" /> ĐỒNG BỘ: HOẠT ĐỘNG
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5 bg-rose-50 border border-rose-250 text-rose-800 text-xs font-black px-3.5 py-1.5 rounded-full shadow-2xs">
-                <AlertTriangle className="w-4 h-4 text-rose-600" /> CẦN KHỞI TẠO SQL (BẢNG KHÔNG TỒN TẠI)
+                <AlertTriangle className="w-4 h-4 text-rose-600" /> {supabaseError || 'CẦN KHỞI TẠO SQL (BẢNG KHÔNG TỒN TẠI)'}
               </span>
             )}
           </div>
