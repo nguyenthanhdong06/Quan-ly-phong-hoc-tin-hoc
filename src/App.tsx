@@ -655,10 +655,10 @@ export default function App() {
         if (dbStates && Object.keys(dbStates).length > 0) {
           latestDbStatesRef.current = dbStates;
 
-          if (dbStates['school_grades']) setGrades(dbStates['school_grades']);
-          if (dbStates['school_classes']) setClasses(dbStates['school_classes']);
-          if (dbStates['school_students']) setStudents(dbStates['school_students']);
-          if (dbStates['school_computers']) setComputers(dbStates['school_computers']);
+          if (Array.isArray(dbStates['school_grades']) && dbStates['school_grades'].length > 0) setGrades(dbStates['school_grades']);
+          if (Array.isArray(dbStates['school_classes']) && dbStates['school_classes'].length > 0) setClasses(dbStates['school_classes']);
+          if (Array.isArray(dbStates['school_students']) && dbStates['school_students'].length > 0) setStudents(dbStates['school_students']);
+          if (Array.isArray(dbStates['school_computers']) && dbStates['school_computers'].length > 0) setComputers(dbStates['school_computers']);
           
           // 🏢 User-Scoped Workspace States
           setSeatingChart(loadWorkspaceSeatingChart(activeWorkspaceId, dbStates));
@@ -666,14 +666,19 @@ export default function App() {
           setEvaluationData(loadDayPartitionedEvaluation(dbStates, {}, activeWorkspaceId));
           setEmulationDataState(loadWorkspaceEmulationState(activeWorkspaceId, dbStates));
 
-          if (dbStates['school_documents']) setDocuments(dbStates['school_documents']);
-          if (dbStates['school_members']) setMembers(dbStates['school_members']);
-          if (dbStates['school_timetable_data']) setTimetableData(dbStates['school_timetable_data']);
-          if (dbStates['school_quotes']) setQuotes(dbStates['school_quotes']);
-          if (dbStates['school_lab_bookings']) setLabBookings(dbStates['school_lab_bookings']);
-          if (dbStates['school_lab_incidents']) setLabIncidents(dbStates['school_lab_incidents']);
-          if (dbStates['school_lab_maintenance_logs']) setLabMaintenanceLogs(dbStates['school_lab_maintenance_logs']);
-          if (dbStates['school_labs']) setLabs(dbStates['school_labs']);
+          if (Array.isArray(dbStates['school_documents']) && dbStates['school_documents'].length > 0) setDocuments(dbStates['school_documents']);
+          if (Array.isArray(dbStates['school_members']) && dbStates['school_members'].length > 0) {
+            setMembers(dbStates['school_members']);
+            safeSetLocalStorage('school_members', dbStates['school_members']);
+          } else {
+            setMembers(prev => prev && prev.length > 0 ? prev : defaultMembers);
+          }
+          if (Array.isArray(dbStates['school_timetable_data']) && dbStates['school_timetable_data'].length > 0) setTimetableData(dbStates['school_timetable_data']);
+          if (Array.isArray(dbStates['school_quotes']) && dbStates['school_quotes'].length > 0) setQuotes(dbStates['school_quotes']);
+          if (Array.isArray(dbStates['school_lab_bookings'])) setLabBookings(dbStates['school_lab_bookings']);
+          if (Array.isArray(dbStates['school_lab_incidents'])) setLabIncidents(dbStates['school_lab_incidents']);
+          if (Array.isArray(dbStates['school_lab_maintenance_logs'])) setLabMaintenanceLogs(dbStates['school_lab_maintenance_logs']);
+          if (Array.isArray(dbStates['school_labs']) && dbStates['school_labs'].length > 0) setLabs(dbStates['school_labs']);
 
           // Tự động giải mã Cloud Vault EmailJS cho thiết bị mới
           if (dbStates['school_otp_config']) {
