@@ -436,7 +436,7 @@ export default function EvaluationTab({
 
         return (
           <div 
-            className="fixed inset-0 bg-slate-900/65 backdrop-blur-md z-[99999] flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200"
+            className="absolute inset-0 bg-slate-900/65 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200"
             onClick={(e) => {
               if (e.target === e.currentTarget) {
                 setSelectedStudent(null);
@@ -594,7 +594,7 @@ export default function EvaluationTab({
             </div>
           </div>
         );
-      })(), document.body)}
+      })(), (typeof document !== 'undefined' && document.getElementById('deskos-active-window')) || document.body)}
 
     </div>
   );

@@ -64,7 +64,10 @@ export const DeskOSMacWindow: React.FC<DeskOSMacWindowProps> = ({
           : 'max-w-7xl px-1 sm:px-2 py-0.5'
       }`}
     >
-      <div className="bg-[#ebdcc4] border-2 border-[#d6c4a8] rounded-2xl shadow-[0_20px_50px_rgba(80,55,25,0.25)] overflow-hidden flex flex-col flex-1 transition-all duration-200">
+      <div 
+        id="deskos-active-window" 
+        className="bg-[#ebdcc4] border-2 border-[#d6c4a8] rounded-2xl shadow-[0_20px_50px_rgba(80,55,25,0.25)] overflow-hidden flex flex-col flex-1 transition-all duration-200 relative"
+      >
         {/* macOS iMac Window Header Bar */}
         <div className="bg-gradient-to-r from-[#dfccb0] via-[#e8d9c2] to-[#dfccb0] px-3.5 py-2 border-b border-[#c8b598] flex flex-wrap items-center justify-between gap-2 select-none shrink-0">
           {/* Active App Tab Title Pill */}
