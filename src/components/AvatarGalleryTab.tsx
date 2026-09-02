@@ -228,6 +228,8 @@ export const AvatarGalleryTab: React.FC<AvatarGalleryTabProps> = ({
         saveCustomAvatars(updated);
         return updated;
       });
+      setActiveCategory(targetCategory);
+      setSubView('gallery');
       const catName = avatarCategories.find(c => c.id === targetCategory)?.name || targetCategory;
       showToast(`Đã tải lên ${newItems.length} avatar vào mục "${catName}"!`, 'success');
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -356,9 +358,11 @@ export const AvatarGalleryTab: React.FC<AvatarGalleryTabProps> = ({
       return updated;
     });
 
+    // Automatically switch active category to the uploaded category and return to gallery window
+    setActiveCategory(driveCategory);
+    setSubView('gallery');
     showToast(`Đã thêm thành công ${newItems.length} avatar từ Google Drive / Link ảnh vào kho!`, 'success');
     setDriveInputText('');
-    setSubView('gallery');
   };
 
   // Delete custom avatar handler
