@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Sprout, 
   Droplets, 
@@ -267,6 +268,48 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
 
   const [badgeModalStudent, setBadgeModalStudent] = useState<Student | null>(null);
   const [customBadgeInput, setCustomBadgeInput] = useState<string>('');
+
+  // Refs for auto-focusing popup inputs
+  const waterReasonInputRef = useRef<HTMLInputElement>(null);
+  const customBadgeInputRef = useRef<HTMLInputElement>(null);
+
+  // Auto focus into input when waterModalStudent opens
+  useEffect(() => {
+    if (waterModalStudent) {
+      const timer = setTimeout(() => {
+        if (waterReasonInputRef.current) {
+          waterReasonInputRef.current.focus();
+          waterReasonInputRef.current.select();
+        }
+      }, 70);
+      return () => clearTimeout(timer);
+    }
+  }, [waterModalStudent?.id]);
+
+  // Auto focus into input when badgeModalStudent opens
+  useEffect(() => {
+    if (badgeModalStudent) {
+      const timer = setTimeout(() => {
+        if (customBadgeInputRef.current) {
+          customBadgeInputRef.current.focus();
+          customBadgeInputRef.current.select();
+        }
+      }, 70);
+      return () => clearTimeout(timer);
+    }
+  }, [badgeModalStudent?.id]);
+
+  // Handle ESC key to close water/badge modals
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (waterModalStudent) setWaterModalStudent(null);
+        if (badgeModalStudent) setBadgeModalStudent(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [waterModalStudent, badgeModalStudent]);
 
   const [isAddRewardModalOpen, setIsAddRewardModalOpen] = useState<boolean>(false);
   const [newRewardIcon, setNewRewardIcon] = useState<string>('🧸');
@@ -1794,113 +1837,188 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
       {/* ================= 🛠️ MODALS ================= */}
 
       {/* 1. WATER MODAL */}
-      {waterModalStudent && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-5">
-            <div className="text-center space-y-1">
-              <div className="text-4xl mb-1">💧</div>
-              <h3 className="text-lg font-black text-slate-900">Tặng Giọt Nước Khen Thưởng</h3>
-              <p className="text-xs font-bold text-sky-600">Học sinh: {waterModalStudent.name} ({waterModalStudent.code})</p>
-            </div>
-
-            {/* Presets */}
-            <div className="grid grid-cols-3 gap-2 text-xs font-black">
-              {[1, 2, 3, 5, 10, 20].map(amt => (
-                <button
-                  key={amt}
-                  onClick={() => setSelectedWaterAmount(amt)}
-                  className={`p-3 rounded-2xl border-2 transition-all ${
-                    selectedWaterAmount === amt ? 'bg-sky-50 text-sky-700 border-sky-500' : 'bg-slate-50 text-slate-700 border-transparent hover:border-slate-300'
-                  }`}
-                >
-                  +{amt} 💧
-                </button>
-              ))}
-            </div>
-
-            <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">Lý do khen thưởng:</label>
-              <input
-                type="text"
-                value={waterReason}
-                onChange={(e) => setWaterReason(e.target.value)}
-                placeholder="Ví dụ: Giúp đỡ bạn, Hăng hái phát biểu..."
-                className="w-full px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold focus:outline-none focus:border-sky-500"
-              />
-            </div>
-
-            <div className="flex gap-3 pt-2">
-              <button
+      {waterModalStudent && createPortal(
+        <div 
+          className="absolute inset-0 bg-slate-900/65 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setWaterModalStudent(null);
+            }
+          }}
+        >
+          <div 
+            className="bg-[#faf5ec] w-full max-w-md rounded-3xl shadow-2xl border-2 border-[#d6c4a8] flex flex-col relative overflow-hidden animate-in zoom-in-95 duration-200 my-auto text-left"
+            onClick={(e) => e.stopPropagation()}
+            tabIndex={-1}
+          >
+            {/* Header */}
+            <div className="bg-gradient-to-r from-[#dfccb0] via-[#e8d9c2] to-[#dfccb0] px-5 py-3.5 border-b border-[#c8b598] flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">💧</span>
+                <div>
+                  <h3 className="font-black text-sm text-[#42301c]">Tặng Giọt Nước Khen Thưởng</h3>
+                  <p className="text-[11px] font-bold text-sky-700">Học sinh: {waterModalStudent.name} ({waterModalStudent.code})</p>
+                </div>
+              </div>
+              <button 
                 onClick={() => setWaterModalStudent(null)}
-                className="w-1/2 py-2.5 rounded-2xl bg-slate-100 font-black text-slate-700 text-xs"
+                className="text-[#6e5334] hover:text-[#382613] bg-white/60 hover:bg-white p-1.5 rounded-full transition-all cursor-pointer shadow-xs focus:outline-none"
+                title="Đóng cửa sổ (Esc)"
               >
-                Hủy
+                <X className="w-4 h-4" />
               </button>
-              <button
-                onClick={() => {
-                  addWaterToStudent(waterModalStudent.id, selectedWaterAmount, waterReason || 'Giáo viên khen thưởng');
-                  setWaterModalStudent(null);
-                  showToast(`Đã tặng +${selectedWaterAmount} 💧 cho ${waterModalStudent.name}!`, 'success');
-                }}
-                className="w-1/2 py-2.5 rounded-2xl bg-sky-500 hover:bg-sky-600 font-black text-white text-xs shadow-xs"
-              >
-                Lưu & Tặng Nước
-              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              {/* Presets */}
+              <div className="grid grid-cols-3 gap-2 text-xs font-black">
+                {[1, 2, 3, 5, 10, 20].map(amt => (
+                  <button
+                    key={amt}
+                    type="button"
+                    onClick={() => setSelectedWaterAmount(amt)}
+                    className={`p-3 rounded-2xl border-2 transition-all cursor-pointer ${
+                      selectedWaterAmount === amt ? 'bg-sky-50 text-sky-700 border-sky-500 shadow-xs' : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    +{amt} 💧
+                  </button>
+                ))}
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black text-[#6e5334] uppercase mb-1">Lý do khen thưởng:</label>
+                <input
+                  ref={waterReasonInputRef}
+                  type="text"
+                  value={waterReason}
+                  onChange={(e) => setWaterReason(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      addWaterToStudent(waterModalStudent.id, selectedWaterAmount, waterReason || 'Giáo viên khen thưởng');
+                      setWaterModalStudent(null);
+                      showToast(`Đã tặng +${selectedWaterAmount} 💧 cho ${waterModalStudent.name}!`, 'success');
+                    }
+                  }}
+                  placeholder="Ví dụ: Giúp đỡ bạn, Hăng hái phát biểu..."
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#d6c4a8] bg-white text-xs font-bold focus:outline-none focus:ring-2 focus:ring-sky-500"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setWaterModalStudent(null)}
+                  className="w-1/2 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 font-black text-slate-700 text-xs transition-all cursor-pointer"
+                >
+                  Hủy (Esc)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    addWaterToStudent(waterModalStudent.id, selectedWaterAmount, waterReason || 'Giáo viên khen thưởng');
+                    setWaterModalStudent(null);
+                    showToast(`Đã tặng +${selectedWaterAmount} 💧 cho ${waterModalStudent.name}!`, 'success');
+                  }}
+                  className="w-1/2 py-2.5 rounded-2xl bg-sky-500 hover:bg-sky-600 font-black text-white text-xs shadow-md shadow-sky-500/20 active:scale-95 transition-all cursor-pointer"
+                >
+                  Lưu & Tặng Nước
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </div>,
+        (typeof document !== 'undefined' && document.getElementById('deskos-active-window')) || document.body
       )}
 
       {/* 2. BADGE MODAL */}
-      {badgeModalStudent && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-5">
-            <div className="text-center space-y-1">
-              <div className="text-4xl mb-1">🏅</div>
-              <h3 className="text-lg font-black text-slate-900">Trao Tặng Huy Hiệu Đức Tính</h3>
-              <p className="text-xs font-bold text-emerald-700">Tặng cho em: {badgeModalStudent.name}</p>
-            </div>
-
-            {/* Presets */}
-            <div className="grid grid-cols-2 gap-2 text-xs font-bold">
-              {['🌱 Mầm Xanh Cần Mẫn', '⭐ Chăm Chỉ Phát Biểu', '🤝 Bạn Tốt Trong Lớp', '🎨 Sáng Tạo Xuất Sắc'].map(preset => (
-                <button
-                  key={preset}
-                  onClick={() => setCustomBadgeInput(preset)}
-                  className="p-3 rounded-2xl border border-slate-200 hover:bg-emerald-50 text-left"
-                >
-                  {preset}
-                </button>
-              ))}
-            </div>
-
-            <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">Tên huy hiệu tự nhập:</label>
-              <input
-                type="text"
-                value={customBadgeInput}
-                onChange={(e) => setCustomBadgeInput(e.target.value)}
-                placeholder="Ví dụ: 📚 Vua Đọc Sách"
-                className="w-full px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold focus:outline-none focus:border-emerald-500"
-              />
-            </div>
-
-            <div className="flex gap-3 pt-2">
-              <button
+      {badgeModalStudent && createPortal(
+        <div 
+          className="absolute inset-0 bg-slate-900/65 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setBadgeModalStudent(null);
+            }
+          }}
+        >
+          <div 
+            className="bg-[#faf5ec] w-full max-w-md rounded-3xl shadow-2xl border-2 border-[#d6c4a8] flex flex-col relative overflow-hidden animate-in zoom-in-95 duration-200 my-auto text-left"
+            onClick={(e) => e.stopPropagation()}
+            tabIndex={-1}
+          >
+            {/* Header */}
+            <div className="bg-gradient-to-r from-[#dfccb0] via-[#e8d9c2] to-[#dfccb0] px-5 py-3.5 border-b border-[#c8b598] flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🏅</span>
+                <div>
+                  <h3 className="font-black text-sm text-[#42301c]">Trao Tặng Huy Hiệu Đức Tính</h3>
+                  <p className="text-[11px] font-bold text-emerald-800">Tặng cho em: {badgeModalStudent.name} ({badgeModalStudent.code})</p>
+                </div>
+              </div>
+              <button 
                 onClick={() => setBadgeModalStudent(null)}
-                className="w-1/2 py-2.5 rounded-2xl bg-slate-100 font-black text-slate-700 text-xs"
+                className="text-[#6e5334] hover:text-[#382613] bg-white/60 hover:bg-white p-1.5 rounded-full transition-all cursor-pointer shadow-xs focus:outline-none"
+                title="Đóng cửa sổ (Esc)"
               >
-                Hủy
+                <X className="w-4 h-4" />
               </button>
-              <button
-                onClick={handleAwardBadge}
-                className="w-1/2 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 font-black text-white text-xs shadow-xs"
-              >
-                Lưu & Trao Huy Hiệu
-              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              {/* Presets */}
+              <div className="grid grid-cols-2 gap-2 text-xs font-bold">
+                {['🌱 Mầm Xanh Cần Mẫn', '⭐ Chăm Chỉ Phát Biểu', '🤝 Bạn Tốt Trong Lớp', '🎨 Sáng Tạo Xuất Sắc'].map(preset => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => {
+                      setCustomBadgeInput(preset);
+                      customBadgeInputRef.current?.focus();
+                    }}
+                    className="p-3 rounded-2xl border border-[#d6c4a8] bg-white hover:bg-emerald-50 text-left transition-all cursor-pointer text-[#3d2b17]"
+                  >
+                    {preset}
+                  </button>
+                ))}
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black text-[#6e5334] uppercase mb-1">Tên huy hiệu tự nhập:</label>
+                <input
+                  ref={customBadgeInputRef}
+                  type="text"
+                  value={customBadgeInput}
+                  onChange={(e) => setCustomBadgeInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleAwardBadge();
+                    }
+                  }}
+                  placeholder="Ví dụ: 📚 Vua Đọc Sách"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#d6c4a8] bg-white text-xs font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setBadgeModalStudent(null)}
+                  className="w-1/2 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 font-black text-slate-700 text-xs transition-all cursor-pointer"
+                >
+                  Hủy (Esc)
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAwardBadge}
+                  className="w-1/2 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 font-black text-white text-xs shadow-md shadow-emerald-600/20 active:scale-95 transition-all cursor-pointer"
+                >
+                  Lưu & Trao Huy Hiệu
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </div>,
+        (typeof document !== 'undefined' && document.getElementById('deskos-active-window')) || document.body
       )}
 
       {/* 3. ADD REWARD MODAL */}
