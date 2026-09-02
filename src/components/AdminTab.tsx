@@ -618,19 +618,6 @@ export default function AdminTab({
           </div>
         </div>
 
-        {/* Informative block showing details of the selected teacher */}
-        <div className="bg-[#fbf7ee] border-2 border-[#e5dacf] p-4 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-xs">
-          <div className="space-y-1">
-            <h2 className="font-black text-[#4a2e16] text-sm">
-              Giáo viên: {members.find(m => m.username === selectedTeacherUsername)?.name || 'Chưa rõ'}
-            </h2>
-            <p className="text-xs text-[#78350f] font-semibold">
-              Chức danh chuyên môn: <strong className="text-[#3d2514]">{members.find(m => m.username === selectedTeacherUsername)?.role || 'Giáo viên bộ môn'}</strong>
-              {' | '} Email liên lạc: <strong className="text-[#3d2514]">{members.find(m => m.username === selectedTeacherUsername)?.email || 'dong.nt@school.edu.vn'}</strong>
-            </p>
-          </div>
-        </div>
-
         {/* EDITABLE CONFIGURATION SECTION FOR TIMETABLE TITLE AND SIGNATURE TITLE */}
         <div className="bg-[#fbf7ee] border-2 border-[#e5dacf] p-4 rounded-2xl shadow-xs text-left space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e5dacf] pb-2.5">
