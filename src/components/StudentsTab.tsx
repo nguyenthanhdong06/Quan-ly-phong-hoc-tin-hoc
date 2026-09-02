@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Student } from '../types';
 import { Trash2, UserPlus, FileSpreadsheet, Search, AlertCircle, Plus, Pencil, Check, X, IdCard, ArrowLeft, UploadCloud } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -277,6 +278,28 @@ export default function StudentsTab({
   
   // Student ID Card Preview Modal state
   const [selectedCardStudent, setSelectedCardStudent] = useState<Student | null>(null);
+  const cardCloseBtnRef = useRef<HTMLButtonElement>(null);
+
+  // Auto focus into close button when Student ID Card modal opens & handle Escape key
+  useEffect(() => {
+    if (selectedCardStudent) {
+      const timer = setTimeout(() => {
+        cardCloseBtnRef.current?.focus();
+      }, 70);
+
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          setSelectedCardStudent(null);
+        }
+      };
+      window.addEventListener('keydown', handleKeyDown);
+
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [selectedCardStudent?.id]);
 
   // Phân trang danh sách học sinh
   const [currentPage, setCurrentPage] = useState(1);
@@ -1096,47 +1119,61 @@ export default function StudentsTab({
       )}
 
       {/* STUDENT ID CARD PREVIEW MODAL */}
-      {selectedCardStudent && (
+      {selectedCardStudent && typeof document !== 'undefined' && createPortal(
         <div 
-          className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
-          onClick={() => setSelectedCardStudent(null)}
+          className="absolute inset-0 bg-slate-900/65 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setSelectedCardStudent(null);
+            }
+          }}
         >
           <div 
-            className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 text-center relative animate-in fade-in zoom-in-95 duration-200 space-y-4"
+            className="bg-[#faf5ec] w-full max-w-sm rounded-3xl shadow-2xl border-2 border-[#d6c4a8] flex flex-col relative overflow-hidden animate-in zoom-in-95 duration-200 my-auto text-center"
             onClick={(e) => e.stopPropagation()}
+            tabIndex={-1}
           >
-            <button
-              onClick={() => setSelectedCardStudent(null)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 p-1.5 rounded-full hover:bg-slate-100 transition z-20 cursor-pointer"
-              title="Đóng"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="text-left space-y-0.5">
-              <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest block">📇 Thẻ Học Sinh Độc Quyền</span>
-              <h3 className="text-base font-black text-slate-800 tracking-tight">Hồ Sơ ID Card Học Sinh</h3>
+            {/* Clean Top Header Bar */}
+            <div className="bg-gradient-to-r from-[#dfccb0] via-[#e8d9c2] to-[#dfccb0] px-5 py-3.5 border-b border-[#c8b598] flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-base">📇</span>
+                <div className="text-left">
+                  <h3 className="font-black text-sm text-[#42301c]">Hồ Sơ Thẻ ID Card Học Sinh</h3>
+                  <p className="text-[11px] font-bold text-indigo-700">{selectedCardStudent.name} • {selectedCardStudent.code}</p>
+                </div>
+              </div>
+              <button 
+                ref={cardCloseBtnRef}
+                onClick={() => setSelectedCardStudent(null)}
+                className="text-[#6e5334] hover:text-[#382613] bg-white/60 hover:bg-white p-1.5 rounded-full transition-all cursor-pointer shadow-xs focus:outline-none"
+                title="Đóng cửa sổ (Esc)"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
-            <div className="py-2">
-              <StudentCard3D
-                student={selectedCardStudent}
-                classStudents={classStudents}
-                machineName="Chưa xếp máy"
-                starCount={0}
-                size="md"
-              />
-            </div>
+            <div className="p-5 space-y-4">
+              <div className="py-1 flex justify-center">
+                <StudentCard3D
+                  student={selectedCardStudent}
+                  classStudents={classStudents}
+                  machineName="Chưa xếp máy"
+                  starCount={0}
+                  size="md"
+                />
+              </div>
 
-            <button
-              type="button"
-              onClick={() => setSelectedCardStudent(null)}
-              className="btn-3d btn-3d-slate w-full py-2.5 text-xs font-black uppercase tracking-wider"
-            >
-              Đóng Cửa Sổ Thẻ
-            </button>
+              <button
+                type="button"
+                onClick={() => setSelectedCardStudent(null)}
+                className="w-full bg-[#5c4326] hover:bg-[#42301c] text-white font-black text-xs py-2.5 px-4 rounded-xl transition-all cursor-pointer text-center shadow-md active:scale-95"
+              >
+                Xong & Đóng (Esc)
+              </button>
+            </div>
           </div>
-        </div>
+        </div>,
+        (document.getElementById('deskos-window-body') || document.getElementById('deskos-active-window')) || document.body
       )}
 
       {/* STUDENT DELETE CONFIRMATION DIALOG MODAL */}
