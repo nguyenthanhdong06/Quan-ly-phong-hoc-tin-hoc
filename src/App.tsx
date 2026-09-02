@@ -163,7 +163,19 @@ export default function App() {
   // --- STATE INIT FROM LOCAL STORAGE ---
   const [grades, setGrades] = useState<Grade[]>(() => safeParse('school_grades', defaultGrades));
   const [classes, setClasses] = useState<ClassItem[]>(() => safeParse('school_classes', defaultClasses));
-  const [students, setStudents] = useState<Student[]>(() => safeParse('school_students', defaultStudents));
+  const [students, setStudents] = useState<Student[]>(() => {
+    const loaded = safeParse<Student[]>('school_students', defaultStudents);
+    // Tự động loại bỏ dữ liệu học sinh mẫu cũ (st-1 đến st-21)
+    const cleaned = (loaded || []).filter(s => !s.id.match(/^st-(?:[1-9]|1[0-9]|2[0-1])$/));
+    if (cleaned.length !== (loaded || []).length) {
+      try {
+        localStorage.setItem('school_students', JSON.stringify(cleaned));
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return cleaned;
+  });
   const [computers, setComputers] = useState<Computer[]>(() => safeParse('school_computers', generateDefaultComputers()));
   
   // Authentication session

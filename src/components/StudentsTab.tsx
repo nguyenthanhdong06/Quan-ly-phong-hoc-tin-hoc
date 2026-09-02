@@ -701,24 +701,13 @@ export default function StudentsTab({
                     Tải file Excel mẫu (.csv)
                   </button>
                   
-                  <div className="flex justify-between items-center bg-slate-50 p-2 rounded-xl border border-dashed text-left">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setExcelText("Bùi Ngọc Quỳnh Anh\tx\nPhan Thị Ngọc Anh\tx\nLương Ngọc Kim Ánh\tx\nNguyễn Hoàng Ân\t\nNguyễn Hữu Danh\t\nLê Đức Duy\t\nLê Quốc Đại\t\nLê Võ Tấn Đạt\t\nLê Ngọc Hân\tx");
-                        showToast("Đã chèn dữ liệu mẫu đúng chuẩn Excel!");
-                      }}
-                      className="text-[10px] text-amber-600 hover:underline font-extrabold"
-                    >
-                      Dùng danh sách mẫu thử
-                    </button>
-                    
+                  <div className="pt-1 text-left">
                     <button
                       onClick={handleImportExcel}
                       disabled={parsedExcelPreview.total === 0}
-                      className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow cursor-pointer active:scale-95"
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-1.5 transition shadow-sm cursor-pointer active:scale-95"
                     >
-                      <Plus className="w-3.5 h-3.5" /> Nhập vào {selectedClass} {parsedExcelPreview.total > 0 ? `(${parsedExcelPreview.total} HS)` : ''}
+                      <Plus className="w-4 h-4" /> Nhập vào {selectedClass} {parsedExcelPreview.total > 0 ? `(${parsedExcelPreview.total} HS)` : ''}
                     </button>
                   </div>
                 </div>
