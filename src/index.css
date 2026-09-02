@@ -174,10 +174,106 @@ button:has(svg[class*="lucide-x"]) {
 }
 
 /* ==========================================================================
+   EVALUATION TAB PILL BUTTONS (STARS AWARD & DEDUCT) - 100% RESPONSIVE
+   ========================================================================== */
+.btn-eval {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  padding: 0.65rem 0.85rem !important;
+  border-radius: 9999px !important;
+  border-width: 2px !important;
+  border-style: solid !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+  text-align: left !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.btn-eval:hover {
+  transform: translateY(-1px) !important;
+  filter: brightness(1.06) !important;
+}
+
+.btn-eval:active {
+  transform: translateY(1px) scale(0.98) !important;
+}
+
+/* Green Khen Thưởng (Tặng Sao) */
+.btn-eval-reward {
+  background: linear-gradient(135deg, #10b981 0%, #059669 60%, #047857 100%) !important;
+  border-color: #065f46 !important;
+  box-shadow: 0 3px 0 #064e3b, 0 4px 10px rgba(5, 150, 105, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.35) !important;
+}
+.btn-eval-reward:hover {
+  box-shadow: 0 4px 0 #064e3b, 0 6px 14px rgba(5, 150, 105, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Red Nhắc Nhở (Trừ Sao) */
+.btn-eval-deduct {
+  background: linear-gradient(135deg, #f43f5e 0%, #e11d48 60%, #be123c 100%) !important;
+  border-color: #9f1239 !important;
+  box-shadow: 0 3px 0 #881337, 0 4px 10px rgba(225, 29, 72, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.35) !important;
+}
+.btn-eval-deduct:hover {
+  box-shadow: 0 4px 0 #881337, 0 6px 14px rgba(225, 29, 72, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Label text inside evaluation pill */
+.btn-eval-text {
+  flex: 1 1 0% !important;
+  min-width: 0 !important;
+  font-size: 0.8rem !important;
+  font-weight: 900 !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  padding-right: 0.35rem !important;
+  text-align: left !important;
+  line-height: 1.2 !important;
+}
+
+@media (min-width: 640px) {
+  .btn-eval-text {
+    font-size: 0.9rem !important;
+  }
+}
+
+/* Star badge inside evaluation pill */
+.btn-eval-badge {
+  flex-shrink: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.15rem !important;
+  padding: 0.15rem 0.55rem !important;
+  border-radius: 9999px !important;
+  font-size: 0.72rem !important;
+  font-weight: 900 !important;
+  background: #fde047 !important;
+  color: #78350f !important;
+  border: 1px solid #eab308 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+  letter-spacing: 0.01em !important;
+  line-height: 1.2 !important;
+}
+
+@media (min-width: 640px) {
+  .btn-eval-badge {
+    font-size: 0.8rem !important;
+    padding: 0.2rem 0.65rem !important;
+  }
+}
+
+/* ==========================================================================
    REFINED 3D GLOSSY PILL BUTTON STYLING (Light & Thin 3D Shadow Effect)
    ========================================================================== */
 
-button:not(.btn-raw):not(.btn-plain) {
+button:not(.btn-raw):not(.btn-plain):not(.btn-eval) {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -202,13 +298,13 @@ button:not(.btn-raw):not(.btn-plain) {
   color: #ffffff !important;
 }
 
-button:not(.btn-raw):not(.btn-plain):hover {
+button:not(.btn-raw):not(.btn-plain):not(.btn-eval):hover {
   transform: translateY(-1px) !important;
   filter: brightness(1.08) !important;
   box-shadow: 0 3.5px 0 #b88a5e, inset 0 1px 1px rgba(255, 255, 255, 0.55), 0 4px 10px rgba(0, 0, 0, 0.12) !important;
 }
 
-button:not(.btn-raw):not(.btn-plain):active {
+button:not(.btn-raw):not(.btn-plain):not(.btn-eval):active {
   transform: translateY(1px) !important;
   box-shadow: 0 0.5px 0 #b88a5e, inset 0 1px 1.5px rgba(0, 0, 0, 0.15) !important;
 }

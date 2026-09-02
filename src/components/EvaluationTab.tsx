@@ -525,12 +525,13 @@ export default function EvaluationTab({
                           key={opt.label}
                           type="button"
                           onClick={() => handleAwardStars(s.id, opt.value, opt.label)}
-                          className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 active:scale-95 border-2 border-emerald-700 rounded-full p-2.5 px-3.5 flex items-center justify-between transition-all cursor-pointer group text-left shadow-md"
+                          className="btn-eval btn-eval-reward"
+                          title={`${opt.label} (+${opt.value} sao)`}
                         >
-                          <span className="text-xs sm:text-sm font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)] truncate pr-1">
+                          <span className="btn-eval-text">
                             {opt.label}
                           </span>
-                          <span className="bg-amber-300 text-amber-950 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-black shrink-0 flex items-center gap-0.5 border border-amber-400 shadow-xs">
+                          <span className="btn-eval-badge">
                             +{opt.value} ⭐️
                           </span>
                         </button>
@@ -554,12 +555,13 @@ export default function EvaluationTab({
                           key={opt.label}
                           type="button"
                           onClick={() => handleAwardStars(s.id, opt.value, opt.label)}
-                          className="bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 active:scale-95 border-2 border-rose-700 rounded-full p-2.5 px-3.5 flex items-center justify-between transition-all cursor-pointer group text-left shadow-md"
+                          className="btn-eval btn-eval-deduct"
+                          title={`${opt.label} (${opt.value} sao)`}
                         >
-                          <span className="text-xs sm:text-sm font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)] truncate pr-1">
+                          <span className="btn-eval-text">
                             {opt.label}
                           </span>
-                          <span className="bg-amber-300 text-amber-950 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-black shrink-0 flex items-center gap-0.5 border border-amber-400 shadow-xs">
+                          <span className="btn-eval-badge">
                             {opt.value} ⭐️
                           </span>
                         </button>
