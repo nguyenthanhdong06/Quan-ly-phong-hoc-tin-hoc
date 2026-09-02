@@ -375,7 +375,7 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     const prevData = getStudentGarden(studentId);
     const oldLevel = getStageInfo(prevData.water).currentStage.level;
 
-    const newWater = prevData.water + amount;
+    const newWater = Math.max(0, prevData.water + amount);
     const newLogs: WaterLog[] = [
       {
         id: `log-${Date.now()}`,
@@ -395,8 +395,12 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
       }
     }));
 
-    triggerFallingWaterDrops();
-    playStarRewardSound();
+    if (amount >= 0) {
+      triggerFallingWaterDrops();
+      playStarRewardSound();
+    } else {
+      playWarningDeductSound();
+    }
 
     const newLevel = getStageInfo(newWater).currentStage.level;
     if (newLevel > oldLevel) {
@@ -404,6 +408,9 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
       triggerStarsConfetti();
       const st = students.find(s => s.id === studentId);
       showToast(`🎉 CHÚC MỪNG! Cây tri thức của ${st ? st.name : 'em'} đã nảy mầm vinh quang lên Cấp ${newLevel}!`, 'success');
+    } else if (amount < 0) {
+      const st = students.find(s => s.id === studentId);
+      showToast(`⚠️ Đã trừ ${Math.abs(amount)} 💧 của ${st ? st.name : 'em'} (${reason})`, 'error');
     }
   };
 
@@ -1442,16 +1449,54 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
               </div>
 
               {/* Quick Action Buttons */}
-              <div className="flex flex-wrap items-center justify-center gap-3 mt-6 z-20">
+              <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 mt-6 z-20">
+                {/* 1. Nút cộng giọt nước */}
                 <button
                   onClick={() => addWaterToStudent(activeStudent.id, 5, 'Chăm chỉ tự tưới cây')}
-                  className="px-5 py-2.5 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-black text-xs shadow-md shadow-sky-500/20 active:scale-95 transition-all flex items-center gap-2"
+                  className="px-5 py-2.5 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-black text-xs shadow-md shadow-sky-500/20 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
+                  title="Tưới Nước (+5 giọt)"
                 >
                   <span>💧</span> Tưới Nước (+5)
                 </button>
+
+                {/* 2. Các nút trừ giọt nước mới tạo (Tone màu đỏ) */}
+                <button
+                  onClick={() => addWaterToStudent(activeStudent.id, -2, 'Nói chuyện')}
+                  className="px-5 py-2.5 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white font-black text-xs shadow-md shadow-rose-500/20 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
+                  title="Nói chuyện: Trừ 2 giọt nước"
+                >
+                  <span>🤫</span> Nói chuyện (-2)
+                </button>
+
+                <button
+                  onClick={() => addWaterToStudent(activeStudent.id, -5, 'Quên sách, vở')}
+                  className="px-5 py-2.5 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white font-black text-xs shadow-md shadow-rose-500/20 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
+                  title="Quên sách, vở: Trừ 5 giọt nước"
+                >
+                  <span>📚</span> Quên sách, vở (-5)
+                </button>
+
+                <button
+                  onClick={() => addWaterToStudent(activeStudent.id, -3, 'Đi học muộn')}
+                  className="px-5 py-2.5 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white font-black text-xs shadow-md shadow-rose-500/20 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
+                  title="Đi học muộn: Trừ 3 giọt nước"
+                >
+                  <span>⏰</span> Đi học muộn (-3)
+                </button>
+
+                <button
+                  onClick={() => addWaterToStudent(activeStudent.id, -1, 'Vệ sinh chưa tốt')}
+                  className="px-5 py-2.5 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white font-black text-xs shadow-md shadow-rose-500/20 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
+                  title="Vệ sinh chưa tốt: Trừ 1 giọt nước"
+                >
+                  <span>🧹</span> Vệ sinh chưa tốt (-1)
+                </button>
+
+                {/* 3. Nút đổi quà / đổi thưởng */}
                 <button
                   onClick={() => setActiveTab('reward')}
-                  className="px-5 py-2.5 rounded-2xl bg-amber-400 hover:bg-amber-500 text-amber-950 font-black text-xs shadow-md shadow-amber-400/20 active:scale-95 transition-all flex items-center gap-2"
+                  className="px-5 py-2.5 rounded-2xl bg-amber-400 hover:bg-amber-500 text-amber-950 font-black text-xs shadow-md shadow-amber-400/20 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
+                  title="Mở kho đổi thưởng"
                 >
                   <span>🍎</span> Đổi Thưởng
                 </button>
@@ -1510,7 +1555,7 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                         <div className="text-[10px] text-slate-400">{log.date}</div>
                       </div>
                       <span className={`px-2.5 py-1 rounded-full text-xs font-black ${
-                        log.amount >= 0 ? 'bg-sky-50 text-sky-700' : 'bg-amber-50 text-amber-700'
+                        log.amount >= 0 ? 'bg-sky-50 text-sky-700' : 'bg-rose-50 text-rose-700 border border-rose-200'
                       }`}>
                         {log.amount >= 0 ? `+${log.amount}` : log.amount} 💧
                       </span>
