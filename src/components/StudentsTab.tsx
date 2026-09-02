@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Student } from '../types';
-import { Trash2, UserPlus, FileSpreadsheet, Search, AlertCircle, Plus, Pencil, Check, X, Download, IdCard, ArrowLeft } from 'lucide-react';
+import { Trash2, UserPlus, FileSpreadsheet, Search, AlertCircle, Plus, Pencil, Check, X, Download, IdCard, ArrowLeft, UploadCloud } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { StudentCard3D } from './StudentCard3D';
 
 interface StudentsTabProps {
@@ -208,6 +209,61 @@ export default function StudentsTab({
 
   // Multi-Student paste Excel box
   const [excelText, setExcelText] = useState('');
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
+  const excelFileInputRef = useRef<HTMLInputElement>(null);
+
+  // 📂 Xử lý tự động đọc nội dung file Excel (.xlsx, .xls, .csv) kéo thả hoặc chọn từ máy tính
+  const processExcelFile = (file: File) => {
+    const validExtensions = ['.xlsx', '.xls', '.csv'];
+    const lowerName = file.name.toLowerCase();
+    const isValid = validExtensions.some(ext => lowerName.endsWith(ext));
+    if (!isValid) {
+      showToast('Vui lòng chọn tệp Excel (.xlsx, .xls) hoặc tệp (.csv)!', 'error');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = e.target?.result;
+        if (!data) return;
+
+        let rows: any[][] = [];
+        if (typeof data === 'string' && lowerName.endsWith('.csv')) {
+          const wb = XLSX.read(data, { type: 'string' });
+          const firstSheet = wb.Sheets[wb.SheetNames[0]];
+          rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: '' });
+        } else {
+          const wb = XLSX.read(data, { type: 'array' });
+          const firstSheet = wb.Sheets[wb.SheetNames[0]];
+          rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: '' });
+        }
+
+        // Chuyển đổi các dòng thành định dạng chuẩn cột phân cách bởi dấu Tab (\t)
+        const lines = rows
+          .map(row => (Array.isArray(row) ? row.map(c => (c !== null && c !== undefined ? String(c).trim() : '')).join('\t') : ''))
+          .filter(l => l.trim().length > 0);
+
+        if (lines.length === 0) {
+          showToast('Tệp Excel không có dữ liệu học sinh nào!', 'error');
+          return;
+        }
+
+        const newText = lines.join('\n');
+        setExcelText(newText);
+        showToast(`Đã đọc xong tệp "${file.name}"!`, 'success');
+      } catch (err) {
+        console.error(err);
+        showToast('Không thể đọc file Excel này. Vui lòng thử lại hoặc mở file copy nội dung!', 'error');
+      }
+    };
+
+    if (lowerName.endsWith('.csv')) {
+      reader.readAsText(file, 'utf-8');
+    } else {
+      reader.readAsArrayBuffer(file);
+    }
+  };
 
   // Editing a student row in-line
   const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
@@ -640,8 +696,70 @@ export default function StudentsTab({
 
               <div className="p-4 sm:p-5 bg-white space-y-3">
                 <p className="text-[11px] text-slate-500 leading-relaxed text-left">
-                  Thầy cô sao chép đồng thời cột <strong>Họ tên học sinh</strong> và cột <strong>Nữ</strong> (như trong ảnh mẫu) trong file Excel, dán trực tiếp vào khung dưới đây.
+                  Thầy cô có thể <strong>kéo thả trực tiếp tệp Excel (.xlsx, .xls, .csv)</strong> vào khung bên dưới hoặc sao chép cột <strong>Họ tên học sinh</strong> và cột <strong>Nữ</strong> dán trực tiếp.
                 </p>
+                {/* 📂 VÙNG KÉO THẢ TRỰC TIẾP FILE EXCEL (.XLSX, .XLS, .CSV) */}
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDraggingFile(true);
+                  }}
+                  onDragLeave={() => setIsDraggingFile(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setIsDraggingFile(false);
+                    const files = e.dataTransfer.files;
+                    if (files && files.length > 0) {
+                      processExcelFile(files[0]);
+                    }
+                  }}
+                  onClick={() => excelFileInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-2xl p-4 sm:p-5 text-center transition-all cursor-pointer select-none group ${
+                    isDraggingFile
+                      ? 'border-emerald-600 bg-emerald-50 scale-[1.01] shadow-md ring-4 ring-emerald-200'
+                      : 'border-[#cbb89d] hover:border-emerald-600 bg-gradient-to-b from-[#faf5ec] to-white hover:bg-emerald-50/40 hover:shadow-xs'
+                  }`}
+                >
+                  <input
+                    type="file"
+                    ref={excelFileInputRef}
+                    accept=".xlsx,.xls,.csv"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        processExcelFile(e.target.files[0]);
+                        e.target.value = '';
+                      }
+                    }}
+                    className="hidden"
+                  />
+                  
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-100/90 border border-emerald-300 flex items-center justify-center text-emerald-700 shadow-xs group-hover:scale-110 transition-transform">
+                      <UploadCloud className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="font-black text-xs sm:text-sm text-slate-800 flex items-center justify-center gap-1.5">
+                        <span>Kéo & thả tệp Excel</span>
+                        <span className="text-emerald-700 font-black underline decoration-emerald-400 underline-offset-2">(.xlsx, .xls, .csv)</span>
+                        <span>vào đây</span>
+                      </p>
+                      <p className="text-[11px] text-slate-500 font-bold mt-0.5">
+                        hoặc <span className="text-emerald-700 font-black hover:underline">bấm để chọn tệp từ máy tính</span>
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-center gap-1.5 mt-0.5">
+                      <span className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-[10px] font-black text-slate-600 shadow-2xs">
+                        Hỗ trợ xuất từ: VNEDU • SMAS • CSDL Ngành • Microsoft Excel
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 my-1">
+                  <div className="h-px bg-slate-200 flex-1"></div>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Hoặc sao chép & dán dữ liệu</span>
+                  <div className="h-px bg-slate-200 flex-1"></div>
+                </div>
 
                 <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/60 text-[11px] text-slate-500 font-semibold space-y-1 text-left">
                   <p className="text-slate-700 font-extrabold flex items-center gap-1 text-[10px]">
@@ -667,12 +785,24 @@ export default function StudentsTab({
                 </div>
 
                 <div className="space-y-2.5">
-                  <textarea
-                    value={excelText}
-                    onChange={(e) => setExcelText(e.target.value)}
-                    placeholder="Dán dữ liệu từ file Excel tại đây...&#10;Ví dụ:&#10;Bùi Ngọc Quỳnh Anh&#9;x&#10;Phan Thị Ngọc Anh&#9;x&#10;Nguyễn Hoàng Ân&#10;Lê Đức Duy"
-                    className="w-full text-xs border border-slate-200 rounded-xl p-3 h-32 focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono text-left"
-                  ></textarea>
+                  <div className="relative">
+                    <textarea
+                      value={excelText}
+                      onChange={(e) => setExcelText(e.target.value)}
+                      placeholder="Dán dữ liệu từ file Excel tại đây...&#10;Ví dụ:&#10;Bùi Ngọc Quỳnh Anh&#9;x&#10;Phan Thị Ngọc Anh&#9;x&#10;Nguyễn Hoàng Ân&#10;Lê Đức Duy"
+                      className="w-full text-xs border border-slate-200 rounded-xl p-3 h-32 focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono text-left"
+                    ></textarea>
+                    {excelText && (
+                      <button
+                        type="button"
+                        onClick={() => setExcelText('')}
+                        className="absolute top-2.5 right-2.5 px-2 py-0.5 text-[10px] font-bold bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 rounded-md border border-slate-200 transition cursor-pointer shadow-2xs"
+                        title="Xóa nội dung đã nhập"
+                      >
+                        ✕ Xóa nội dung
+                      </button>
+                    )}
+                  </div>
 
                   {/* THỐNG KÊ NHẬN DIỆN THỜI GIAN THỰC (REALTIME PREVIEW COUNTER) */}
                   {parsedExcelPreview.total > 0 && (
