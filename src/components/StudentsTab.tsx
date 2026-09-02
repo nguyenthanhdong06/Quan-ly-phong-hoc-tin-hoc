@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Student } from '../types';
-import { Trash2, UserPlus, FileSpreadsheet, Search, AlertCircle, Plus, Pencil, Check, X, Download, IdCard, ArrowLeft, UploadCloud } from 'lucide-react';
+import { Trash2, UserPlus, FileSpreadsheet, Search, AlertCircle, Plus, Pencil, Check, X, IdCard, ArrowLeft, UploadCloud } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { StudentCard3D } from './StudentCard3D';
 
@@ -551,28 +551,6 @@ export default function StudentsTab({
     }
   };
 
-  // Tải file mẫu CSV đúng chuẩn Excel
-  const handleDownloadTemplate = () => {
-    const csvContent = "\uFEFF" + 
-      "Họ Và Tên,Nữ\n" +
-      "Bùi Ngọc Quỳnh Anh,x\n" +
-      "Phan Thị Ngọc Anh,x\n" +
-      "Lương Ngọc Kim Ánh,x\n" +
-      "Nguyễn Hoàng Ân,\n" +
-      "Nguyễn Hữu Danh,\n" +
-      "Lê Đức Duy,\n" +
-      "Lê Quốc Đại,\n" +
-      "Lê Võ Tấn Đạt,\n" +
-      "Lê Ngọc Hân,x\n";
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `Mau_Danh_Sach_Hoc_Sinh_Lop_${selectedClass}.csv`;
-    link.click();
-    showToast('Đã tải xuống tệp Excel CSV mẫu chuẩn!');
-  };
-
   return (
     <div className="space-y-6">
 
@@ -821,15 +799,6 @@ export default function StudentsTab({
                       </div>
                     </div>
                   )}
-
-                  <button
-                    type="button"
-                    onClick={handleDownloadTemplate}
-                    className="flex items-center justify-center gap-1.5 text-[11px] text-emerald-700 hover:text-emerald-800 font-black bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200 py-2 rounded-xl w-full transition cursor-pointer"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    Tải file Excel mẫu (.csv)
-                  </button>
                   
                   <div className="pt-1 text-left">
                     <button
