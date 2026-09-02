@@ -21,6 +21,7 @@ import {
   Filter,
   ArrowLeft,
   Edit3,
+  Pencil,
   ExternalLink,
   UploadCloud
 } from 'lucide-react';
@@ -311,6 +312,41 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [waterModalStudent, badgeModalStudent]);
 
+  // Reward Manager (Kho Thu Hoạch & Đổi Thưởng) State
+  const [isRewardManagerOpen, setIsRewardManagerOpen] = useState<boolean>(false);
+  const [editingReward, setEditingReward] = useState<GardenReward | null>(null);
+  const [isRewardFormModalOpen, setIsRewardFormModalOpen] = useState<boolean>(false);
+  const [rewardFormIcon, setRewardFormIcon] = useState<string>('🎁');
+  const [rewardFormTitle, setRewardFormTitle] = useState<string>('');
+  const [rewardFormCost, setRewardFormCost] = useState<number>(100);
+  const [rewardFormType, setRewardFormType] = useState<'WATER' | 'HARVEST'>('WATER');
+  const rewardTitleInputRef = useRef<HTMLInputElement>(null);
+
+  // Auto focus into reward title input when modal opens
+  useEffect(() => {
+    if (isRewardFormModalOpen) {
+      const timer = setTimeout(() => {
+        rewardTitleInputRef.current?.focus();
+        rewardTitleInputRef.current?.select();
+      }, 70);
+      return () => clearTimeout(timer);
+    }
+  }, [isRewardFormModalOpen]);
+
+  // Handle ESC key for reward modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (isRewardFormModalOpen) {
+          setIsRewardFormModalOpen(false);
+          setEditingReward(null);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isRewardFormModalOpen]);
+
   const [isAddRewardModalOpen, setIsAddRewardModalOpen] = useState<boolean>(false);
   const [newRewardIcon, setNewRewardIcon] = useState<string>('🧸');
   const [newRewardTitle, setNewRewardTitle] = useState<string>('');
@@ -554,6 +590,72 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
       playVictoryFanfareSound();
       triggerStarsConfetti();
       showToast(`🎁 Tuyệt vời! Em đã dùng ${reward.cost} 💧 đổi thành công món quà "${reward.title}"!`, 'success');
+    }
+  };
+
+  // Reward Management Handlers (Kho Thu Hoạch & Đổi Thưởng)
+  const handleOpenCreateReward = () => {
+    setEditingReward(null);
+    setRewardFormIcon('🎁');
+    setRewardFormTitle('');
+    setRewardFormCost(100);
+    setRewardFormType('WATER');
+    setIsRewardFormModalOpen(true);
+  };
+
+  const handleOpenEditReward = (item: GardenReward) => {
+    setEditingReward(item);
+    setRewardFormIcon(item.icon || '🎁');
+    setRewardFormTitle(item.title);
+    setRewardFormCost(item.cost || 100);
+    setRewardFormType(item.type || 'WATER');
+    setIsRewardFormModalOpen(true);
+  };
+
+  const handleSaveReward = () => {
+    if (!rewardFormTitle.trim()) {
+      showToast('Vui lòng nhập tên phần thưởng!', 'warning');
+      return;
+    }
+
+    if (editingReward) {
+      const updated: GardenReward = {
+        ...editingReward,
+        icon: rewardFormIcon.trim() || '🎁',
+        title: rewardFormTitle.trim(),
+        cost: Number(rewardFormCost) || 0,
+        type: rewardFormType
+      };
+      setRewards(prev => prev.map(r => r.id === editingReward.id ? updated : r));
+      setIsRewardFormModalOpen(false);
+      setEditingReward(null);
+      showToast(`Đã cập nhật phần thưởng "${updated.title}"!`, 'success');
+    } else {
+      const newItem: GardenReward = {
+        id: `rew-${Date.now()}`,
+        icon: rewardFormIcon.trim() || '🎁',
+        title: rewardFormTitle.trim(),
+        cost: Number(rewardFormCost) || 100,
+        type: rewardFormType
+      };
+      setRewards(prev => [...prev, newItem]);
+      setIsRewardFormModalOpen(false);
+      setRewardFormTitle('');
+      showToast(`Đã thêm món quà mới "${newItem.title}" vào Cửa Hàng!`, 'success');
+    }
+  };
+
+  const handleDeleteReward = (id: string, title: string) => {
+    if (window.confirm(`Bạn có chắc chắn muốn xóa phần thưởng "${title}" khỏi kho đổi quà không?`)) {
+      setRewards(prev => prev.filter(r => r.id !== id));
+      showToast(`Đã xóa phần thưởng "${title}" thành công!`, 'success');
+    }
+  };
+
+  const handleResetDefaultRewards = () => {
+    if (window.confirm('Bạn có chắc muốn khôi phục danh sách phần thưởng về mẫu ban đầu?')) {
+      setRewards(DEFAULT_REWARDS);
+      showToast('Đã khôi phục kho phần thưởng mẫu thành công!', 'success');
     }
   };
 
@@ -1157,6 +1259,135 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     );
   }
 
+  // --- INLINE SUB-VIEW 3: KHO THU HOẠCH & ĐỔI THƯỞNG (100% TAKEOVER) ---
+  if (isRewardManagerOpen) {
+    return (
+      <div className="space-y-6 text-slate-800 pb-10">
+        {/* Header Bar with Back Button */}
+        <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs">
+          <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  setIsRewardManagerOpen(false);
+                  setEditingReward(null);
+                }}
+                className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-[#cbb89d] font-black text-xs transition-all flex items-center gap-1.5 shadow-2xs active:scale-95 cursor-pointer"
+              >
+                <ArrowLeft className="w-4 h-4 text-slate-700" /> Quay Về Bảng Quản Lý
+              </button>
+              <div>
+                <h3 className="font-black text-sm sm:text-base text-[#3d2b17] flex items-center gap-2">
+                  <span>🎁</span> KHO THU HOẠCH & ĐỔI PHẦN THƯỞNG
+                </h3>
+                <p className="text-[11px] font-bold text-[#5c4327]">
+                  Quản lý danh sách phần thưởng: Thêm, sửa, xóa phần thưởng (Tự động đồng bộ với mục Đổi Thưởng của học sinh).
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={handleOpenCreateReward}
+                className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
+              >
+                <Plus className="w-4 h-4" /> Thêm Phần Thưởng Mới
+              </button>
+
+              <button
+                onClick={handleResetDefaultRewards}
+                className="px-3.5 py-2 rounded-xl bg-white hover:bg-amber-50 text-amber-900 border border-amber-300 font-black text-xs transition-all flex items-center gap-1.5 shadow-2xs active:scale-95 cursor-pointer"
+                title="Khôi phục danh sách phần thưởng mặc định ban đầu"
+              >
+                <RefreshCw className="w-3.5 h-3.5" /> Khôi Phục Mẫu
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Reward Cards Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          {rewards.map((item) => {
+            const isHarvest = item.type === 'HARVEST';
+            return (
+              <div
+                key={item.id}
+                className="bg-white rounded-3xl p-5 border-2 border-[#e8d7c0] hover:border-amber-400 shadow-sm hover:shadow-md transition-all flex flex-col justify-between text-center relative group"
+              >
+                {/* Header Badge & Action Icons */}
+                <div className="flex justify-between items-center mb-2">
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                    isHarvest ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-sky-100 text-sky-800 border border-sky-300'
+                  }`}>
+                    {isHarvest ? '🍎 Cấp 7 Kết Trái' : '💧 Giọt Nước'}
+                  </span>
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => handleOpenEditReward(item)}
+                      className="p-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 transition-colors cursor-pointer"
+                      title="Sửa nội dung phần thưởng"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteReward(item.id, item.title)}
+                      className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 transition-colors cursor-pointer"
+                      title="Xóa phần thưởng này"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Emoji & Title */}
+                <div className="space-y-2 my-2">
+                  <div className="text-6xl select-none hover:scale-110 transition-transform">{item.icon}</div>
+                  <h4 className="font-black text-slate-900 text-sm leading-snug">{item.title}</h4>
+                  <div className={`text-xs font-black inline-block px-3 py-1 rounded-full ${
+                    isHarvest ? 'bg-amber-50 text-amber-800 border border-amber-200' : 'bg-sky-50 text-sky-800 border border-sky-200'
+                  }`}>
+                    {isHarvest ? '🍎 Yêu cầu Kết Trái' : `${item.cost} 💧 Giọt Nước`}
+                  </div>
+                </div>
+
+                {/* Bottom Edit & Delete Buttons */}
+                <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-slate-100">
+                  <button
+                    onClick={() => handleOpenEditReward(item)}
+                    className="py-2 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 font-black text-xs transition-all flex items-center justify-center gap-1 cursor-pointer"
+                  >
+                    <Pencil className="w-3.5 h-3.5" /> Sửa
+                  </button>
+                  <button
+                    onClick={() => handleDeleteReward(item.id, item.title)}
+                    className="py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-black text-xs transition-all flex items-center justify-center gap-1 cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" /> Xóa
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Empty state */}
+        {rewards.length === 0 && (
+          <div className="text-center py-16 bg-white rounded-3xl border border-[#cbb89d] space-y-4">
+            <div className="text-5xl">🎁</div>
+            <p className="text-slate-500 font-bold text-sm">Kho phần thưởng đang trống.</p>
+            <button
+              onClick={handleResetDefaultRewards}
+              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs shadow-xs cursor-pointer"
+            >
+              Khôi Phục Danh Sách Mẫu
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 sm:space-y-6 text-slate-800 pb-10">
       
@@ -1700,22 +1931,30 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
 
                 <button
                   onClick={() => setIsSeedBankModalOpen(true)}
-                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-xs transition-all flex items-center gap-1.5 active:scale-95"
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
                 >
                   <span>🌾</span> Kho Hạt Giống (7 Cấp)
                 </button>
 
                 <button
+                  onClick={() => setIsRewardManagerOpen(true)}
+                  className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                  title="Quản lý kho thu hoạch và đổi thưởng (Thêm, sửa, xóa phần thưởng)"
+                >
+                  <span>🎁</span> Kho Thu Hoạch & Đổi Thưởng
+                </button>
+
+                <button
                   onClick={handleAddWaterToAll}
-                  className="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-black text-xs shadow-xs transition-all flex items-center gap-1.5"
+                  className="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-black text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
                 >
                   <span>💧</span> Thưởng Cả Lớp (+5)
                 </button>
                 <button
-                  onClick={() => setIsAddRewardModalOpen(true)}
-                  className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs shadow-xs transition-all flex items-center gap-1.5"
+                  onClick={handleOpenCreateReward}
+                  className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
                 >
-                  <span>🎁</span> Thêm Quà Mới
+                  <span>➕</span> Thêm Quà Nhanh
                 </button>
                 <button
                   onClick={handleResetGardenData}
@@ -2021,28 +2260,38 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
         (typeof document !== 'undefined' && (document.getElementById('deskos-window-body') || document.getElementById('deskos-active-window'))) || document.body
       )}
 
-      {/* 3. ADD REWARD MODAL */}
-      {isAddRewardModalOpen && createPortal(
+      {/* 3. ADD / EDIT REWARD MODAL */}
+      {isRewardFormModalOpen && createPortal(
         <div 
           className="absolute inset-0 bg-slate-900/65 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
-              setIsAddRewardModalOpen(false);
+              setIsRewardFormModalOpen(false);
+              setEditingReward(null);
             }
           }}
         >
           <div 
             className="bg-[#faf5ec] w-full max-w-md rounded-3xl shadow-2xl border-2 border-[#d6c4a8] flex flex-col relative overflow-hidden animate-in zoom-in-95 duration-200 my-auto text-left"
             onClick={(e) => e.stopPropagation()}
+            tabIndex={-1}
           >
             {/* Header */}
             <div className="bg-gradient-to-r from-[#dfccb0] via-[#e8d9c2] to-[#dfccb0] px-5 py-3.5 border-b border-[#c8b598] flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="text-xl">🎁</span>
-                <h3 className="font-black text-sm text-[#42301c]">Thêm Quà Mới Vào Cửa Hàng</h3>
+                <span className="text-xl">{editingReward ? '✏️' : '🎁'}</span>
+                <div>
+                  <h3 className="font-black text-sm text-[#42301c]">
+                    {editingReward ? 'Chỉnh Sửa Phần Thưởng' : 'Thêm Phần Thưởng Mới'}
+                  </h3>
+                  <p className="text-[11px] font-bold text-amber-800">Kho Thu Hoạch & Đổi Thưởng</p>
+                </div>
               </div>
               <button 
-                onClick={() => setIsAddRewardModalOpen(false)}
+                onClick={() => {
+                  setIsRewardFormModalOpen(false);
+                  setEditingReward(null);
+                }}
                 className="text-[#6e5334] hover:text-[#382613] bg-white/60 hover:bg-white p-1.5 rounded-full transition-all cursor-pointer shadow-xs focus:outline-none"
                 title="Đóng cửa sổ (Esc)"
               >
@@ -2050,61 +2299,92 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
               </button>
             </div>
 
-            <div className="p-5 space-y-3 text-xs font-bold">
+            <div className="p-5 space-y-3.5 text-xs font-bold">
+              {/* Quick Emojis Picker */}
+              <div>
+                <label className="block text-[10px] font-black text-[#6e5334] uppercase mb-1.5">Gợi ý Icon Emoji:</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {['🧸', '✏️', '📓', '🎨', '🧩', '🎁', '🍎', '🚀', '⚽', '📚', '🎒', '🧃', '🏅', '🏆', '⭐'].map(emoji => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => setRewardFormIcon(emoji)}
+                      className={`w-8 h-8 rounded-xl border flex items-center justify-center text-lg transition-all cursor-pointer ${
+                        rewardFormIcon === emoji ? 'bg-amber-200 border-amber-600 shadow-xs scale-105' : 'bg-white border-[#d6c4a8] hover:bg-slate-100'
+                      }`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div>
                 <label className="block text-[10px] font-black text-[#6e5334] uppercase mb-1">Biểu tượng Emoji:</label>
                 <input
                   type="text"
-                  value={newRewardIcon}
-                  onChange={(e) => setNewRewardIcon(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-[#d6c4a8] bg-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  value={rewardFormIcon}
+                  onChange={(e) => setRewardFormIcon(e.target.value)}
+                  placeholder="Ví dụ: 🧸"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#d6c4a8] bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm"
                 />
               </div>
+
               <div>
                 <label className="block text-[10px] font-black text-[#6e5334] uppercase mb-1">Tên phần thưởng:</label>
                 <input
+                  ref={rewardTitleInputRef}
                   type="text"
-                  value={newRewardTitle}
-                  onChange={(e) => setNewRewardTitle(e.target.value)}
+                  value={rewardFormTitle}
+                  onChange={(e) => setRewardFormTitle(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveReward();
+                  }}
                   placeholder="Ví dụ: Gấu bông tí hon"
-                  className="w-full px-4 py-2.5 rounded-xl border border-[#d6c4a8] bg-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#d6c4a8] bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm"
                 />
               </div>
+
               <div>
                 <label className="block text-[10px] font-black text-[#6e5334] uppercase mb-1">Giá Giọt Nước (💧):</label>
                 <input
                   type="number"
-                  value={newRewardCost}
-                  onChange={(e) => setNewRewardCost(parseInt(e.target.value) || 0)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-[#d6c4a8] bg-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  value={rewardFormCost}
+                  onChange={(e) => setRewardFormCost(parseInt(e.target.value) || 0)}
+                  min={0}
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#d6c4a8] bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm"
                 />
               </div>
+
               <div>
                 <label className="block text-[10px] font-black text-[#6e5334] uppercase mb-1">Yêu cầu thu hoạch đặc biệt:</label>
                 <select
-                  value={newRewardType}
-                  onChange={(e) => setNewRewardType(e.target.value as 'WATER' | 'HARVEST')}
+                  value={rewardFormType}
+                  onChange={(e) => setRewardFormType(e.target.value as 'WATER' | 'HARVEST')}
                   className="w-full px-4 py-2.5 rounded-xl border border-[#d6c4a8] bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
                 >
-                  <option value="WATER">Đổi bằng Giọt Nước thông thường</option>
-                  <option value="HARVEST">Cần Kết Trái Cấp 7 (Thu Hoạch Mùa Vụ 🍎)</option>
+                  <option value="WATER">💧 Đổi bằng Giọt Nước thông thường</option>
+                  <option value="HARVEST">🍎 Cần Kết Trái Cấp 7 (Thu Hoạch Mùa Vụ)</option>
                 </select>
               </div>
 
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setIsAddRewardModalOpen(false)}
+                  onClick={() => {
+                    setIsRewardFormModalOpen(false);
+                    setEditingReward(null);
+                  }}
                   className="w-1/2 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 font-black text-slate-700 text-xs transition-all cursor-pointer"
                 >
                   Hủy (Esc)
                 </button>
                 <button
                   type="button"
-                  onClick={handleCreateReward}
-                  className="w-1/2 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 font-black text-white text-xs shadow-md shadow-amber-500/20 active:scale-95 transition-all cursor-pointer"
+                  onClick={handleSaveReward}
+                  className="w-1/2 py-2.5 rounded-2xl bg-amber-600 hover:bg-amber-700 font-black text-white text-xs shadow-md shadow-amber-600/20 active:scale-95 transition-all cursor-pointer"
                 >
-                  Tạo Quà Mới
+                  {editingReward ? 'Lưu Thay Đổi' : 'Tạo Phần Thưởng'}
                 </button>
               </div>
             </div>
