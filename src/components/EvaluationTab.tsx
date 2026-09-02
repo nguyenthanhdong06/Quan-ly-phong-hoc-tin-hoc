@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { Student, EvaluationData, SeatingChart, Computer, EmulationDataState, AttendanceData } from '../types';
 import { Star, Calendar, Search, X, Award, MessageSquare, Tag } from 'lucide-react';
 import { triggerStarsConfetti } from '../utils/confetti';
@@ -204,10 +205,34 @@ export default function EvaluationTab({
   
   const [searchTerm, setSearchTerm] = React.useState('');
   const [selectedStudent, setSelectedStudent] = React.useState<Student | null>(null);
+  const commentInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleSelectStudent = React.useCallback((student: Student) => {
     setSelectedStudent(student);
   }, []);
+
+  // Auto focus into comment input when student modal opens & handle Escape key
+  React.useEffect(() => {
+    if (selectedStudent) {
+      const timer = setTimeout(() => {
+        if (commentInputRef.current) {
+          commentInputRef.current.focus();
+        }
+      }, 60);
+
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          setSelectedStudent(null);
+        }
+      };
+      window.addEventListener('keydown', handleKeyDown);
+
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [selectedStudent?.id]);
 
   // Reset search term when class changes for perfect UX
   React.useEffect(() => {
@@ -452,8 +477,8 @@ export default function EvaluationTab({
         </>
       )}
 
-      {/* Edit Evaluation Modal */}
-      {selectedStudent && (() => {
+      {/* Edit Evaluation Modal - Portaled to document.body to ensure 100% full screen coverage */}
+      {selectedStudent && typeof document !== 'undefined' && createPortal((() => {
         const s = selectedStudent;
         const evalObj = currentDaysEvaluations[s.id] || { rating: 0, comment: '', tags: [] };
         const seatId = Object.keys(seatingChart[selectedClass] || {}).find(k => seatingChart[selectedClass][k] === s.id);
@@ -472,8 +497,18 @@ export default function EvaluationTab({
         const isModalStudentAbsent = modalAttendanceStatus === 'excused' || modalAttendanceStatus === 'unexcused';
 
         return (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
-            <div className="bg-[#faf5ec] w-full max-w-lg rounded-3xl shadow-2xl border-2 border-[#d6c4a8] flex flex-col relative overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div 
+            className="fixed inset-0 bg-slate-900/65 backdrop-blur-md z-[99999] flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setSelectedStudent(null);
+              }
+            }}
+          >
+            <div 
+              className="bg-[#faf5ec] w-full max-w-lg rounded-3xl shadow-2xl border-2 border-[#d6c4a8] flex flex-col relative overflow-hidden animate-in zoom-in-95 duration-200 my-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
               {/* Clean Top Header Bar */}
               <div className="bg-gradient-to-r from-[#dfccb0] via-[#e8d9c2] to-[#dfccb0] px-5 py-3 border-b border-[#c8b598] flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -483,7 +518,7 @@ export default function EvaluationTab({
                 <button 
                   onClick={() => setSelectedStudent(null)}
                   className="text-[#6e5334] hover:text-[#382613] bg-white/60 hover:bg-white p-1.5 rounded-full transition-all cursor-pointer shadow-xs focus:outline-none"
-                  title="Đóng cửa sổ"
+                  title="Đóng cửa sổ (Esc)"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -600,6 +635,7 @@ export default function EvaluationTab({
                       Ý kiến / Nhận xét của giáo viên:
                     </span>
                     <input
+                      ref={commentInputRef}
                       type="text"
                       value={evalObj.comment}
                       onChange={(e) => handleSetComment(s.id, e.target.value)}
@@ -620,7 +656,7 @@ export default function EvaluationTab({
             </div>
           </div>
         );
-      })()}
+      })(), document.body)}
 
     </div>
   );
