@@ -38,6 +38,36 @@ export default function ClassesTab({
   const [classSubjectTeacherInput, setClassSubjectTeacherInput] = useState('');
   const [editingClass, setEditingClass] = useState<ClassItem | null>(null);
 
+  // Refs for auto-focusing the first input on edit
+  const editClassNameInputRef = React.useRef<HTMLInputElement>(null);
+  const editGradeNameInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Auto focus into the first input when editing class
+  React.useEffect(() => {
+    if (editingClass) {
+      setTimeout(() => {
+        if (editClassNameInputRef.current) {
+          editClassNameInputRef.current.focus();
+          editClassNameInputRef.current.select();
+          editClassNameInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 60);
+    }
+  }, [editingClass?.id]);
+
+  // Auto focus into the first input when editing grade
+  React.useEffect(() => {
+    if (editingGrade) {
+      setTimeout(() => {
+        if (editGradeNameInputRef.current) {
+          editGradeNameInputRef.current.focus();
+          editGradeNameInputRef.current.select();
+          editGradeNameInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 60);
+    }
+  }, [editingGrade?.id]);
+
   // Cascade delete control modal/state
   const [classToDelete, setClassToDelete] = useState<ClassItem | null>(null);
   const [moveTargetClassId, setMoveTargetClassId] = useState('');
@@ -399,6 +429,7 @@ export default function ClassesTab({
                   <form onSubmit={handleUpdateGrade} className="p-3 bg-amber-50 rounded-xl border border-amber-200 space-y-2">
                     <p className="text-[10px] font-black text-amber-800 uppercase">Đang sửa mã khối: {editingGrade.id}</p>
                     <input
+                      ref={editGradeNameInputRef}
                       type="text"
                       value={editingGrade.name}
                       onChange={(e) => setEditingGrade({ ...editingGrade, name: e.target.value })}
@@ -524,10 +555,11 @@ export default function ClassesTab({
                     <div>
                       <label className="block text-[10px] font-bold text-slate-500 mb-1">Tên lớp hiển thị</label>
                       <input
+                        ref={editClassNameInputRef}
                         type="text"
                         value={editingClass.name}
                         onChange={(e) => setEditingClass({ ...editingClass, name: e.target.value })}
-                        className="w-full text-xs border border-slate-200 rounded-lg p-2 bg-white"
+                        className="w-full text-xs border border-slate-200 rounded-lg p-2 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                         required
                       />
                     </div>
