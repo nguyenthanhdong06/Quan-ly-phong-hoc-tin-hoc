@@ -58,6 +58,140 @@ const capitalizeName = (str: string): string => {
     .join(' ');
 };
 
+export interface ParsedStudentRow {
+  name: string;
+  gender: 'Nam' | 'Nữ';
+}
+
+// 📊 Hàm phân tích cú pháp dữ liệu học sinh sao chép từ Excel (xử lý chuẩn xác Tab, khoảng trắng, STT, giới tính Nữ/Nam)
+export const parseStudentExcelLine = (rawLine: string): ParsedStudentRow | null => {
+  if (!rawLine) return null;
+  // 1. Chỉ loại bỏ ký tự xuống dòng ở cuối (\r, \n), KHÔNG dùng trim() để bảo toàn dấu Tab (\t) ở cuối cột
+  const line = rawLine.replace(/[\r\n]+$/, '');
+  if (!line.trim()) return null;
+
+  const lowerTrimmed = line.trim().toLowerCase();
+  // Bỏ qua các dòng tiêu đề Excel thường gặp
+  if (
+    lowerTrimmed.startsWith('sep=') ||
+    lowerTrimmed.startsWith('stt\t') ||
+    lowerTrimmed === 'stt' ||
+    lowerTrimmed === 'họ và tên' ||
+    lowerTrimmed === 'họ tên' ||
+    lowerTrimmed === 'hoten' ||
+    lowerTrimmed === 'name' ||
+    lowerTrimmed === 'họ và tên\tnữ' ||
+    lowerTrimmed.startsWith('họ và tên\t') ||
+    lowerTrimmed.startsWith('họ tên\t') ||
+    lowerTrimmed.includes('họ và tên,nữ')
+  ) {
+    return null;
+  }
+
+  let parts: string[] = [];
+  let hasExplicitGender = false;
+  let gender: 'Nam' | 'Nữ' = 'Nam';
+
+  const isFemaleMark = (val: string): boolean => {
+    if (!val) return false;
+    const v = val.trim().toLowerCase();
+    return v === 'x' || v === 'nữ' || v === 'nu' || v === 'f' || v === 'female' || v === 'gái' || v === '✓' || v === 'v' || v === '1';
+  };
+
+  const isMaleMark = (val: string): boolean => {
+    if (!val) return false;
+    const v = val.trim().toLowerCase();
+    return v === 'nam' || v === 'm' || v === 'male' || v === 'trai' || v === '0';
+  };
+
+  // Tách dòng thành các cột
+  if (line.includes('\t')) {
+    parts = line.split('\t').map(p => p.trim());
+  } else if (line.includes(',')) {
+    parts = line.split(',').map(p => p.trim());
+  } else if (/\s{2,}/.test(line)) {
+    // Trường hợp sao chép từ bảng có 2 khoảng trắng trở lên ngăn cách các cột
+    parts = line.split(/\s{2,}/).map(p => p.trim());
+  } else if (/\s+[xX✓vV]$/.test(line)) {
+    // Trường hợp chỉ có 1 khoảng trắng trước ký tự x ở cuối dòng
+    const match = line.match(/^(.+?)\s+([xX✓vV])$/);
+    if (match) {
+      parts = [match[1].trim(), match[2].trim()];
+    }
+  }
+
+  if (parts.length === 0) {
+    parts = [line.trim()];
+  }
+
+  // Nếu cột đầu tiên là STT (chỉ chứa chữ số như 1, 2, 01, 15...) và có từ 2 cột trở lên
+  if (parts.length >= 2 && /^\d+$/.test(parts[0])) {
+    parts.shift();
+  }
+
+  let rawName = '';
+
+  if (parts.length >= 3) {
+    // Trường hợp 3 cột trở lên: Có thể là Họ đệm | Tên | Nữ
+    const last = parts[parts.length - 1];
+    if (isFemaleMark(last)) {
+      gender = 'Nữ';
+      hasExplicitGender = true;
+      rawName = parts.slice(0, parts.length - 1).join(' ');
+    } else if (isMaleMark(last) || last === '') {
+      gender = 'Nam';
+      hasExplicitGender = true;
+      rawName = parts.slice(0, parts.length - 1).join(' ');
+    } else {
+      rawName = parts.join(' ');
+    }
+  } else if (parts.length === 2) {
+    // Chuẩn 2 cột: Cột 1 = Họ và Tên, Cột 2 = Nữ ('x' = Nữ, để trống/khác = Nam)
+    rawName = parts[0];
+    const second = parts[1];
+    if (isFemaleMark(second)) {
+      gender = 'Nữ';
+      hasExplicitGender = true;
+    } else if (isMaleMark(second) || second === '') {
+      gender = 'Nam';
+      hasExplicitGender = true;
+    } else {
+      // Trường hợp dán Họ đệm và Tên riêng (ví dụ: 'Nguyễn Văn' và 'A')
+      rawName = parts[0] + ' ' + parts[1];
+    }
+  } else {
+    rawName = parts[0];
+    const matchX = rawName.match(/^(.+?)\s+([xX✓vV])$/);
+    if (matchX) {
+      rawName = matchX[1].trim();
+      gender = 'Nữ';
+      hasExplicitGender = true;
+    }
+  }
+
+  // Nếu file không có cột giới tính (chỉ có 1 cột danh sách tên), đoán giới tính thông minh theo tên đệm/tên chính
+  if (!hasExplicitGender) {
+    const lower = rawName.toLowerCase();
+    const words = lower.split(/\s+/);
+    if (
+      words.includes('thị') || words.includes('nhi') || words.includes('quỳnh') ||
+      words.includes('thảo') || words.includes('ngọc') || words.includes('hân') ||
+      words.includes('hương') || words.includes('trúc') || words.includes('lan') ||
+      words.includes('hoa') || words.includes('trang') || words.includes('mai') ||
+      words.includes('diệp') || words.includes('nhung') || words.includes('vy')
+    ) {
+      gender = 'Nữ';
+    } else {
+      gender = 'Nam';
+    }
+  }
+
+  rawName = rawName.trim().replace(/\s+/g, ' ');
+  if (!rawName) return null;
+
+  return { name: capitalizeName(rawName), gender };
+};
+
 export default function StudentsTab({
   selectedClass,
   students,
@@ -120,6 +254,26 @@ export default function StudentsTab({
     const startIndex = (currentPage - 1) * itemsPerPage;
     return filteredStudents.slice(startIndex, startIndex + itemsPerPage);
   }, [filteredStudents, currentPage, itemsPerPage]);
+
+  // 📊 Nhận diện và thống kê dữ liệu dán từ Excel theo thời gian thực (Real-time Preview)
+  const parsedExcelPreview = useMemo(() => {
+    if (!excelText.trim()) return { total: 0, male: 0, female: 0, items: [] as ParsedStudentRow[] };
+    const lines = excelText.split('\n');
+    const items: ParsedStudentRow[] = [];
+    let male = 0;
+    let female = 0;
+
+    lines.forEach(line => {
+      const parsed = parseStudentExcelLine(line);
+      if (parsed) {
+        items.push(parsed);
+        if (parsed.gender === 'Nữ') female++;
+        else male++;
+      }
+    });
+
+    return { total: items.length, male, female, items };
+  }, [excelText]);
 
   const handleDeleteStudent = (id: string, name: string) => {
     setStudents(prev => prev.filter(s => s.id !== id));
@@ -247,37 +401,15 @@ export default function StudentsTab({
 
   // Handle upload paste from Excel with Confirmation & Auto-suffix (1), (2) & Auto-capitalization & Auto-scroll
   const handleImportExcel = () => {
-    if (!excelText.trim()) {
+    const parsedItems = parsedExcelPreview.items;
+    if (parsedItems.length === 0) {
       showToast('Vui lòng dán dữ liệu cột học sinh Copy từ Excel!', 'error');
       return;
     }
 
-    const lines = excelText.split('\n');
-    const duplicateNamesInExcel: string[] = [];
-
     // Quét phát hiện danh sách học sinh trùng tên
-    lines.forEach((line) => {
-      const trimmedLine = line.trim();
-      if (!trimmedLine) return;
-
-      let parts = trimmedLine.split('\t');
-      if (parts.length === 1 && trimmedLine.includes(',')) {
-        parts = trimmedLine.split(',');
-      }
-
-      const rawName = parts[0] ? capitalizeName(parts[0].trim()) : '';
-
-      if (
-        !rawName || 
-        rawName.toLowerCase().startsWith('sep=') ||
-        rawName.toLowerCase() === 'họ và tên' || 
-        rawName.toLowerCase() === 'họ tên' || 
-        rawName.toLowerCase() === 'hoten' || 
-        rawName.toLowerCase() === 'name'
-      ) {
-        return;
-      }
-
+    const duplicateNamesInExcel: string[] = [];
+    parsedItems.forEach(({ name: rawName }) => {
       const isDuplicateInClass = classStudents.some(s => {
         const base = s.name.replace(/\s*\(\d+\)$/, '').trim().toLowerCase();
         return base === rawName.toLowerCase();
@@ -302,31 +434,9 @@ export default function StudentsTab({
       useAutoSuffix = confirmSuffix;
     }
 
-    let addedCount = 0;
     const newStudentsList: Student[] = [];
 
-    lines.forEach((line, index) => {
-      const trimmedLine = line.trim();
-      if (!trimmedLine) return;
-
-      let parts = trimmedLine.split('\t');
-      if (parts.length === 1 && trimmedLine.includes(',')) {
-        parts = trimmedLine.split(',');
-      }
-
-      const rawName = parts[0] ? capitalizeName(parts[0].trim()) : '';
-
-      if (
-        !rawName || 
-        rawName.toLowerCase().startsWith('sep=') ||
-        rawName.toLowerCase() === 'họ và tên' || 
-        rawName.toLowerCase() === 'họ tên' || 
-        rawName.toLowerCase() === 'hoten' || 
-        rawName.toLowerCase() === 'name'
-      ) {
-        return;
-      }
-
+    parsedItems.forEach(({ name: rawName, gender }, index) => {
       let finalName = rawName;
       const baseKey = rawName.toLowerCase();
       if (nameTracker[baseKey]) {
@@ -338,23 +448,6 @@ export default function StudentsTab({
         nameTracker[baseKey] = 1;
       }
 
-      let gender: 'Nam' | 'Nữ' = 'Nam';
-      if (parts[1] !== undefined) {
-        const rawGender = parts[1].trim().toLowerCase();
-        if (rawGender === 'x' || rawGender === 'nữ' || rawGender === 'nu' || rawGender === '1' || rawGender === 'f' || rawGender === 'female' || rawGender === '✓') {
-          gender = 'Nữ';
-        } else if (rawGender === 'nam' || rawGender === 'm' || rawGender === 'male') {
-          gender = 'Nam';
-        } else if (rawGender.length > 0) {
-          gender = 'Nữ';
-        }
-      } else {
-        const lowerName = rawName.toLowerCase();
-        if (lowerName.includes('thị') || lowerName.includes('vy') || lowerName.includes('lan') || lowerName.includes('hoa') || lowerName.includes('diệp') || lowerName.includes('trang') || lowerName.includes('nhung')) {
-          gender = 'Nữ';
-        }
-      }
-
       const generatedCode = `HS${Math.floor(100 + Math.random() * 900)}`;
 
       newStudentsList.push({
@@ -364,9 +457,9 @@ export default function StudentsTab({
         gender,
         classId: selectedClass
       });
-      addedCount++;
     });
 
+    const addedCount = newStudentsList.length;
     if (addedCount > 0) {
       setStudents(prev => [...prev, ...newStudentsList]);
       setExcelText('');
@@ -396,7 +489,7 @@ export default function StudentsTab({
         }, 250);
       }
 
-      showToast(`🎉 Tuyệt vời! Đã nạp thành công ${addedCount} học sinh vào lớp ${selectedClass}!`);
+      showToast(`🎉 Tuyệt vời! Đã nạp thành công ${addedCount} học sinh (${parsedExcelPreview.male} Nam, ${parsedExcelPreview.female} Nữ) vào lớp ${selectedClass}!`);
     } else {
       showToast('Không tìm thấy dữ liệu học sinh hợp lệ để nhập!', 'error');
     }
@@ -581,6 +674,24 @@ export default function StudentsTab({
                     className="w-full text-xs border border-slate-200 rounded-xl p-3 h-32 focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono text-left"
                   ></textarea>
 
+                  {/* THỐNG KÊ NHẬN DIỆN THỜI GIAN THỰC (REALTIME PREVIEW COUNTER) */}
+                  {parsedExcelPreview.total > 0 && (
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-2.5 flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-emerald-950 animate-fadeIn">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm">📊</span>
+                        <span>Đã nhận diện: <strong className="text-emerald-800 text-sm font-black">{parsedExcelPreview.total}</strong> học sinh</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sky-700 bg-sky-100/90 px-2 py-0.5 rounded-lg border border-sky-200 font-extrabold flex items-center gap-1">
+                          👦 <span>{parsedExcelPreview.male} Nam</span>
+                        </span>
+                        <span className="text-rose-700 bg-rose-100/90 px-2 py-0.5 rounded-lg border border-rose-200 font-extrabold flex items-center gap-1">
+                          👧 <span>{parsedExcelPreview.female} Nữ</span>
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
                   <button
                     type="button"
                     onClick={handleDownloadTemplate}
@@ -604,9 +715,10 @@ export default function StudentsTab({
                     
                     <button
                       onClick={handleImportExcel}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow cursor-pointer"
+                      disabled={parsedExcelPreview.total === 0}
+                      className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1 transition shadow cursor-pointer active:scale-95"
                     >
-                      <Plus className="w-3.5 h-3.5" /> Nhập vào {selectedClass}
+                      <Plus className="w-3.5 h-3.5" /> Nhập vào {selectedClass} {parsedExcelPreview.total > 0 ? `(${parsedExcelPreview.total} HS)` : ''}
                     </button>
                   </div>
                 </div>
