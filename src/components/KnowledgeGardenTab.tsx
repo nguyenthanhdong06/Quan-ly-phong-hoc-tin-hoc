@@ -320,6 +320,7 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
   const [rewardFormTitle, setRewardFormTitle] = useState<string>('');
   const [rewardFormCost, setRewardFormCost] = useState<number>(100);
   const [rewardFormType, setRewardFormType] = useState<'WATER' | 'HARVEST'>('WATER');
+  const [highlightedRewardId, setHighlightedRewardId] = useState<string | null>(null);
   const rewardTitleInputRef = useRef<HTMLInputElement>(null);
 
   // Auto focus into reward title input when modal opens
@@ -629,6 +630,19 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
       setRewards(prev => prev.map(r => r.id === editingReward.id ? updated : r));
       setIsRewardFormModalOpen(false);
       setEditingReward(null);
+
+      // Focus vào phần thưởng vừa cập nhật
+      setHighlightedRewardId(updated.id);
+      setTimeout(() => {
+        const el = document.getElementById(`reward-card-${updated.id}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 150);
+      setTimeout(() => {
+        setHighlightedRewardId(null);
+      }, 3500);
+
       showToast(`Đã cập nhật phần thưởng "${updated.title}"!`, 'success');
     } else {
       const newItem: GardenReward = {
@@ -641,7 +655,25 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
       setRewards(prev => [...prev, newItem]);
       setIsRewardFormModalOpen(false);
       setRewardFormTitle('');
-      showToast(`Đã thêm món quà mới "${newItem.title}" vào Cửa Hàng!`, 'success');
+
+      // ĐỒNG BỘ: TỰ ĐỘNG MỞ TAB 'KHO THU HOẠCH & ĐỔI THƯỞNG' VÀ FOCUS VÀO PHẦN THƯỞNG VỪA TẠO
+      setActiveTab('teacher');
+      setIsRewardManagerOpen(true);
+      setHighlightedRewardId(newItem.id);
+
+      setTimeout(() => {
+        const el = document.getElementById(`reward-card-${newItem.id}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 150);
+
+      setTimeout(() => {
+        setHighlightedRewardId(null);
+      }, 4000);
+
+      triggerStarsConfetti();
+      showToast(`Đã thêm phần thưởng "${newItem.title}" thành công vào Kho!`, 'success');
     }
   };
 
@@ -1309,18 +1341,31 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {rewards.map((item) => {
             const isHarvest = item.type === 'HARVEST';
+            const isHighlighted = highlightedRewardId === item.id;
             return (
               <div
+                id={`reward-card-${item.id}`}
                 key={item.id}
-                className="bg-white rounded-3xl p-5 border-2 border-[#e8d7c0] hover:border-amber-400 shadow-sm hover:shadow-md transition-all flex flex-col justify-between text-center relative group"
+                className={`bg-white rounded-3xl p-5 border-2 transition-all flex flex-col justify-between text-center relative group ${
+                  isHighlighted 
+                    ? 'border-amber-500 ring-4 ring-amber-400/60 shadow-2xl scale-105 bg-amber-50/50 duration-500' 
+                    : 'border-[#e8d7c0] hover:border-amber-400 shadow-sm hover:shadow-md'
+                }`}
               >
                 {/* Header Badge & Action Icons */}
                 <div className="flex justify-between items-center mb-2">
-                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                    isHarvest ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-sky-100 text-sky-800 border border-sky-300'
-                  }`}>
-                    {isHarvest ? '🍎 Cấp 7 Kết Trái' : '💧 Giọt Nước'}
-                  </span>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                      isHarvest ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-sky-100 text-sky-800 border border-sky-300'
+                    }`}>
+                      {isHarvest ? '🍎 Cấp 7 Kết Trái' : '💧 Giọt Nước'}
+                    </span>
+                    {isHighlighted && (
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-xs animate-bounce">
+                        ✨ MỚI TẠO
+                      </span>
+                    )}
+                  </div>
 
                   <div className="flex items-center gap-1">
                     <button
