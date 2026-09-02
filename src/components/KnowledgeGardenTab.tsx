@@ -1291,6 +1291,142 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     );
   }
 
+  // Render Reward Modal (Add / Edit) - Callable both inside sub-view and in main view
+  const renderRewardFormModal = () => {
+    if (!isRewardFormModalOpen) return null;
+    return typeof document !== 'undefined' ? createPortal(
+      <div 
+        className="absolute inset-0 bg-slate-900/65 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            setIsRewardFormModalOpen(false);
+            setEditingReward(null);
+          }
+        }}
+      >
+        <div 
+          className="bg-[#faf5ec] w-full max-w-md rounded-3xl shadow-2xl border-2 border-[#d6c4a8] flex flex-col relative overflow-hidden animate-in zoom-in-95 duration-200 my-auto text-left"
+          onClick={(e) => e.stopPropagation()}
+          tabIndex={-1}
+        >
+          {/* Header */}
+          <div className="bg-gradient-to-r from-[#dfccb0] via-[#e8d9c2] to-[#dfccb0] px-5 py-3.5 border-b border-[#c8b598] flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">{editingReward ? '✏️' : '🎁'}</span>
+              <div>
+                <h3 className="font-black text-sm text-[#42301c]">
+                  {editingReward ? 'Chỉnh Sửa Phần Thưởng' : 'Thêm Phần Thưởng Mới'}
+                </h3>
+                <p className="text-[11px] font-bold text-amber-800">Kho Thu Hoạch & Đổi Thưởng</p>
+              </div>
+            </div>
+            <button 
+              onClick={() => {
+                setIsRewardFormModalOpen(false);
+                setEditingReward(null);
+              }}
+              className="text-[#6e5334] hover:text-[#382613] bg-white/60 hover:bg-white p-1.5 rounded-full transition-all cursor-pointer shadow-xs focus:outline-none"
+              title="Đóng cửa sổ (Esc)"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="p-5 space-y-3.5 text-xs font-bold">
+            {/* Quick Emojis Picker */}
+            <div>
+              <label className="block text-[10px] font-black text-[#6e5334] uppercase mb-1.5">Gợi ý Icon Emoji:</label>
+              <div className="flex flex-wrap gap-1.5">
+                {['🧸', '✏️', '📓', '🎨', '🧩', '🎁', '🍎', '🚀', '⚽', '📚', '🎒', '🧃', '🏅', '🏆', '⭐'].map(emoji => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => setRewardFormIcon(emoji)}
+                    className={`w-8 h-8 rounded-xl border flex items-center justify-center text-lg transition-all cursor-pointer ${
+                      rewardFormIcon === emoji ? 'bg-amber-200 border-amber-600 shadow-xs scale-105' : 'bg-white border-[#d6c4a8] hover:bg-slate-100'
+                    }`}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-black text-[#6e5334] uppercase mb-1">Biểu tượng Emoji:</label>
+              <input
+                type="text"
+                value={rewardFormIcon}
+                onChange={(e) => setRewardFormIcon(e.target.value)}
+                placeholder="Ví dụ: 🧸"
+                className="w-full px-4 py-2.5 rounded-xl border border-[#d6c4a8] bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-black text-[#6e5334] uppercase mb-1">Tên phần thưởng:</label>
+              <input
+                ref={rewardTitleInputRef}
+                type="text"
+                value={rewardFormTitle}
+                onChange={(e) => setRewardFormTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSaveReward();
+                }}
+                placeholder="Ví dụ: Gấu bông tí hon"
+                className="w-full px-4 py-2.5 rounded-xl border border-[#d6c4a8] bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-black text-[#6e5334] uppercase mb-1">Giá Giọt Nước (💧):</label>
+              <input
+                type="number"
+                value={rewardFormCost}
+                onChange={(e) => setRewardFormCost(parseInt(e.target.value) || 0)}
+                min={0}
+                className="w-full px-4 py-2.5 rounded-xl border border-[#d6c4a8] bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-black text-[#6e5334] uppercase mb-1">Yêu cầu thu hoạch đặc biệt:</label>
+              <select
+                value={rewardFormType}
+                onChange={(e) => setRewardFormType(e.target.value as 'WATER' | 'HARVEST')}
+                className="w-full px-4 py-2.5 rounded-xl border border-[#d6c4a8] bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
+              >
+                <option value="WATER">💧 Đổi bằng Giọt Nước thông thường</option>
+                <option value="HARVEST">🍎 Cần Kết Trái Cấp 7 (Thu Hoạch Mùa Vụ)</option>
+              </select>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsRewardFormModalOpen(false);
+                  setEditingReward(null);
+                }}
+                className="w-1/2 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 font-black text-slate-700 text-xs transition-all cursor-pointer"
+              >
+                Hủy (Esc)
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveReward}
+                className="w-1/2 py-2.5 rounded-2xl bg-amber-600 hover:bg-amber-700 font-black text-white text-xs shadow-md shadow-amber-600/20 active:scale-95 transition-all cursor-pointer"
+              >
+                {editingReward ? 'Lưu Thay Đổi' : 'Tạo Phần Thưởng'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>,
+      (document.getElementById('deskos-window-body') || document.getElementById('deskos-active-window')) || document.body
+    ) : null;
+  };
+
   // --- INLINE SUB-VIEW 3: KHO THU HOẠCH & ĐỔI THƯỞNG (100% TAKEOVER) ---
   if (isRewardManagerOpen) {
     return (
@@ -1429,6 +1565,9 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
             </button>
           </div>
         )}
+
+        {/* Render Add / Edit Reward Modal right inside this sub-view */}
+        {renderRewardFormModal()}
       </div>
     );
   }
@@ -2306,137 +2445,7 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
       )}
 
       {/* 3. ADD / EDIT REWARD MODAL */}
-      {isRewardFormModalOpen && createPortal(
-        <div 
-          className="absolute inset-0 bg-slate-900/65 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setIsRewardFormModalOpen(false);
-              setEditingReward(null);
-            }
-          }}
-        >
-          <div 
-            className="bg-[#faf5ec] w-full max-w-md rounded-3xl shadow-2xl border-2 border-[#d6c4a8] flex flex-col relative overflow-hidden animate-in zoom-in-95 duration-200 my-auto text-left"
-            onClick={(e) => e.stopPropagation()}
-            tabIndex={-1}
-          >
-            {/* Header */}
-            <div className="bg-gradient-to-r from-[#dfccb0] via-[#e8d9c2] to-[#dfccb0] px-5 py-3.5 border-b border-[#c8b598] flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">{editingReward ? '✏️' : '🎁'}</span>
-                <div>
-                  <h3 className="font-black text-sm text-[#42301c]">
-                    {editingReward ? 'Chỉnh Sửa Phần Thưởng' : 'Thêm Phần Thưởng Mới'}
-                  </h3>
-                  <p className="text-[11px] font-bold text-amber-800">Kho Thu Hoạch & Đổi Thưởng</p>
-                </div>
-              </div>
-              <button 
-                onClick={() => {
-                  setIsRewardFormModalOpen(false);
-                  setEditingReward(null);
-                }}
-                className="text-[#6e5334] hover:text-[#382613] bg-white/60 hover:bg-white p-1.5 rounded-full transition-all cursor-pointer shadow-xs focus:outline-none"
-                title="Đóng cửa sổ (Esc)"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="p-5 space-y-3.5 text-xs font-bold">
-              {/* Quick Emojis Picker */}
-              <div>
-                <label className="block text-[10px] font-black text-[#6e5334] uppercase mb-1.5">Gợi ý Icon Emoji:</label>
-                <div className="flex flex-wrap gap-1.5">
-                  {['🧸', '✏️', '📓', '🎨', '🧩', '🎁', '🍎', '🚀', '⚽', '📚', '🎒', '🧃', '🏅', '🏆', '⭐'].map(emoji => (
-                    <button
-                      key={emoji}
-                      type="button"
-                      onClick={() => setRewardFormIcon(emoji)}
-                      className={`w-8 h-8 rounded-xl border flex items-center justify-center text-lg transition-all cursor-pointer ${
-                        rewardFormIcon === emoji ? 'bg-amber-200 border-amber-600 shadow-xs scale-105' : 'bg-white border-[#d6c4a8] hover:bg-slate-100'
-                      }`}
-                    >
-                      {emoji}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-black text-[#6e5334] uppercase mb-1">Biểu tượng Emoji:</label>
-                <input
-                  type="text"
-                  value={rewardFormIcon}
-                  onChange={(e) => setRewardFormIcon(e.target.value)}
-                  placeholder="Ví dụ: 🧸"
-                  className="w-full px-4 py-2.5 rounded-xl border border-[#d6c4a8] bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-black text-[#6e5334] uppercase mb-1">Tên phần thưởng:</label>
-                <input
-                  ref={rewardTitleInputRef}
-                  type="text"
-                  value={rewardFormTitle}
-                  onChange={(e) => setRewardFormTitle(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleSaveReward();
-                  }}
-                  placeholder="Ví dụ: Gấu bông tí hon"
-                  className="w-full px-4 py-2.5 rounded-xl border border-[#d6c4a8] bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-black text-[#6e5334] uppercase mb-1">Giá Giọt Nước (💧):</label>
-                <input
-                  type="number"
-                  value={rewardFormCost}
-                  onChange={(e) => setRewardFormCost(parseInt(e.target.value) || 0)}
-                  min={0}
-                  className="w-full px-4 py-2.5 rounded-xl border border-[#d6c4a8] bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-black text-[#6e5334] uppercase mb-1">Yêu cầu thu hoạch đặc biệt:</label>
-                <select
-                  value={rewardFormType}
-                  onChange={(e) => setRewardFormType(e.target.value as 'WATER' | 'HARVEST')}
-                  className="w-full px-4 py-2.5 rounded-xl border border-[#d6c4a8] bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
-                >
-                  <option value="WATER">💧 Đổi bằng Giọt Nước thông thường</option>
-                  <option value="HARVEST">🍎 Cần Kết Trái Cấp 7 (Thu Hoạch Mùa Vụ)</option>
-                </select>
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsRewardFormModalOpen(false);
-                    setEditingReward(null);
-                  }}
-                  className="w-1/2 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 font-black text-slate-700 text-xs transition-all cursor-pointer"
-                >
-                  Hủy (Esc)
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveReward}
-                  className="w-1/2 py-2.5 rounded-2xl bg-amber-600 hover:bg-amber-700 font-black text-white text-xs shadow-md shadow-amber-600/20 active:scale-95 transition-all cursor-pointer"
-                >
-                  {editingReward ? 'Lưu Thay Đổi' : 'Tạo Phần Thưởng'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>,
-        (typeof document !== 'undefined' && (document.getElementById('deskos-window-body') || document.getElementById('deskos-active-window'))) || document.body
-      )}
+      {renderRewardFormModal()}
 
     </div>
   );
