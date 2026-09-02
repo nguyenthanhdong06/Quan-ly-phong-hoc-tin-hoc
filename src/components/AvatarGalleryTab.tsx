@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Student, ClassItem } from '../types';
-import { Image, User, Check, RotateCcw, Sparkles, UploadCloud, Link as LinkIcon, X, Plus, Trash2, FolderPlus, Search } from 'lucide-react';
+import { Image, User, Check, RotateCcw, Sparkles, UploadCloud, Link as LinkIcon, X, Plus, Trash2, FolderPlus, Search, ArrowLeft } from 'lucide-react';
 import { saveSupabaseState } from '../supabaseClient';
 import { StudentAvatar3D } from './StudentAvatar3D';
 
@@ -171,13 +171,24 @@ export const AvatarGalleryTab: React.FC<AvatarGalleryTabProps> = ({
     return () => window.removeEventListener('custom_avatars_updated', handleUpdate);
   }, []);
 
-  // Modal & File upload state
-  const [isDriveModalOpen, setIsDriveModalOpen] = useState<boolean>(false);
+  // SubView & File upload state (Inline View 100% like AttendanceTab)
+  const [subView, setSubView] = useState<'gallery' | 'drive-import'>('gallery');
   const [driveInputText, setDriveInputText] = useState<string>('');
   const [driveCategory, setDriveCategory] = useState<'con_nguoi' | 'dong_vat' | 'sieu_anh_hung' | 'hoa'>('con_nguoi');
-  const [driveNamePrefix, setDriveNamePrefix] = useState<string>('Avatar Google Drive');
+  const [driveNamePrefix, setDriveNamePrefix] = useState<string>('Avatar Google Drive / Link ảnh');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const driveInputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-focus on textarea when opening drive-import inline view
+  useEffect(() => {
+    if (subView === 'drive-import') {
+      const timer = setTimeout(() => {
+        driveInputRef.current?.focus();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [subView]);
 
   const classStudents = students.filter(s => s.classId === selectedClass);
   const filteredClassStudents = classStudents.filter(s => {
@@ -306,13 +317,13 @@ export const AvatarGalleryTab: React.FC<AvatarGalleryTabProps> = ({
     } else {
       setDriveCategory('con_nguoi');
     }
-    setIsDriveModalOpen(true);
+    setSubView('drive-import');
   };
 
-  // Google Drive URL submit handler
+  // Google Drive & Direct Image URL submit handler
   const handleAddFromGoogleDrive = () => {
     if (!driveInputText.trim()) {
-      showToast('Vui lòng nhập ít nhất một đường liên kết Google Drive!', 'error');
+      showToast('Vui lòng nhập ít nhất một đường liên kết Google Drive / Link ảnh!', 'error');
       return;
     }
 
@@ -329,7 +340,7 @@ export const AvatarGalleryTab: React.FC<AvatarGalleryTabProps> = ({
 
     const newItems: AvatarItem[] = rawLinks.map((link, idx) => {
       const convertedUrl = convertDriveUrlToThumbnail(link);
-      const baseName = driveNamePrefix.trim() || 'Avatar Google Drive';
+      const baseName = driveNamePrefix.trim() || 'Avatar Google Drive / Link ảnh';
       const name = rawLinks.length > 1 ? `${baseName} ${idx + 1}` : baseName;
       return {
         url: convertedUrl,
@@ -345,9 +356,9 @@ export const AvatarGalleryTab: React.FC<AvatarGalleryTabProps> = ({
       return updated;
     });
 
-    showToast(`Đã thêm thành công ${newItems.length} avatar từ Google Drive!`, 'success');
+    showToast(`Đã thêm thành công ${newItems.length} avatar từ Google Drive / Link ảnh vào kho!`, 'success');
     setDriveInputText('');
-    setIsDriveModalOpen(false);
+    setSubView('gallery');
   };
 
   // Delete custom avatar handler
@@ -414,20 +425,25 @@ export const AvatarGalleryTab: React.FC<AvatarGalleryTabProps> = ({
         className="hidden"
       />
 
-      {/* 🌟 1. DESKOS IMAC WARM BEIGE CARD HEADER STRIP */}
-      <div className="border-2 border-[#cbb89d] rounded-3xl bg-[#fffbf0] overflow-hidden shadow-sm">
-        <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-5 py-3 flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <div className="bg-amber-100 p-2 rounded-xl text-amber-800 shrink-0">
-                <Image className="w-4.5 h-4.5" />
+      {/* ========================================================================= */}
+      {/* 🌟 CHẾ ĐỘ 1: KHO AVATAR & GÁN CHO HỌC SINH (DEFAULT VIEW)                 */}
+      {/* ========================================================================= */}
+      {subView === 'gallery' && (
+        <>
+          {/* 🌟 1. DESKOS IMAC WARM BEIGE CARD HEADER STRIP */}
+          <div className="border-2 border-[#cbb89d] rounded-3xl bg-[#fffbf0] overflow-hidden shadow-sm">
+            <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-5 py-3 flex flex-col md:flex-row md:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <div className="bg-amber-100 p-2 rounded-xl text-amber-800 shrink-0">
+                    <Image className="w-4.5 h-4.5" />
+                  </div>
+                  <h2 className="text-base sm:text-lg font-black text-[#3d2b17] tracking-tight uppercase">KHO AVATAR HỌC SINH</h2>
+                </div>
+                <p className="text-xs text-[#5c4327] font-bold mt-0.5">
+                  Quản trị viên hoặc Giáo viên có thể lựa chọn avatar độc đáo từ Google Drive / Link ảnh hoặc tải từ máy tính cho từng học sinh.
+                </p>
               </div>
-              <h2 className="text-base sm:text-lg font-black text-[#3d2b17] tracking-tight uppercase">KHO AVATAR HỌC SINH</h2>
-            </div>
-            <p className="text-xs text-[#5c4327] font-bold mt-0.5">
-              Quản trị viên hoặc Giáo viên có thể lựa chọn avatar độc đáo từ Google Drive hoặc tải từ máy tính cho từng học sinh.
-            </p>
-          </div>
 
         {/* Class selector */}
         <div className="flex items-center gap-2 self-start md:self-center shrink-0">
@@ -629,13 +645,14 @@ export const AvatarGalleryTab: React.FC<AvatarGalleryTabProps> = ({
                 {/* HOẶC */}
                 <span className="text-[10px] font-black text-slate-400 tracking-widest uppercase">HOẶC</span>
 
-                {/* Action 2: Thêm liên kết Google Drive (Green text button) */}
+                {/* Action 2: Thêm liên kết Google Drive / Link ảnh (Green text button) */}
                 <button
                   type="button"
                   onClick={handleOpenDriveModal}
                   className="text-emerald-600 hover:text-emerald-700 font-black text-xs transition-colors cursor-pointer active:scale-95 flex items-center gap-1"
                 >
-                  Thêm liên kết Google Drive
+                  <LinkIcon className="w-3.5 h-3.5" />
+                  <span>Thêm liên kết Google Drive / Link ảnh</span>
                 </button>
               </div>
             </div>
@@ -730,89 +747,107 @@ export const AvatarGalleryTab: React.FC<AvatarGalleryTabProps> = ({
         </div>
       </div>
 
-      {/* POP-UP MODAL: Thêm avatar từ Google Drive */}
-      {isDriveModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-150">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-6 space-y-5 border border-slate-100 animate-in zoom-in-95 duration-150 text-left">
-            {/* Modal Header */}
-            <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-4">
-              <div className="flex items-center gap-3">
-                <div className="bg-emerald-100 p-2.5 rounded-2xl text-emerald-600 shrink-0">
-                  <LinkIcon className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="text-base font-black text-slate-800 tracking-tight">Thêm avatar từ Google Drive</h3>
-                  <p className="text-xs text-slate-400 font-medium">Hỗ trợ dán 1 hoặc nhiều link chia sẻ cùng lúc</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsDriveModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+        </>
+      )}
 
-            {/* Modal Body */}
-            <div className="space-y-4">
-              {/* Textarea for links */}
+      {/* ========================================================================= */}
+      {/* 🌟 CHẾ ĐỘ 2: THÊM AVATAR GOOGLE DRIVE / LINK ẢNH (INLINE VIEW 100%)       */}
+      {/* Cấu trúc đồng nhất 100% với ứng dụng Điểm danh (AttendanceTab)            */}
+      {/* ========================================================================= */}
+      {subView === 'drive-import' && (
+        <div className="space-y-6 animate-fadeIn w-full">
+          {/* Top navigation bar with Quay về button */}
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-[#fffbf0] border border-[#cbb89d] p-4 rounded-2xl shadow-xs">
+            <button
+              type="button"
+              onClick={() => setSubView('gallery')}
+              className="bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-xs py-2.5 px-4.5 rounded-xl border border-slate-700 transition shadow-2xs cursor-pointer flex items-center gap-2 active:scale-95"
+            >
+              <ArrowLeft className="w-4 h-4 text-slate-200" />
+              <span>Quay Về Kho Avatar</span>
+            </button>
+
+            <h3 className="text-sm sm:text-base font-black text-slate-800 flex items-center gap-1.5">
+              <span>🔗</span> THÊM AVATAR TỪ GOOGLE DRIVE / LINK ẢNH
+            </h3>
+
+            <span className="text-xs font-bold text-slate-500">
+              Hỗ trợ dán 1 hoặc nhiều link chia sẻ cùng lúc
+            </span>
+          </div>
+
+          {/* Inline View 100% Full Width Container */}
+          <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-md border border-[#cbb89d] space-y-5 text-left w-full">
+            {/* Header info banner */}
+            <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+              <div className="bg-emerald-100 p-2.5 rounded-2xl text-emerald-600 shrink-0">
+                <LinkIcon className="w-6 h-6" />
+              </div>
               <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-extrabold text-slate-700">
-                    Đường liên kết Google Drive (hoặc nhiều link):
-                  </label>
-                  {detectedLinksCount > 0 && (
-                    <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
-                      Đã nhận diện: {detectedLinksCount} link
-                    </span>
-                  )}
-                </div>
-                <textarea
-                  rows={5}
-                  value={driveInputText}
-                  onChange={(e) => setDriveInputText(e.target.value)}
-                  placeholder={`Dán các đường liên kết Google Drive tại đây...\nVí dụ:\nhttps://drive.google.com/file/d/1mjpI3dUOzHY8L5l-y7CkL_s9jw9XriSI/view?usp=sharing\nhttps://drive.google.com/file/d/1piSQIYDZsEvxdJgb45Kq1Vykiu32rrE4/view?usp=sharing`}
-                  className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs font-medium rounded-2xl p-3.5 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-mono leading-relaxed resize-none"
-                />
-                <p className="text-[11px] text-slate-400 font-medium mt-1">
-                  💡 <strong>Mẹo:</strong> Mỗi đường link nằm trên một dòng hoặc phân cách bởi dấu phẩy. Hệ thống tự động chuyển hóa liên kết sang định dạng hiển thị ảnh mượt mà.
-                </p>
-              </div>
-
-              {/* Options: Category & Name prefix */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                <div>
-                  <label className="block text-xs font-extrabold text-slate-700 mb-1.5">Danh mục Avatar:</label>
-                  <select
-                    value={driveCategory}
-                    onChange={(e) => setDriveCategory(e.target.value as any)}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 cursor-pointer"
-                  >
-                    <option value="con_nguoi">🧑‍🤝‍🧑 Con người</option>
-                    <option value="dong_vat">🐼 Động vật</option>
-                    <option value="sieu_anh_hung">🦸 Siêu anh hùng</option>
-                    <option value="hoa">🌸 Hoa</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-extrabold text-slate-700 mb-1.5">Tên hiển thị (Tùy chọn):</label>
-                  <input
-                    type="text"
-                    value={driveNamePrefix}
-                    onChange={(e) => setDriveNamePrefix(e.target.value)}
-                    placeholder="VD: Avatar Google Drive"
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs font-bold rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-                  />
-                </div>
+                <h3 className="text-base font-black text-slate-800 tracking-tight">Thêm avatar từ Google Drive / Link ảnh</h3>
+                <p className="text-xs text-slate-500 font-medium">Hỗ trợ dán 1 hoặc nhiều link chia sẻ Google Drive hoặc Link ảnh trực tiếp (JPG, PNG, WebP) cùng lúc</p>
               </div>
             </div>
 
-            {/* Modal Footer */}
-            <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
+            {/* Textarea for links */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-extrabold text-slate-700">
+                  Đường liên kết Google Drive / Link ảnh (hoặc nhiều link):
+                </label>
+                {detectedLinksCount > 0 && (
+                  <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200">
+                    Đã nhận diện: {detectedLinksCount} link
+                  </span>
+                )}
+              </div>
+              <textarea
+                ref={driveInputRef}
+                rows={6}
+                value={driveInputText}
+                onChange={(e) => setDriveInputText(e.target.value)}
+                placeholder={`Dán các đường liên kết Google Drive / Link ảnh tại đây...\nVí dụ:\nhttps://drive.google.com/file/d/1mjpI3dUOzHY8L5l-y7CkL_s9jw9XriSI/view?usp=sharing\nhttps://drive.google.com/file/d/1piSQIYDZsEvxdJgb45Kq1Vykiu32rrE4/view?usp=sharing\nhttps://example.com/anh-hoc-sinh.jpg`}
+                className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs font-medium rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-mono leading-relaxed resize-none"
+              />
+              <p className="text-[11px] text-slate-500 font-medium mt-1 flex items-start gap-1">
+                <span>💡</span>
+                <span><strong>Mẹo:</strong> Mỗi đường link nằm trên một dòng hoặc phân cách bởi dấu phẩy. Hệ thống tự động chuyển hóa liên kết Google Drive hoặc Link ảnh sang định dạng hiển thị ảnh mượt mà.</span>
+              </p>
+            </div>
+
+            {/* Options: Category & Name prefix */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+              <div>
+                <label className="block text-xs font-extrabold text-slate-700 mb-1.5">Danh mục Avatar:</label>
+                <select
+                  value={driveCategory}
+                  onChange={(e) => setDriveCategory(e.target.value as any)}
+                  className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 cursor-pointer"
+                >
+                  <option value="con_nguoi">🧑‍🤝‍🧑 Con người</option>
+                  <option value="dong_vat">🐼 Động vật</option>
+                  <option value="sieu_anh_hung">🦸 Siêu anh hùng</option>
+                  <option value="hoa">🌸 Hoa</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-extrabold text-slate-700 mb-1.5">Tên hiển thị (Tùy chọn):</label>
+                <input
+                  type="text"
+                  value={driveNamePrefix}
+                  onChange={(e) => setDriveNamePrefix(e.target.value)}
+                  placeholder="VD: Avatar Google Drive / Link ảnh"
+                  className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs font-bold rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                />
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-3 border-t border-slate-200/80 pt-4">
               <button
                 type="button"
-                onClick={() => setIsDriveModalOpen(false)}
+                onClick={() => setSubView('gallery')}
                 className="px-4 py-2.5 rounded-xl text-xs font-extrabold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
               >
                 Hủy bỏ
@@ -820,10 +855,10 @@ export const AvatarGalleryTab: React.FC<AvatarGalleryTabProps> = ({
               <button
                 type="button"
                 onClick={handleAddFromGoogleDrive}
-                className="px-5 py-2.5 rounded-xl text-xs font-black text-white bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20 flex items-center gap-2 transition-all cursor-pointer active:scale-95"
+                className="px-6 py-2.5 rounded-xl text-xs font-black text-white bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20 flex items-center gap-2 transition-all cursor-pointer active:scale-95"
               >
                 <Plus className="w-4 h-4 stroke-[3px]" />
-                Thêm {detectedLinksCount > 1 ? `${detectedLinksCount} ` : ''}Avatar Vào Kho
+                <span>Thêm {detectedLinksCount > 1 ? `${detectedLinksCount} ` : ''}Avatar Vào Kho</span>
               </button>
             </div>
           </div>
