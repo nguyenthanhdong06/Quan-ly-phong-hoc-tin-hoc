@@ -2102,18 +2102,8 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
           {/* Teacher Header Bar */}
           <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs space-y-0 text-left">
             
-            <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-              <div>
-                <h3 className="font-black text-xs sm:text-sm text-[#3d2b17] uppercase tracking-wider flex items-center gap-2">
-                  <span>👩‍🏫</span> BẢNG QUẢN LÝ THI ĐUA KHU VƯỜN • LỚP {selectedClass}
-                </h3>
-                <p className="text-[11px] font-bold text-[#5c4327]">Tặng giọt nước khen thưởng, trao huy hiệu và xuất báo cáo thi đua.</p>
-              </div>
-
-              {/* Quick Actions */}
-              <div className="flex flex-wrap items-center gap-2">
-
-                <button
+            <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex flex-wrap items-center gap-2">
+              <button
                   onClick={() => setIsSeedBankModalOpen(true)}
                   className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
                 >
@@ -2147,7 +2137,6 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                 >
                   <RefreshCw className="w-3.5 h-3.5" /> Đặt Lại Cây (0💧)
                 </button>
-              </div>
             </div>
 
             <div className="p-4 sm:p-5 bg-[#fffbf0] space-y-4">
