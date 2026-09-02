@@ -1928,7 +1928,7 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
             </div>
           </div>
         </div>,
-        (typeof document !== 'undefined' && document.getElementById('deskos-active-window')) || document.body
+        (typeof document !== 'undefined' && (document.getElementById('deskos-window-body') || document.getElementById('deskos-active-window'))) || document.body
       )}
 
       {/* 2. BADGE MODAL */}
@@ -2018,73 +2018,99 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
             </div>
           </div>
         </div>,
-        (typeof document !== 'undefined' && document.getElementById('deskos-active-window')) || document.body
+        (typeof document !== 'undefined' && (document.getElementById('deskos-window-body') || document.getElementById('deskos-active-window'))) || document.body
       )}
 
       {/* 3. ADD REWARD MODAL */}
-      {isAddRewardModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
-            <h3 className="text-lg font-black text-slate-900 text-center">🎁 Thêm Quà Mới Vào Cửa Hàng</h3>
+      {isAddRewardModalOpen && createPortal(
+        <div 
+          className="absolute inset-0 bg-slate-900/65 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setIsAddRewardModalOpen(false);
+            }
+          }}
+        >
+          <div 
+            className="bg-[#faf5ec] w-full max-w-md rounded-3xl shadow-2xl border-2 border-[#d6c4a8] flex flex-col relative overflow-hidden animate-in zoom-in-95 duration-200 my-auto text-left"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="bg-gradient-to-r from-[#dfccb0] via-[#e8d9c2] to-[#dfccb0] px-5 py-3.5 border-b border-[#c8b598] flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🎁</span>
+                <h3 className="font-black text-sm text-[#42301c]">Thêm Quà Mới Vào Cửa Hàng</h3>
+              </div>
+              <button 
+                onClick={() => setIsAddRewardModalOpen(false)}
+                className="text-[#6e5334] hover:text-[#382613] bg-white/60 hover:bg-white p-1.5 rounded-full transition-all cursor-pointer shadow-xs focus:outline-none"
+                title="Đóng cửa sổ (Esc)"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
 
-            <div className="space-y-3 text-xs font-bold">
+            <div className="p-5 space-y-3 text-xs font-bold">
               <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">Biểu tượng Emoji:</label>
+                <label className="block text-[10px] font-black text-[#6e5334] uppercase mb-1">Biểu tượng Emoji:</label>
                 <input
                   type="text"
                   value={newRewardIcon}
                   onChange={(e) => setNewRewardIcon(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-amber-500"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#d6c4a8] bg-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">Tên phần thưởng:</label>
+                <label className="block text-[10px] font-black text-[#6e5334] uppercase mb-1">Tên phần thưởng:</label>
                 <input
                   type="text"
                   value={newRewardTitle}
                   onChange={(e) => setNewRewardTitle(e.target.value)}
                   placeholder="Ví dụ: Gấu bông tí hon"
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-amber-500"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#d6c4a8] bg-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">Giá Giọt Nước (💧):</label>
+                <label className="block text-[10px] font-black text-[#6e5334] uppercase mb-1">Giá Giọt Nước (💧):</label>
                 <input
                   type="number"
                   value={newRewardCost}
                   onChange={(e) => setNewRewardCost(parseInt(e.target.value) || 0)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-amber-500"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#d6c4a8] bg-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">Yêu cầu thu hoạch đặc biệt:</label>
+                <label className="block text-[10px] font-black text-[#6e5334] uppercase mb-1">Yêu cầu thu hoạch đặc biệt:</label>
                 <select
                   value={newRewardType}
                   onChange={(e) => setNewRewardType(e.target.value as 'WATER' | 'HARVEST')}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-amber-500"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#d6c4a8] bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
                 >
                   <option value="WATER">Đổi bằng Giọt Nước thông thường</option>
                   <option value="HARVEST">Cần Kết Trái Cấp 7 (Thu Hoạch Mùa Vụ 🍎)</option>
                 </select>
               </div>
-            </div>
 
-            <div className="flex gap-3 pt-2">
-              <button
-                onClick={() => setIsAddRewardModalOpen(false)}
-                className="w-1/2 py-2.5 rounded-2xl bg-slate-100 font-black text-slate-700 text-xs"
-              >
-                Hủy
-              </button>
-              <button
-                onClick={handleCreateReward}
-                className="w-1/2 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 font-black text-white text-xs shadow-xs"
-              >
-                Tạo Quà Mới
-              </button>
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAddRewardModalOpen(false)}
+                  className="w-1/2 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 font-black text-slate-700 text-xs transition-all cursor-pointer"
+                >
+                  Hủy (Esc)
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCreateReward}
+                  className="w-1/2 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 font-black text-white text-xs shadow-md shadow-amber-500/20 active:scale-95 transition-all cursor-pointer"
+                >
+                  Tạo Quà Mới
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </div>,
+        (typeof document !== 'undefined' && (document.getElementById('deskos-window-body') || document.getElementById('deskos-active-window'))) || document.body
       )}
 
     </div>

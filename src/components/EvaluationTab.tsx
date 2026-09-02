@@ -596,7 +596,7 @@ export default function EvaluationTab({
             </div>
           </div>
         );
-      })(), (typeof document !== 'undefined' && document.getElementById('deskos-active-window')) || document.body)}
+      })(), (typeof document !== 'undefined' && (document.getElementById('deskos-window-body') || document.getElementById('deskos-active-window'))) || document.body)}
 
     </div>
   );

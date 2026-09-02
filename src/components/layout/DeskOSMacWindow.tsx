@@ -69,7 +69,7 @@ export const DeskOSMacWindow: React.FC<DeskOSMacWindowProps> = ({
         className="bg-[#ebdcc4] border-2 border-[#d6c4a8] rounded-2xl shadow-[0_20px_50px_rgba(80,55,25,0.25)] overflow-hidden flex flex-col flex-1 transition-all duration-200 relative"
       >
         {/* macOS iMac Window Header Bar */}
-        <div className="bg-gradient-to-r from-[#dfccb0] via-[#e8d9c2] to-[#dfccb0] px-3.5 py-2 border-b border-[#c8b598] flex flex-wrap items-center justify-between gap-2 select-none shrink-0">
+        <div className="bg-gradient-to-r from-[#dfccb0] via-[#e8d9c2] to-[#dfccb0] px-3.5 py-2 border-b border-[#c8b598] flex flex-wrap items-center justify-between gap-2 select-none shrink-0 relative z-30">
           {/* Active App Tab Title Pill */}
           <div className="flex items-center gap-2 bg-[#f5e6ca] px-3 py-1 rounded-xl border border-[#d6c4a8] shadow-2xs">
             <TabIcon className="w-4 h-4 text-amber-800 shrink-0" />
@@ -162,9 +162,15 @@ export const DeskOSMacWindow: React.FC<DeskOSMacWindowProps> = ({
           </div>
         </div>
 
-        {/* Window Content Body (Zero outer page scrollbar! Internal scrollbar ONLY inside iMac Window) */}
-        <div className="p-3 sm:p-5 bg-[#faf5ec]/90 backdrop-blur-xs flex-1 overflow-y-auto custom-scrollbar">
-          {children}
+        {/* Window Content Body Area (Scoped below the Header Bar so modal overlays only blur/cover content, leaving Header Bar untouched) */}
+        <div 
+          id="deskos-window-body"
+          className="flex-1 flex flex-col relative overflow-hidden"
+        >
+          {/* Window Content Body (Zero outer page scrollbar! Internal scrollbar ONLY inside iMac Window) */}
+          <div className="p-3 sm:p-5 bg-[#faf5ec]/90 backdrop-blur-xs flex-1 overflow-y-auto custom-scrollbar">
+            {children}
+          </div>
         </div>
       </div>
     </div>
