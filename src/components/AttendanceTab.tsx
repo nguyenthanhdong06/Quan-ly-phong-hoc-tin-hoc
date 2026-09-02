@@ -202,25 +202,55 @@ export default function AttendanceTab({
   }, [filteredStudents, currentPage, pageSize]);
 
   // Metrics (Memoized for 0ms Instant Calculation & Zero Jitter)
-  const { presentCount, excusedCount, unexcusedCount, totalAbsentCount, attendanceRate } = React.useMemo(() => {
+  const { 
+    presentCount, 
+    presentFemaleCount,
+    excusedCount, 
+    excusedFemaleCount,
+    unexcusedCount, 
+    unexcusedFemaleCount,
+    totalAbsentCount, 
+    totalFemaleCount,
+    totalCount,
+    attendanceRate 
+  } = React.useMemo(() => {
     let present = 0;
+    let presentFemale = 0;
     let excused = 0;
+    let excusedFemale = 0;
     let unexcused = 0;
+    let unexcusedFemale = 0;
+    let totalFemale = 0;
 
     classStudents.forEach(s => {
+      const isFemale = s.gender === 'Nữ' || s.gender?.toLowerCase() === 'nữ';
+      if (isFemale) totalFemale++;
+
       const status = currentDaysAttendance[s.id] || 'present';
-      if (status === 'present') present++;
-      else if (status === 'excused') excused++;
-      else if (status === 'unexcused') unexcused++;
+      if (status === 'present') {
+        present++;
+        if (isFemale) presentFemale++;
+      } else if (status === 'excused') {
+        excused++;
+        if (isFemale) excusedFemale++;
+      } else if (status === 'unexcused') {
+        unexcused++;
+        if (isFemale) unexcusedFemale++;
+      }
     });
 
     const total = classStudents.length;
     const rate = total > 0 ? Math.round((present / total) * 100) : 100;
     return {
       presentCount: present,
+      presentFemaleCount: presentFemale,
       excusedCount: excused,
+      excusedFemaleCount: excusedFemale,
       unexcusedCount: unexcused,
+      unexcusedFemaleCount: unexcusedFemale,
       totalAbsentCount: excused + unexcused,
+      totalFemaleCount: totalFemale,
+      totalCount: total,
       attendanceRate: rate
     };
   }, [classStudents, currentDaysAttendance]);
@@ -395,32 +425,34 @@ export default function AttendanceTab({
         </div>
       </div>
 
-      {/* Statistics board with smooth instant 0ms numbers */}
+      {/* Statistics board with smooth instant 0ms numbers (Tổng/Nữ) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         
         <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 text-left">
           <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Sĩ số lớp cần học</span>
-          <strong className="text-2xl font-black text-slate-800 mt-1 block">{classStudents.length}</strong>
+          <strong className="text-2xl font-black text-slate-800 mt-1 block">
+            {totalCount}/{totalFemaleCount}
+          </strong>
         </div>
 
         <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-200 text-left relative overflow-hidden">
           <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 block">Hiện diện (Học tốt)</span>
           <strong className="text-2xl font-black text-emerald-700 mt-1 block transition-all duration-200">
-            {presentCount} <span className="text-xs font-bold text-emerald-600">({attendanceRate}%)</span>
+            {presentCount}/{presentFemaleCount} <span className="text-xs font-bold text-emerald-600">({attendanceRate}%)</span>
           </strong>
         </div>
 
         <div className="bg-amber-50 p-4 rounded-xl border border-amber-200 text-left relative overflow-hidden">
           <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 block">Xin phép nghỉ (P)</span>
           <strong className="text-2xl font-black text-amber-700 mt-1 block transition-all duration-200">
-            {excusedCount}
+            {excusedCount}/{excusedFemaleCount}
           </strong>
         </div>
 
         <div className="bg-red-50 p-4 rounded-xl border border-red-200 text-left relative overflow-hidden">
           <span className="text-[10px] font-black uppercase tracking-wider text-red-700 block">Vắng không phép (KP)</span>
           <strong className="text-2xl font-black text-red-700 mt-1 block transition-all duration-200">
-            {unexcusedCount}
+            {unexcusedCount}/{unexcusedFemaleCount}
           </strong>
         </div>
 
@@ -540,7 +572,7 @@ export default function AttendanceTab({
           <div className="text-left">
             <h3 className="font-black text-xs sm:text-sm text-[#3d2b17] tracking-wider uppercase flex items-center gap-2">
               <span>📋</span>
-              BẢNG ĐIỂM DANH HỌC SINH • NGÀY {selectedDate}
+              BẢNG ĐIỂM DANH HỌC SINH
             </h3>
             <p className="text-[11px] font-bold text-[#5c4327]">
               Chọn trạng thái đi học (Hiện diện / Vắng phép / Không phép) cho từng học sinh bên dưới.
