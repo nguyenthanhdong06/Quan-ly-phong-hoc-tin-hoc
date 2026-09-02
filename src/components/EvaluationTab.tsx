@@ -7,6 +7,7 @@ import { playStarRewardSound, playWarningDeductSound } from '../utils/audioEffec
 import { CyberRobotCardFrameDecoration } from './CyberRobotCardFrameDecoration';
 import { StudentCard3D } from './StudentCard3D';
 import { VietnameseDatePicker } from './common/VietnameseDatePicker';
+import { getStudentAvatar } from '../utils/studentAvatar';
 
 interface EvaluationTabProps {
   selectedClass: string;
@@ -23,69 +24,6 @@ interface EvaluationTabProps {
   emulationDataState: EmulationDataState;
   attendanceData: AttendanceData;
 }
-
-const getStudentAvatar = (studentId: string, allStudents?: Student[]) => {
-  const avatars = [
-    { emoji: "🐼", bg: "bg-indigo-50 border-indigo-100" },
-    { emoji: "🐰", bg: "bg-emerald-50 border-emerald-100" },
-    { emoji: "🦁", bg: "bg-amber-50 border-amber-100" },
-    { emoji: "🦊", bg: "bg-orange-50 border-orange-100" },
-    { emoji: "🐯", bg: "bg-yellow-50 border-yellow-100" },
-    { emoji: "🐨", bg: "bg-slate-100/80 border-slate-200" },
-    { emoji: "🐸", bg: "bg-green-50 border-green-100" },
-    { emoji: "🐷", bg: "bg-pink-50 border-pink-100" },
-    { emoji: "🐻", bg: "bg-amber-100/60 border-amber-200" },
-    { emoji: "🦉", bg: "bg-purple-50 border-purple-100" },
-    { emoji: "🐱", bg: "bg-rose-50 border-rose-100" },
-    { emoji: "🐶", bg: "bg-blue-50 border-blue-100" },
-    { emoji: "🐧", bg: "bg-slate-100/80 border-slate-200"},
-    { emoji: "🐻‍❄️", bg: "bg-rose-50 border-rose-200"},
-    { emoji: "🦄", bg: "bg-rose-50 border-rose-100"},
-    { emoji: "🐺", bg: "bg-slate-100/80 border-slate-200"},
-    { emoji: "🦝", bg: "bg-slate-100/80 border-slate-200"},
-    { emoji: "🐹", bg: "bg-rose-50 border-rose-100"},
-    { emoji: "🐭", bg: "bg-emerald-50 border-emerald-100"},
-    { emoji: "🐮", bg: "bg-emerald-50 border-emerald-100"},
-    { emoji: "🐴", bg: "bg-amber-100/60 border-amber-200"},
-    { emoji: "🐳", bg: "bg-blue-50 border-blue-100"},
-    { emoji: "🐋", bg: "bg-blue-50 border-blue-100"},
-    { emoji: "🐙", bg: "bg-pink-50 border-pink-100"},
-    { emoji: "🦑", bg: "bg-amber-100/60 border-orange-100"},
-    { emoji: "🦀", bg: "bg-amber-100/60 border-pink-100"},
-    { emoji: "🦚", bg: "bg-green-50 border-green-100"},
-    { emoji: "🦧", bg: "bg-blue-50 border-blue-100"},
-    { emoji: "🕊️", bg: "bg-emerald-50 border-emerald-100"},
-    { emoji: "🐞", bg: "bg-amber-50 border-amber-100"},
-    { emoji: "🦋", bg: "bg-amber-50 border-amber-100"},
-    { emoji: "🐝", bg: "bg-yellow-50 border-yellow-100"},
-    { emoji: "🦗", bg: "bg-amber-50 border-amber-100"},
-    { emoji: "🪲", bg: "bg-green-50 border-green-100"},
-    { emoji: "🪰", bg: "bg-emerald-50 border-emerald-100"},
-    { emoji: "🕷️", bg: "bg-emerald-50 border-emerald-100"},
-    { emoji: "🦂", bg: "bg-emerald-50 border-emerald-100"},
-    { emoji: "🦖", bg: "bg-emerald-50 border-emerald-100"},
-    { emoji: "🦕", bg: "bg-emerald-50 border-emerald-100"},
-    { emoji: "🐲", bg: "bg-blue border-emerald-100"},
-    { emoji: "🐔", bg: "bg-emerald-50 border-emerald-100"},
-    { emoji: "🐓", bg: "bg-emerald-50 border-emerald-100"}
-  ];
-
-  if (allStudents && allStudents.length > 0) {
-    const sorted = [...allStudents].sort((a, b) => a.id.localeCompare(b.id));
-    const index = sorted.findIndex(s => s.id === studentId);
-    if (index !== -1) {
-      return avatars[index % avatars.length];
-    }
-  }
-
-  let hash = 0;
-  for (let i = 0; i < studentId.length; i++) {
-    hash = studentId.charCodeAt(i) + ((hash << 20) - hash);
-  }
-  hash = Math.abs(hash);
-
-  return avatars[hash % avatars.length];
-};
 
 // Simple Avatar Component to render clean, flat circle avatars with student-specific background colors with gorgeous hover effects
 const SimpleAvatar = ({ emoji, bg, size = 'w-16 h-16', className = '', avatarUrl }: { emoji: string; bg: string; size?: string; className?: string; avatarUrl?: string }) => {

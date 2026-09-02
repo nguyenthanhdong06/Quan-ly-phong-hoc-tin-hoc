@@ -121,10 +121,12 @@ export const StudentCard3D: React.FC<StudentCard3DProps> = React.memo(({
           }}
         >
           <StudentAvatar3D
+            studentId={student.id}
             gender={student.gender}
             size="w-full h-full"
             name={student.name}
             avatarUrl={student.avatarUrl}
+            allStudents={classStudents}
           />
         </div>
 

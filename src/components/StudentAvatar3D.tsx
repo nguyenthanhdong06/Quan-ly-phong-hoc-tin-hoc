@@ -1,17 +1,37 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
 import { convertGoogleDriveUrl } from '../utils/googleDriveImageHelper';
+import { getStudentAvatar } from '../utils/studentAvatar';
 
-// 3D Pixel/Cartoon Avatar component for boy/girl or custom Google Drive URL
-export const StudentAvatar3D = React.memo(({ gender, size = 'w-10 h-10', name = '', avatarUrl }: { gender: string; size?: string; name?: string; avatarUrl?: string }) => {
+export interface StudentAvatar3DProps {
+  gender?: string;
+  size?: string;
+  name?: string;
+  avatarUrl?: string;
+  studentId?: string;
+  allStudents?: any[];
+}
+
+// 3D Animal Avatar component or custom Google Drive URL
+export const StudentAvatar3D = React.memo(({ 
+  gender, 
+  size = 'w-10 h-10', 
+  name = '', 
+  avatarUrl,
+  studentId,
+  allStudents
+}: StudentAvatar3DProps) => {
   const [error, setError] = useState(false);
 
   useEffect(() => {
     setError(false);
   }, [avatarUrl]);
 
-  const isGirl = gender === 'Nữ';
-  const fastAvatarUrl = React.useMemo(() => {
+  const animalAvatar = useMemo(() => {
+    return getStudentAvatar(studentId || name || 'default_student', allStudents);
+  }, [studentId, name, allStudents]);
+
+  const fastAvatarUrl = useMemo(() => {
     if (!avatarUrl) return '';
     return convertGoogleDriveUrl(avatarUrl, 256);
   }, [avatarUrl]);
@@ -19,15 +39,11 @@ export const StudentAvatar3D = React.memo(({ gender, size = 'w-10 h-10', name = 
   if (!avatarUrl || error) {
     return (
       <div 
-        className={`${size} rounded-full flex items-center justify-center font-extrabold border-2 shadow-inner select-none shrink-0 ${
-          isGirl 
-            ? 'bg-gradient-to-tr from-pink-400 to-rose-300 border-pink-200 text-white' 
-            : 'bg-gradient-to-tr from-blue-400 to-sky-300 border-blue-200 text-white'
-        }`}
-        title={name || "Avatar mặc định"}
+        className={`${size} rounded-full flex items-center justify-center font-extrabold border-2 shadow-inner select-none shrink-0 ${animalAvatar.bg} transition-transform duration-200`}
+        title={name || "Avatar học sinh"}
       >
-        <span className="text-[1.25em] leading-none pointer-events-none">
-          {isGirl ? '👧🏻' : '👦🏻'}
+        <span className="text-[1.3em] leading-none pointer-events-none select-none">
+          {animalAvatar.emoji}
         </span>
       </div>
     );
