@@ -692,6 +692,9 @@ export default function App() {
           if (Array.isArray(dbStates['school_lab_incidents'])) setLabIncidents(dbStates['school_lab_incidents']);
           if (Array.isArray(dbStates['school_lab_maintenance_logs'])) setLabMaintenanceLogs(dbStates['school_lab_maintenance_logs']);
           if (Array.isArray(dbStates['school_labs'])) setLabs(dbStates['school_labs']);
+          if (Array.isArray(dbStates['school_computer_reports'])) {
+            safeSetLocalStorage('school_computer_reports', dbStates['school_computer_reports']);
+          }
 
           // Tự động giải mã Cloud Vault EmailJS cho thiết bị mới
           if (dbStates['school_otp_config']) {
@@ -1171,7 +1174,8 @@ export default function App() {
         saveSupabaseState('custom_avatars_list', loadCustomAvatars()),
         saveSupabaseState(`${activeWorkspaceId}_school_garden_data`, gardenData),
         saveSupabaseState('school_garden_rewards', gardenRewards),
-        saveSupabaseState('school_custom_seed_sets', customSeedSets)
+        saveSupabaseState('school_custom_seed_sets', customSeedSets),
+        saveSupabaseState('school_computer_reports', safeParse('school_computer_reports', []))
       ]);
       
       const allSuccess = results.every(r => r === true);

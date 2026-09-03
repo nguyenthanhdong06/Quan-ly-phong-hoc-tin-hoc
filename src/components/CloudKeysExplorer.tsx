@@ -177,19 +177,21 @@ export function analyzeCloudKey(row: CloudKeyRow): CloudKeyInfo {
     categoryBadgeText = 'text-amber-800';
     categoryBadgeBorder = 'border-amber-300';
     description = 'Danh sách máy tính, máy ghép và trạng thái hoạt động';
-  } else if (k === 'school_labs' || k.startsWith('school_lab_')) {
+  } else if (k === 'school_labs' || k.startsWith('school_lab_') || k === 'school_computer_reports') {
     category = 'lab';
-    categoryLabel = 'Phòng thực hành';
-    categoryColor = '#f59e0b';
-    categoryBadgeBg = 'bg-amber-100';
-    categoryBadgeText = 'text-amber-800';
-    categoryBadgeBorder = 'border-amber-300';
+    categoryLabel = k === 'school_computer_reports' ? 'Báo cáo phòng máy' : 'Phòng thực hành';
+    categoryColor = '#0891b2';
+    categoryBadgeBg = 'bg-cyan-100';
+    categoryBadgeText = 'text-cyan-800';
+    categoryBadgeBorder = 'border-cyan-300';
     description = k === 'school_labs' 
       ? 'Danh mục các phòng máy thực hành' 
       : k === 'school_lab_bookings' 
       ? 'Lịch đăng ký mượn phòng máy của giáo viên' 
       : k === 'school_lab_incidents' 
       ? 'Nhật ký sự cố hỏng hóc máy tính' 
+      : k === 'school_computer_reports'
+      ? 'Lịch sử báo cáo cơ sở vật chất phòng máy của giáo viên'
       : 'Lịch sử bảo trì thiết bị phòng máy';
   } else if (k.includes('attendance')) {
     category = 'attendance';

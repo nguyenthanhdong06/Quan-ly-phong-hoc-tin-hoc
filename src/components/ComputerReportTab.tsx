@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { safeSetLocalStorage } from '../utils/safeStorage';
 import { Member } from '../types';
+import { supabase, saveSupabaseState } from '../supabaseClient';
 import { 
   Printer, 
   Download, 
@@ -175,8 +176,9 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
     });
   }, [savedReports, currentUser, isAdmin]);
 
-  // Load saved reports on mount
+  // Load saved reports on mount (LocalStorage cache first, then Supabase Cloud sync)
   useEffect(() => {
+    // 1. Tải nhanh từ LocalStorage để hiển thị tức thì không độ trễ
     const local = localStorage.getItem('school_computer_reports');
     if (local) {
       try {
@@ -185,6 +187,55 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
         console.error('Error parsing saved reports', e);
       }
     }
+
+    // 2. Truy vấn đồng bộ dữ liệu mới nhất từ Supabase Cloud
+    async function fetchCloudReports() {
+      try {
+        const { data, error } = await supabase
+          .from('school_states')
+          .select('value')
+          .eq('key', 'school_computer_reports')
+          .maybeSingle();
+
+        if (error) {
+          console.warn('Supabase fetch error for computer reports:', error.message);
+          return;
+        }
+
+        if (data && Array.isArray(data.value)) {
+          setSavedReports(data.value);
+          safeSetLocalStorage('school_computer_reports', data.value);
+        }
+      } catch (err) {
+        console.warn('Error fetching cloud computer reports:', err);
+      }
+    }
+
+    fetchCloudReports();
+
+    // 3. Lắng nghe thay đổi thời gian thực Realtime từ Supabase
+    const channel = supabase
+      .channel('realtime_computer_reports')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'school_states',
+          filter: 'key=eq.school_computer_reports'
+        },
+        (payload: any) => {
+          if (payload.new && Array.isArray(payload.new.value)) {
+            setSavedReports(payload.new.value);
+            safeSetLocalStorage('school_computer_reports', payload.new.value);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   // Update general reporter when currentUser changes
@@ -327,8 +378,8 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
     setAdditions(updated);
   };
 
-  // Save report to browser history
-  const handleSaveReport = () => {
+  // Save report to browser history and Supabase Cloud
+  const handleSaveReport = async () => {
     const id = activeReportId || `rep-${Date.now()}`;
     const reportTitle = `Báo cáo ngày ${generalInfo.thoiGianBaoCao} - ${generalInfo.nguoiPhuTrach}`;
     
@@ -360,6 +411,12 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
 
     setSavedReports(updatedList);
     safeSetLocalStorage('school_computer_reports', updatedList);
+
+    // Đồng bộ tức thì lên Supabase Cloud
+    const cloudSaved = await saveSupabaseState('school_computer_reports', updatedList);
+    if (cloudSaved) {
+      showToast('Đã đồng bộ báo cáo lên Supabase Cloud!', 'success');
+    }
   };
 
   // Load a report from history
@@ -376,8 +433,8 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
     showToast(`Đã tải báo cáo của ${rep.creator}`);
   };
 
-  // Delete a report from history
-  const handleDeleteReport = (id: string) => {
+  // Delete a report from history and Supabase Cloud
+  const handleDeleteReport = async (id: string) => {
     const filtered = savedReports.filter(r => r.id !== id);
     setSavedReports(filtered);
     safeSetLocalStorage('school_computer_reports', filtered);
@@ -386,6 +443,9 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
     }
     setDeleteConfirmId(null);
     showToast('Đã xóa báo cáo!');
+
+    // Cập nhật lên Supabase Cloud
+    await saveSupabaseState('school_computer_reports', filtered);
   };
 
   // Helper to construct the HTML representation for both direct print & Word doc conversion
