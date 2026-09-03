@@ -692,6 +692,10 @@ export default function App() {
           if (Array.isArray(dbStates['school_lab_incidents'])) setLabIncidents(dbStates['school_lab_incidents']);
           if (Array.isArray(dbStates['school_lab_maintenance_logs'])) setLabMaintenanceLogs(dbStates['school_lab_maintenance_logs']);
           if (Array.isArray(dbStates['school_labs'])) setLabs(dbStates['school_labs']);
+          const scopedReportKey = `${activeWorkspaceId}_school_computer_reports`;
+          if (Array.isArray(dbStates[scopedReportKey])) {
+            safeSetLocalStorage(scopedReportKey, dbStates[scopedReportKey]);
+          }
           if (Array.isArray(dbStates['school_computer_reports'])) {
             safeSetLocalStorage('school_computer_reports', dbStates['school_computer_reports']);
           }
@@ -1175,6 +1179,7 @@ export default function App() {
         saveSupabaseState(`${activeWorkspaceId}_school_garden_data`, gardenData),
         saveSupabaseState('school_garden_rewards', gardenRewards),
         saveSupabaseState('school_custom_seed_sets', customSeedSets),
+        saveSupabaseState(`${activeWorkspaceId}_school_computer_reports`, safeParse(`${activeWorkspaceId}_school_computer_reports`, safeParse('school_computer_reports', []))),
         saveSupabaseState('school_computer_reports', safeParse('school_computer_reports', []))
       ]);
       
@@ -1799,7 +1804,7 @@ export default function App() {
             )}
 
             {activeTab === 'computer-report' && currentUser && (
-              <ComputerReportTab currentUser={currentUser} />
+              <ComputerReportTab currentUser={currentUser} workspaceId={activeWorkspaceId} />
             )}
 
             {activeTab === 'interactive-games' && hasAdminOrTeacherAccess && (

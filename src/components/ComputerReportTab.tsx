@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { safeSetLocalStorage } from '../utils/safeStorage';
 import { Member } from '../types';
 import { supabase, saveSupabaseState } from '../supabaseClient';
+import { getWorkspaceId, getScopedKey } from '../services/workspaceService';
 import { 
   Printer, 
   Download, 
@@ -22,6 +23,7 @@ import {
 
 interface ComputerReportTabProps {
   currentUser: Member | null;
+  workspaceId?: string;
 }
 
 interface GeneralInfo {
@@ -134,8 +136,10 @@ const DEFAULT_ADDITIONS: AdditionRow[] = [
   { id: 'a-6', stt: 6, thietBi: 'Máy tính', soLuong: '1', lyDo: 'Thay máy đã xuống cấp' },
 ];
 
-export default function ComputerReportTab({ currentUser }: ComputerReportTabProps) {
+export default function ComputerReportTab({ currentUser, workspaceId }: ComputerReportTabProps) {
   const isAdmin = Boolean(currentUser?.role?.includes('Admin'));
+  const currentWsId = workspaceId || getWorkspaceId(currentUser);
+  const scopedKey = getScopedKey('school_computer_reports', currentWsId);
 
   // General Form States
   const [generalInfo, setGeneralInfo] = useState<GeneralInfo>({
@@ -178,11 +182,13 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
 
   // Load saved reports on mount (LocalStorage cache first, then Supabase Cloud sync)
   useEffect(() => {
-    // 1. Tải nhanh từ LocalStorage để hiển thị tức thì không độ trễ
-    const local = localStorage.getItem('school_computer_reports');
-    if (local) {
+    // 1. Tải nhanh từ LocalStorage theo khóa riêng của giáo viên (fallback sang khóa chung)
+    const localScoped = localStorage.getItem(scopedKey);
+    const localFallback = localStorage.getItem('school_computer_reports');
+    const localData = localScoped || localFallback;
+    if (localData) {
       try {
-        setSavedReports(JSON.parse(local));
+        setSavedReports(JSON.parse(localData));
       } catch (e) {
         console.error('Error parsing saved reports', e);
       }
@@ -191,20 +197,40 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
     // 2. Truy vấn đồng bộ dữ liệu mới nhất từ Supabase Cloud
     async function fetchCloudReports() {
       try {
-        const { data, error } = await supabase
+        // Ưu tiên đọc theo scopedKey của giáo viên hiện tại (ví dụ: ws_u-1_school_computer_reports)
+        const { data: userScopedData, error: userError } = await supabase
+          .from('school_states')
+          .select('value')
+          .eq('key', scopedKey)
+          .maybeSingle();
+
+        if (!userError && userScopedData && Array.isArray(userScopedData.value) && userScopedData.value.length > 0) {
+          setSavedReports(userScopedData.value);
+          safeSetLocalStorage(scopedKey, userScopedData.value);
+          safeSetLocalStorage('school_computer_reports', userScopedData.value);
+          return;
+        }
+
+        // Nếu chưa có khóa riêng, tải từ khóa chung school_computer_reports
+        const { data: globalData, error: globalError } = await supabase
           .from('school_states')
           .select('value')
           .eq('key', 'school_computer_reports')
           .maybeSingle();
 
-        if (error) {
-          console.warn('Supabase fetch error for computer reports:', error.message);
-          return;
-        }
-
-        if (data && Array.isArray(data.value)) {
-          setSavedReports(data.value);
-          safeSetLocalStorage('school_computer_reports', data.value);
+        if (globalData && Array.isArray(globalData.value) && globalData.value.length > 0) {
+          const myReports = isAdmin 
+            ? globalData.value 
+            : globalData.value.filter((r: any) => 
+                (r.creatorId && currentUser?.id && r.creatorId === currentUser.id) ||
+                (r.creatorUsername && currentUser?.username && r.creatorUsername === currentUser.username) ||
+                (r.creator && currentUser?.name && r.creator === currentUser.name)
+              );
+          const reportsToSet = myReports.length > 0 ? myReports : globalData.value;
+          setSavedReports(reportsToSet);
+          safeSetLocalStorage(scopedKey, reportsToSet);
+          // Tự động khởi tạo lưu khóa riêng lên Supabase
+          await saveSupabaseState(scopedKey, reportsToSet);
         }
       } catch (err) {
         console.warn('Error fetching cloud computer reports:', err);
@@ -213,21 +239,21 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
 
     fetchCloudReports();
 
-    // 3. Lắng nghe thay đổi thời gian thực Realtime từ Supabase
+    // 3. Lắng nghe thay đổi thời gian thực Realtime từ Supabase cho khóa của giáo viên
     const channel = supabase
-      .channel('realtime_computer_reports')
+      .channel(`realtime_reports_${currentWsId}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'school_states',
-          filter: 'key=eq.school_computer_reports'
+          filter: `key=eq.${scopedKey}`
         },
         (payload: any) => {
           if (payload.new && Array.isArray(payload.new.value)) {
             setSavedReports(payload.new.value);
-            safeSetLocalStorage('school_computer_reports', payload.new.value);
+            safeSetLocalStorage(scopedKey, payload.new.value);
           }
         }
       )
@@ -236,7 +262,7 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [scopedKey, currentWsId, isAdmin]);
 
   // Update general reporter when currentUser changes
   useEffect(() => {
@@ -410,12 +436,17 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
     }
 
     setSavedReports(updatedList);
+    safeSetLocalStorage(scopedKey, updatedList);
     safeSetLocalStorage('school_computer_reports', updatedList);
 
-    // Đồng bộ tức thì lên Supabase Cloud
-    const cloudSaved = await saveSupabaseState('school_computer_reports', updatedList);
-    if (cloudSaved) {
-      showToast('Đã đồng bộ báo cáo lên Supabase Cloud!', 'success');
+    // 1. Đồng bộ lên khóa riêng của giáo viên này trên Supabase Cloud
+    const cloudSavedScoped = await saveSupabaseState(scopedKey, updatedList);
+
+    // 2. Đồng bộ vào kho lưu trữ chung toàn trường để Quản trị viên (Admin) xem được
+    await saveSupabaseState('school_computer_reports', updatedList);
+
+    if (cloudSavedScoped) {
+      showToast('Đã lưu & đồng bộ báo cáo lên Supabase Cloud của Thầy/Cô!', 'success');
     }
   };
 
@@ -437,6 +468,7 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
   const handleDeleteReport = async (id: string) => {
     const filtered = savedReports.filter(r => r.id !== id);
     setSavedReports(filtered);
+    safeSetLocalStorage(scopedKey, filtered);
     safeSetLocalStorage('school_computer_reports', filtered);
     if (activeReportId === id) {
       setActiveReportId(null);
@@ -444,7 +476,8 @@ export default function ComputerReportTab({ currentUser }: ComputerReportTabProp
     setDeleteConfirmId(null);
     showToast('Đã xóa báo cáo!');
 
-    // Cập nhật lên Supabase Cloud
+    // Cập nhật cả khóa riêng của giáo viên và khóa chung trên Supabase Cloud
+    await saveSupabaseState(scopedKey, filtered);
     await saveSupabaseState('school_computer_reports', filtered);
   };
 
