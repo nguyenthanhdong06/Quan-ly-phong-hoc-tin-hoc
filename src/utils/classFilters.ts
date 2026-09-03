@@ -1,4 +1,5 @@
 import { Member, ClassItem, TimetableData } from '../types';
+import { sortClasses } from './classSorter';
 
 /**
  * Filter classes to match 100% of the assigned classes in the user's timetable.
@@ -9,10 +10,10 @@ export function getTeacherAssignedClasses(
   timetableData: TimetableData,
   classes: ClassItem[]
 ): ClassItem[] {
-  if (!currentUser) return classes;
+  if (!currentUser) return sortClasses(classes);
 
   const isAdmin = currentUser.role?.includes('Admin');
-  if (isAdmin) return classes; // Admin gets 100% of all classes
+  if (isAdmin) return sortClasses(classes); // Admin gets 100% of all classes
 
   // Find user's schedule entries in timetableData by username, id, or name
   const userTimetable =
@@ -42,7 +43,7 @@ export function getTeacherAssignedClasses(
 
   // If no classes match timetable yet (e.g. fresh setup), fallback to classes assigned directly to teacher
   if (assignedClasses.length > 0) {
-    return assignedClasses;
+    return sortClasses(assignedClasses);
   }
 
   const directTeacherClasses = classes.filter(c => 
@@ -50,5 +51,5 @@ export function getTeacherAssignedClasses(
     (c.subjectTeacher && c.subjectTeacher.trim().toLowerCase() === currentUser.name.trim().toLowerCase())
   );
 
-  return directTeacherClasses.length > 0 ? directTeacherClasses : classes;
+  return sortClasses(directTeacherClasses.length > 0 ? directTeacherClasses : classes);
 }

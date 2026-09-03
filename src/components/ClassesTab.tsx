@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Grade, ClassItem, Student } from '../types';
 import { Plus, Edit2, Trash2, FolderPlus, HelpCircle, Layers, Users, BookOpen, AlertCircle, ChevronDown, ChevronUp, ArrowLeft } from 'lucide-react';
+import { sortClasses } from '../utils/classSorter';
 
 interface ClassesTabProps {
   grades: Grade[];
@@ -170,7 +171,7 @@ export default function ClassesTab({
       subjectTeacher: classSubjectTeacherInput.trim()
     };
 
-    setClasses(prev => [...prev, newC]);
+    setClasses(prev => sortClasses([...prev, newC]));
     setClassIdInput('');
     setClassNameInput('');
     setClassGradeIdInput('');
@@ -199,13 +200,13 @@ export default function ClassesTab({
       return;
     }
 
-    setClasses(prev => prev.map(c => c.id === editingClass.id ? {
+    setClasses(prev => sortClasses(prev.map(c => c.id === editingClass.id ? {
       ...editingClass,
       name: editingClass.name.trim(),
       teacher: editingClass.teacher.trim(),
       teacherPhone: editingClass.teacherPhone ? editingClass.teacherPhone.trim() : '',
       subjectTeacher: editingClass.subjectTeacher ? editingClass.subjectTeacher.trim() : ''
-    } : c));
+    } : c)));
     showToast(`Đã cập nhật thông tin lớp ${editingClass.name} thành công!`);
     setEditingClass(null);
   };
@@ -645,9 +646,7 @@ export default function ClassesTab({
                     <>
                       {/* Lặp qua các khối lớp đã có và sắp xếp khối học theo Grade ID */}
                       {grades.map(grade => {
-                        const gradeClasses = classes
-                          .filter(c => c.gradeId === grade.id)
-                          .sort((a, b) => a.name.localeCompare(b.name, 'vi', { numeric: true, sensitivity: 'base' }));
+                        const gradeClasses = sortClasses(classes.filter(c => c.gradeId === grade.id));
 
                         if (gradeClasses.length === 0) return null;
 

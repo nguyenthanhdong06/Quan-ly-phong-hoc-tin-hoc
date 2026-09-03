@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Minus, Square, X, Home, Users, School, ClipboardCheck, Star, Trophy, Monitor, Calendar, FolderOpen, Gamepad2, Settings, HelpCircle, Image as ImageIcon, FileText, Sprout, CalendarCheck } from 'lucide-react';
 import { Grade, ClassItem } from '../../types';
 import { playButtonClickSound } from '../../utils/audioEffects';
+import { sortClasses } from '../../utils/classSorter';
 
 interface DeskOSMacWindowProps {
   activeTab: string;
@@ -53,6 +54,10 @@ export const DeskOSMacWindow: React.FC<DeskOSMacWindowProps> = ({
   const [isMaximized, setIsMaximized] = useState(false);
   const currentTabInfo = TAB_METADATA[activeTab] || { label: 'Phòng Lab', icon: Monitor };
   const TabIcon = currentTabInfo.icon;
+
+  const sortedClasses = useMemo(() => {
+    return sortClasses(filteredClasses || []);
+  }, [filteredClasses]);
 
   if (isMinimized) return null;
 
@@ -111,10 +116,10 @@ export const DeskOSMacWindow: React.FC<DeskOSMacWindowProps> = ({
                   }}
                   className="bg-transparent text-[#4a351e] font-black text-xs outline-none cursor-pointer pr-1"
                 >
-                  {filteredClasses.map(c => (
+                  {sortedClasses.map(c => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
-                  {filteredClasses.length === 0 && (
+                  {sortedClasses.length === 0 && (
                     <option value="">Không có lớp</option>
                   )}
                 </select>

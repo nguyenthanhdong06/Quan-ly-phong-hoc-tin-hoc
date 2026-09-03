@@ -29,6 +29,7 @@ import AdminTab from './components/AdminTab';
 import TimetableTab from './components/TimetableTab';
 import LabBookingTab from './components/LabBookingTab';
 import { getTeacherAssignedClasses } from './utils/classFilters';
+import { sortClasses } from './utils/classSorter';
 import OfflineSyncBanner from './components/OfflineSyncBanner';
 import { triggerInstantShortcutDownload } from './utils/shortcutInstaller';
 import { 
@@ -162,7 +163,7 @@ export default function App() {
 
   // --- STATE INIT FROM LOCAL STORAGE ---
   const [grades, setGrades] = useState<Grade[]>(() => safeParse('school_grades', defaultGrades));
-  const [classes, setClasses] = useState<ClassItem[]>(() => safeParse('school_classes', defaultClasses));
+  const [classes, setClasses] = useState<ClassItem[]>(() => sortClasses(safeParse('school_classes', defaultClasses)));
   const [students, setStudents] = useState<Student[]>(() => {
     const loaded = safeParse<Student[]>('school_students', defaultStudents);
     // Tự động loại bỏ dữ liệu học sinh mẫu cũ (st-1 đến st-21)
@@ -668,7 +669,7 @@ export default function App() {
           latestDbStatesRef.current = dbStates;
 
           if (Array.isArray(dbStates['school_grades'])) setGrades(dbStates['school_grades'].length > 0 ? dbStates['school_grades'] : defaultGrades);
-          if (Array.isArray(dbStates['school_classes'])) setClasses(dbStates['school_classes']);
+          if (Array.isArray(dbStates['school_classes'])) setClasses(sortClasses(dbStates['school_classes']));
           if (Array.isArray(dbStates['school_students'])) setStudents(dbStates['school_students']);
           if (Array.isArray(dbStates['school_computers'])) setComputers(dbStates['school_computers']);
           
@@ -955,12 +956,12 @@ export default function App() {
 
   // Filter classes by teacher timetable assignment (Admin gets ALL 100% classes)
   const userAssignedClasses = useMemo(() => {
-    return getTeacherAssignedClasses(currentUser, timetableData, classes);
+    return sortClasses(getTeacherAssignedClasses(currentUser, timetableData, classes));
   }, [currentUser, timetableData, classes]);
 
   // Filter active classes by grade from user's assigned classes
   const filteredActiveClasses = useMemo(() => {
-    return userAssignedClasses.filter(c => c.gradeId === selectedGrade);
+    return sortClasses(userAssignedClasses.filter(c => c.gradeId === selectedGrade));
   }, [userAssignedClasses, selectedGrade]);
 
   // Auto handle selectedClass synchronization when grade or assigned classes change
@@ -1120,7 +1121,7 @@ export default function App() {
       const dbStates = await loadAllSupabaseStates();
       if (dbStates && Object.keys(dbStates).length > 0) {
         if (dbStates['school_grades']) setGrades(dbStates['school_grades']);
-        if (dbStates['school_classes']) setClasses(dbStates['school_classes']);
+        if (dbStates['school_classes']) setClasses(sortClasses(dbStates['school_classes']));
         if (dbStates['school_students']) setStudents(dbStates['school_students']);
         if (dbStates['school_computers']) setComputers(dbStates['school_computers']);
         
