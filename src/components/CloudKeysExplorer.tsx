@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Database, 
   Search, 
@@ -345,6 +346,18 @@ export const CloudKeysExplorer: React.FC<CloudKeysExplorerProps> = ({
   useEffect(() => {
     fetchCloudKeys();
   }, []);
+
+  // Close modals on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (inspectingKey) setInspectingKey(null);
+        if (deletingKey) setDeletingKey(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [inspectingKey, deletingKey]);
 
   // 2. STATS COMPUTATION
   const stats = useMemo(() => {
@@ -768,20 +781,28 @@ export const CloudKeysExplorer: React.FC<CloudKeysExplorerProps> = ({
         )}
       </div>
 
-      {/* 5. MODAL: JSON INSPECTOR */}
-      {inspectingKey && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-[#fdfaf5] rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden border border-[#d6c4a8] transform transition-all animate-fadeIn text-left flex flex-col max-h-[85vh]">
-            
+      {/* 5. MODAL: JSON INSPECTOR (VƯỜN TRI THỨC SCOPED PORTAL) */}
+      {inspectingKey && typeof document !== 'undefined' && createPortal(
+        <div 
+          className="absolute inset-0 bg-slate-900/65 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setInspectingKey(null);
+          }}
+        >
+          <div 
+            className="bg-[#faf5ec] w-full max-w-2xl rounded-3xl shadow-2xl border-2 border-[#d6c4a8] flex flex-col relative overflow-hidden animate-in zoom-in-95 duration-200 my-auto text-left max-h-[85vh]"
+            onClick={(e) => e.stopPropagation()}
+            tabIndex={-1}
+          >
             {/* Modal Header */}
-            <div className="bg-gradient-to-r from-[#287866] to-[#1a5346] p-4 text-white flex justify-between items-center shrink-0">
-              <div className="flex items-center gap-2">
-                <Database className="w-5 h-5 text-emerald-200" />
+            <div className="bg-gradient-to-r from-[#dfccb0] via-[#e8d9c2] to-[#dfccb0] px-5 py-3.5 border-b border-[#c8b598] flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2.5">
+                <span className="text-xl">🗄️</span>
                 <div>
-                  <h4 className="font-black text-sm uppercase tracking-wider">
-                    Chi Tiết Khóa: <span className="font-mono text-amber-300">{inspectingKey.key}</span>
-                  </h4>
-                  <p className="text-[11px] text-emerald-100 font-medium">
+                  <h3 className="font-black text-sm text-[#42301c] uppercase tracking-wide flex items-center gap-1.5">
+                    Chi Tiết Khóa: <span className="font-mono text-emerald-800 lowercase">{inspectingKey.key}</span>
+                  </h3>
+                  <p className="text-[11px] font-bold text-amber-900">
                     {inspectingKey.description} • {formatBytes(inspectingKey.byteSize)} • {inspectingKey.itemCount} bản ghi
                   </p>
                 </div>
@@ -789,20 +810,21 @@ export const CloudKeysExplorer: React.FC<CloudKeysExplorerProps> = ({
               <button
                 type="button"
                 onClick={() => setInspectingKey(null)}
-                className="bg-black/20 hover:bg-black/40 text-white rounded-full p-1.5 transition-all cursor-pointer"
+                className="text-[#6e5334] hover:text-[#382613] bg-white/60 hover:bg-white p-1.5 rounded-full transition-all cursor-pointer shadow-xs focus:outline-none"
+                title="Đóng cửa sổ (Esc)"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Modal Body: JSON View */}
-            <div className="p-5 overflow-y-auto flex-1 space-y-4">
-              <div className="flex items-center justify-between text-xs text-[#78350f] font-bold">
+            <div className="p-5 overflow-y-auto flex-1 space-y-4 text-xs font-bold text-[#42301c]">
+              <div className="flex items-center justify-between text-xs text-[#78350f] font-black">
                 <span>Định dạng dữ liệu JSON lưu trữ trên Supabase:</span>
                 <button
                   type="button"
                   onClick={() => handleCopyJson(inspectingKey.value)}
-                  className="inline-flex items-center gap-1 bg-[#ecdcc7] hover:bg-[#dfcdb5] text-[#4a2e16] text-xs font-black px-3 py-1 rounded-full border border-[#d6c4a8] transition-all cursor-pointer active:scale-95"
+                  className="inline-flex items-center gap-1.5 bg-[#ecdcc7] hover:bg-[#dfcdb5] text-[#4a2e16] text-xs font-black px-3.5 py-1.5 rounded-full border border-[#d6c4a8] transition-all cursor-pointer active:scale-95 shadow-3xs"
                 >
                   {copiedKey ? (
                     <>
@@ -816,7 +838,7 @@ export const CloudKeysExplorer: React.FC<CloudKeysExplorerProps> = ({
                 </button>
               </div>
 
-              <div className="bg-[#231811] text-[#fde047] font-mono text-[11px] p-4 rounded-2xl border border-[#4a2e16] overflow-x-auto max-h-[50vh] leading-relaxed shadow-inner">
+              <div className="bg-[#231811] text-[#fde047] font-mono text-[11px] p-4 rounded-2xl border border-[#4a2e16] overflow-x-auto max-h-[46vh] leading-relaxed shadow-inner">
                 <pre className="whitespace-pre-wrap select-all">
                   {typeof inspectingKey.value === 'string' 
                     ? inspectingKey.value 
@@ -824,83 +846,102 @@ export const CloudKeysExplorer: React.FC<CloudKeysExplorerProps> = ({
                 </pre>
               </div>
 
-              <div className="bg-[#f0e6d6] p-3 rounded-xl border border-[#d6c4a8] text-xs text-[#5c4326] space-y-1 font-semibold">
-                <div><strong>Khóa:</strong> <code className="font-mono text-emerald-800">{inspectingKey.key}</code></div>
-                <div><strong>Thời gian cập nhật:</strong> {formatVietnameseDateTime(inspectingKey.updated_at).full}</div>
-                <div><strong>Dung lượng:</strong> {formatBytes(inspectingKey.byteSize)} ({inspectingKey.byteSize} bytes)</div>
+              <div className="bg-white/90 p-3.5 rounded-2xl border border-[#d6c4a8] text-xs text-[#5c4326] space-y-1.5 font-semibold shadow-xs">
+                <div className="flex items-center gap-2"><strong>🔑 Tên Khóa:</strong> <code className="font-mono text-emerald-800 font-bold">{inspectingKey.key}</code></div>
+                <div className="flex items-center gap-2 border-t border-[#f0e4d0] pt-1.5"><strong>⏰ Thời gian cập nhật:</strong> <span>{formatVietnameseDateTime(inspectingKey.updated_at).full}</span></div>
+                <div className="flex items-center gap-2 border-t border-[#f0e4d0] pt-1.5"><strong>💾 Dung lượng lưu trữ:</strong> <span>{formatBytes(inspectingKey.byteSize)} ({inspectingKey.byteSize} bytes)</span></div>
               </div>
             </div>
 
             {/* Modal Footer */}
-            <div className="bg-[#f5ebd9] p-4 border-t border-[#e5dacf] flex justify-end shrink-0">
+            <div className="p-5 pt-0 flex justify-end shrink-0">
               <button
                 type="button"
                 onClick={() => setInspectingKey(null)}
-                className="bg-[#287866] hover:bg-[#1f6253] text-white font-black text-xs px-5 py-2 rounded-full border border-[#16473c] shadow-sm transition-all cursor-pointer active:scale-95"
+                className="px-6 py-2.5 rounded-2xl bg-amber-600 hover:bg-amber-700 font-black text-white text-xs shadow-md shadow-amber-600/20 active:scale-95 transition-all cursor-pointer"
               >
-                Đóng
+                Đóng (Esc)
               </button>
             </div>
 
           </div>
-        </div>
+        </div>,
+        (typeof document !== 'undefined' && (document.getElementById('deskos-window-body') || document.getElementById('deskos-active-window'))) || document.body
       )}
 
-      {/* 6. MODAL: DELETE CONFIRMATION */}
-      {deletingKey && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden border border-slate-100 transform transition-all animate-fadeIn text-left">
-            
-            <div className="bg-gradient-to-r from-red-500 to-rose-600 p-4 text-white flex justify-between items-center">
-              <div className="flex items-center gap-2 font-extrabold text-sm uppercase tracking-wide text-white">
-                <AlertTriangle className="w-5 h-5 text-yellow-300 animate-pulse" />
-                Xác nhận xóa khóa Cloud
+      {/* 6. MODAL: DELETE CONFIRMATION (VƯỜN TRI THỨC SCOPED PORTAL) */}
+      {deletingKey && typeof document !== 'undefined' && createPortal(
+        <div 
+          className="absolute inset-0 bg-slate-900/65 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setDeletingKey(null);
+          }}
+        >
+          <div 
+            className="bg-[#faf5ec] w-full max-w-md rounded-3xl shadow-2xl border-2 border-[#d6c4a8] flex flex-col relative overflow-hidden animate-in zoom-in-95 duration-200 my-auto text-left"
+            onClick={(e) => e.stopPropagation()}
+            tabIndex={-1}
+          >
+            {/* Header */}
+            <div className="bg-gradient-to-r from-[#dfccb0] via-[#e8d9c2] to-[#dfccb0] px-5 py-3.5 border-b border-[#c8b598] flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">⚠️</span>
+                <div>
+                  <h3 className="font-black text-sm text-[#42301c]">Xác Nhận Xóa Khóa Cloud</h3>
+                  <p className="text-[11px] font-bold text-rose-800">Cơ sở dữ liệu Supabase</p>
+                </div>
               </div>
               <button
                 type="button"
                 onClick={() => setDeletingKey(null)}
-                className="bg-black/10 hover:bg-black/25 text-white rounded-full p-1.5 cursor-pointer"
+                className="text-[#6e5334] hover:text-[#382613] bg-white/60 hover:bg-white p-1.5 rounded-full transition-all cursor-pointer shadow-xs focus:outline-none"
+                title="Đóng cửa sổ (Esc)"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="p-5 space-y-3">
-              <p className="text-xs text-slate-700 leading-relaxed font-semibold">
+            {/* Body */}
+            <div className="p-5 space-y-3.5 text-xs font-bold text-[#42301c]">
+              <p className="text-slate-700">
                 Thầy/Cô có chắc chắn muốn xóa vĩnh viễn khóa dữ liệu sau khỏi Supabase Cloud không?
               </p>
               
-              <div className="bg-rose-50 border border-rose-200 p-3 rounded-xl font-mono text-xs font-black text-rose-800 break-all">
-                {deletingKey.key}
+              <div className="bg-white/90 border border-rose-200 p-3.5 rounded-2xl font-mono text-xs font-black text-rose-700 break-all shadow-xs flex items-center gap-2">
+                <span>🔑</span>
+                <span>{deletingKey.key}</span>
               </div>
 
-              <p className="text-[11px] text-slate-500 italic">
-                * Hành động này sẽ xóa dữ liệu bảng này trên máy chủ. Nếu cần thiết, dữ liệu có thể được nạp lại bằng nút "Đẩy đè dữ liệu".
-              </p>
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-[11px] text-rose-700 font-bold flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500" />
+                <span>Hành động này sẽ xóa dữ liệu bảng này trên máy chủ. Nếu cần thiết, dữ liệu có thể được nạp lại bằng nút "Đẩy đè dữ liệu".</span>
+              </div>
             </div>
 
-            <div className="bg-slate-50 p-4 border-t border-slate-100 flex justify-end gap-2">
+            {/* Footer Buttons */}
+            <div className="flex gap-3 p-5 pt-0">
               <button
                 type="button"
                 onClick={() => setDeletingKey(null)}
                 disabled={isDeleting}
-                className="bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs px-4 py-2 rounded-full border border-slate-300 transition-all cursor-pointer"
+                className="w-1/2 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 font-black text-slate-700 text-xs transition-all cursor-pointer"
               >
-                Hủy bỏ
+                Hủy (Esc)
               </button>
               <button
                 type="button"
                 onClick={handleDeleteKey}
                 disabled={isDeleting}
-                className="bg-rose-600 hover:bg-rose-700 text-white font-black text-xs px-5 py-2 rounded-full border border-rose-700 shadow-md transition-all cursor-pointer active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
+                className="w-1/2 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-700 font-black text-white text-xs shadow-md shadow-rose-600/20 active:scale-95 transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span>{isDeleting ? 'Đang xóa...' : 'Đồng ý xóa'}</span>
+                <span>{isDeleting ? 'Đang xóa...' : 'Đồng Ý Xóa'}</span>
               </button>
             </div>
 
           </div>
-        </div>
+        </div>,
+        (typeof document !== 'undefined' && (document.getElementById('deskos-window-body') || document.getElementById('deskos-active-window'))) || document.body
       )}
 
     </div>
