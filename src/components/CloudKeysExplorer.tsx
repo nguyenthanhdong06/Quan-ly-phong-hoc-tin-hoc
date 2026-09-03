@@ -751,24 +751,15 @@ export const CloudKeysExplorer: React.FC<CloudKeysExplorerProps> = ({
 
                       {/* Actions */}
                       <td className="py-3.5 px-4 text-center">
-                        <div className="flex items-center justify-center gap-1.5">
+                        <div className="flex items-center justify-center">
                           <button
                             type="button"
                             onClick={() => setInspectingKey(item)}
-                            className="inline-flex items-center gap-1 bg-gradient-to-b from-[#287866] to-[#1d5c4e] hover:from-[#318f7a] hover:to-[#226e5e] text-white text-[11px] font-black px-2.5 py-1.5 rounded-lg border border-[#16473c] shadow-2xs transition-all cursor-pointer active:scale-95"
+                            className="inline-flex items-center gap-1 bg-gradient-to-b from-[#287866] to-[#1d5c4e] hover:from-[#318f7a] hover:to-[#226e5e] text-white text-[11px] font-black px-3 py-1.5 rounded-lg border border-[#16473c] shadow-2xs transition-all cursor-pointer active:scale-95"
                             title="Xem chi tiết JSON"
                           >
                             <Eye className="w-3.5 h-3.5" />
                             <span>Xem</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => setDeletingKey(item)}
-                            className="inline-flex items-center p-1.5 text-rose-600 hover:text-rose-800 hover:bg-rose-50 rounded-lg border border-transparent hover:border-rose-200 transition-all cursor-pointer active:scale-95"
-                            title="Xóa khóa này khỏi Cloud"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </td>
