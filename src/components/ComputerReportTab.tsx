@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { safeSetLocalStorage } from '../utils/safeStorage';
 import { Member } from '../types';
 import { supabase, saveSupabaseState } from '../supabaseClient';
@@ -163,6 +164,7 @@ export default function ComputerReportTab({ currentUser, workspaceId }: Computer
   const [savedReports, setSavedReports] = useState<SavedReport[]>([]);
   const [activeReportId, setActiveReportId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState<boolean>(false);
   
   // Tab UI modes
   const [viewMode, setViewMode] = useState<'edit' | 'preview'>('edit');
@@ -281,25 +283,39 @@ export default function ComputerReportTab({ currentUser, workspaceId }: Computer
     }, 4000);
   };
 
+  // Handle ESC key to close any active modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (deleteConfirmId) setDeleteConfirmId(null);
+        if (isResetConfirmOpen) setIsResetConfirmOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [deleteConfirmId, isResetConfirmOpen]);
+
   // Reset form to default template
   const handleResetForm = () => {
-    if (window.confirm('Bạn có chắc chắn muốn thiết lập lại toàn bộ nội dung mẫu?')) {
-      setGeneralInfo({
-        tieuDeBaoCao: 'BÁO CÁO CƠ SỞ VẬT CHẤT PHÒNG MÁY TÍNH',
-        donVi: 'Trường Tiểu học Long Định',
-        diaPhuong: 'Xã Long Định',
-        nguoiPhuTrach: currentUser?.name || 'Nguyễn Thanh Đồng',
-        thoiGianBaoCao: new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
-      });
-      setAssets(DEFAULT_ASSETS);
-      setBrokenDetails(DEFAULT_BROKEN);
-      setAdditions(DEFAULT_ADDITIONS);
-      setNgayKy(new Date().getDate().toString().padStart(2, '0'));
-      setThangKy((new Date().getMonth() + 1).toString().padStart(2, '0'));
-      setNamKy(new Date().getFullYear().toString());
-      setActiveReportId(null);
-      showToast('Đã khôi phục dữ liệu mẫu chuẩn giống ảnh 100%');
-    }
+    setIsResetConfirmOpen(true);
+  };
+
+  const executeResetForm = () => {
+    setGeneralInfo({
+      tieuDeBaoCao: 'BÁO CÁO CƠ SỞ VẬT CHẤT PHÒNG MÁY TÍNH',
+      donVi: 'Trường Tiểu học Long Định',
+      diaPhuong: 'Xã Long Định',
+      nguoiPhuTrach: currentUser?.name || 'Nguyễn Thanh Đồng',
+      thoiGianBaoCao: new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    });
+    setAssets(DEFAULT_ASSETS);
+    setBrokenDetails(DEFAULT_BROKEN);
+    setAdditions(DEFAULT_ADDITIONS);
+    setNgayKy(new Date().getDate().toString().padStart(2, '0'));
+    setThangKy((new Date().getMonth() + 1).toString().padStart(2, '0'));
+    setNamKy(new Date().getFullYear().toString());
+    setActiveReportId(null);
+    showToast('Đã khôi phục dữ liệu mẫu chuẩn ban đầu!');
   };
 
   // Handle general field changes
@@ -1701,71 +1717,158 @@ export default function ComputerReportTab({ currentUser, workspaceId }: Computer
 
       </div>
 
-      {/* DELETE CONFIRMATION MODAL POPUP */}
+      {/* ================= 🛠️ MODALS (DESKOS SCOPED PORTAL) ================= */}
+
+      {/* 1. DELETE CONFIRMATION MODAL */}
       {deleteConfirmId && (() => {
         const targetRep = savedReports.find(r => r.id === deleteConfirmId);
         if (!targetRep) return null;
-        return (
+        return typeof document !== 'undefined' ? createPortal(
           <div 
-            className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[9999] p-4 transition-all duration-300"
-            onClick={() => setDeleteConfirmId(null)}
+            className="absolute inset-0 bg-slate-900/65 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setDeleteConfirmId(null);
+              }
+            }}
           >
             <div 
-              className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-100 flex flex-col items-center text-center gap-4 relative transform scale-100 transition-transform duration-300"
+              className="bg-[#faf5ec] w-full max-w-md rounded-3xl shadow-2xl border-2 border-[#d6c4a8] flex flex-col relative overflow-hidden animate-in zoom-in-95 duration-200 my-auto text-left"
               onClick={(e) => e.stopPropagation()}
+              tabIndex={-1}
             >
-              <button 
-                onClick={() => setDeleteConfirmId(null)}
-                className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-
-              <div className="w-14 h-14 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-500 shadow-3xs">
-                <AlertTriangle className="w-7 h-7 animate-pulse" />
+              {/* Header */}
+              <div className="bg-gradient-to-r from-[#dfccb0] via-[#e8d9c2] to-[#dfccb0] px-5 py-3.5 border-b border-[#c8b598] flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">🗑️</span>
+                  <div>
+                    <h3 className="font-black text-sm text-[#42301c]">Xác Nhận Xóa Báo Cáo</h3>
+                    <p className="text-[11px] font-bold text-rose-800">Lịch sử Báo cáo phòng máy</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setDeleteConfirmId(null)}
+                  className="text-[#6e5334] hover:text-[#382613] bg-white/60 hover:bg-white p-1.5 rounded-full transition-all cursor-pointer shadow-xs focus:outline-none"
+                  title="Đóng cửa sổ (Esc)"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
 
-              <div className="space-y-1.5 w-full">
-                <h3 className="text-base font-extrabold text-slate-900 uppercase tracking-wide">
-                  Xác nhận xóa báo cáo?
-                </h3>
-                <p className="text-xs text-slate-500 leading-relaxed font-medium">
-                  Hành động này sẽ xóa vĩnh viễn báo cáo đã lưu của đơn vị:
+              {/* Body */}
+              <div className="p-5 space-y-3.5 text-xs font-bold text-[#42301c]">
+                <p className="text-slate-700">
+                  Hành động này sẽ xóa vĩnh viễn báo cáo đã lưu khỏi hệ thống:
                 </p>
-                <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-left space-y-1 my-2">
-                  <div className="text-xs font-black text-slate-800 truncate">
-                    🏢 {targetRep.generalInfo.donVi}
+
+                <div className="bg-white/90 border border-[#d6c4a8] rounded-2xl p-3.5 text-left space-y-1.5 shadow-xs">
+                  <div className="text-xs font-black text-slate-800 truncate flex items-center gap-1.5">
+                    <span>🏢</span> {targetRep.generalInfo.donVi}
                   </div>
-                  <div className="text-[11px] font-bold text-slate-500 flex flex-wrap gap-2">
+                  <div className="text-[11px] font-bold text-slate-600 flex flex-wrap gap-3 pt-1 border-t border-[#f0e4d0]">
                     <span>📅 {targetRep.generalInfo.thoiGianBaoCao}</span>
                     <span>👤 {targetRep.creator}</span>
                   </div>
                 </div>
-                <p className="text-[11px] text-rose-500 font-bold">
-                  ⚠️ Lưu ý: Bạn sẽ không thể khôi phục lại dữ liệu này!
-                </p>
+
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-[11px] text-rose-700 font-bold flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500" />
+                  <span>Lưu ý: Dữ liệu đã xóa trên đám mây Supabase sẽ không thể khôi phục lại!</span>
+                </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2.5 w-full mt-2">
+              {/* Footer Buttons */}
+              <div className="flex gap-3 p-5 pt-0">
                 <button
                   type="button"
                   onClick={() => setDeleteConfirmId(null)}
-                  className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer border border-slate-200 active:scale-95"
+                  className="w-1/2 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 font-black text-slate-700 text-xs transition-all cursor-pointer"
                 >
-                  Hủy bỏ
+                  Hủy (Esc)
                 </button>
                 <button
                   type="button"
                   onClick={() => handleDeleteReport(deleteConfirmId)}
-                  className="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer shadow-md shadow-rose-600/10 active:scale-95"
+                  className="w-1/2 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-700 font-black text-white text-xs shadow-md shadow-rose-600/20 active:scale-95 transition-all cursor-pointer"
                 >
-                  Xác nhận xóa
+                  Xác Nhận Xóa
                 </button>
               </div>
             </div>
-          </div>
-        );
+          </div>,
+          (typeof document !== 'undefined' && (document.getElementById('deskos-window-body') || document.getElementById('deskos-active-window'))) || document.body
+        ) : null;
       })()}
+
+      {/* 2. RESET CONFIRMATION MODAL */}
+      {isResetConfirmOpen && typeof document !== 'undefined' && createPortal(
+        <div 
+          className="absolute inset-0 bg-slate-900/65 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setIsResetConfirmOpen(false);
+            }
+          }}
+        >
+          <div 
+            className="bg-[#faf5ec] w-full max-w-md rounded-3xl shadow-2xl border-2 border-[#d6c4a8] flex flex-col relative overflow-hidden animate-in zoom-in-95 duration-200 my-auto text-left"
+            onClick={(e) => e.stopPropagation()}
+            tabIndex={-1}
+          >
+            {/* Header */}
+            <div className="bg-gradient-to-r from-[#dfccb0] via-[#e8d9c2] to-[#dfccb0] px-5 py-3.5 border-b border-[#c8b598] flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🔄</span>
+                <div>
+                  <h3 className="font-black text-sm text-[#42301c]">Khôi Phục Mẫu Báo Cáo</h3>
+                  <p className="text-[11px] font-bold text-amber-800">Thiết lập lại biểu mẫu chuẩn</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsResetConfirmOpen(false)}
+                className="text-[#6e5334] hover:text-[#382613] bg-white/60 hover:bg-white p-1.5 rounded-full transition-all cursor-pointer shadow-xs focus:outline-none"
+                title="Đóng cửa sổ (Esc)"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-5 space-y-3.5 text-xs font-bold text-[#42301c]">
+              <p className="text-slate-700">
+                Thầy/Cô có chắc chắn muốn thiết lập lại toàn bộ nội dung biểu mẫu về trạng thái chuẩn ban đầu không?
+              </p>
+
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl text-[11px] text-amber-900 font-bold flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600" />
+                <span>Toàn bộ danh mục 13 hạng mục tài sản, danh sách hỏng hóc và đề xuất sẽ được đặt lại theo mẫu chuẩn.</span>
+              </div>
+            </div>
+
+            {/* Footer Buttons */}
+            <div className="flex gap-3 p-5 pt-0">
+              <button
+                type="button"
+                onClick={() => setIsResetConfirmOpen(false)}
+                className="w-1/2 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 font-black text-slate-700 text-xs transition-all cursor-pointer"
+              >
+                Hủy (Esc)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  executeResetForm();
+                  setIsResetConfirmOpen(false);
+                }}
+                className="w-1/2 py-2.5 rounded-2xl bg-amber-600 hover:bg-amber-700 font-black text-white text-xs shadow-md shadow-amber-600/20 active:scale-95 transition-all cursor-pointer"
+              >
+                Xác Nhận Đặt Lại
+              </button>
+            </div>
+          </div>
+        </div>,
+        (typeof document !== 'undefined' && (document.getElementById('deskos-window-body') || document.getElementById('deskos-active-window'))) || document.body
+      )}
 
     </div>
   );
