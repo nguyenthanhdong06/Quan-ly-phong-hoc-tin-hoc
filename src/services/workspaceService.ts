@@ -169,6 +169,62 @@ export function loadWorkspaceGardenData(
 }
 
 /**
+ * Tải dữ liệu thời khóa biểu riêng cho Workspace của Giáo viên
+ */
+export function loadWorkspaceTimetableData(
+  workspaceId: string,
+  userIdentifier?: string,
+  dbStates?: Record<string, any>
+): Record<string, any> {
+  const scopedKey = getScopedKey('school_timetable_data', workspaceId);
+
+  // 1. Kiểm tra từ Cloud dbStates theo scopedKey
+  if (dbStates && dbStates[scopedKey] !== undefined && typeof dbStates[scopedKey] === 'object') {
+    safeSetLocalStorage(scopedKey, dbStates[scopedKey]);
+    return dbStates[scopedKey];
+  }
+
+  // 2. Kiểm tra từ LocalStorage
+  const localScoped = safeGetLocalStorage<Record<string, any> | null>(scopedKey, null);
+  if (localScoped && typeof localScoped === 'object' && Object.keys(localScoped).length > 0) {
+    return localScoped;
+  }
+
+  // 3. Fallback: Đọc từ school_timetable_data toàn cục theo userIdentifier
+  if (userIdentifier) {
+    const globalTimetable = (dbStates && dbStates['school_timetable_data']) 
+      || safeGetLocalStorage<Record<string, any>>('school_timetable_data', {});
+    
+    // Tìm theo userIdentifier (username, id, hoặc case-insensitive)
+    if (globalTimetable[userIdentifier]) {
+      const schedule = globalTimetable[userIdentifier];
+      safeSetLocalStorage(scopedKey, schedule);
+      return schedule;
+    }
+    const cleanId = userIdentifier.toLowerCase();
+    const matchedKey = Object.keys(globalTimetable).find(k => k.toLowerCase() === cleanId);
+    if (matchedKey && globalTimetable[matchedKey]) {
+      const schedule = globalTimetable[matchedKey];
+      safeSetLocalStorage(scopedKey, schedule);
+      return schedule;
+    }
+  }
+
+  return {};
+}
+
+/**
+ * Lưu dữ liệu thời khóa biểu riêng cho Workspace của Giáo viên
+ */
+export async function saveWorkspaceTimetableData(
+  workspaceId: string,
+  schedule: Record<string, any>
+): Promise<boolean> {
+  return await saveWorkspaceState('school_timetable_data', workspaceId, schedule);
+}
+
+
+/**
  * 🗑️ Xóa vĩnh viễn toàn bộ Không gian làm việc của Giáo viên trên Supabase Cloud và LocalStorage
  * Được kích hoạt tự động khi Quản trị viên xóa tài khoản giáo viên (user).
  */

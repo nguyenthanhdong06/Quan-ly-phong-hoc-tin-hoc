@@ -242,13 +242,15 @@ export function analyzeCloudKey(row: CloudKeyRow): CloudKeyInfo {
       : k === 'school_garden_rewards' 
       ? 'Danh mục phần quà đổi điểm thưởng tưới cây' 
       : 'Cấp độ sinh trưởng và điểm chăm sóc cây học sinh';
-  } else if (k === 'school_timetable_data' || k === 'school_timetable_titles' || k.includes('school_timetable_title')) {
+  } else if (k.includes('timetable_data') || k.includes('school_timetable_title') || k === 'school_timetable_titles') {
     category = 'schedule';
     categoryLabel = k === 'school_timetable_titles' 
       ? 'Tiêu đề TKB toàn trường' 
       : k.includes('school_timetable_title') 
       ? 'Tiêu đề TKB giáo viên' 
-      : 'Thời khóa biểu';
+      : k.startsWith('ws_')
+      ? 'TKB riêng giáo viên'
+      : 'Thời khóa biểu toàn trường';
     categoryColor = '#14b8a6';
     categoryBadgeBg = 'bg-teal-100';
     categoryBadgeText = 'text-teal-800';
@@ -257,7 +259,9 @@ export function analyzeCloudKey(row: CloudKeyRow): CloudKeyInfo {
       ? 'Danh mục tiêu đề và mục ký thời khóa biểu đồng bộ cho từng giáo viên'
       : k.includes('school_timetable_title')
       ? 'Cấu hình tiêu đề & mục ký thời khóa biểu riêng cho không gian giáo viên'
-      : 'Lịch phân công giảng dạy môn Tin học theo tuần';
+      : k.startsWith('ws_')
+      ? 'Lịch dạy thời khóa biểu riêng theo không gian làm việc của giáo viên'
+      : 'Lịch phân công giảng dạy môn Tin học tổng hợp toàn trường';
   } else if (k === 'school_documents') {
     category = 'resources';
     categoryLabel = 'Tài liệu & Kế hoạch';

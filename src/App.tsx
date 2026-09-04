@@ -73,6 +73,7 @@ import {
   loadWorkspaceSeatingChart, 
   loadWorkspaceEmulationState, 
   loadWorkspaceGardenData,
+  loadWorkspaceTimetableData,
   saveWorkspaceState,
   WORKSPACE_PREFIX 
 } from './services/workspaceService';
@@ -621,7 +622,7 @@ export default function App() {
   currentWsRef.current = activeWorkspaceId;
 
   // Synchronous Workspace State Switcher (Prevents Old User Debounce Overwrite Race Conditions)
-  const switchWorkspaceState = (targetWsId: string) => {
+  const switchWorkspaceState = (targetWsId: string, userIdentifier?: string) => {
     // 1. Hủy ngay lập tức mọi pending debounce timer của user/workspace trước
     if (seatingDebounceRef.current) {
       clearTimeout(seatingDebounceRef.current);
@@ -649,6 +650,7 @@ export default function App() {
     const newEvaluation = loadDayPartitionedEvaluation(latestDbStatesRef.current, {}, targetWsId);
     const newEmulation = loadWorkspaceEmulationState(targetWsId, latestDbStatesRef.current);
     const newGardenData = loadWorkspaceGardenData(targetWsId, latestDbStatesRef.current);
+    const wsTimetable = loadWorkspaceTimetableData(targetWsId, userIdentifier, latestDbStatesRef.current);
 
     // 4. Batch update states đồng loạt vào React
     setActiveWorkspaceId(targetWsId);
@@ -657,6 +659,14 @@ export default function App() {
     setEvaluationData(newEvaluation);
     setEmulationDataState(newEmulation);
     setGardenData(newGardenData);
+
+    if (wsTimetable && Object.keys(wsTimetable).length > 0 && userIdentifier) {
+      setTimetableData(prev => {
+        const next = { ...prev, [userIdentifier]: wsTimetable };
+        safeSetLocalStorage('school_timetable_data', next);
+        return next;
+      });
+    }
   };
 
   // --- INITIAL EFFECT: FETCH FROM SUPABASE ---
@@ -688,7 +698,29 @@ export default function App() {
             setMembers(defaultMembers);
             safeSetLocalStorage('school_members', defaultMembers);
           }
-          if (dbStates['school_timetable_data'] !== undefined) setTimetableData(dbStates['school_timetable_data']);
+          // 📅 Đồng bộ Thời khóa biểu toàn trường & TKB riêng từng Workspace giáo viên
+          let mergedTimetable: TimetableData = (dbStates['school_timetable_data'] && typeof dbStates['school_timetable_data'] === 'object')
+            ? { ...dbStates['school_timetable_data'] }
+            : safeParse('school_timetable_data', defaultTimetable);
+
+          const membersList: Member[] = Array.isArray(dbStates['school_members']) ? dbStates['school_members'] : members;
+          Object.keys(dbStates).forEach(key => {
+            if (key.startsWith('ws_') && key.endsWith('_school_timetable_data') && typeof dbStates[key] === 'object') {
+              const wsId = key.replace('_school_timetable_data', '');
+              const cleanId = wsId.replace('ws_', '');
+              const member = membersList.find(m => m.id === cleanId || m.username === cleanId);
+              const schedule = dbStates[key];
+              if (schedule && typeof schedule === 'object') {
+                if (member?.username) mergedTimetable[member.username] = schedule;
+                if (member?.id) mergedTimetable[member.id] = schedule;
+                if (!member) mergedTimetable[cleanId] = schedule;
+                safeSetLocalStorage(key, schedule);
+              }
+            }
+          });
+
+          setTimetableData(mergedTimetable);
+          safeSetLocalStorage('school_timetable_data', mergedTimetable);
           if (Array.isArray(dbStates['school_quotes'])) setQuotes(dbStates['school_quotes']);
           if (Array.isArray(dbStates['school_lab_bookings'])) setLabBookings(dbStates['school_lab_bookings']);
           if (Array.isArray(dbStates['school_lab_incidents'])) setLabIncidents(dbStates['school_lab_incidents']);
@@ -758,6 +790,43 @@ export default function App() {
       }
     }
     syncFromSupabase();
+  }, []);
+
+  // --- 📡 REALTIME SYNC: SUPABASE TO REACT STATE (MULTI-DEVICE LIVE TIMETABLE SYNC) ---
+  useEffect(() => {
+    const channel = supabase
+      .channel('realtime_app_timetable_sync')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'school_states'
+        },
+        (payload) => {
+          const row = payload.new as any;
+          if (!row || !row.key) return;
+
+          if (row.key === 'school_timetable_data' && row.value && typeof row.value === 'object') {
+            safeSetLocalStorage('school_timetable_data', row.value);
+            setTimetableData(prev => ({ ...prev, ...row.value }));
+          } else if (row.key.startsWith('ws_') && row.key.endsWith('_school_timetable_data') && row.value) {
+            const wsId = row.key.replace('_school_timetable_data', '');
+            const cleanId = wsId.replace('ws_', '');
+            safeSetLocalStorage(row.key, row.value);
+            setTimetableData(prev => {
+              const next = { ...prev, [cleanId]: row.value };
+              safeSetLocalStorage('school_timetable_data', next);
+              return next;
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   // --- 🧠 AUTOMATIC 30-MINUTE RAM & CACHE OPTIMIZER ---
@@ -912,8 +981,16 @@ export default function App() {
     safeSetLocalStorage('school_timetable_data', timetableData);
     if (isLoaded) {
       saveSupabaseState('school_timetable_data', timetableData);
+      if (currentUser) {
+        const userSchedule = timetableData[currentUser.username] || (currentUser.id && timetableData[currentUser.id]);
+        if (userSchedule && typeof userSchedule === 'object' && Object.keys(userSchedule).length > 0) {
+          const wsKey = `${getWorkspaceId(currentUser)}_school_timetable_data`;
+          safeSetLocalStorage(wsKey, userSchedule);
+          saveSupabaseState(wsKey, userSchedule);
+        }
+      }
     }
-  }, [timetableData, isLoaded]);
+  }, [timetableData, isLoaded, currentUser]);
 
   useEffect(() => {
     safeSetLocalStorage('school_quotes', quotes);
@@ -1023,7 +1100,7 @@ export default function App() {
 
         // Chuyển không gian làm việc đồng bộ ngay lập tức cho User mới
         const targetWsId = getWorkspaceId(updatedUser);
-        switchWorkspaceState(targetWsId);
+        switchWorkspaceState(targetWsId, updatedUser.username || updatedUser.id);
 
         // Cập nhật mảng members với activeSessionId mới
         setMembers((prev) => {
@@ -1137,7 +1214,30 @@ export default function App() {
 
         if (dbStates['school_documents']) setDocuments(dbStates['school_documents']);
         if (dbStates['school_members']) setMembers(dbStates['school_members']);
-        if (dbStates['school_timetable_data']) setTimetableData(dbStates['school_timetable_data']);
+        
+        // 📅 Đồng bộ Thời khóa biểu toàn trường & TKB riêng từng Workspace giáo viên
+        let mergedTimetable: TimetableData = (dbStates['school_timetable_data'] && typeof dbStates['school_timetable_data'] === 'object')
+          ? { ...dbStates['school_timetable_data'] }
+          : safeParse('school_timetable_data', defaultTimetable);
+
+        const currentMembersList: Member[] = Array.isArray(dbStates['school_members']) ? dbStates['school_members'] : members;
+        Object.keys(dbStates).forEach(key => {
+          if (key.startsWith('ws_') && key.endsWith('_school_timetable_data') && typeof dbStates[key] === 'object') {
+            const wsId = key.replace('_school_timetable_data', '');
+            const cleanId = wsId.replace('ws_', '');
+            const member = currentMembersList.find(m => m.id === cleanId || m.username === cleanId);
+            const schedule = dbStates[key];
+            if (schedule && typeof schedule === 'object') {
+              if (member?.username) mergedTimetable[member.username] = schedule;
+              if (member?.id) mergedTimetable[member.id] = schedule;
+              if (!member) mergedTimetable[cleanId] = schedule;
+              safeSetLocalStorage(key, schedule);
+            }
+          }
+        });
+        setTimetableData(mergedTimetable);
+        safeSetLocalStorage('school_timetable_data', mergedTimetable);
+
         if (dbStates['school_quotes']) setQuotes(dbStates['school_quotes']);
         if (dbStates['custom_avatars_list'] && Array.isArray(dbStates['custom_avatars_list'])) {
           safeSetLocalStorage('custom_avatars_list', dbStates['custom_avatars_list']);
@@ -1190,7 +1290,8 @@ export default function App() {
         saveSupabaseState(`${activeWorkspaceId}_school_computer_reports`, safeParse(`${activeWorkspaceId}_school_computer_reports`, safeParse('school_computer_reports', []))),
         saveSupabaseState('school_computer_reports', safeParse('school_computer_reports', [])),
         saveSupabaseState('school_timetable_titles', safeParse('school_timetable_titles', {})),
-        saveSupabaseState(`${activeWorkspaceId}_school_timetable_title`, safeParse(`${activeWorkspaceId}_school_timetable_title`, {}))
+        saveSupabaseState(`${activeWorkspaceId}_school_timetable_title`, safeParse(`${activeWorkspaceId}_school_timetable_title`, {})),
+        saveSupabaseState(`${activeWorkspaceId}_school_timetable_data`, timetableData[currentUser?.username || ''] || (currentUser?.id && timetableData[currentUser.id]) || safeParse(`${activeWorkspaceId}_school_timetable_data`, {}))
       ]);
       
       const allSuccess = results.every(r => r === true);

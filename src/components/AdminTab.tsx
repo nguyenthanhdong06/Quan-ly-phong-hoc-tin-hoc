@@ -8,7 +8,7 @@ import { sendOtpToUser, GOOGLE_APPS_SCRIPT_GMAIL_TEMPLATE } from '../services/em
 import { encryptVaultData } from '../utils/security';
 import { CloudKeysExplorer } from './CloudKeysExplorer';
 import { getTeacherTimetableConfig, saveTeacherTimetableConfig } from '../services/timetableTitleService';
-import { deleteUserWorkspaceData } from '../services/workspaceService';
+import { deleteUserWorkspaceData, getWorkspaceId, saveWorkspaceTimetableData } from '../services/workspaceService';
 
 interface AdminTabProps {
   members: Member[];
@@ -358,16 +358,33 @@ export default function AdminTab({
       return;
     }
 
-    const teacherSchedule = { ...(timetableData[selectedTeacherUsername] || {}) };
+    const teacher = members.find(m => m.username === selectedTeacherUsername || m.id === selectedTeacherUsername);
+    const existingSchedule = timetableData[selectedTeacherUsername] 
+      || (teacher && (timetableData[teacher.username] || timetableData[teacher.id])) 
+      || {};
+
+    const teacherSchedule = { ...existingSchedule };
     teacherSchedule[`${editingCell.day}-${editingCell.period}`] = {
       subject: formSubject.trim(),
       className: formClass.trim()
     };
 
-    setTimetableData((prev: any) => ({
-      ...prev,
+    const nextTimetable = {
+      ...timetableData,
       [selectedTeacherUsername]: teacherSchedule
-    }));
+    };
+    if (teacher?.username) nextTimetable[teacher.username] = teacherSchedule;
+    if (teacher?.id) nextTimetable[teacher.id] = teacherSchedule;
+
+    setTimetableData(nextTimetable);
+    safeSetLocalStorage('school_timetable_data', nextTimetable);
+    saveSupabaseState('school_timetable_data', nextTimetable);
+
+    // 🏢 Đồng bộ lưu vào Không gian làm việc riêng của Giáo viên trên Supabase
+    if (teacher) {
+      const wsId = getWorkspaceId(teacher);
+      saveWorkspaceTimetableData(wsId, teacherSchedule);
+    }
 
     setEditingCell(null);
     showToast(`Đã lưu thời khóa biểu Tiết ${editingCell.period} - Thứ ${editingCell.day} thành công!`, 'success');
@@ -377,13 +394,30 @@ export default function AdminTab({
   const handleDeleteAssignment = () => {
     if (!editingCell) return;
 
-    const teacherSchedule = { ...(timetableData[selectedTeacherUsername] || {}) };
+    const teacher = members.find(m => m.username === selectedTeacherUsername || m.id === selectedTeacherUsername);
+    const existingSchedule = timetableData[selectedTeacherUsername] 
+      || (teacher && (timetableData[teacher.username] || timetableData[teacher.id])) 
+      || {};
+
+    const teacherSchedule = { ...existingSchedule };
     delete teacherSchedule[`${editingCell.day}-${editingCell.period}`];
 
-    setTimetableData((prev: any) => ({
-      ...prev,
+    const nextTimetable = {
+      ...timetableData,
       [selectedTeacherUsername]: teacherSchedule
-    }));
+    };
+    if (teacher?.username) nextTimetable[teacher.username] = teacherSchedule;
+    if (teacher?.id) nextTimetable[teacher.id] = teacherSchedule;
+
+    setTimetableData(nextTimetable);
+    safeSetLocalStorage('school_timetable_data', nextTimetable);
+    saveSupabaseState('school_timetable_data', nextTimetable);
+
+    // 🏢 Đồng bộ cập nhật Không gian làm việc riêng của Giáo viên trên Supabase
+    if (teacher) {
+      const wsId = getWorkspaceId(teacher);
+      saveWorkspaceTimetableData(wsId, teacherSchedule);
+    }
 
     setEditingCell(null);
     showToast(`Đã gỡ phân công Tiết ${editingCell.period} - Thứ ${editingCell.day}!`, 'success');

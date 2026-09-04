@@ -28,6 +28,7 @@ import {
   syncTimetableTitlesFromSupabase 
 } from '../services/timetableTitleService';
 import { supabase } from '../supabaseClient';
+import { safeGetLocalStorage, safeSetLocalStorage } from '../utils/safeStorage';
 
 interface TimetableTabProps {
   timetableData: TimetableData;
@@ -47,17 +48,15 @@ export default function TimetableTab({
   // Find teachers from members list
   const teachers = members.filter(m => m.role.includes('Giáo viên') || m.role.includes('Admin'));
 
-  // Default selected teacher to saved selection for Admin, or lock to currentUser for teachers
+  // Default selected teacher to saved selection for Admin, or prioritize currentUser on login across devices
   const [selectedTeacherUsername, setSelectedTeacherUsername] = useState<string>(() => {
-    if (!isAdmin && currentUser) {
-      return currentUser.username;
+    if (currentUser) {
+      const match = teachers.find(t => t.username === currentUser.username || t.id === currentUser.id);
+      if (match) return match.username;
+      return currentUser.username || currentUser.id || '';
     }
     const saved = localStorage.getItem('timetable_selected_teacher');
-    if (saved) return saved;
-    if (currentUser) {
-      const match = teachers.find(t => t.username === currentUser.username);
-      if (match) return match.username;
-    }
+    if (saved && teachers.some(t => t.username === saved || t.id === saved)) return saved;
     return teachers[0]?.username || '';
   });
 
@@ -93,10 +92,10 @@ export default function TimetableTab({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isTitleModalOpen]);
 
-  // Realtime Supabase listener for timetable title changes across devices
+  // Realtime Supabase listener for timetable title and timetable data changes across devices
   useEffect(() => {
     const channel = supabase
-      .channel('realtime_timetable_titles_tab')
+      .channel('realtime_timetable_titles_and_data_tab')
       .on(
         'postgres_changes',
         {
@@ -107,8 +106,19 @@ export default function TimetableTab({
         (payload) => {
           const row = payload.new as any;
           if (!row || !row.key) return;
+
+          // 1. Title updates
           if (row.key === 'school_timetable_titles' || row.key.includes('school_timetable_title')) {
             syncTimetableTitlesFromSupabase({ [row.key]: row.value });
+          }
+
+          // 2. Timetable Data updates across devices
+          if (row.key === 'school_timetable_data') {
+            safeSetLocalStorage('school_timetable_data', row.value);
+            window.dispatchEvent(new CustomEvent('school_timetable_data_updated', { detail: row.value }));
+          } else if (row.key.startsWith('ws_') && row.key.endsWith('_school_timetable_data')) {
+            safeSetLocalStorage(row.key, row.value);
+            window.dispatchEvent(new CustomEvent('school_timetable_data_updated', { detail: { [row.key]: row.value } }));
           }
         }
       )
@@ -151,10 +161,17 @@ export default function TimetableTab({
   };
 
   useEffect(() => {
-    if (!isAdmin && currentUser && selectedTeacherUsername !== currentUser.username) {
-      setSelectedTeacherUsername(currentUser.username);
+    if (currentUser) {
+      if (!isAdmin) {
+        setSelectedTeacherUsername(currentUser.username);
+      } else {
+        const isValid = teachers.some(t => t.username === selectedTeacherUsername || t.id === selectedTeacherUsername);
+        if (!selectedTeacherUsername || !isValid) {
+          setSelectedTeacherUsername(currentUser.username);
+        }
+      }
     }
-  }, [isAdmin, currentUser, selectedTeacherUsername]);
+  }, [isAdmin, currentUser, teachers, selectedTeacherUsername]);
 
   useEffect(() => {
     const handleStorage = () => {
@@ -165,11 +182,16 @@ export default function TimetableTab({
         return;
       }
       const savedTeacher = localStorage.getItem('timetable_selected_teacher') || selectedTeacherUsername;
-      if (savedTeacher !== selectedTeacherUsername) {
-        setSelectedTeacherUsername(savedTeacher);
+      if (savedTeacher && teachers.some(t => t.username === savedTeacher || t.id === savedTeacher)) {
+        if (savedTeacher !== selectedTeacherUsername) {
+          setSelectedTeacherUsername(savedTeacher);
+        }
+        setTimetableTitle(getTeacherTitle(savedTeacher));
+        setSignatureTitle(getTeacherSignature(savedTeacher));
+      } else if (currentUser) {
+        setTimetableTitle(getTeacherTitle(currentUser.username));
+        setSignatureTitle(getTeacherSignature(currentUser.username));
       }
-      setTimetableTitle(getTeacherTitle(savedTeacher));
-      setSignatureTitle(getTeacherSignature(savedTeacher));
     };
     handleStorage();
     window.addEventListener('storage', handleStorage);
@@ -178,7 +200,7 @@ export default function TimetableTab({
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener('timetable_config_updated', handleStorage);
     };
-  }, [selectedTeacherUsername, isAdmin, currentUser]);
+  }, [selectedTeacherUsername, isAdmin, currentUser, teachers]);
 
   // View modes: 'personal' (Cá nhân), 'global' (Toàn trường), 'search' (Tra cứu nhanh)
   const [viewMode, setViewMode] = useState<'personal' | 'global' | 'search'>('personal');
@@ -192,7 +214,10 @@ export default function TimetableTab({
   const [selectedGlobalDay, setSelectedGlobalDay] = useState<string>('2'); // '2' = Thứ 2, etc.
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  const selectedTeacher = teachers.find(t => t.username === selectedTeacherUsername);
+  const selectedTeacher = teachers.find(
+    t => t.username?.toLowerCase() === selectedTeacherUsername?.toLowerCase() ||
+         t.id?.toLowerCase() === selectedTeacherUsername?.toLowerCase()
+  ) || (currentUser && (currentUser.username === selectedTeacherUsername || currentUser.id === selectedTeacherUsername) ? currentUser : teachers[0]);
 
   const handlePrint = () => {
     const printableContent = document.getElementById('printable-timetable');
@@ -314,8 +339,62 @@ export default function TimetableTab({
   };
 
   const getCellData = (day: string, period: string) => {
-    const teacherSchedule = timetableData[selectedTeacherUsername] || {};
-    return teacherSchedule[`${day}-${period}`];
+    // 1. Tìm trực tiếp theo selectedTeacherUsername
+    let teacherSchedule = timetableData[selectedTeacherUsername];
+
+    // 2. Tìm theo thông tin giáo viên (username, id, name)
+    if (!teacherSchedule && selectedTeacher) {
+      if (selectedTeacher.username && timetableData[selectedTeacher.username]) {
+        teacherSchedule = timetableData[selectedTeacher.username];
+      } else if (selectedTeacher.id && timetableData[selectedTeacher.id]) {
+        teacherSchedule = timetableData[selectedTeacher.id];
+      } else if (selectedTeacher.name && timetableData[selectedTeacher.name]) {
+        teacherSchedule = timetableData[selectedTeacher.name];
+      }
+    }
+
+    // 3. Khớp không phân biệt hoa thường (Case-insensitive matching)
+    if (!teacherSchedule) {
+      const searchKey = (selectedTeacher?.username || selectedTeacherUsername || '').toLowerCase();
+      const matchedKey = Object.keys(timetableData).find(k => k.toLowerCase() === searchKey);
+      if (matchedKey && timetableData[matchedKey]) {
+        teacherSchedule = timetableData[matchedKey];
+      }
+    }
+
+    // 4. Tìm trong không gian làm việc riêng của giáo viên (LocalStorage fallback)
+    if (!teacherSchedule && selectedTeacher) {
+      const cleanId = (selectedTeacher.id || selectedTeacher.username).replace(/[^a-zA-Z0-9_-]/g, '_');
+      const wsSchedule = safeGetLocalStorage<Record<string, any> | null>(`ws_${cleanId}_school_timetable_data`, null);
+      if (wsSchedule && typeof wsSchedule === 'object') {
+        teacherSchedule = wsSchedule;
+      }
+    }
+
+    return teacherSchedule ? teacherSchedule[`${day}-${period}`] : undefined;
+  };
+
+  const getTeacherTotalSlots = (username: string) => {
+    const teacher = teachers.find(
+      t => t.username?.toLowerCase() === username?.toLowerCase() ||
+           t.id?.toLowerCase() === username?.toLowerCase()
+    );
+    let teacherSchedule = timetableData[username];
+    if (!teacherSchedule && teacher) {
+      if (teacher.username && timetableData[teacher.username]) teacherSchedule = timetableData[teacher.username];
+      else if (teacher.id && timetableData[teacher.id]) teacherSchedule = timetableData[teacher.id];
+      else if (teacher.name && timetableData[teacher.name]) teacherSchedule = timetableData[teacher.name];
+    }
+    if (!teacherSchedule) {
+      const searchKey = (teacher?.username || username || '').toLowerCase();
+      const matchedKey = Object.keys(timetableData).find(k => k.toLowerCase() === searchKey);
+      if (matchedKey && timetableData[matchedKey]) teacherSchedule = timetableData[matchedKey];
+    }
+    if (!teacherSchedule && teacher) {
+      const cleanId = (teacher.id || teacher.username).replace(/[^a-zA-Z0-9_-]/g, '_');
+      teacherSchedule = safeGetLocalStorage<Record<string, any>>(`ws_${cleanId}_school_timetable_data`, {});
+    }
+    return Object.keys(teacherSchedule || {}).length;
   };
 
   // Helper to format class string to superscript format (e.g. 3/5 -> 3⁵ or 3.5 -> 3⁵)
@@ -585,7 +664,13 @@ export default function TimetableTab({
     }> = [];
 
     teachers.forEach((teacher) => {
-      const schedule = timetableData[teacher.username] || {};
+      const cleanId = (teacher.id || teacher.username).replace(/[^a-zA-Z0-9_-]/g, '_');
+      const wsSchedule = safeGetLocalStorage<Record<string, any>>(`ws_${cleanId}_school_timetable_data`, {});
+      const schedule = timetableData[teacher.username] 
+        || (teacher.id && timetableData[teacher.id]) 
+        || (teacher.name && timetableData[teacher.name]) 
+        || wsSchedule 
+        || {};
       Object.entries(schedule).forEach(([key, val]: [string, any]) => {
         // key format "day-period" e.g. "2-1"
         const [day, period] = key.split('-');
@@ -856,7 +941,7 @@ export default function TimetableTab({
           <div className="bg-white/80 px-3 py-1.5 rounded-xl border border-emerald-100 shadow-xs text-right shrink-0">
             <span className="block text-[8px] font-black text-slate-400 uppercase tracking-wider">Tổng số tiết dạy</span>
             <span className="text-base font-black text-emerald-700">
-              {Object.keys(timetableData[selectedTeacherUsername] || {}).length} tiết / tuần
+              {getTeacherTotalSlots(selectedTeacherUsername)} tiết / tuần
             </span>
           </div>
         </div>
@@ -1318,7 +1403,13 @@ export default function TimetableTab({
               </thead>
               <tbody className="divide-y divide-slate-200 bg-white">
                 {teachers.map((t) => {
-                  const schedule = timetableData[t.username] || {};
+                  const cleanId = (t.id || t.username).replace(/[^a-zA-Z0-9_-]/g, '_');
+                  const wsSchedule = safeGetLocalStorage<Record<string, any>>(`ws_${cleanId}_school_timetable_data`, {});
+                  const schedule = timetableData[t.username] 
+                    || (t.id && timetableData[t.id]) 
+                    || (t.name && timetableData[t.name]) 
+                    || wsSchedule 
+                    || {};
                   const totalPeriodsToday = Object.keys(schedule).filter(k => k.startsWith(`${selectedGlobalDay}-`)).length;
                   
                   return (
