@@ -32,7 +32,7 @@ export function safeSetLocalStorage(key: string, value: any): boolean {
         }
 
         // Fallback strategy 2: Try clearing non-essential cache items
-        const nonEssentialKeys = ['custom_avatars_list', 'vongQuayQuizData', 'school_quotes'];
+        const nonEssentialKeys = ['custom_avatars_list', 'vongQuayQuizData'];
         for (const k of nonEssentialKeys) {
           if (k !== key) {
             try {

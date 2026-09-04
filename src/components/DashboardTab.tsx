@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { safeSetLocalStorage } from '../utils/safeStorage';
-import { Grade, ClassItem, Student, Computer, DocumentItem, EmulationDataState, MotivationalQuote, TeacherTodo } from '../types';
+import { Grade, ClassItem, Student, Computer, DocumentItem, EmulationDataState, TeacherTodo } from '../types';
 import { 
   Award, Monitor, Activity, Radio, AlertTriangle, FileText, ChevronRight, ChevronLeft,
   CheckCircle, HelpCircle, Database, Cloud, RefreshCw, Layers, Users, 
@@ -106,7 +106,6 @@ interface DashboardTabProps {
   onForceSync?: () => Promise<void>;
   onForcePush?: () => Promise<void>;
   onOpenSupabaseModal?: () => void;
-  quotes?: MotivationalQuote[];
 }
 
 export default function DashboardTab({
@@ -128,8 +127,7 @@ export default function DashboardTab({
   supabaseError = null,
   onForceSync,
   onForcePush,
-  onOpenSupabaseModal,
-  quotes = []
+  onOpenSupabaseModal
 }: DashboardTabProps) {
   
   const [showDbInfo, setShowDbInfo] = useState(true);
@@ -656,150 +654,8 @@ export default function DashboardTab({
     }
   }, [emulationMetric]);
 
-  // --- CAROUSEL ROTATION FOR MOTIVATIONAL QUOTES (RANDOMIZED & 10s DELAY) ---
-  const [quoteIndex, setQuoteIndex] = useState(0);
-  const [fadeState, setFadeState] = useState<'in' | 'out'>('in');
-
-  // Initialize quote index to active quote's index
-  useEffect(() => {
-    if (quotes && quotes.length > 0) {
-      const activeIdx = quotes.findIndex(q => q.isActive);
-      if (activeIdx !== -1) {
-        setQuoteIndex(activeIdx);
-      }
-    }
-  }, [quotes]);
-
-  // Auto cycle quotes randomly every 10 seconds
-  useEffect(() => {
-    if (!quotes || quotes.length <= 1) return;
-
-    const interval = setInterval(() => {
-      setFadeState('out');
-      setTimeout(() => {
-        setQuoteIndex(prev => {
-          if (quotes.length <= 1) return 0;
-          let nextIdx = prev;
-          let attempts = 0;
-          // Attempt to find a different index to avoid repeating the same quote back-to-back
-          while (nextIdx === prev && attempts < 15) {
-            nextIdx = Math.floor(Math.random() * quotes.length);
-            attempts++;
-          }
-          return nextIdx;
-        });
-        setFadeState('in');
-      }, 500);
-    }, 10000); // 10 seconds delay
-
-    return () => clearInterval(interval);
-  }, [quotes]);
-
-  const displayedQuote = useMemo(() => {
-    if (!quotes || quotes.length === 0) {
-      return {
-        text: "Bộ lông làm đẹp con công, học vấn làm đẹp con người.",
-        author: "Ngạn ngữ Nga"
-      };
-    }
-    const idx = quoteIndex % quotes.length;
-    return quotes[idx] || quotes[0];
-  }, [quotes, quoteIndex]);
-
-  const handleNextQuote = () => {
-    if (!quotes || quotes.length <= 1) return;
-    setFadeState('out');
-    setTimeout(() => {
-      setQuoteIndex(prev => {
-        let nextIdx = prev;
-        let attempts = 0;
-        while (nextIdx === prev && attempts < 15) {
-          nextIdx = Math.floor(Math.random() * quotes.length);
-          attempts++;
-        }
-        return nextIdx;
-      });
-      setFadeState('in');
-    }, 400);
-  };
-
-  const handlePrevQuote = () => {
-    if (!quotes || quotes.length <= 1) return;
-    setFadeState('out');
-    setTimeout(() => {
-      setQuoteIndex(prev => {
-        let nextIdx = prev;
-        let attempts = 0;
-        while (nextIdx === prev && attempts < 15) {
-          nextIdx = Math.floor(Math.random() * quotes.length);
-          attempts++;
-        }
-        return nextIdx;
-      });
-      setFadeState('in');
-    }, 400);
-  };
-
-  const handleDotClick = (index: number) => {
-    if (index === quoteIndex) return;
-    setFadeState('out');
-    setTimeout(() => {
-      setQuoteIndex(index);
-      setFadeState('in');
-    }, 400);
-  };
-
   return (
     <div className="space-y-6">
-      {/* COMPACT WELCOME BANNER (CHALKBOARD THEMED ACCORDING TO USER'S PHOTO) */}
-      <div className="bg-gradient-to-r from-[#143224] to-[#1b4332] px-12 sm:px-16 py-7 rounded-2xl shadow-md border-3 border-[#2a5e44] text-center relative overflow-hidden flex flex-col items-center justify-center min-h-[140px] group/chalkboard">
-        {/* Subtle chalk board texture / reflection overlays */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.06),transparent_70%)] pointer-events-none" />
-        
-        {/* Wooden-like rustic or double thin chalk lines borders inside */}
-        <div className="absolute inset-2 border border-dashed border-emerald-500/20 rounded-xl pointer-events-none" />
-
-        {/* Text Area with Smooth Fade Transitions - Adjusted max-width to 5xl for full-frame text layout */}
-        <div 
-          className={`relative z-10 w-full max-w-5xl mx-auto space-y-1.5 text-center transition-all duration-500 transform ${
-            fadeState === 'in' ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-98 translate-y-1'
-          }`}
-        >
-          <p 
-            className="text-lg sm:text-2xl md:text-3xl text-white font-normal tracking-wide leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)] select-none text-center break-words whitespace-normal px-2" 
-            style={{ fontFamily: '"Charm", cursive' }}
-          >
-            “{displayedQuote.text}”
-          </p>
-          {displayedQuote.author && (
-            <p 
-              className="text-xs sm:text-sm text-amber-200/90 font-medium tracking-widest text-center mt-2.5 select-none break-words whitespace-normal" 
-              style={{ fontFamily: '"Charm", cursive' }}
-            >
-              – {displayedQuote.author}
-            </p>
-          )}
-        </div>
-
-        {/* Pagination Dots */}
-        {quotes && quotes.length > 1 && (
-          <div className="relative z-10 flex items-center justify-center gap-1.5 mt-3">
-            {quotes.map((_, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => handleDotClick(idx)}
-                className={`btn-raw h-1.5 rounded-full transition-all duration-300 ${
-                  idx === quoteIndex 
-                    ? 'w-5 bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]' 
-                    : 'w-1.5 bg-emerald-500/30 hover:bg-emerald-400/50'
-                }`}
-                title={`Chuyển đến câu số ${idx + 1}`}
-              />
-            ))}
-          </div>
-        )}
-      </div>
 
       {/* COMPACT HARDWARE STATUS GRID - EXTREMELY LIVELY WITH MICRO INSIGHTS */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

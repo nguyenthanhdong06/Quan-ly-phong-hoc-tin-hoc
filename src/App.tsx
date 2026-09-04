@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Grade, ClassItem, Student, Computer, DocumentItem, Member, AttendanceData, EvaluationData, EmulationDataState, SeatingChart, TimetableData, MotivationalQuote, THEMES, LabBooking, LabIncident, LabMaintenanceLog, LabInfo } from './types';
+import { Grade, ClassItem, Student, Computer, DocumentItem, Member, AttendanceData, EvaluationData, EmulationDataState, SeatingChart, TimetableData, THEMES, LabBooking, LabIncident, LabMaintenanceLog, LabInfo } from './types';
 import {
   defaultGrades,
   defaultClasses,
@@ -11,12 +11,10 @@ import {
   defaultEvaluation,
   defaultEmulation,
   defaultSeating,
-  defaultTimetable,
-  defaultQuotes
+  defaultTimetable
 } from './data/mockData';
 
 // Subcomponents import
-import DashboardTab from './components/DashboardTab';
 import StudentsTab from './components/StudentsTab';
 import ClassesTab from './components/ClassesTab';
 import AttendanceTab from './components/AttendanceTab';
@@ -201,7 +199,6 @@ export default function App() {
   const [documents, setDocuments] = useState<DocumentItem[]>(() => safeParse('school_documents', defaultDocuments));
   const [members, setMembers] = useState<Member[]>(() => safeParse('school_members', defaultMembers));
   const [timetableData, setTimetableData] = useState<TimetableData>(() => safeParse('school_timetable_data', defaultTimetable));
-  const [quotes, setQuotes] = useState<MotivationalQuote[]>(() => safeParse('school_quotes', defaultQuotes));
   const [labBookings, setLabBookings] = useState<LabBooking[]>(() => safeParse('school_lab_bookings', []));
   const [labIncidents, setLabIncidents] = useState<LabIncident[]>(() => safeParse('school_lab_incidents', []));
   const [labMaintenanceLogs, setLabMaintenanceLogs] = useState<LabMaintenanceLog[]>(() => safeParse('school_lab_maintenance_logs', []));
@@ -727,12 +724,6 @@ export default function App() {
 
           setTimetableData(mergedTimetable);
           safeSetLocalStorage('school_timetable_data', mergedTimetable);
-          if (Array.isArray(dbStates['school_quotes']) && dbStates['school_quotes'].length > 0) {
-            setQuotes(dbStates['school_quotes']);
-          } else {
-            setQuotes(defaultQuotes);
-            saveSupabaseState('school_quotes', defaultQuotes);
-          }
           if (Array.isArray(dbStates['school_lab_bookings'])) setLabBookings(dbStates['school_lab_bookings']);
           if (Array.isArray(dbStates['school_lab_incidents'])) setLabIncidents(dbStates['school_lab_incidents']);
           if (Array.isArray(dbStates['school_lab_maintenance_logs'])) setLabMaintenanceLogs(dbStates['school_lab_maintenance_logs']);
@@ -1007,12 +998,6 @@ export default function App() {
     }
   }, [timetableData, isLoaded, currentUser]);
 
-  useEffect(() => {
-    safeSetLocalStorage('school_quotes', quotes);
-    if (isLoaded) {
-      saveSupabaseState('school_quotes', quotes);
-    }
-  }, [quotes, isLoaded]);
 
   useEffect(() => {
     if (currentUser) {
@@ -1253,7 +1238,6 @@ export default function App() {
         setTimetableData(mergedTimetable);
         safeSetLocalStorage('school_timetable_data', mergedTimetable);
 
-        if (dbStates['school_quotes']) setQuotes(dbStates['school_quotes']);
         if (dbStates['custom_avatars_list'] && Array.isArray(dbStates['custom_avatars_list'])) {
           safeSetLocalStorage('custom_avatars_list', dbStates['custom_avatars_list']);
           window.dispatchEvent(new CustomEvent('custom_avatars_updated', { detail: dbStates['custom_avatars_list'] }));
@@ -1297,7 +1281,6 @@ export default function App() {
         saveSupabaseState('school_documents', documents),
         saveSupabaseState('school_members', members),
         saveSupabaseState('school_timetable_data', timetableData),
-        saveSupabaseState('school_quotes', quotes),
         saveSupabaseState('custom_avatars_list', loadCustomAvatars()),
         saveSupabaseState(`${activeWorkspaceId}_school_garden_data`, gardenData),
         saveSupabaseState('school_garden_rewards', gardenRewards),
@@ -1924,8 +1907,6 @@ export default function App() {
                 timetableData={timetableData}
                 setTimetableData={setTimetableData}
                 classes={classes}
-                quotes={quotes}
-                setQuotes={setQuotes}
               />
             )}
 

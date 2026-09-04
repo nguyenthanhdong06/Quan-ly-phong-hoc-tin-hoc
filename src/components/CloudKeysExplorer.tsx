@@ -271,14 +271,6 @@ export function analyzeCloudKey(row: CloudKeyRow): CloudKeyInfo {
     categoryBadgeText = 'text-orange-800';
     categoryBadgeBorder = 'border-orange-300';
     description = 'Kế hoạch dạy học, giáo án điện tử PPT môn Tin';
-  } else if (k === 'school_quotes') {
-    category = 'resources';
-    categoryLabel = 'Danh ngôn học tập';
-    categoryColor = '#eab308';
-    categoryBadgeBg = 'bg-yellow-100';
-    categoryBadgeText = 'text-yellow-800';
-    categoryBadgeBorder = 'border-yellow-300';
-    description = 'Câu châm ngôn truyền cảm hứng học tập mỗi ngày';
   } else if (k.startsWith('school_otp_') || k.includes('vault') || k === 'custom_avatars_list' || k === 'school_pc_frame_config') {
     category = 'security';
     categoryLabel = 'Bảo mật & Cấu hình';
@@ -482,8 +474,8 @@ export const CloudKeysExplorer: React.FC<CloudKeysExplorerProps> = ({
           return;
         }
 
-        // 2. Khóa legacy rỗng từ hệ thống cũ
-        if (['school_attendance_data', 'school_evaluation_data', 'school_seating_chart', 'school_emulation_state'].includes(k)) {
+        // 2. Khóa legacy rỗng hoặc tính năng đã loại bỏ
+        if (['school_quotes', 'school_attendance_data', 'school_evaluation_data', 'school_seating_chart', 'school_emulation_state'].includes(k)) {
           redundantKeys.push(k);
           return;
         }
@@ -566,7 +558,7 @@ export const CloudKeysExplorer: React.FC<CloudKeysExplorerProps> = ({
     { id: 'emulation', label: 'Thi đua' },
     { id: 'garden', label: 'Vườn Tri Thức' },
     { id: 'schedule', label: 'TKB' },
-    { id: 'resources', label: 'Tài liệu & Danh ngôn' },
+    { id: 'resources', label: 'Tài liệu học tập' },
     { id: 'security', label: 'Cấu hình' }
   ];
 
