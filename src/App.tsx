@@ -1047,6 +1047,10 @@ export default function App() {
 
   // Auto handle selectedClass synchronization when grade or assigned classes change
   useEffect(() => {
+    // Nếu lớp hiện tại đã thuộc đúng khối đang chọn thì giữ nguyên 100%, không ép về lớp đầu tiên
+    if (userAssignedClasses.some(c => c.id === selectedClass && c.gradeId === selectedGrade)) {
+      return;
+    }
     const firstOfGrade = userAssignedClasses.find(c => c.gradeId === selectedGrade);
     if (firstOfGrade) {
       setSelectedClass(firstOfGrade.id);
