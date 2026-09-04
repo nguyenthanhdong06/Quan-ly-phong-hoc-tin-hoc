@@ -76,6 +76,7 @@ import {
   saveWorkspaceState,
   WORKSPACE_PREFIX 
 } from './services/workspaceService';
+import { syncTimetableTitlesFromSupabase } from './services/timetableTitleService';
 
 
 // Icons import from Lucide
@@ -701,6 +702,9 @@ export default function App() {
             safeSetLocalStorage('school_computer_reports', dbStates['school_computer_reports']);
           }
 
+          // 📅 Đồng bộ tiêu đề thời khóa biểu từng giáo viên từ Supabase
+          syncTimetableTitlesFromSupabase(dbStates, activeWorkspaceId);
+
           // Tự động giải mã Cloud Vault EmailJS cho thiết bị mới
           if (dbStates['school_otp_config']) {
             const otpVault = decryptVaultData(dbStates['school_otp_config']);
@@ -1139,6 +1143,9 @@ export default function App() {
           safeSetLocalStorage('custom_avatars_list', dbStates['custom_avatars_list']);
           window.dispatchEvent(new CustomEvent('custom_avatars_updated', { detail: dbStates['custom_avatars_list'] }));
         }
+
+        // 📅 Đồng bộ tiêu đề thời khóa biểu từng giáo viên từ Supabase
+        syncTimetableTitlesFromSupabase(dbStates, activeWorkspaceId);
         
         showToast('Tải dữ liệu thành công! Đã ghi nhận đè bộ nhớ cục bộ.', 'success');
       } else {
@@ -1181,7 +1188,9 @@ export default function App() {
         saveSupabaseState('school_garden_rewards', gardenRewards),
         saveSupabaseState('school_custom_seed_sets', customSeedSets),
         saveSupabaseState(`${activeWorkspaceId}_school_computer_reports`, safeParse(`${activeWorkspaceId}_school_computer_reports`, safeParse('school_computer_reports', []))),
-        saveSupabaseState('school_computer_reports', safeParse('school_computer_reports', []))
+        saveSupabaseState('school_computer_reports', safeParse('school_computer_reports', [])),
+        saveSupabaseState('school_timetable_titles', safeParse('school_timetable_titles', {})),
+        saveSupabaseState(`${activeWorkspaceId}_school_timetable_title`, safeParse(`${activeWorkspaceId}_school_timetable_title`, {}))
       ]);
       
       const allSuccess = results.every(r => r === true);

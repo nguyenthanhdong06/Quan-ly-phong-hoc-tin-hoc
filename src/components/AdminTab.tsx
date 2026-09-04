@@ -6,6 +6,7 @@ import { saveSupabaseState, supabase, SQL_INITIALIZATION_QUERY } from '../supaba
 import { sendOtpToUser, GOOGLE_APPS_SCRIPT_GMAIL_TEMPLATE } from '../services/emailSmsOtpService';
 import { encryptVaultData } from '../utils/security';
 import { CloudKeysExplorer } from './CloudKeysExplorer';
+import { getTeacherTimetableConfig, saveTeacherTimetableConfig } from '../services/timetableTitleService';
 
 interface AdminTabProps {
   members: Member[];
@@ -266,19 +267,15 @@ export default function AdminTab({
     return localStorage.getItem('timetable_selected_teacher') || currentUser?.username || (members[0] ? members[0].username : 'dong.nt');
   });
 
-  // Helpers to fetch custom title and signature per teacher
+  // Helpers to fetch custom title and signature per teacher (Synced with Supabase)
   const getTeacherTitle = (username: string) => {
-    if (!username) return 'THỜI KHÓA BIỂU (2025-2026) TỪ 09/09/2025';
-    return localStorage.getItem(`timetable_title_${username}`)
-      || localStorage.getItem('timetable_custom_title')
-      || 'THỜI KHÓA BIỂU (2025-2026) TỪ 09/09/2025';
+    const teacher = members.find(m => m.username === username || m.id === username);
+    return getTeacherTimetableConfig(username, teacher?.id).title;
   };
 
   const getTeacherSignature = (username: string) => {
-    if (!username) return 'GVBM';
-    return localStorage.getItem(`timetable_signature_${username}`)
-      || localStorage.getItem('timetable_custom_signature')
-      || 'GVBM';
+    const teacher = members.find(m => m.username === username || m.id === username);
+    return getTeacherTimetableConfig(username, teacher?.id).signature;
   };
 
   // Configurable Timetable Title and Signature Title (Editable per teacher)
@@ -292,19 +289,32 @@ export default function AdminTab({
     return getTeacherSignature(initialTeacher);
   });
 
-  // Save title and signature config for the selected teacher
-  const handleSaveTitleConfig = () => {
-    if (selectedTeacherUsername) {
-      localStorage.setItem(`timetable_title_${selectedTeacherUsername}`, timetableTitle);
-      localStorage.setItem(`timetable_signature_${selectedTeacherUsername}`, signatureTitle);
+  const [isSavingTitle, setIsSavingTitle] = useState<boolean>(false);
+
+  // Save title and signature config for the selected teacher (User-Scoped & Cloud Synced to Supabase)
+  const handleSaveTitleConfig = async () => {
+    const teacherObj = members.find(m => m.username === selectedTeacherUsername || m.id === selectedTeacherUsername)
+      || { username: selectedTeacherUsername, name: selectedTeacherUsername };
+    const nameStr = teacherObj.name || selectedTeacherUsername;
+
+    setIsSavingTitle(true);
+    try {
+      const success = await saveTeacherTimetableConfig(
+        teacherObj,
+        { title: timetableTitle, signature: signatureTitle },
+        currentUser
+      );
+      if (success) {
+        showToast(`Đã lưu & đồng bộ tiêu đề TKB cho Thầy/Cô ${nameStr} lên Supabase Cloud!`, 'success');
+      } else {
+        showToast(`Đã lưu tiêu đề TKB cho Thầy/Cô ${nameStr}!`, 'success');
+      }
+    } catch (err) {
+      console.warn('Lỗi lưu tiêu đề thời khóa biểu:', err);
+      showToast(`Đã lưu tiêu đề TKB cho Thầy/Cô ${nameStr} trên trình duyệt!`, 'success');
+    } finally {
+      setIsSavingTitle(false);
     }
-    localStorage.setItem('timetable_custom_title', timetableTitle);
-    localStorage.setItem('timetable_custom_signature', signatureTitle);
-    window.dispatchEvent(new Event('timetable_config_updated'));
-    window.dispatchEvent(new Event('storage'));
-    const teacherObj = members.find(m => m.username === selectedTeacherUsername);
-    const nameStr = teacherObj ? teacherObj.name : selectedTeacherUsername;
-    showToast(`Đã lưu tiêu đề TKB & mục ký cho giáo viên ${nameStr}!`, 'success');
   };
 
   // Keep state synchronized in real time with localStorage and custom events
@@ -641,10 +651,11 @@ export default function AdminTab({
             <button
               type="button"
               onClick={handleSaveTitleConfig}
-              className="bg-gradient-to-b from-[#287866] to-[#1d5c4e] hover:from-[#318f7a] hover:to-[#226e5e] text-white font-black text-xs px-4 py-2 rounded-full border border-[#16473c] shadow-md transition-all cursor-pointer active:scale-95 shrink-0 flex items-center gap-1.5"
+              disabled={isSavingTitle}
+              className="bg-gradient-to-b from-[#287866] to-[#1d5c4e] hover:from-[#318f7a] hover:to-[#226e5e] text-white font-black text-xs px-4 py-2 rounded-full border border-[#16473c] shadow-md transition-all cursor-pointer active:scale-95 shrink-0 flex items-center gap-1.5 disabled:opacity-50"
             >
               <Save className="w-4 h-4" />
-              <span>Lưu tiêu đề giáo viên</span>
+              <span>{isSavingTitle ? 'Đang lưu Cloud...' : 'Lưu tiêu đề giáo viên'}</span>
             </button>
           </div>
 

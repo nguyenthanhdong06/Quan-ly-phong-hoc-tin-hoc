@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Member, TimetableData } from '../types';
 import { 
   Calendar, 
@@ -17,8 +18,16 @@ import {
   Users,
   Grid,
   Edit3,
-  Settings
+  Settings,
+  Save,
+  X
 } from 'lucide-react';
+import { 
+  getTeacherTimetableConfig, 
+  saveTeacherTimetableConfig, 
+  syncTimetableTitlesFromSupabase 
+} from '../services/timetableTitleService';
+import { supabase } from '../supabaseClient';
 
 interface TimetableTabProps {
   timetableData: TimetableData;
@@ -52,24 +61,94 @@ export default function TimetableTab({
     return teachers[0]?.username || '';
   });
 
-  // Helpers to fetch custom title and signature per teacher
+  // Helpers to fetch custom title and signature per teacher (Synced with Supabase Cloud)
   const getTeacherTitle = (username: string) => {
-    if (!username) return 'THỜI KHÓA BIỂU (2025-2026) TỪ 09/09/2025';
-    return localStorage.getItem(`timetable_title_${username}`)
-      || localStorage.getItem('timetable_custom_title')
-      || 'THỜI KHÓA BIỂU (2025-2026) TỪ 09/09/2025';
+    const teacher = members.find(m => m.username === username || m.id === username);
+    return getTeacherTimetableConfig(username, teacher?.id).title;
   };
 
   const getTeacherSignature = (username: string) => {
-    if (!username) return 'GVBM';
-    return localStorage.getItem(`timetable_signature_${username}`)
-      || localStorage.getItem('timetable_custom_signature')
-      || 'GVBM';
+    const teacher = members.find(m => m.username === username || m.id === username);
+    return getTeacherTimetableConfig(username, teacher?.id).signature;
   };
 
   // Configurable Timetable Title and Signature Title per selected teacher
   const [timetableTitle, setTimetableTitle] = useState<string>(() => getTeacherTitle(selectedTeacherUsername));
   const [signatureTitle, setSignatureTitle] = useState<string>(() => getTeacherSignature(selectedTeacherUsername));
+
+  // Modal for editing title & signature
+  const [isTitleModalOpen, setIsTitleModalOpen] = useState<boolean>(false);
+  const [editTitle, setEditTitle] = useState<string>('');
+  const [editSignature, setEditSignature] = useState<string>('');
+  const [isSavingTitle, setIsSavingTitle] = useState<boolean>(false);
+
+  // Escape key listener to close title modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isTitleModalOpen) {
+        setIsTitleModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isTitleModalOpen]);
+
+  // Realtime Supabase listener for timetable title changes across devices
+  useEffect(() => {
+    const channel = supabase
+      .channel('realtime_timetable_titles_tab')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'school_states'
+        },
+        (payload) => {
+          const row = payload.new as any;
+          if (!row || !row.key) return;
+          if (row.key === 'school_timetable_titles' || row.key.includes('school_timetable_title')) {
+            syncTimetableTitlesFromSupabase({ [row.key]: row.value });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const handleOpenEditTitleModal = () => {
+    setEditTitle(timetableTitle);
+    setEditSignature(signatureTitle);
+    setIsTitleModalOpen(true);
+  };
+
+  const handleSaveTitleFromModal = async () => {
+    const teacherObj = selectedTeacher || { username: selectedTeacherUsername, name: selectedTeacherUsername };
+    setIsSavingTitle(true);
+    try {
+      const success = await saveTeacherTimetableConfig(
+        teacherObj,
+        { title: editTitle, signature: editSignature },
+        currentUser
+      );
+      setTimetableTitle(editTitle);
+      setSignatureTitle(editSignature);
+      setIsTitleModalOpen(false);
+      if (success) {
+        showToast(`Đã lưu & đồng bộ tiêu đề TKB cho Thầy/Cô ${teacherObj.name} lên Supabase Cloud!`, 'success');
+      } else {
+        showToast(`Đã lưu tiêu đề TKB cho Thầy/Cô ${teacherObj.name}!`, 'success');
+      }
+    } catch (err) {
+      console.warn('Lỗi lưu tiêu đề thời khóa biểu:', err);
+      showToast('Đã lưu tiêu đề TKB trên trình duyệt!', 'success');
+    } finally {
+      setIsSavingTitle(false);
+    }
+  };
 
   useEffect(() => {
     if (!isAdmin && currentUser && selectedTeacherUsername !== currentUser.username) {
@@ -691,6 +770,17 @@ export default function TimetableTab({
               >
                 <Printer className="w-3.5 h-3.5 text-white" />
                 In Lịch / PDF
+              </button>
+
+              {/* Edit Title Button */}
+              <button
+                type="button"
+                onClick={handleOpenEditTitleModal}
+                className="flex items-center gap-1.5 px-3.5 py-2 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 text-xs font-black rounded-xl transition cursor-pointer active:scale-95 shadow-2xs"
+                title="Tùy chỉnh tiêu đề và mục ký thời khóa biểu (Đồng bộ Cloud)"
+              >
+                <Edit3 className="w-3.5 h-3.5 text-amber-700" />
+                <span>Sửa tiêu đề</span>
               </button>
 
               {/* Teacher Selector dropdown (ADMIN ONLY SELECTOR, NON-ADMIN SHOWS READONLY USER BADGE) */}
@@ -1534,6 +1624,106 @@ export default function TimetableTab({
           </div>
         </div>
       </div>
+
+      {/* MODAL: CHỈNH SỬA TIÊU ĐỀ THỜI KHÓA BIỂU (VƯỜN TRI THỨC SCOPED PORTAL) */}
+      {isTitleModalOpen && typeof document !== 'undefined' && createPortal(
+        <div 
+          className="absolute inset-0 bg-slate-900/65 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsTitleModalOpen(false);
+          }}
+        >
+          <div 
+            className="bg-[#faf5ec] w-full max-w-lg rounded-3xl shadow-2xl border-2 border-[#d6c4a8] flex flex-col relative overflow-hidden animate-in zoom-in-95 duration-200 my-auto text-left"
+            onClick={(e) => e.stopPropagation()}
+            tabIndex={-1}
+          >
+            {/* Header */}
+            <div className="bg-gradient-to-r from-[#dfccb0] via-[#e8d9c2] to-[#dfccb0] px-5 py-3.5 border-b border-[#c8b598] flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">✏️</span>
+                <div>
+                  <h3 className="font-black text-sm text-[#42301c]">Tùy Chỉnh Tiêu Đề Thời Khóa Biểu</h3>
+                  <p className="text-[11px] font-bold text-amber-900">
+                    Áp dụng cho: {selectedTeacher?.name || selectedTeacherUsername} • Đồng bộ Supabase
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsTitleModalOpen(false)}
+                className="text-[#6e5334] hover:text-[#382613] bg-white/60 hover:bg-white p-1.5 rounded-full transition-all cursor-pointer shadow-xs focus:outline-none"
+                title="Đóng cửa sổ (Esc)"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-5 space-y-4 text-xs font-bold text-[#42301c]">
+              <div className="space-y-1.5">
+                <label className="block text-[11px] font-black text-amber-950 uppercase tracking-wider">
+                  Tiêu đề thời khóa biểu (Dòng trên cùng)
+                </label>
+                <input
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  placeholder="THỜI KHÓA BIỂU (2025-2026) TỪ 09/09/2025"
+                  className="w-full bg-white text-slate-900 font-extrabold text-xs sm:text-sm px-4 py-2.5 rounded-2xl border border-[#d6c4a8] focus:border-amber-600 focus:ring-2 focus:ring-amber-500/20 focus:outline-none transition-all shadow-xs"
+                />
+                <p className="text-[10px] text-slate-500 font-semibold italic">
+                  * Ví dụ: THỜI KHÓA BIỂU (2025-2026) TỪ 09/09/2025 - HỌC KỲ I
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-[11px] font-black text-amber-950 uppercase tracking-wider">
+                  Mục tiêu đề ký tên (Góc phải bên dưới)
+                </label>
+                <input
+                  type="text"
+                  value={editSignature}
+                  onChange={(e) => setEditSignature(e.target.value)}
+                  placeholder="GVBM"
+                  className="w-full bg-white text-slate-900 font-extrabold text-xs sm:text-sm px-4 py-2.5 rounded-2xl border border-[#d6c4a8] focus:border-amber-600 focus:ring-2 focus:ring-amber-500/20 focus:outline-none transition-all shadow-xs"
+                />
+                <p className="text-[10px] text-slate-500 font-semibold italic">
+                  * Ví dụ: GVBM, GIÁO VIÊN BỘ MÔN, hoặc GIÁO VIÊN CHỦ NHIỆM
+                </p>
+              </div>
+
+              <div className="bg-amber-50 border border-amber-200 p-3 rounded-2xl text-[11px] text-amber-900 font-bold flex items-center gap-2">
+                <span>☁️</span>
+                <span>Tiêu đề này sẽ được lưu cố định cho giáo viên <strong>{selectedTeacher?.name || selectedTeacherUsername}</strong> và tự động đồng bộ trên toàn bộ thiết bị qua Supabase Cloud.</span>
+              </div>
+            </div>
+
+            {/* Footer Buttons */}
+            <div className="flex gap-3 p-5 pt-0">
+              <button
+                type="button"
+                onClick={() => setIsTitleModalOpen(false)}
+                disabled={isSavingTitle}
+                className="w-1/2 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 font-black text-slate-700 text-xs transition-all cursor-pointer"
+              >
+                Hủy (Esc)
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveTitleFromModal}
+                disabled={isSavingTitle}
+                className="w-1/2 py-2.5 rounded-2xl bg-gradient-to-b from-[#287866] to-[#1d5c4e] hover:from-[#318f7a] hover:to-[#226e5e] font-black text-white text-xs shadow-md shadow-emerald-700/20 active:scale-95 transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>{isSavingTitle ? 'Đang lưu Cloud...' : 'Lưu tiêu đề & Đồng bộ'}</span>
+              </button>
+            </div>
+
+          </div>
+        </div>,
+        (typeof document !== 'undefined' && (document.getElementById('deskos-window-body') || document.getElementById('deskos-active-window'))) || document.body
+      )}
 
     </div>
   );
