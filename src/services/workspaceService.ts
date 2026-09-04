@@ -1,6 +1,6 @@
 import { Member, SeatingChart, EmulationDataState } from '../types';
 import { safeSetLocalStorage, safeGetLocalStorage } from '../utils/safeStorage';
-import { saveSupabaseState } from '../supabaseClient';
+import { saveSupabaseState, supabase } from '../supabaseClient';
 import { defaultSeating, defaultEmulation } from '../data/mockData';
 
 /**
@@ -166,4 +166,102 @@ export function loadWorkspaceGardenData(
     dbStates,
     safeGetLocalStorage('deskos_garden_data_v2', fallbackValue)
   );
+}
+
+/**
+ * 🗑️ Xóa vĩnh viễn toàn bộ Không gian làm việc của Giáo viên trên Supabase Cloud và LocalStorage
+ * Được kích hoạt tự động khi Quản trị viên xóa tài khoản giáo viên (user).
+ */
+export async function deleteUserWorkspaceData(
+  user: { id: string; username?: string; name?: string }
+): Promise<{ success: boolean; deletedCount: number }> {
+  const cleanId = (user.id || '').replace(/[^a-zA-Z0-9_-]/g, '_');
+  const cleanUsername = (user.username || '').replace(/[^a-zA-Z0-9_-]/g, '_');
+  let deletedCount = 0;
+
+  try {
+    // 1. Quét tất cả các khóa trên Supabase liên quan đến workspace giáo viên này
+    const { data: allStates, error: fetchErr } = await supabase
+      .from('school_states')
+      .select('key');
+
+    if (!fetchErr && allStates && allStates.length > 0) {
+      const keysToDelete = allStates
+        .map(r => r.key)
+        .filter(key => {
+          if (!key) return false;
+          // Khóa bắt đầu bằng ws_id hoặc ws_username
+          if (cleanId && (key.startsWith(`ws_${cleanId}_`) || key === `ws_${cleanId}`)) return true;
+          if (cleanUsername && (key.startsWith(`ws_${cleanUsername}_`) || key === `ws_${cleanUsername}`)) return true;
+          // Khóa kết thúc bằng _ws_id hoặc _ws_username (ví dụ attendance_2026-09-04_ws_u-2)
+          if (cleanId && key.endsWith(`_ws_${cleanId}`)) return true;
+          if (cleanUsername && key.endsWith(`_ws_${cleanUsername}`)) return true;
+          return false;
+        });
+
+      if (keysToDelete.length > 0) {
+        const { error: delErr } = await supabase
+          .from('school_states')
+          .delete()
+          .in('key', keysToDelete);
+
+        if (!delErr) {
+          deletedCount += keysToDelete.length;
+        } else {
+          console.warn('Lỗi khi xóa khóa workspace trên Supabase:', delErr.message);
+        }
+      }
+    }
+
+    // 2. Dọn dẹp tiêu đề thời khóa biểu của giáo viên trong school_timetable_titles
+    const currentTitlesMap = safeGetLocalStorage<Record<string, any>>('school_timetable_titles', {});
+    let titlesChanged = false;
+    if (user.username && currentTitlesMap[user.username]) {
+      delete currentTitlesMap[user.username];
+      titlesChanged = true;
+    }
+    if (user.id && currentTitlesMap[user.id]) {
+      delete currentTitlesMap[user.id];
+      titlesChanged = true;
+    }
+    if (titlesChanged) {
+      safeSetLocalStorage('school_timetable_titles', currentTitlesMap);
+      await saveSupabaseState('school_timetable_titles', currentTitlesMap);
+    }
+
+    // 3. Dọn dẹp lịch dạy thời khóa biểu của giáo viên trong school_timetable_data
+    const currentTimetable = safeGetLocalStorage<Record<string, any>>('school_timetable_data', {});
+    if (user.username && currentTimetable[user.username]) {
+      delete currentTimetable[user.username];
+      safeSetLocalStorage('school_timetable_data', currentTimetable);
+      await saveSupabaseState('school_timetable_data', currentTimetable);
+    }
+
+    // 4. Dọn dẹp toàn bộ bộ nhớ cục bộ localStorage
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k) continue;
+        if (
+          (cleanId && (k.startsWith(`ws_${cleanId}`) || k.includes(`_${cleanId}`))) ||
+          (cleanUsername && (k.startsWith(`ws_${cleanUsername}`) || k.includes(`_${cleanUsername}`) || k === `timetable_title_${cleanUsername}` || k === `timetable_signature_${cleanUsername}`))
+        ) {
+          keysToRemove.push(k);
+        }
+      }
+      keysToRemove.forEach(k => {
+        try {
+          localStorage.removeItem(k);
+        } catch {
+          // ignore
+        }
+      });
+    }
+
+    return { success: true, deletedCount };
+  } catch (err) {
+    console.warn('Lỗi khi xóa workspace của giáo viên:', err);
+    return { success: false, deletedCount };
+  }
 }

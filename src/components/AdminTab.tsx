@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Member, Computer, Student, ClassItem, MotivationalQuote } from '../types';
 import { UserCheck, Trash2, ShieldAlert, Heart, HardDrive, Cpu, Cloud, Check, Wifi, AlertTriangle, RefreshCw, Database, FileCode, CheckCircle2, X, Calendar, Plus, Clock, User, Sparkles, Settings, FileText, Printer, Save, Key, Lock, Eye, EyeOff, RotateCcw, Mail, Send, ArrowRight, ArrowLeft } from 'lucide-react';
 import { safeSetLocalStorage } from '../utils/safeStorage';
@@ -7,6 +8,7 @@ import { sendOtpToUser, GOOGLE_APPS_SCRIPT_GMAIL_TEMPLATE } from '../services/em
 import { encryptVaultData } from '../utils/security';
 import { CloudKeysExplorer } from './CloudKeysExplorer';
 import { getTeacherTimetableConfig, saveTeacherTimetableConfig } from '../services/timetableTitleService';
+import { deleteUserWorkspaceData } from '../services/workspaceService';
 
 interface AdminTabProps {
   members: Member[];
@@ -317,21 +319,18 @@ export default function AdminTab({
     }
   };
 
-  // Keep state synchronized in real time with localStorage and custom events
+  // Keep state synchronized in real time when teacher selection changes externally
   useEffect(() => {
     const handleSync = () => {
-      const savedTeacher = localStorage.getItem('timetable_selected_teacher') || selectedTeacherUsername;
-      if (savedTeacher !== selectedTeacherUsername) {
+      const savedTeacher = localStorage.getItem('timetable_selected_teacher');
+      if (savedTeacher && savedTeacher !== selectedTeacherUsername) {
         setSelectedTeacherUsername(savedTeacher);
+        setTimetableTitle(getTeacherTitle(savedTeacher));
+        setSignatureTitle(getTeacherSignature(savedTeacher));
       }
-      setTimetableTitle(getTeacherTitle(savedTeacher));
-      setSignatureTitle(getTeacherSignature(savedTeacher));
     };
-    handleSync();
-    window.addEventListener('timetable_config_updated', handleSync);
     window.addEventListener('storage', handleSync);
     return () => {
-      window.removeEventListener('timetable_config_updated', handleSync);
       window.removeEventListener('storage', handleSync);
     };
   }, [selectedTeacherUsername]);
@@ -452,20 +451,60 @@ export default function AdminTab({
     }, 250);
   };
 
-  const handleDeleteMember = async (id: string, name: string) => {
+  // State for member deletion confirmation modal
+  const [deletingMember, setDeletingMember] = useState<Member | null>(null);
+  const [isDeletingMember, setIsDeletingMember] = useState<boolean>(false);
+
+  // Escape listener for deleting member modal
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && deletingMember && !isDeletingMember) {
+        setDeletingMember(null);
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [deletingMember, isDeletingMember]);
+
+  const handleConfirmDeleteMember = async () => {
+    if (!deletingMember) return;
     if (!isRootAdmin) {
-      showToast('⚠️ Quyền Quản trị viên không được phép xóa tài khoản cán bộ giáo viên. Thao tác xóa chỉ dành cho Quản trị hệ thống (Admin).', 'error');
+      showToast('⚠️ Quyền Quản trị viên không được phép xóa tài khoản cán bộ giáo viên. Thao tác xóa chỉ dành cho Quản trị hệ thống (Root Admin).', 'error');
       return;
     }
-    if (id === 'u-1') {
+    if (deletingMember.id === 'u-1') {
       showToast('Thầy cô không thể xóa tài khoản Quản trị hệ thống tối cao này!', 'error');
       return;
     }
-    const updatedMembers = members.filter(m => m.id !== id);
-    setMembers(updatedMembers);
-    safeSetLocalStorage('school_members', updatedMembers);
-    await saveSupabaseState('school_members', updatedMembers);
-    showToast(`Đã hủy quyền truy cập hệ thống của: ${name}`);
+
+    setIsDeletingMember(true);
+    try {
+      // 1. Xóa vĩnh viễn toàn bộ Không gian làm việc của giáo viên này trên Supabase Cloud và LocalStorage
+      const { deletedCount } = await deleteUserWorkspaceData(deletingMember);
+
+      // 2. Xóa khỏi danh sách cán bộ giáo viên school_members
+      const updatedMembers = members.filter(m => m.id !== deletingMember.id);
+      setMembers(updatedMembers);
+      safeSetLocalStorage('school_members', updatedMembers);
+      await saveSupabaseState('school_members', updatedMembers);
+
+      // 3. Nếu đang xem TKB của giáo viên bị xóa, chuyển về tài khoản mặc định
+      if (selectedTeacherUsername === deletingMember.username) {
+        const nextTeacher = updatedMembers[0]?.username || 'dong.nt';
+        setSelectedTeacherUsername(nextTeacher);
+        localStorage.setItem('timetable_selected_teacher', nextTeacher);
+        setTimetableTitle(getTeacherTitle(nextTeacher));
+        setSignatureTitle(getTeacherSignature(nextTeacher));
+      }
+
+      showToast(`Đã xóa tài khoản "${deletingMember.name}" và xóa vĩnh viễn ${deletedCount} mục dữ liệu không gian làm việc trên Supabase Cloud!`, 'success');
+      setDeletingMember(null);
+    } catch (err) {
+      console.warn('Lỗi khi xóa tài khoản & workspace:', err);
+      showToast('Lỗi khi xóa tài khoản: ' + String(err), 'error');
+    } finally {
+      setIsDeletingMember(false);
+    }
   };
 
   // Reset all computers to functional
@@ -613,8 +652,8 @@ export default function AdminTab({
                 const newUsername = e.target.value;
                 setSelectedTeacherUsername(newUsername);
                 localStorage.setItem('timetable_selected_teacher', newUsername);
-                window.dispatchEvent(new Event('timetable_config_updated'));
-                window.dispatchEvent(new Event('storage'));
+                setTimetableTitle(getTeacherTitle(newUsername));
+                setSignatureTitle(getTeacherSignature(newUsername));
                 showToast(`Đã chuyển sang xem TKB của giáo viên: ${members.find(m => m.username === newUsername)?.name || newUsername}`);
               }}
               className="border border-[#d6c4a8] bg-white rounded-xl p-2 text-xs font-black text-[#3d2514] focus:outline-none focus:ring-2 focus:ring-[#287866] cursor-pointer min-w-[200px] shadow-2xs"
@@ -668,16 +707,7 @@ export default function AdminTab({
               <input
                 type="text"
                 value={timetableTitle}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setTimetableTitle(val);
-                  if (selectedTeacherUsername) {
-                    localStorage.setItem(`timetable_title_${selectedTeacherUsername}`, val);
-                  }
-                  localStorage.setItem('timetable_custom_title', val);
-                  window.dispatchEvent(new Event('timetable_config_updated'));
-                  window.dispatchEvent(new Event('storage'));
-                }}
+                onChange={(e) => setTimetableTitle(e.target.value)}
                 className="w-full bg-white text-slate-900 font-extrabold text-xs sm:text-sm px-4 py-2.5 rounded-2xl border border-slate-700/60 focus:border-teal-600 focus:ring-2 focus:ring-teal-500/20 focus:outline-none transition-all shadow-xs"
                 placeholder="THỜI KHÓA BIỂU (2025-2026) TỪ 09/09/2025"
               />
@@ -691,16 +721,7 @@ export default function AdminTab({
               <input
                 type="text"
                 value={signatureTitle}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setSignatureTitle(val);
-                  if (selectedTeacherUsername) {
-                    localStorage.setItem(`timetable_signature_${selectedTeacherUsername}`, val);
-                  }
-                  localStorage.setItem('timetable_custom_signature', val);
-                  window.dispatchEvent(new Event('timetable_config_updated'));
-                  window.dispatchEvent(new Event('storage'));
-                }}
+                onChange={(e) => setSignatureTitle(e.target.value)}
                 className="w-full bg-white text-slate-900 font-extrabold text-xs sm:text-sm px-4 py-2.5 rounded-2xl border border-slate-700/60 focus:border-teal-600 focus:ring-2 focus:ring-teal-500/20 focus:outline-none transition-all shadow-xs"
                 placeholder="GVBM"
               />
@@ -1221,16 +1242,16 @@ export default function AdminTab({
                           </td>
 
                           <td className="py-3.5 px-4 text-center">
-                            {!isRootAdmin ? (
+                            {member.id !== 'u-1' ? (
                               <button
-                                onClick={() => handleDeleteMember(member.id, member.name)}
-                                className="text-slate-400 hover:text-red-500 p-1.5 hover:bg-red-50 rounded transition inline-block focus:outline-none cursor-pointer"
-                                title="Xóa thành viên"
+                                onClick={() => setDeletingMember(member)}
+                                className="text-rose-600 hover:text-rose-800 p-1.5 hover:bg-rose-50 rounded-xl transition inline-flex items-center justify-center focus:outline-none cursor-pointer border border-transparent hover:border-rose-200 shadow-2xs"
+                                title="Xóa tài khoản giáo viên & Dọn dẹp Không gian làm việc"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             ) : (
-                              <span className="text-[10px] italic text-slate-400 font-medium">Root Admin</span>
+                              <span className="text-[10px] italic text-slate-400 font-bold bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200">Root Admin</span>
                             )}
                           </td>
                         </tr>
@@ -2130,6 +2151,95 @@ export default function AdminTab({
 
           </div>
         </div>
+      )}
+
+      {/* MODAL: XÁC NHẬN XÓA GIÁO VIÊN & KHÔNG GIAN LÀM VIỆC (VƯỜN TRI THỨC SCOPED PORTAL) */}
+      {deletingMember && typeof document !== 'undefined' && createPortal(
+        <div 
+          className="absolute inset-0 bg-slate-900/65 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isDeletingMember) setDeletingMember(null);
+          }}
+        >
+          <div 
+            className="bg-[#faf5ec] w-full max-w-md rounded-3xl shadow-2xl border-2 border-[#d6c4a8] flex flex-col relative overflow-hidden animate-in zoom-in-95 duration-200 my-auto text-left"
+            onClick={(e) => e.stopPropagation()}
+            tabIndex={-1}
+          >
+            {/* Header */}
+            <div className="bg-gradient-to-r from-[#dfccb0] via-[#e8d9c2] to-[#dfccb0] px-5 py-3.5 border-b border-[#c8b598] flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">⚠️</span>
+                <div>
+                  <h3 className="font-black text-sm text-[#42301c]">Xác Nhận Xóa Giáo Viên</h3>
+                  <p className="text-[11px] font-bold text-rose-800">Xóa tài khoản & Dọn dẹp Không gian làm việc</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDeletingMember(null)}
+                disabled={isDeletingMember}
+                className="text-[#6e5334] hover:text-[#382613] bg-white/60 hover:bg-white p-1.5 rounded-full transition-all cursor-pointer shadow-xs focus:outline-none disabled:opacity-50"
+                title="Đóng cửa sổ (Esc)"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-5 space-y-3.5 text-xs font-bold text-[#42301c]">
+              <p className="text-slate-700 leading-relaxed">
+                Thầy/Cô có chắc chắn muốn xóa vĩnh viễn tài khoản giáo viên sau khỏi hệ thống không?
+              </p>
+              
+              <div className="bg-white/95 border border-rose-200 p-3.5 rounded-2xl shadow-xs space-y-1">
+                <div className="flex items-center gap-2 text-rose-900 font-black text-sm">
+                  <span>👤</span>
+                  <span>{deletingMember.name}</span>
+                  <span className="text-[10px] bg-rose-100 text-rose-800 px-2 py-0.5 rounded-full font-bold">
+                    {deletingMember.role}
+                  </span>
+                </div>
+                <div className="text-[11px] text-slate-500 font-mono">
+                  Tài khoản đăng nhập: <strong>{deletingMember.username}</strong> ({deletingMember.id})
+                </div>
+              </div>
+
+              <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-2xl text-[11px] text-rose-800 font-semibold space-y-1">
+                <div className="flex items-center gap-1.5 font-black text-rose-900">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
+                  <span>Cảnh báo dọn dẹp Supabase Cloud:</span>
+                </div>
+                <p className="leading-relaxed">
+                  Hành động này sẽ <strong>xóa vĩnh viễn toàn bộ không gian làm việc</strong> của giáo viên này trên Supabase Cloud (gồm sơ đồ chỗ ngồi riêng, lịch sử điểm danh, chấm sao thi đua, cấp độ vườn tri thức và tiêu đề thời khóa biểu riêng).
+                </p>
+              </div>
+            </div>
+
+            {/* Footer Buttons */}
+            <div className="flex gap-3 p-5 pt-0">
+              <button
+                type="button"
+                onClick={() => setDeletingMember(null)}
+                disabled={isDeletingMember}
+                className="w-1/2 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 font-black text-slate-700 text-xs transition-all cursor-pointer disabled:opacity-50"
+              >
+                Hủy (Esc)
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteMember}
+                disabled={isDeletingMember}
+                className="w-1/2 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-700 font-black text-white text-xs shadow-md shadow-rose-600/20 active:scale-95 transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{isDeletingMember ? 'Đang xóa Cloud...' : 'Đồng Ý Xóa Vĩnh Viễn'}</span>
+              </button>
+            </div>
+
+          </div>
+        </div>,
+        (typeof document !== 'undefined' && (document.getElementById('deskos-window-body') || document.getElementById('deskos-active-window'))) || document.body
       )}
 
     </div>
