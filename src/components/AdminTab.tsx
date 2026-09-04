@@ -266,8 +266,28 @@ export default function AdminTab({
 
   // States for Active Scheduler Teacher
   const [selectedTeacherUsername, setSelectedTeacherUsername] = useState<string>(() => {
-    return localStorage.getItem('timetable_selected_teacher') || currentUser?.username || (members[0] ? members[0].username : 'dong.nt');
+    const saved = localStorage.getItem('timetable_selected_teacher');
+    if (saved && members.some(m => m.username === saved || m.id === saved)) {
+      return saved;
+    }
+    if (currentUser) {
+      const match = members.find(m => m.username === currentUser.username || m.id === currentUser.id);
+      if (match) return match.username;
+    }
+    return members[0]?.username || 'dong.nt';
   });
+
+  // Resolve valid active teacher object from members list
+  const activeTeacher = useMemo(() => {
+    if (!members || members.length === 0) return null;
+    const found = members.find(m => m.username === selectedTeacherUsername || m.id === selectedTeacherUsername);
+    if (found) return found;
+    if (currentUser) {
+      const userInMembers = members.find(m => m.username === currentUser.username || m.id === currentUser.id);
+      if (userInMembers) return userInMembers;
+    }
+    return members[0];
+  }, [members, selectedTeacherUsername, currentUser]);
 
   // Helpers to fetch custom title and signature per teacher (Synced with Supabase)
   const getTeacherTitle = (username: string) => {
@@ -282,20 +302,30 @@ export default function AdminTab({
 
   // Configurable Timetable Title and Signature Title (Editable per teacher)
   const [timetableTitle, setTimetableTitle] = useState<string>(() => {
-    const initialTeacher = localStorage.getItem('timetable_selected_teacher') || currentUser?.username || (members[0] ? members[0].username : 'dong.nt');
+    const initialTeacher = (activeTeacher?.username) || selectedTeacherUsername;
     return getTeacherTitle(initialTeacher);
   });
 
   const [signatureTitle, setSignatureTitle] = useState<string>(() => {
-    const initialTeacher = localStorage.getItem('timetable_selected_teacher') || currentUser?.username || (members[0] ? members[0].username : 'dong.nt');
+    const initialTeacher = (activeTeacher?.username) || selectedTeacherUsername;
     return getTeacherSignature(initialTeacher);
   });
 
   const [isSavingTitle, setIsSavingTitle] = useState<boolean>(false);
 
+  // Auto-sync teacher selection when members list updates or if selectedTeacherUsername is invalid
+  useEffect(() => {
+    if (activeTeacher && activeTeacher.username !== selectedTeacherUsername) {
+      setSelectedTeacherUsername(activeTeacher.username);
+      localStorage.setItem('timetable_selected_teacher', activeTeacher.username);
+      setTimetableTitle(getTeacherTitle(activeTeacher.username));
+      setSignatureTitle(getTeacherSignature(activeTeacher.username));
+    }
+  }, [activeTeacher, selectedTeacherUsername]);
+
   // Save title and signature config for the selected teacher (User-Scoped & Cloud Synced to Supabase)
   const handleSaveTitleConfig = async () => {
-    const teacherObj = members.find(m => m.username === selectedTeacherUsername || m.id === selectedTeacherUsername)
+    const teacherObj = activeTeacher || members.find(m => m.username === selectedTeacherUsername || m.id === selectedTeacherUsername)
       || { username: selectedTeacherUsername, name: selectedTeacherUsername };
     const nameStr = teacherObj.name || selectedTeacherUsername;
 
@@ -324,26 +354,40 @@ export default function AdminTab({
     const handleSync = () => {
       const savedTeacher = localStorage.getItem('timetable_selected_teacher');
       if (savedTeacher && savedTeacher !== selectedTeacherUsername) {
-        setSelectedTeacherUsername(savedTeacher);
-        setTimetableTitle(getTeacherTitle(savedTeacher));
-        setSignatureTitle(getTeacherSignature(savedTeacher));
+        const match = members.find(m => m.username === savedTeacher || m.id === savedTeacher);
+        if (match) {
+          setSelectedTeacherUsername(match.username);
+          setTimetableTitle(getTeacherTitle(match.username));
+          setSignatureTitle(getTeacherSignature(match.username));
+        }
       }
     };
     window.addEventListener('storage', handleSync);
+    window.addEventListener('timetable_config_updated', handleSync);
     return () => {
       window.removeEventListener('storage', handleSync);
+      window.removeEventListener('timetable_config_updated', handleSync);
     };
-  }, [selectedTeacherUsername]);
+  }, [selectedTeacherUsername, members]);
 
   // Cell assignment states
   const [editingCell, setEditingCell] = useState<{ day: string; period: string } | null>(null);
   const [formSubject, setFormSubject] = useState('Tin học');
   const [formClass, setFormClass] = useState('');
 
+  // Helper to safely retrieve cell data for current active teacher
+  const getAdminCellData = (day: string, period: string) => {
+    const teacherUser = activeTeacher?.username || selectedTeacherUsername;
+    const teacherId = activeTeacher?.id;
+    const teacherSchedule = timetableData[teacherUser] 
+      || (teacherId ? timetableData[teacherId] : undefined) 
+      || {};
+    return teacherSchedule[`${day}-${period}`];
+  };
+
   // Helper to open cell editing modal
   const handleCellClick = (day: string, period: string) => {
-    const teacherSchedule = timetableData[selectedTeacherUsername] || {};
-    const current = teacherSchedule[`${day}-${period}`];
+    const current = getAdminCellData(day, period);
     setFormSubject(current ? current.subject : 'Tin học');
     setFormClass(current ? current.className : '');
     setEditingCell({ day, period });
@@ -358,9 +402,11 @@ export default function AdminTab({
       return;
     }
 
-    const teacher = members.find(m => m.username === selectedTeacherUsername || m.id === selectedTeacherUsername);
-    const existingSchedule = timetableData[selectedTeacherUsername] 
-      || (teacher && (timetableData[teacher.username] || timetableData[teacher.id])) 
+    const teacher = activeTeacher || members.find(m => m.username === selectedTeacherUsername || m.id === selectedTeacherUsername);
+    const teacherUser = teacher?.username || selectedTeacherUsername;
+    const teacherId = teacher?.id;
+    const existingSchedule = timetableData[teacherUser] 
+      || (teacherId ? timetableData[teacherId] : undefined) 
       || {};
 
     const teacherSchedule = { ...existingSchedule };
@@ -371,7 +417,7 @@ export default function AdminTab({
 
     const nextTimetable = {
       ...timetableData,
-      [selectedTeacherUsername]: teacherSchedule
+      [teacherUser]: teacherSchedule
     };
     if (teacher?.username) nextTimetable[teacher.username] = teacherSchedule;
     if (teacher?.id) nextTimetable[teacher.id] = teacherSchedule;
@@ -394,9 +440,11 @@ export default function AdminTab({
   const handleDeleteAssignment = () => {
     if (!editingCell) return;
 
-    const teacher = members.find(m => m.username === selectedTeacherUsername || m.id === selectedTeacherUsername);
-    const existingSchedule = timetableData[selectedTeacherUsername] 
-      || (teacher && (timetableData[teacher.username] || timetableData[teacher.id])) 
+    const teacher = activeTeacher || members.find(m => m.username === selectedTeacherUsername || m.id === selectedTeacherUsername);
+    const teacherUser = teacher?.username || selectedTeacherUsername;
+    const teacherId = teacher?.id;
+    const existingSchedule = timetableData[teacherUser] 
+      || (teacherId ? timetableData[teacherId] : undefined) 
       || {};
 
     const teacherSchedule = { ...existingSchedule };
@@ -404,7 +452,7 @@ export default function AdminTab({
 
     const nextTimetable = {
       ...timetableData,
-      [selectedTeacherUsername]: teacherSchedule
+      [teacherUser]: teacherSchedule
     };
     if (teacher?.username) nextTimetable[teacher.username] = teacherSchedule;
     if (teacher?.id) nextTimetable[teacher.id] = teacherSchedule;
@@ -523,8 +571,8 @@ export default function AdminTab({
       await saveSupabaseState('school_members', updatedMembers);
 
       // 3. Nếu đang xem TKB của giáo viên bị xóa, chuyển về tài khoản mặc định
-      if (selectedTeacherUsername === deletingMember.username) {
-        const nextTeacher = updatedMembers[0]?.username || 'dong.nt';
+      if (selectedTeacherUsername === deletingMember.username || selectedTeacherUsername === deletingMember.id) {
+        const nextTeacher = updatedMembers[0]?.username || currentUser?.username || 'dong.nt';
         setSelectedTeacherUsername(nextTeacher);
         localStorage.setItem('timetable_selected_teacher', nextTeacher);
         setTimetableTitle(getTeacherTitle(nextTeacher));
@@ -681,14 +729,15 @@ export default function AdminTab({
               <User className="w-3.5 h-3.5 text-[#d97706]" /> Chọn Giáo viên phụ trách:
             </span>
             <select
-              value={selectedTeacherUsername}
+              value={activeTeacher?.username || selectedTeacherUsername}
               onChange={(e) => {
                 const newUsername = e.target.value;
                 setSelectedTeacherUsername(newUsername);
                 localStorage.setItem('timetable_selected_teacher', newUsername);
                 setTimetableTitle(getTeacherTitle(newUsername));
                 setSignatureTitle(getTeacherSignature(newUsername));
-                showToast(`Đã chuyển sang xem TKB của giáo viên: ${members.find(m => m.username === newUsername)?.name || newUsername}`);
+                const teacherName = members.find(m => m.username === newUsername)?.name || newUsername;
+                showToast(`Đã chuyển sang xem TKB của giáo viên: ${teacherName}`);
               }}
               className="border border-[#d6c4a8] bg-white rounded-xl p-2 text-xs font-black text-[#3d2514] focus:outline-none focus:ring-2 focus:ring-[#287866] cursor-pointer min-w-[200px] shadow-2xs"
             >
@@ -712,7 +761,7 @@ export default function AdminTab({
                 <h3 className="text-xs font-black uppercase tracking-wider text-[#4a2e16] flex items-center gap-2">
                   <span>Cấu hình Tiêu đề & Mục ký tên thời khóa biểu</span>
                   <span className="bg-[#f5e6ca] text-[#713f12] text-[9px] font-extrabold px-2.5 py-0.5 rounded-full border border-[#d6c4a8]">
-                    Áp dụng riêng: {members.find(m => m.username === selectedTeacherUsername)?.name || selectedTeacherUsername}
+                    Áp dụng riêng: {activeTeacher?.name || selectedTeacherUsername}
                   </span>
                 </h3>
                 <p className="text-[10px] text-[#78350f] font-semibold">
@@ -736,7 +785,7 @@ export default function AdminTab({
             {/* Input 1: Tiêu đề thời khóa biểu */}
             <div className="md:col-span-2 space-y-1">
               <label className="block text-[11px] font-black text-slate-700 uppercase tracking-wider flex items-center gap-1">
-                <span>Tiêu đề thời khóa biểu ({members.find(m => m.username === selectedTeacherUsername)?.name})</span>
+                <span>Tiêu đề thời khóa biểu ({activeTeacher?.name || ''})</span>
               </label>
               <input
                 type="text"
@@ -793,7 +842,7 @@ export default function AdminTab({
                 </td>
                 <td className="border border-slate-300 font-extrabold bg-slate-50/55 text-slate-600 py-4">Sáng 1</td>
                 {['2', '3', '4', '5', '6'].map((day) => {
-                  const data = (timetableData[selectedTeacherUsername] || {})[`${day}-1`];
+                  const data = getAdminCellData(day, '1');
                   return (
                     <td 
                       key={`1-${day}`} 
@@ -822,10 +871,10 @@ export default function AdminTab({
               <tr className="bg-white hover:bg-slate-50/40 transition">
                 <td className="border border-slate-300 font-extrabold bg-slate-50/55 text-slate-600 py-4">Sáng 2</td>
                 {['2', '3', '4', '5', '6'].map((day) => {
-                  const data = (timetableData[selectedTeacherUsername] || {})[`${day}-2`];
+                  const data = getAdminCellData(day, '2');
                   return (
                     <td 
-                      key={`2-${day}`}
+                      key={`2-${day}`} 
                       id={`cell-${day}-2`}
                       onClick={() => handleCellClick(day, '2')}
                       className="border border-slate-300 p-3.5 transition relative cursor-pointer group hover:bg-amber-50 select-none min-h-[64px]"
@@ -863,10 +912,10 @@ export default function AdminTab({
               <tr className="bg-white hover:bg-slate-50/40 transition">
                 <td className="border border-slate-300 font-extrabold bg-slate-50/55 text-slate-600 py-4">Sáng 3</td>
                 {['2', '3', '4', '5', '6'].map((day) => {
-                  const data = (timetableData[selectedTeacherUsername] || {})[`${day}-3`];
+                  const data = getAdminCellData(day, '3');
                   return (
                     <td 
-                      key={`3-${day}`}
+                      key={`3-${day}`} 
                       id={`cell-${day}-3`}
                       onClick={() => handleCellClick(day, '3')}
                       className="border border-slate-300 p-3.5 transition relative cursor-pointer group hover:bg-amber-50 select-none min-h-[64px]"
@@ -892,10 +941,10 @@ export default function AdminTab({
               <tr className="bg-white hover:bg-slate-50/40 transition">
                 <td className="border border-slate-300 font-extrabold bg-slate-50/55 text-slate-600 py-4">Sáng 4</td>
                 {['2', '3', '4', '5', '6'].map((day) => {
-                  const data = (timetableData[selectedTeacherUsername] || {})[`${day}-4`];
+                  const data = getAdminCellData(day, '4');
                   return (
                     <td 
-                      key={`4-${day}`}
+                      key={`4-${day}`} 
                       id={`cell-${day}-4`}
                       onClick={() => handleCellClick(day, '4')}
                       className="border border-slate-300 p-3.5 transition relative cursor-pointer group hover:bg-amber-50 select-none min-h-[64px]"
@@ -929,10 +978,10 @@ export default function AdminTab({
                 </td>
                 <td className="border border-slate-300 font-extrabold bg-slate-50/55 text-slate-600 py-4">Chiều 5</td>
                 {['2', '3', '4', '5', '6'].map((day) => {
-                  const data = (timetableData[selectedTeacherUsername] || {})[`${day}-5`];
+                  const data = getAdminCellData(day, '5');
                   return (
                     <td 
-                      key={`5-${day}`}
+                      key={`5-${day}`} 
                       id={`cell-${day}-5`}
                       onClick={() => handleCellClick(day, '5')}
                       className="border border-slate-300 p-3.5 transition relative cursor-pointer group hover:bg-amber-50 select-none min-h-[64px]"
@@ -958,10 +1007,10 @@ export default function AdminTab({
               <tr className="bg-white hover:bg-slate-50/40 transition">
                 <td className="border border-slate-300 font-extrabold bg-slate-50/55 text-slate-600 py-4">Chiều 6</td>
                 {['2', '3', '4', '5', '6'].map((day) => {
-                  const data = (timetableData[selectedTeacherUsername] || {})[`${day}-6`];
+                  const data = getAdminCellData(day, '6');
                   return (
                     <td 
-                      key={`6-${day}`}
+                      key={`6-${day}`} 
                       id={`cell-${day}-6`}
                       onClick={() => handleCellClick(day, '6')}
                       className="border border-slate-300 p-3.5 transition relative cursor-pointer group hover:bg-amber-50 select-none min-h-[64px]"
@@ -987,7 +1036,7 @@ export default function AdminTab({
               <tr className="bg-white hover:bg-slate-50/40 transition">
                 <td className="border border-slate-300 font-extrabold bg-slate-50/55 text-slate-600 py-4">Chiều 7</td>
                 {['2', '3', '4', '5', '6'].map((day) => {
-                  const data = (timetableData[selectedTeacherUsername] || {})[`${day}-7`];
+                  const data = getAdminCellData(day, '7');
                   return (
                     <td 
                       key={`7-${day}`}
