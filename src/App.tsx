@@ -256,11 +256,29 @@ export default function App() {
     setActiveTab(tabId);
   };
 
-  const [selectedGrade, setSelectedGrade] = useState<number>(3);
-  const [selectedClass, setSelectedClass] = useState<string>('Ba 1');
+  const [selectedGrade, setSelectedGrade] = useState<number>(() => {
+    const saved = localStorage.getItem('school_selected_grade');
+    return saved ? parseInt(saved, 10) : 3;
+  });
+  const [selectedClass, setSelectedClass] = useState<string>(() => {
+    return localStorage.getItem('school_selected_class') || 'Ba 1';
+  });
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     return new Date().toISOString().split('T')[0];
   });
+
+  // Tự động ghi nhớ khối và lớp đã chọn vào localStorage
+  useEffect(() => {
+    if (selectedGrade) {
+      localStorage.setItem('school_selected_grade', String(selectedGrade));
+    }
+  }, [selectedGrade]);
+
+  useEffect(() => {
+    if (selectedClass) {
+      localStorage.setItem('school_selected_class', selectedClass);
+    }
+  }, [selectedClass]);
 
   
   // Cài đặt tự động đăng xuất do không hoạt động (phút) - 0 là tắt
@@ -1042,18 +1060,43 @@ export default function App() {
 
   // Filter active classes by grade from user's assigned classes
   const filteredActiveClasses = useMemo(() => {
-    return sortClasses(userAssignedClasses.filter(c => c.gradeId === selectedGrade));
+    return sortClasses(userAssignedClasses.filter(c => Number(c.gradeId) === Number(selectedGrade)));
   }, [userAssignedClasses, selectedGrade]);
 
-  // Auto handle selectedClass synchronization when grade or assigned classes change
+  // 1. Tự động đồng bộ selectedGrade theo selectedClass khi giáo viên chọn lớp ở bất kỳ màn hình nào
   useEffect(() => {
-    const firstOfGrade = userAssignedClasses.find(c => c.gradeId === selectedGrade);
+    if (!selectedClass || userAssignedClasses.length === 0) return;
+    const currentClassObj = userAssignedClasses.find(c => c.id === selectedClass) || classes.find(c => c.id === selectedClass);
+    if (currentClassObj && currentClassObj.gradeId && Number(currentClassObj.gradeId) !== Number(selectedGrade)) {
+      setSelectedGrade(Number(currentClassObj.gradeId));
+    }
+  }, [selectedClass, userAssignedClasses, classes, selectedGrade]);
+
+  // 2. Đồng bộ selectedClass: CHỈ tự động đổi khi lớp hiện tại không hợp lệ hoặc không thuộc khối được chọn
+  useEffect(() => {
+    if (userAssignedClasses.length === 0) return;
+
+    // Kiểm tra lớp hiện tại có còn tồn tại trong danh sách lớp được phân công không
+    const currentClassInAssigned = userAssignedClasses.find(c => c.id === selectedClass);
+
+    // Nếu lớp hiện tại đã tồn tại VÀ đúng khối đang chọn -> GIỮ NGUYÊN 100%, TUYỆT ĐỐI KHÔNG ÉP VỀ MẶC ĐỊNH!
+    if (currentClassInAssigned && Number(currentClassInAssigned.gradeId) === Number(selectedGrade)) {
+      return;
+    }
+
+    // Nếu lớp hiện tại không thuộc khối đang chọn (ví dụ giáo viên bấm đổi Khối):
+    // Tìm lớp đầu tiên của khối đó trong danh sách phân công
+    const firstOfGrade = userAssignedClasses.find(c => Number(c.gradeId) === Number(selectedGrade));
     if (firstOfGrade) {
       setSelectedClass(firstOfGrade.id);
-    } else if (userAssignedClasses.length > 0) {
+    } else if (!currentClassInAssigned) {
+      // Nếu lớp hiện tại hoàn toàn không có trong danh sách phân công (ví dụ vừa đổi giáo viên)
       setSelectedClass(userAssignedClasses[0].id);
+      if (userAssignedClasses[0].gradeId) {
+        setSelectedGrade(Number(userAssignedClasses[0].gradeId));
+      }
     }
-  }, [selectedGrade, userAssignedClasses]);
+  }, [selectedGrade, userAssignedClasses, selectedClass]);
 
   // --- COMPUTER LAYOUT GROUPS (For 3D-Like classroom representation) ---
   const classroomColumns = useMemo(() => {
