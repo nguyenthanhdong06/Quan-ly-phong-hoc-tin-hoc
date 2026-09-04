@@ -574,30 +574,30 @@ export const CloudKeysExplorer: React.FC<CloudKeysExplorerProps> = ({
     <div className="bg-[#fbf7ee] border-2 border-[#d6c4a8] rounded-3xl p-6 shadow-md space-y-6 text-left animate-fadeIn">
       
       {/* 1. HEADER & SUMMARY METRICS */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-[#e5dacf]">
-        <div className="flex items-center gap-3">
-          <div className="bg-gradient-to-br from-[#287866] to-[#1a5346] p-3.5 rounded-2xl text-white shadow-md">
-            <Database className="w-6 h-6 animate-pulse" />
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-4 border-b border-[#e5dacf]">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="bg-gradient-to-br from-[#287866] to-[#1a5346] p-2.5 sm:p-3 rounded-2xl text-white shadow-md shrink-0">
+            <Database className="w-5 h-5 sm:w-6 sm:h-6 animate-pulse" />
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-base font-black text-[#4a2e16] uppercase tracking-wide">
-                Trình Khám Phá Khóa Dữ Liệu Đám Mây (Cloud Keys Explorer)
+              <h3 className="text-sm sm:text-base font-black text-[#4a2e16] uppercase tracking-wide">
+                Khám phá khóa dữ liệu Cloud
               </h3>
-              <span className="bg-emerald-100 border border-emerald-300 text-emerald-800 text-[10px] font-black px-2.5 py-0.5 rounded-full">
+              <span className="bg-emerald-100 border border-emerald-300 text-emerald-800 text-[10px] font-black px-2.5 py-0.5 rounded-full shrink-0">
                 Supabase Live
               </span>
             </div>
-            <p className="text-xs text-[#78350f] font-semibold mt-0.5">
-              Theo dõi chi tiết số lượng bản ghi, dung lượng và thời gian cập nhật của từng bảng dữ liệu trên Cloud
+            <p className="text-xs text-[#78350f] font-medium mt-0.5">
+              Theo dõi dung lượng, bản ghi và tối ưu dữ liệu Cloud
             </p>
           </div>
         </div>
 
-        {/* Action Controls */}
-        <div className="flex items-center gap-2 flex-wrap">
+        {/* Action Controls: Always on 1 single row */}
+        <div className="flex items-center gap-2 shrink-0 flex-nowrap self-start md:self-center">
           {pingMs !== null && (
-            <div className="inline-flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full border border-[#d6c4a8] text-[11px] font-bold text-[#5c4326] shadow-2xs">
+            <div className="inline-flex items-center gap-1.5 bg-white px-2.5 py-1.5 rounded-full border border-[#d6c4a8] text-[11px] font-bold text-[#5c4326] shadow-2xs whitespace-nowrap">
               <Activity className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
               <span>Ping: <strong className="text-emerald-700">{pingMs}ms</strong></span>
             </div>
@@ -607,22 +607,22 @@ export const CloudKeysExplorer: React.FC<CloudKeysExplorerProps> = ({
             type="button"
             onClick={fetchCloudKeys}
             disabled={isLoading || isOptimizing}
-            className="flex items-center gap-1.5 bg-gradient-to-b from-[#287866] to-[#1d5c4e] hover:from-[#318f7a] hover:to-[#226e5e] text-white font-black text-xs px-4 py-2 rounded-full border border-[#16473c] shadow-sm transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+            className="flex items-center gap-1.5 bg-gradient-to-b from-[#287866] to-[#1d5c4e] hover:from-[#318f7a] hover:to-[#226e5e] text-white font-bold text-xs px-3.5 py-1.5 rounded-full border border-[#16473c] shadow-sm transition-all cursor-pointer active:scale-95 disabled:opacity-50 whitespace-nowrap"
             title="Tải lại danh sách khóa từ Supabase"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-            <span>{isLoading ? 'Đang đọc...' : 'Làm mới khóa'}</span>
+            <span>{isLoading ? 'Đang đọc...' : 'Làm mới'}</span>
           </button>
 
           <button
             type="button"
             onClick={handleBulkOptimizeKeys}
             disabled={isLoading || isOptimizing}
-            className="flex items-center gap-1.5 bg-gradient-to-b from-[#d97706] to-[#b45309] hover:from-[#f59e0b] hover:to-[#d97706] text-white font-black text-xs px-4 py-2 rounded-full border border-[#92400e] shadow-sm transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+            className="flex items-center gap-1.5 bg-gradient-to-b from-[#287866] to-[#1d5c4e] hover:from-[#318f7a] hover:to-[#226e5e] text-white font-bold text-xs px-3.5 py-1.5 rounded-full border border-[#16473c] shadow-sm transition-all cursor-pointer active:scale-95 disabled:opacity-50 whitespace-nowrap"
             title="Tự động quét & loại bỏ tất cả các khóa rác, khóa trùng lặp và mồ côi để giảm dung lượng Supabase"
           >
-            <Sparkles className={`w-3.5 h-3.5 ${isOptimizing ? 'animate-spin' : ''}`} />
-            <span>{isOptimizing ? 'Đang tối ưu...' : 'Tối ưu hóa Database'}</span>
+            <Sparkles className={`w-3.5 h-3.5 text-amber-300 ${isOptimizing ? 'animate-spin' : ''}`} />
+            <span>{isOptimizing ? 'Đang tối ưu...' : 'Tối ưu Database'}</span>
           </button>
         </div>
       </div>
