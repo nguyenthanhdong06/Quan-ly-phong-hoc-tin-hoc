@@ -682,7 +682,13 @@ export default function App() {
           if (Array.isArray(dbStates['school_grades'])) setGrades(dbStates['school_grades'].length > 0 ? dbStates['school_grades'] : defaultGrades);
           if (Array.isArray(dbStates['school_classes'])) setClasses(sortClasses(dbStates['school_classes']));
           if (Array.isArray(dbStates['school_students'])) setStudents(dbStates['school_students']);
-          if (Array.isArray(dbStates['school_computers'])) setComputers(dbStates['school_computers']);
+          if (Array.isArray(dbStates['school_computers']) && dbStates['school_computers'].length > 0) {
+            setComputers(dbStates['school_computers']);
+          } else {
+            const defaultComps = generateDefaultComputers();
+            setComputers(defaultComps);
+            saveSupabaseState('school_computers', defaultComps);
+          }
           
           // 🏢 User-Scoped Workspace States
           setSeatingChart(loadWorkspaceSeatingChart(activeWorkspaceId, dbStates));
@@ -721,7 +727,12 @@ export default function App() {
 
           setTimetableData(mergedTimetable);
           safeSetLocalStorage('school_timetable_data', mergedTimetable);
-          if (Array.isArray(dbStates['school_quotes'])) setQuotes(dbStates['school_quotes']);
+          if (Array.isArray(dbStates['school_quotes']) && dbStates['school_quotes'].length > 0) {
+            setQuotes(dbStates['school_quotes']);
+          } else {
+            setQuotes(defaultQuotes);
+            saveSupabaseState('school_quotes', defaultQuotes);
+          }
           if (Array.isArray(dbStates['school_lab_bookings'])) setLabBookings(dbStates['school_lab_bookings']);
           if (Array.isArray(dbStates['school_lab_incidents'])) setLabIncidents(dbStates['school_lab_incidents']);
           if (Array.isArray(dbStates['school_lab_maintenance_logs'])) setLabMaintenanceLogs(dbStates['school_lab_maintenance_logs']);
@@ -926,6 +937,7 @@ export default function App() {
   useEffect(() => {
     if (!isLoaded) return;
     const wsId = currentWsRef.current;
+    if (!wsId || wsId === 'ws_default') return;
     const scopedKey = `${wsId}_school_seating_chart`;
     safeSetLocalStorage(scopedKey, seatingChart);
     if (seatingDebounceRef.current) clearTimeout(seatingDebounceRef.current);
@@ -937,6 +949,7 @@ export default function App() {
   useEffect(() => {
     if (!isLoaded) return;
     const wsId = currentWsRef.current;
+    if (!wsId || wsId === 'ws_default') return;
     if (attendanceDebounceRef.current) clearTimeout(attendanceDebounceRef.current);
     attendanceDebounceRef.current = setTimeout(() => {
       saveDayPartitionedAttendance(attendanceData, selectedDate, wsId);
@@ -946,6 +959,7 @@ export default function App() {
   useEffect(() => {
     if (!isLoaded) return;
     const wsId = currentWsRef.current;
+    if (!wsId || wsId === 'ws_default') return;
     if (evaluationDebounceRef.current) clearTimeout(evaluationDebounceRef.current);
     evaluationDebounceRef.current = setTimeout(() => {
       saveDayPartitionedEvaluation(evaluationData, selectedDate, wsId);
@@ -955,6 +969,7 @@ export default function App() {
   useEffect(() => {
     if (!isLoaded) return;
     const wsId = currentWsRef.current;
+    if (!wsId || wsId === 'ws_default') return;
     const scopedKey = `${wsId}_school_emulation_state`;
     safeSetLocalStorage(scopedKey, emulationDataState);
     if (emulationDebounceRef.current) clearTimeout(emulationDebounceRef.current);

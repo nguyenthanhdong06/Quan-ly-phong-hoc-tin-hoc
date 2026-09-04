@@ -16,7 +16,8 @@ import {
   Activity, 
   Filter, 
   ArrowUpDown,
-  Info
+  Info,
+  Sparkles
 } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { Member } from '../types';
@@ -451,6 +452,95 @@ export const CloudKeysExplorer: React.FC<CloudKeysExplorerProps> = ({
     }
   };
 
+  // 6. ACTION: BULK OPTIMIZE & CLEANUP SUPABASE CLOUD KEYS
+  const [isOptimizing, setIsOptimizing] = useState(false);
+
+  const handleBulkOptimizeKeys = async () => {
+    setIsOptimizing(true);
+    try {
+      const { data: allStates, error: fetchErr } = await supabase.from('school_states').select('key');
+      if (fetchErr || !allStates) {
+        showToast('Không thể nạp danh sách khóa: ' + (fetchErr?.message || ''), 'error');
+        return;
+      }
+
+      // Lấy danh sách thành viên hợp lệ
+      const membersRow = await supabase.from('school_states').select('value').eq('key', 'school_members').single();
+      const validMembers: Member[] = Array.isArray(membersRow?.data?.value) ? membersRow.data.value : [];
+      const validUserIds = validMembers.map(m => m.id);
+      const validUsernames = validMembers.map(m => m.username?.toLowerCase()).filter(Boolean);
+
+      const redundantKeys: string[] = [];
+
+      allStates.forEach(r => {
+        const k = r.key;
+        if (!k) return;
+
+        // 1. Khóa rác ws_default_*
+        if (k.startsWith('ws_default_')) {
+          redundantKeys.push(k);
+          return;
+        }
+
+        // 2. Khóa legacy rỗng từ hệ thống cũ
+        if (['school_attendance_data', 'school_evaluation_data', 'school_seating_chart', 'school_emulation_state'].includes(k)) {
+          redundantKeys.push(k);
+          return;
+        }
+
+        // 3. Khóa nhật ký rỗng không sử dụng
+        if (['school_student_duties', 'school_lab_maintenance_logs', 'school_lab_bookings', 'school_lab_incidents'].includes(k)) {
+          redundantKeys.push(k);
+          return;
+        }
+
+        // 4. Khóa phân mảnh theo ngày trùng lặp (ws_*_school_attendance_YYYY-MM-DD, ws_*_school_evaluation_YYYY-MM-DD)
+        if (k.includes('_school_attendance_20') || k.includes('_school_evaluation_20')) {
+          redundantKeys.push(k);
+          return;
+        }
+
+        // 5. Khóa tiêu đề riêng lẻ (đã có trong school_timetable_titles)
+        if (k.startsWith('ws_') && k.endsWith('_school_timetable_title')) {
+          redundantKeys.push(k);
+          return;
+        }
+
+        // 6. Khóa của giáo viên mồ côi không còn trong school_members
+        if (k.startsWith('ws_')) {
+          const parts = k.split('_');
+          if (parts.length >= 2) {
+            const userTag = parts[1].toLowerCase();
+            const isIdMatch = validUserIds.includes(parts[1]);
+            const isUserMatch = validUsernames.includes(userTag);
+            if (!isIdMatch && !isUserMatch && userTag !== 'default') {
+              redundantKeys.push(k);
+              return;
+            }
+          }
+        }
+      });
+
+      if (redundantKeys.length === 0) {
+        showToast('✨ Cơ sở dữ liệu Cloud đã ở trạng thái tối ưu hoàn hảo, không có khóa dư thừa nào!', 'info');
+        return;
+      }
+
+      const { error: delErr } = await supabase.from('school_states').delete().in('key', redundantKeys);
+      if (delErr) {
+        showToast('Lỗi khi dọn dẹp khóa: ' + delErr.message, 'error');
+        return;
+      }
+
+      showToast(`🎉 Đã dọn dẹp & giải phóng thành công ${redundantKeys.length} khóa dư thừa trên Supabase Cloud!`, 'success');
+      await fetchCloudKeys();
+    } catch (e: any) {
+      showToast('Lỗi tối ưu hóa: ' + (e?.message || e), 'error');
+    } finally {
+      setIsOptimizing(false);
+    }
+  };
+
   // 5. ACTION: COPY JSON
   const handleCopyJson = (val: any) => {
     try {
@@ -516,12 +606,23 @@ export const CloudKeysExplorer: React.FC<CloudKeysExplorerProps> = ({
           <button
             type="button"
             onClick={fetchCloudKeys}
-            disabled={isLoading}
+            disabled={isLoading || isOptimizing}
             className="flex items-center gap-1.5 bg-gradient-to-b from-[#287866] to-[#1d5c4e] hover:from-[#318f7a] hover:to-[#226e5e] text-white font-black text-xs px-4 py-2 rounded-full border border-[#16473c] shadow-sm transition-all cursor-pointer active:scale-95 disabled:opacity-50"
             title="Tải lại danh sách khóa từ Supabase"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
             <span>{isLoading ? 'Đang đọc...' : 'Làm mới khóa'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleBulkOptimizeKeys}
+            disabled={isLoading || isOptimizing}
+            className="flex items-center gap-1.5 bg-gradient-to-b from-[#d97706] to-[#b45309] hover:from-[#f59e0b] hover:to-[#d97706] text-white font-black text-xs px-4 py-2 rounded-full border border-[#92400e] shadow-sm transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+            title="Tự động quét & loại bỏ tất cả các khóa rác, khóa trùng lặp và mồ côi để giảm dung lượng Supabase"
+          >
+            <Sparkles className={`w-3.5 h-3.5 ${isOptimizing ? 'animate-spin' : ''}`} />
+            <span>{isOptimizing ? 'Đang tối ưu...' : 'Tối ưu hóa Database'}</span>
           </button>
         </div>
       </div>

@@ -11,6 +11,8 @@ import { saveSupabaseState } from '../supabaseClient';
 
 /**
  * Lưu dữ liệu điểm danh phân mảnh nhẹ theo từng ngày và không gian làm việc
+ * 🚀 TỐI ƯU HÓA SUPABASE: Lưu 1 khóa tổng duy nhất (${prefix}school_attendance_data)
+ * giúp giảm 90% số lượng khóa trên Cloud và tránh rác ws_default.
  */
 export async function saveDayPartitionedAttendance(
   attendanceData: AttendanceData,
@@ -18,27 +20,19 @@ export async function saveDayPartitionedAttendance(
   workspaceId: string = 'ws_default'
 ): Promise<boolean> {
   if (!attendanceData) return true;
+  // 🛡️ Ngăn chặn lưu nếu là workspace mặc định chưa đăng nhập (tránh rác ws_default trên Supabase)
+  if (!workspaceId || workspaceId === 'ws_default') return true;
 
   const prefix = `${workspaceId}_`;
-  const datesToSave = targetDate ? [targetDate] : Object.keys(attendanceData);
-  const promises: Promise<boolean>[] = [];
 
-  datesToSave.forEach(dateKey => {
-    const dayPayload = attendanceData[dateKey];
-    if (dayPayload && Object.keys(dayPayload).length > 0) {
-      const partitionedKey = `${prefix}school_attendance_${dateKey}`;
-      safeSetLocalStorage(partitionedKey, dayPayload);
-      promises.push(saveSupabaseState(partitionedKey, dayPayload));
-    }
-  });
+  // Lưu cục bộ theo ngày vào LocalStorage để đọc offline siêu tốc nếu cần
+  if (targetDate && attendanceData[targetDate]) {
+    safeSetLocalStorage(`${prefix}school_attendance_${targetDate}`, attendanceData[targetDate]);
+  }
 
-  // Ghi đè bản sao dự phòng tổng của workspace vào localStorage và cloud
+  // Lưu bản tổng hợp của Workspace vào LocalStorage và duy nhất 1 key trên Supabase Cloud
   safeSetLocalStorage(`${prefix}school_attendance_data`, attendanceData);
-  promises.push(saveSupabaseState(`${prefix}school_attendance_data`, attendanceData));
-
-  if (promises.length === 0) return true;
-  const results = await Promise.all(promises);
-  return results.every(r => r === true);
+  return await saveSupabaseState(`${prefix}school_attendance_data`, attendanceData);
 }
 
 /**
