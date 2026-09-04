@@ -56,17 +56,8 @@ export const DeskOSMacWindow: React.FC<DeskOSMacWindowProps> = ({
   const TabIcon = currentTabInfo.icon;
 
   const sortedClasses = useMemo(() => {
-    const list: ClassItem[] = sortClasses<ClassItem>(filteredClasses || []);
-    if (selectedClass && !list.some(c => c.id === selectedClass)) {
-      list.unshift({
-        id: selectedClass,
-        name: selectedClass,
-        gradeId: Number(selectedGrade) || 3,
-        teacher: ''
-      });
-    }
-    return list;
-  }, [filteredClasses, selectedClass, selectedGrade]);
+    return sortClasses(filteredClasses || []);
+  }, [filteredClasses]);
 
   if (isMinimized) return null;
 
@@ -100,10 +91,10 @@ export const DeskOSMacWindow: React.FC<DeskOSMacWindowProps> = ({
                     key={g.id}
                     onClick={() => {
                       playButtonClickSound();
-                      setSelectedGrade(Number(g.id));
+                      setSelectedGrade(g.id);
                     }}
                     className={`px-2 py-0.5 text-xs font-black rounded-lg transition-all ${
-                      Number(selectedGrade) === Number(g.id) 
+                      selectedGrade === g.id 
                         ? 'bg-amber-500 text-white shadow-sm border border-amber-600' 
                         : 'hover:bg-amber-100 text-[#5c4326]'
                     }`}
