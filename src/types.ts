@@ -56,11 +56,14 @@ export interface Member {
   activeSessionId?: string;
 }
 
+// Trạng thái điểm danh: Có mặt | Vắng có phép | Vắng không phép | Đi trễ
+export type AttendanceStatus = 'present' | 'excused' | 'unexcused' | 'late';
+
 // Cấu trúc điểm danh chi tiết theo ngày: { [dateKey]: { [classId]: { [studentId]: status } } }
 export interface AttendanceData {
   [dateKey: string]: {
     [classId: string]: {
-      [studentId: string]: 'present' | 'excused' | 'unexcused';
+      [studentId: string]: AttendanceStatus;
     };
   };
 }
