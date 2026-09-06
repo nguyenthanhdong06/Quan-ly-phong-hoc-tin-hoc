@@ -1186,10 +1186,10 @@ export default function StudentsTab({
         (document.getElementById('deskos-window-body') || document.getElementById('deskos-active-window')) || document.body
       )}
 
-      {/* STUDENT DELETE CONFIRMATION DIALOG MODAL (ĐỒNG BỘ CẤU TRÚC POPUP VƯỜN TRI THỨC) */}
-      {studentToDelete && createPortal(
+      {/* STUDENT DELETE CONFIRMATION DIALOG MODAL (ĐỒNG BỘ CẤU TRÚC POPUP NÚT XEM CỦA QUẢN TRỊ HỆ THỐNG) */}
+      {studentToDelete && typeof document !== 'undefined' && createPortal(
         <div 
-          className="fixed inset-0 bg-slate-900/65 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200"
+          className="absolute inset-0 bg-slate-900/65 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               setStudentToDelete(null);
@@ -1197,22 +1197,25 @@ export default function StudentsTab({
           }}
         >
           <div 
-            className="bg-[#faf5ec] w-full max-w-md rounded-3xl shadow-2xl border-2 border-[#d6c4a8] flex flex-col relative overflow-hidden animate-in zoom-in-95 duration-200 my-auto text-left"
+            className="bg-[#faf5ec] w-full max-w-2xl rounded-3xl shadow-2xl border-2 border-[#d6c4a8] flex flex-col relative overflow-hidden animate-in zoom-in-95 duration-200 my-auto text-left max-h-[85vh]"
             onClick={(e) => e.stopPropagation()}
             tabIndex={-1}
           >
-            {/* Header Gradient Chuẩn Vườn Tri Thức */}
-            <div className="bg-gradient-to-r from-[#dfccb0] via-[#e8d9c2] to-[#dfccb0] px-5 py-3.5 border-b border-[#c8b598] flex items-center justify-between">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-[#dfccb0] via-[#e8d9c2] to-[#dfccb0] px-5 py-3.5 border-b border-[#c8b598] flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2.5">
-                <span className="text-xl p-1.5 bg-rose-100/90 rounded-xl border border-rose-200 text-rose-600 shadow-2xs">
-                  🗑️
-                </span>
+                <span className="text-xl">🗑️</span>
                 <div>
-                  <h3 className="font-black text-sm text-[#42301c]">Xác Nhận Xóa Học Sinh</h3>
-                  <p className="text-[11px] font-bold text-rose-700">Hành động này không thể hoàn tác</p>
+                  <h3 className="font-black text-sm text-[#42301c] uppercase tracking-wide flex items-center gap-1.5">
+                    Xác Nhận Xóa: <span className="font-sans text-rose-800 normal-case">{studentToDelete.name}</span>
+                  </h3>
+                  <p className="text-[11px] font-bold text-amber-900">
+                    Lớp {selectedClass} • MSHS: {matchedStudentToDelete?.code || '---'} • Hành động không thể hoàn tác
+                  </p>
                 </div>
               </div>
               <button 
+                type="button"
                 onClick={() => setStudentToDelete(null)}
                 className="text-[#6e5334] hover:text-[#382613] bg-white/60 hover:bg-white p-1.5 rounded-full transition-all cursor-pointer shadow-xs focus:outline-none"
                 title="Đóng cửa sổ (Esc)"
@@ -1222,73 +1225,98 @@ export default function StudentsTab({
             </div>
 
             {/* Modal Body */}
-            <div className="p-5 space-y-4 text-xs font-bold">
+            <div className="p-5 overflow-y-auto flex-1 space-y-4 text-xs font-bold text-[#42301c]">
+              <div className="flex items-center justify-between text-xs text-[#78350f] font-black">
+                <span>Thông tin chi tiết học sinh trong cơ sở dữ liệu:</span>
+                <span className="inline-flex items-center gap-1 bg-[#ecdcc7] text-[#4a2e16] text-[11px] font-black px-2.5 py-1 rounded-full border border-[#d6c4a8] shadow-3xs">
+                  Lớp: {selectedClass} • {matchedStudentToDelete?.gender === 'Nữ' ? 'Nữ 👧🏻' : 'Nam 👦🏻'}
+                </span>
+              </div>
+
               {/* Card thông tin chi tiết học sinh cần xóa */}
-              <div className="bg-white border border-[#d6c4a8] rounded-2xl p-3.5 shadow-2xs flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center font-black text-amber-900 text-lg shrink-0 overflow-hidden shadow-xs">
-                  {matchedStudentToDelete?.avatarUrl ? (
-                    <img src={matchedStudentToDelete.avatarUrl} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <span>{matchedStudentToDelete?.gender === 'Nữ' ? '👧' : '👦'}</span>
-                  )}
-                </div>
-                <div className="space-y-0.5 text-left flex-1 min-w-0">
-                  <h4 className="font-black text-slate-900 text-sm truncate">{studentToDelete.name}</h4>
-                  <p className="text-[11px] font-bold text-slate-500">
-                    MSHS: <span className="font-mono text-slate-800 font-bold">{matchedStudentToDelete?.code || '---'}</span> • Lớp: <span className="font-black text-amber-900">{selectedClass}</span>
-                  </p>
-                  <div className="flex items-center gap-1.5 pt-0.5">
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${matchedStudentToDelete?.gender === 'Nữ' ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-blue-700'}`}>
-                      {matchedStudentToDelete?.gender === 'Nữ' ? 'Nữ 👧🏻' : 'Nam 👦🏻'}
-                    </span>
-                    {matchedStudentToDelete?.duty && (
-                      <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-black">
-                        {matchedStudentToDelete.duty}
-                      </span>
+              <div className="bg-white/95 p-4 rounded-2xl border border-[#d6c4a8] text-xs text-[#5c4326] space-y-3 font-semibold shadow-xs">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-14 h-14 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center font-black text-amber-900 text-xl shrink-0 overflow-hidden shadow-xs">
+                    {matchedStudentToDelete?.avatarUrl ? (
+                      <img src={matchedStudentToDelete.avatarUrl} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <span>{matchedStudentToDelete?.gender === 'Nữ' ? '👧' : '👦'}</span>
                     )}
+                  </div>
+                  <div className="space-y-1 text-left flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-black text-slate-900 text-base truncate">{studentToDelete.name}</h4>
+                      {matchedStudentToDelete?.duty && (
+                        <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-black shrink-0">
+                          {matchedStudentToDelete.duty}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] font-bold text-slate-500 flex items-center gap-2">
+                      <span>Mã định danh (MSHS): <strong className="font-mono text-emerald-800">{matchedStudentToDelete?.code || '---'}</strong></span>
+                      <span>•</span>
+                      <span>Lớp biên chế: <strong className="text-amber-900 font-black">{selectedClass}</strong></span>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Các thông tin chi tiết dạng lưới */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-[#f0e4d0] text-xs text-[#5c4326]">
+                  <div className="flex items-center gap-2">
+                    <strong className="text-slate-500 font-bold">Giới tính:</strong>
+                    <span className="font-black text-slate-800">{matchedStudentToDelete?.gender === 'Nữ' ? 'Nữ 👧🏻' : 'Nam 👦🏻'}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <strong className="text-slate-500 font-bold">Ngày sinh:</strong>
+                    <span className="font-mono font-bold text-slate-800">{matchedStudentToDelete?.birthDate || 'Chưa cập nhật'}</span>
+                  </div>
+                  <div className="flex items-center gap-2 col-span-full border-t border-[#f7efe3] pt-1.5">
+                    <strong className="text-slate-500 font-bold shrink-0">Ghi chú cá nhân:</strong>
+                    <span className="font-medium text-slate-700 italic truncate">{matchedStudentToDelete?.notes || 'Không có ghi chú'}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Khối Cảnh Báo Sư Phạm Nổi Bật */}
-              <div className="bg-rose-50/90 border border-rose-200/90 rounded-2xl p-3.5 text-rose-900 space-y-1.5 text-left">
+              {/* Khối Cảnh Báo Sư Phạm Nổi Bật theo phong cách Admin */}
+              <div className="bg-rose-50/90 border border-rose-200 rounded-2xl p-4 text-rose-900 space-y-1.5 text-left shadow-xs">
                 <div className="flex items-center gap-1.5 font-black text-xs text-rose-900">
-                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
                   <span>CẢNH BÁO QUAN TRỌNG:</span>
                 </div>
                 <p className="text-[11px] font-semibold leading-relaxed text-rose-800">
-                  Bạn có chắc chắn muốn xóa học sinh <strong className="text-rose-950 font-black">"{studentToDelete.name}"</strong> khỏi cơ sở dữ liệu lớp <strong className="font-black">{selectedClass}</strong>?
+                  Thầy/Cô có chắc chắn muốn xóa học sinh <strong className="text-rose-950 font-black">"{studentToDelete.name}"</strong> khỏi cơ sở dữ liệu lớp <strong className="font-black">{selectedClass}</strong> không?
                 </p>
-                <p className="text-[10px] text-rose-700/90 font-medium">
-                  ⚠️ Toàn bộ hồ sơ thi đua, số sao tích lũy và dữ liệu chăm sóc cây trong Khu Vườn Tri Thức của em sẽ bị gỡ hoàn toàn khỏi hệ thống.
+                <p className="text-[10px] text-rose-700/90 font-medium leading-relaxed">
+                  ⚠️ Toàn bộ hồ sơ thi đua, số sao tích lũy và dữ liệu chăm sóc cây trong Khu Vườn Tri Thức của em sẽ bị gỡ hoàn toàn khỏi hệ thống máy chủ và không thể phục hồi.
                 </p>
-              </div>
-
-              {/* Nút hành động chuẩn phong cách Vườn Tri Thức */}
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setStudentToDelete(null)}
-                  className="w-1/2 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 font-black text-slate-700 text-xs transition-all cursor-pointer shadow-xs active:scale-95"
-                >
-                  Hủy Bỏ (Esc)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleDeleteStudent(studentToDelete.id, studentToDelete.name);
-                    setStudentToDelete(null);
-                  }}
-                  className="w-1/2 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-700 font-black text-white text-xs shadow-md shadow-rose-600/25 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span>Xác Nhận Xóa</span>
-                </button>
               </div>
             </div>
+
+            {/* Modal Footer */}
+            <div className="p-5 pt-0 flex items-center justify-end gap-3 shrink-0">
+              <button
+                type="button"
+                onClick={() => setStudentToDelete(null)}
+                className="px-5 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 font-black text-slate-700 text-xs transition-all cursor-pointer shadow-xs active:scale-95"
+              >
+                Hủy Bỏ (Esc)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  handleDeleteStudent(studentToDelete.id, studentToDelete.name);
+                  setStudentToDelete(null);
+                }}
+                className="px-6 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-700 font-black text-white text-xs shadow-md shadow-rose-600/25 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Xác Nhận Xóa</span>
+              </button>
+            </div>
+
           </div>
         </div>,
-        (document.getElementById('deskos-window-body') || document.getElementById('deskos-active-window')) || document.body
+        (typeof document !== 'undefined' && (document.getElementById('deskos-window-body') || document.getElementById('deskos-active-window'))) || document.body
       )}
 
     </div>
