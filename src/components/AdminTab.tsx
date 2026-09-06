@@ -491,16 +491,20 @@ export default function AdminTab({
   const [deletingMember, setDeletingMember] = useState<Member | null>(null);
   const [isDeletingMember, setIsDeletingMember] = useState<boolean>(false);
 
-  // Escape listener for deleting member modal
+  // Escape listener for deleting member modal & editing timetable cell modal
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && deletingMember && !isDeletingMember) {
-        setDeletingMember(null);
+      if (e.key === 'Escape') {
+        if (editingCell) {
+          setEditingCell(null);
+        } else if (deletingMember && !isDeletingMember) {
+          setDeletingMember(null);
+        }
       }
     };
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
-  }, [deletingMember, isDeletingMember]);
+  }, [editingCell, deletingMember, isDeletingMember]);
 
   const handleConfirmDeleteMember = async () => {
     if (!deletingMember) return;
@@ -1459,52 +1463,92 @@ export default function AdminTab({
         </div>
       )}
 
-      {/* MODAL PHÂN CÔNG THỜI KHÓA BIỂU CHI TIẾT */}
-      {editingCell && (
-        <div id="school-timetable-modal" className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-100 transform transition-all animate-fadeIn text-left">
-            
-            {/* Modal title */}
-            <div className="bg-gradient-to-r from-amber-500 to-amber-600 p-5 text-slate-950 flex justify-between items-center">
-              <div>
-                <h4 className="font-extrabold text-sm uppercase tracking-wider text-slate-950 flex items-center gap-1.5 animate-pulse">
-                  <Calendar className="w-4.5 h-4.5" />
-                  PHÂN CÔNG LỊCH GIẢNG DẠY
-                </h4>
-                <p className="text-[10px] text-slate-850 font-black">
-                  Thứ {editingCell.day === '2' ? 'Hai' : editingCell.day === '3' ? 'Ba' : editingCell.day === '4' ? 'Tư' : editingCell.day === '5' ? 'Năm' : 'Sáu'} — Tiết {editingCell.period} ({parseInt(editingCell.period) <= 4 ? 'Sáng' : 'Chiều'})
-                </p>
+      {/* MODAL PHÂN CÔNG THỜI KHÓA BIỂU CHI TIẾT (ĐỒNG BỘ CẤU TRÚC POPUP ỨNG DỤNG ĐÁNH GIÁ) */}
+      {editingCell && typeof document !== 'undefined' && createPortal(
+        <div 
+          id="school-timetable-modal" 
+          className="absolute inset-0 bg-slate-900/65 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setEditingCell(null);
+            }
+          }}
+        >
+          <div 
+            className="bg-[#faf5ec] w-full max-w-lg rounded-3xl shadow-2xl border-2 border-[#d6c4a8] flex flex-col relative overflow-hidden animate-in zoom-in-95 duration-200 my-auto text-left max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}
+            tabIndex={-1}
+          >
+            {/* Clean Top Header Bar (Chuẩn phong cách Đánh Giá) */}
+            <div className="bg-gradient-to-r from-[#dfccb0] via-[#e8d9c2] to-[#dfccb0] px-5 py-3.5 border-b border-[#c8b598] flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="p-1.5 bg-amber-100/90 rounded-xl border border-amber-300 text-amber-800 shadow-2xs">
+                  <Calendar className="w-4 h-4 text-amber-800" />
+                </div>
+                <div>
+                  <h4 className="font-black text-sm text-[#42301c] uppercase tracking-wide">
+                    Phân Công Lịch Giảng Dạy
+                  </h4>
+                  <p className="text-[11px] font-bold text-amber-900">
+                    Thứ {editingCell.day === '2' ? 'Hai' : editingCell.day === '3' ? 'Ba' : editingCell.day === '4' ? 'Tư' : editingCell.day === '5' ? 'Năm' : 'Sáu'} — Tiết {editingCell.period} ({parseInt(editingCell.period) <= 4 ? 'Buổi Sáng' : 'Buổi Chiều'})
+                  </p>
+                </div>
               </div>
-              <button
+              <button 
                 type="button"
                 onClick={() => setEditingCell(null)}
-                className="bg-black/10 hover:bg-black/25 text-slate-950 rounded-full p-1.5 focus:outline-none cursor-pointer"
+                className="text-[#6e5334] hover:text-[#382613] bg-white/60 hover:bg-white p-1.5 rounded-full transition-all cursor-pointer shadow-xs focus:outline-none"
+                title="Đóng cửa sổ (Esc)"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="p-6 space-y-4">
+            {/* Modal Inner Content Body */}
+            <div className="p-5 sm:p-6 overflow-y-auto flex-1 space-y-4 text-xs font-bold text-[#42301c]">
               
-              {/* Form Subject input segment */}
-              <div>
-                <label className="block text-xs font-black text-slate-500 uppercase mb-1">Học phần giảng dạy: *</label>
+              {/* Thẻ định danh Giáo viên & Buổi học phụ trách */}
+              <div className="flex items-center gap-3 bg-white/85 p-3.5 rounded-2xl border border-[#d6c4a8] shadow-xs">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-100 to-amber-200 border border-amber-300 flex items-center justify-center font-black text-amber-900 text-xl shrink-0 shadow-2xs">
+                  👨🏻‍🏫
+                </div>
+                <div className="text-left flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-black text-slate-900 text-sm truncate">{activeTeacher?.name || selectedTeacherUsername}</h4>
+                    <span className="bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md text-[10px] font-extrabold border border-amber-200 shrink-0">
+                      {activeTeacher?.role || 'Giáo viên'}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-slate-600 font-semibold mt-0.5 flex items-center gap-1.5 flex-wrap">
+                    <span>Lịch giảng dạy:</span>
+                    <span className="font-black text-emerald-800">Thứ {editingCell.day === '2' ? 'Hai' : editingCell.day === '3' ? 'Ba' : editingCell.day === '4' ? 'Tư' : editingCell.day === '5' ? 'Năm' : 'Sáu'}</span>
+                    <span>•</span>
+                    <span className="font-black text-indigo-700">Tiết {editingCell.period}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Mục 1: Học phần giảng dạy */}
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-[#5c4326] uppercase tracking-wider block">
+                  Học phần giảng dạy: *
+                </label>
                 <input
                   type="text"
                   value={formSubject}
                   onChange={(e) => setFormSubject(e.target.value)}
                   placeholder="Ví dụ: Tin học, Lập trình..."
-                  className="w-full border border-slate-200 rounded-xl p-3 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none font-bold text-slate-800"
+                  className="w-full text-xs px-3.5 py-2.5 border border-[#d6c4a8] rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white font-extrabold text-[#42301c] shadow-2xs"
                 />
                 
-                {/* Suggestions for subjects */}
-                <div className="flex flex-wrap gap-1.5 mt-2">
+                {/* Gợi ý học phần */}
+                <div className="flex flex-wrap gap-1.5 pt-0.5">
                   {['Tin học', 'Công nghệ', 'STEM', 'Kỹ năng số', 'Lập trình'].map((sub) => (
                     <button
                       key={sub}
                       type="button"
                       onClick={() => setFormSubject(sub)}
-                      className="bg-slate-100 hover:bg-slate-200 text-slate-600 font-extrabold text-[9px] px-2.5 py-1 rounded-md transition cursor-pointer"
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-black border transition-all cursor-pointer shadow-3xs active:scale-95 ${formSubject === sub ? 'bg-[#287866] text-white border-[#1d5c4e]' : 'bg-white hover:bg-amber-50 text-[#5c4326] border-[#d6c4a8]'}`}
                     >
                       {sub}
                     </button>
@@ -1512,20 +1556,22 @@ export default function AdminTab({
                 </div>
               </div>
 
-              {/* Form Class input segment */}
-              <div>
-                <label className="block text-xs font-black text-slate-500 uppercase mb-1">Mã Lớp được phân công: *</label>
+              {/* Mục 2: Mã Lớp được phân công */}
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-[#5c4326] uppercase tracking-wider block">
+                  Mã Lớp được phân công: *
+                </label>
                 <input
                   type="text"
                   value={formClass}
                   onChange={(e) => setFormClass(e.target.value)}
                   placeholder="Nhập tên lớp (Ví dụ: 4³, 3⁵, Ba 1...)"
-                  className="w-full border border-slate-200 rounded-xl p-3 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none font-black text-slate-800"
+                  className="w-full text-xs px-3.5 py-2.5 border border-[#d6c4a8] rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white font-black text-[#42301c] shadow-2xs"
                 />
 
-                {/* Micro superscript helper appenders to match paper layout exactly! */}
-                <div className="mt-2.5 bg-slate-50 p-2.5 rounded-xl border border-dashed text-left space-y-1.5">
-                  <span className="block text-[9px] font-black text-slate-400 tracking-widest uppercase">
+                {/* Chữ số mũ nhanh */}
+                <div className="bg-[#f7efe3] p-2.5 rounded-xl border border-[#d6c4a8] text-left space-y-1.5">
+                  <span className="block text-[9.5px] font-black text-[#78350f] tracking-wider uppercase">
                     Chữ số mũ nhanh (Tin học 4³, Tin học 3⁵...):
                   </span>
                   <div className="flex flex-wrap gap-1">
@@ -1534,7 +1580,7 @@ export default function AdminTab({
                         key={char}
                         type="button"
                         onClick={() => handleAddSuperscript(char)}
-                        className="bg-white hover:bg-amber-100/80 border text-slate-800 w-7 h-7 flex items-center justify-center font-black rounded-lg transition text-xs shadow-sm cursor-pointer"
+                        className="bg-white hover:bg-amber-100/90 border border-[#d6c4a8] text-[#42301c] w-7 h-7 flex items-center justify-center font-black rounded-lg transition-all text-xs shadow-2xs cursor-pointer active:scale-90"
                         title={`Thêm ${char}`}
                       >
                         {char}
@@ -1543,18 +1589,18 @@ export default function AdminTab({
                   </div>
                 </div>
 
-                {/* Suggestions for standard class codes of registered classes */}
-                <div className="space-y-1.5 mt-3 text-left">
-                  <span className="block text-[9px] font-black text-slate-400 tracking-widest uppercase">
+                {/* Gợi ý danh sách lớp */}
+                <div className="space-y-1.5 pt-0.5 text-left">
+                  <span className="block text-[9.5px] font-black text-[#78350f] tracking-wider uppercase">
                     Gợi ý nhanh từ danh sách lớp thực tế:
                   </span>
-                  <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-1.5 border rounded-lg bg-white">
+                  <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-2 border border-[#d6c4a8] rounded-xl bg-white/90">
                     {classes.map((c) => (
                       <button
                         key={c.id}
                         type="button"
                         onClick={() => setFormClass(c.name)}
-                        className="border hover:border-amber-500 hover:bg-amber-50 text-slate-700 font-bold text-[9px] px-2 py-1 rounded-md transition cursor-pointer"
+                        className={`px-2 py-1 rounded-md text-[10px] font-bold border transition-all cursor-pointer shadow-3xs active:scale-95 ${formClass === c.name ? 'bg-[#5c4326] text-white border-[#42301c]' : 'bg-white hover:bg-amber-50 text-slate-700 border-slate-200'}`}
                       >
                         {c.name}
                       </button>
@@ -1563,39 +1609,46 @@ export default function AdminTab({
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row justify-end gap-2 text-xs pt-3 border-t border-slate-100">
-                {/* Delete button if already assigned */}
+            </div>
+
+            {/* Modal Footer: Nút bấm chuẩn phong cách Đánh Giá */}
+            <div className="p-5 pt-0 flex flex-col sm:flex-row items-center justify-between gap-2.5 shrink-0 border-t border-[#ebdcc4] pt-4 mt-1">
+              {/* Nút Xóa phân công (nếu ô này đã có dữ liệu hoặc đã nhập lớp) */}
+              {(getAdminCellData(editingCell.day, editingCell.period) || formClass.trim()) ? (
                 <button
                   type="button"
                   onClick={handleDeleteAssignment}
-                  className="bg-red-50 hover:bg-red-100 text-red-650 font-black px-4 py-3 rounded-xl block cursor-pointer transition text-center order-2 sm:order-1 sm:mr-auto"
+                  className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-black text-xs transition-all cursor-pointer shadow-2xs active:scale-95 flex items-center justify-center gap-1.5 order-2 sm:order-1"
                 >
-                  Xóa phân công
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Xóa Phân Công</span>
                 </button>
-                
-                <div className="flex gap-2 order-1 sm:order-2">
-                  <button
-                    type="button"
-                    onClick={() => setEditingCell(null)}
-                    className="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-4 py-3 rounded-xl block cursor-pointer transition flex-1 text-center"
-                  >
-                    Hủy bỏ
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSaveAssignment}
-                    className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black px-5 py-3 rounded-xl block shadow transition flex-1 text-center cursor-pointer"
-                  >
-                    Lưu phân công
-                  </button>
-                </div>
+              ) : (
+                <div className="hidden sm:block order-1" />
+              )}
+              
+              <div className="flex items-center gap-2.5 w-full sm:w-auto sm:ml-auto order-1 sm:order-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingCell(null)}
+                  className="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs transition-all cursor-pointer shadow-2xs active:scale-95 text-center"
+                >
+                  Hủy Bỏ (Esc)
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveAssignment}
+                  className="flex-1 sm:flex-initial px-6 py-2.5 rounded-xl bg-gradient-to-b from-[#287866] to-[#1d5c4e] hover:from-[#318f7a] hover:to-[#226e5e] text-white font-black text-xs border border-[#16473c] shadow-md transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-1.5"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Lưu Phân Công</span>
+                </button>
               </div>
-
             </div>
 
           </div>
-        </div>
+        </div>,
+        (typeof document !== 'undefined' && (document.getElementById('deskos-window-body') || document.getElementById('deskos-active-window'))) || document.body
       )}
 
       {/* 5. CẤU HÌNH API KEY EMAIL & SMS OTP */}
