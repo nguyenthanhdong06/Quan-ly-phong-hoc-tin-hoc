@@ -533,19 +533,19 @@ export default function AttendanceTab({
               Chọn trạng thái đi học (Hiện diện / Vắng phép / Không phép) cho từng học sinh bên dưới.
             </p>
           </div>
-          <div className="relative w-full sm:w-64 flex items-center">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <div className="relative w-full sm:w-72 flex items-center">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Tìm tên hoặc MSHS..."
+              placeholder="Tìm kiếm theo Tên hoặc Mã..."
               autoComplete="off"
               spellCheck={false}
-              className="w-full text-xs pl-8.5 pr-8 py-2 border border-[#cbb89d] bg-white rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none font-semibold text-[#3d2b17] placeholder:text-slate-400 shadow-2xs"
+              className="w-full text-xs border border-slate-200 rounded-xl pl-9 pr-8 py-2 focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white font-medium shadow-3xs"
             />
             {searchTerm && (
-              <button 
+              <button
                 type="button"
                 onClick={() => setSearchTerm('')}
                 title="Xóa tìm kiếm"
