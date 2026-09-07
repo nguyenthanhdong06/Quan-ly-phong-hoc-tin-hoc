@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { StudentAttendanceStat, formatDateVN } from './attendanceStatsUtils';
 import { AttendanceStatus } from '../../types';
 import { 
@@ -8,6 +9,7 @@ import {
   Clock, 
   CalendarClock, 
   AlertOctagon, 
+  AlertCircle,
   MessageSquare, 
   Check, 
   Copy,
@@ -27,6 +29,18 @@ export const AttendanceStudentModal: React.FC<AttendanceStudentModalProps> = ({
   showToast
 }) => {
   const [copied, setCopied] = useState(false);
+
+  // Lắng nghe phím Escape để đóng modal mượt mà
+  useEffect(() => {
+    if (!stat) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [stat, onClose]);
 
   if (!stat) return null;
 
@@ -114,127 +128,173 @@ export const AttendanceStudentModal: React.FC<AttendanceStudentModalProps> = ({
     }
   };
 
-  return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
+  return typeof document !== 'undefined' && createPortal(
+    <div 
+      className="absolute inset-0 bg-slate-900/65 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div 
-        className="bg-[#fffbf0] border-2 border-[#cbb89d] rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden text-left flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-150"
+        className="bg-[#faf5ec] w-full max-w-2xl rounded-3xl shadow-2xl border-2 border-[#d6c4a8] flex flex-col relative overflow-hidden animate-in zoom-in-95 duration-200 my-auto text-left max-h-[88vh]"
         onClick={(e) => e.stopPropagation()}
+        tabIndex={-1}
       >
-        {/* Header Modal */}
-        <div className="bg-[#dfccb0] border-b border-[#cbb89d] p-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-white border border-[#cbb89d] flex items-center justify-center text-lg font-black text-amber-900 shadow-xs overflow-hidden">
-              {student.avatarUrl ? (
-                <img src={student.avatarUrl} alt="" className="w-full h-full object-cover" />
-              ) : (
-                <span>{student.gender === 'Nữ' ? '👧' : '👦'}</span>
-              )}
-            </div>
+        {/* Modal Header: Đồng bộ chuẩn giao diện Popup Nút Xem của Quản trị hệ thống */}
+        <div className="bg-gradient-to-r from-[#dfccb0] via-[#e8d9c2] to-[#dfccb0] px-5 py-3.5 border-b border-[#c8b598] flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2.5">
+            <span className="text-xl">📅</span>
             <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm sm:text-base font-black text-[#3d2b17] uppercase tracking-wide">
-                  {student.name}
-                </h3>
-                <span className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${ratingColor.bg} ${ratingColor.text} ${ratingColor.border}`}>
+              <h3 className="font-black text-sm text-[#42301c] uppercase tracking-wide flex items-center gap-2">
+                Chi Tiết Lịch Điểm Danh: <span className="font-black text-slate-900">{student.name}</span>
+                <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${ratingColor.bg} ${ratingColor.text} ${ratingColor.border}`}>
                   {rating}
                 </span>
-              </div>
-              <p className="text-[11px] font-bold text-[#5c4327]">
-                MSHS: <span className="font-mono text-slate-800">{student.code}</span> | Lớp:{' '}
-                <span className="font-black text-amber-900">{student.classId}</span> | Giới tính: {student.gender}
+              </h3>
+              <p className="text-[11px] font-bold text-amber-900">
+                Lớp: <strong className="font-black text-amber-950">{student.classId}</strong> • MSHS: <strong className="font-mono text-emerald-800">{student.code}</strong> • Giới tính: {student.gender}
               </p>
             </div>
           </div>
-
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-xl text-[#5c4327] hover:bg-[#ebdcc9] hover:text-[#3d2b17] transition cursor-pointer"
-            title="Đóng modal"
+            className="text-[#6e5334] hover:text-[#382613] bg-white/60 hover:bg-white p-1.5 rounded-full transition-all cursor-pointer shadow-xs focus:outline-none"
+            title="Đóng cửa sổ (Esc)"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Content Body - Scrollable */}
-        <div className="p-5 space-y-5 overflow-y-auto">
-          {/* 5 Quick KPI Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
-            <div className="bg-white border border-[#cbb89d] rounded-xl p-2.5 text-center shadow-2xs">
-              <span className="text-[10px] font-bold text-slate-400 block">Tổng buổi</span>
-              <strong className="text-lg font-black text-slate-800 font-mono">{totalSessions}</strong>
+        {/* Modal Body: Nội dung chi tiết chuẩn phong cách DeskOS */}
+        <div className="p-5 overflow-y-auto flex-1 space-y-4 text-xs font-bold text-[#42301c]">
+          
+          {/* Thanh phụ: Tóm tắt trạng thái & Nút thao tác nhanh */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-[#78350f] font-black">
+            <span>Tổng hợp chuyên cần & nhật ký điểm danh:</span>
+            <button
+              type="button"
+              onClick={handleCopyMessage}
+              className="inline-flex items-center gap-1.5 bg-[#ecdcc7] hover:bg-[#dfcdb5] text-[#4a2e16] text-xs font-black px-3.5 py-1.5 rounded-full border border-[#d6c4a8] transition-all cursor-pointer active:scale-95 shadow-3xs self-start sm:self-auto"
+            >
+              {copied ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-700" /> Đã sao chép tin nhắn!
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5" /> Soạn tin nhắn gửi GVCN / Phụ huynh
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Card Thông tin học sinh & 5 chỉ số KPI chuyên cần */}
+          <div className="bg-white/95 p-4 rounded-2xl border border-[#d6c4a8] text-xs text-[#5c4326] space-y-3 shadow-xs">
+            <div className="flex items-center gap-3.5">
+              <div className="w-13 h-13 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center font-black text-amber-900 text-xl shrink-0 overflow-hidden shadow-xs">
+                {student.avatarUrl ? (
+                  <img src={student.avatarUrl} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <span>{student.gender === 'Nữ' ? '👧' : '👦'}</span>
+                )}
+              </div>
+              <div className="space-y-1 text-left flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <h4 className="font-black text-slate-900 text-base truncate">{student.name}</h4>
+                  <span className={`px-2 py-0.5 rounded-full border text-[10px] font-black ${ratingColor.bg} ${ratingColor.text} ${ratingColor.border}`}>
+                    {rating}
+                  </span>
+                </div>
+                <p className="text-[11px] font-bold text-slate-500 flex items-center gap-2 flex-wrap">
+                  <span>Mã định danh (MSHS): <strong className="font-mono text-emerald-800">{student.code}</strong></span>
+                  <span>•</span>
+                  <span>Lớp: <strong className="text-amber-900 font-black">{student.classId}</strong></span>
+                  <span>•</span>
+                  <span>Giới tính: <strong className="text-slate-700">{student.gender}</strong></span>
+                </p>
+              </div>
             </div>
 
-            <div className="bg-emerald-50 border border-emerald-300 rounded-xl p-2.5 text-center shadow-2xs">
-              <span className="text-[10px] font-bold text-emerald-700 block">Có mặt</span>
-              <strong className="text-lg font-black text-emerald-800 font-mono">{presentCount}</strong>
+            {/* 5 Quick KPI Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-2 border-t border-[#f0e4d0]">
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-center shadow-3xs">
+                <span className="text-[10px] font-bold text-slate-500 block">Tổng số buổi</span>
+                <strong className="text-base sm:text-lg font-black text-slate-800 font-mono">{totalSessions}</strong>
+              </div>
+
+              <div className="bg-emerald-50/80 border border-emerald-300 rounded-xl p-2.5 text-center shadow-3xs">
+                <span className="text-[10px] font-bold text-emerald-800 block">Có mặt</span>
+                <strong className="text-base sm:text-lg font-black text-emerald-800 font-mono">{presentCount}</strong>
+              </div>
+
+              <div className="bg-amber-50/80 border border-amber-300 rounded-xl p-2.5 text-center shadow-3xs">
+                <span className="text-[10px] font-bold text-amber-800 block">Đi trễ</span>
+                <strong className="text-base sm:text-lg font-black text-amber-800 font-mono">{lateCount}</strong>
+              </div>
+
+              <div className="bg-sky-50/80 border border-sky-300 rounded-xl p-2.5 text-center shadow-3xs">
+                <span className="text-[10px] font-bold text-sky-800 block">Có phép</span>
+                <strong className="text-base sm:text-lg font-black text-sky-800 font-mono">{excusedCount}</strong>
+              </div>
+
+              <div className="bg-rose-50/80 border border-rose-300 rounded-xl p-2.5 text-center shadow-3xs col-span-2 sm:col-span-1">
+                <span className="text-[10px] font-bold text-rose-800 block">Không phép</span>
+                <strong className="text-base sm:text-lg font-black text-rose-700 font-mono">{unexcusedCount}</strong>
+              </div>
             </div>
 
-            <div className="bg-amber-50 border border-amber-300 rounded-xl p-2.5 text-center shadow-2xs">
-              <span className="text-[10px] font-bold text-amber-700 block">Đi trễ</span>
-              <strong className="text-lg font-black text-amber-800 font-mono">{lateCount}</strong>
-            </div>
-
-            <div className="bg-sky-50 border border-sky-300 rounded-xl p-2.5 text-center shadow-2xs">
-              <span className="text-[10px] font-bold text-sky-700 block">Có phép</span>
-              <strong className="text-lg font-black text-sky-800 font-mono">{excusedCount}</strong>
-            </div>
-
-            <div className="bg-rose-50 border border-rose-300 rounded-xl p-2.5 text-center shadow-2xs col-span-2 sm:col-span-1">
-              <span className="text-[10px] font-bold text-rose-700 block">Không phép</span>
-              <strong className="text-lg font-black text-rose-700 font-mono">{unexcusedCount}</strong>
+            {/* Tỷ lệ chuyên cần progress */}
+            <div className="pt-2 border-t border-[#f0e4d0] space-y-1.5">
+              <div className="flex items-center justify-between text-xs font-bold">
+                <span className="text-[#5c4326] uppercase tracking-wider text-[11px]">
+                  Tỷ Lệ Chuyên Cần Khóa Học:
+                </span>
+                <span className="font-black text-sm sm:text-base text-amber-900 font-mono">
+                  {attendanceRate}%
+                </span>
+              </div>
+              <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden border border-slate-200">
+                <div
+                  className={`h-2.5 rounded-full transition-all duration-500 ${
+                    attendanceRate >= 95
+                      ? 'bg-emerald-500'
+                      : attendanceRate >= 85
+                      ? 'bg-amber-500'
+                      : 'bg-rose-500'
+                  }`}
+                  style={{ width: `${attendanceRate}%` }}
+                />
+              </div>
             </div>
           </div>
 
-          {/* Tỷ lệ chuyên cần progress */}
-          <div className="bg-white border border-[#cbb89d] rounded-2xl p-3.5 shadow-2xs space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-extrabold text-[#3d2b17] uppercase tracking-wider">
-                Tỷ Lệ Chuyên Cần Toàn Khóa:
-              </span>
-              <span className="font-black text-base text-amber-800 font-mono">
-                {attendanceRate}%
-              </span>
-            </div>
-            <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
-              <div
-                className={`h-2.5 rounded-full transition-all duration-500 ${
-                  attendanceRate >= 95
-                    ? 'bg-emerald-500'
-                    : attendanceRate >= 85
-                    ? 'bg-amber-500'
-                    : 'bg-rose-500'
-                }`}
-                style={{ width: `${attendanceRate}%` }}
-              />
-            </div>
-          </div>
-
-          {/* ==========================================================
-              LỊCH ĐIỂM DANH (CALENDAR MATRIX VIEW 5 MÃ MÀU)
-              ========================================================== */}
-          <div className="bg-white border border-[#cbb89d] rounded-2xl p-4 shadow-2xs space-y-3">
+          {/* Khối Ma Trận Lịch Điểm Danh (Calendar Matrix View) */}
+          <div className="bg-white/95 p-4 rounded-2xl border border-[#d6c4a8] shadow-xs space-y-3">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-slate-100 pb-2">
               <h4 className="text-xs font-black uppercase text-[#3d2b17] tracking-wider flex items-center gap-1.5">
                 <Calendar className="w-4 h-4 text-amber-700" />
                 <span>MA TRẬN LỊCH ĐIỂM DANH CÁC BUỔI HỌC</span>
               </h4>
-              <span className="text-[10px] font-bold text-slate-400">
+              <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full">
                 {dailyRecords.length} buổi đã ghi nhận
               </span>
             </div>
 
             {/* Bảng chú giải màu sắc */}
-            <div className="flex flex-wrap items-center gap-2.5 text-[10px] font-bold text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+            <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold text-slate-700 bg-[#faf5ec] p-2.5 rounded-xl border border-[#e8d9c2]">
               <span className="flex items-center gap-1">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Có mặt
               </span>
+              <span className="text-slate-300">•</span>
               <span className="flex items-center gap-1">
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> Đi trễ
               </span>
+              <span className="text-slate-300">•</span>
               <span className="flex items-center gap-1">
                 <span className="w-2.5 h-2.5 rounded-full bg-sky-500" /> Vắng có phép
               </span>
+              <span className="text-slate-300">•</span>
               <span className="flex items-center gap-1">
                 <span className="w-2.5 h-2.5 rounded-full bg-rose-600" /> Vắng không phép
               </span>
@@ -253,7 +313,7 @@ export const AttendanceStudentModal: React.FC<AttendanceStudentModalProps> = ({
                   return (
                     <div
                       key={rec.date}
-                      className={`p-2 rounded-xl border flex flex-col items-center justify-center text-center transition hover:scale-105 cursor-default ${colorConfig.bg} ${colorConfig.text} ${colorConfig.border} shadow-2xs`}
+                      className={`p-2 rounded-xl border flex flex-col items-center justify-center text-center transition hover:scale-105 cursor-default ${colorConfig.bg} ${colorConfig.text} ${colorConfig.border} shadow-3xs`}
                       title={`Ngày: ${formatDateVN(rec.date)} | Trạng thái: ${colorConfig.label}`}
                     >
                       <span className="text-[10px] font-mono font-bold opacity-90">{dateShort}</span>
@@ -270,11 +330,11 @@ export const AttendanceStudentModal: React.FC<AttendanceStudentModalProps> = ({
 
           {/* Nhật ký các ngày vắng hoặc trễ (nếu có) */}
           {abnormalRecords.length > 0 && (
-            <div className="bg-amber-50/60 border border-amber-300 rounded-2xl p-4 shadow-2xs space-y-2.5">
-              <h4 className="text-xs font-black uppercase text-amber-900 tracking-wider flex items-center gap-1.5">
-                <Info className="w-4 h-4 text-amber-700" />
-                <span>NHẬT KÝ CÁC BUỔI CẦN LƯU Ý ({abnormalRecords.length} buổi)</span>
-              </h4>
+            <div className="bg-rose-50/90 border border-rose-200 rounded-2xl p-3.5 shadow-xs space-y-2 text-left">
+              <div className="flex items-center gap-1.5 font-black text-xs text-rose-900">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                <span>NHẬT KÝ CÁC BUỔI CẦN LƯU Ý ({abnormalRecords.length} buổi):</span>
+              </div>
               <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
                 {abnormalRecords.map((r, i) => {
                   const isLate = r.status === 'late';
@@ -282,13 +342,13 @@ export const AttendanceStudentModal: React.FC<AttendanceStudentModalProps> = ({
                   return (
                     <div
                       key={i}
-                      className="bg-white border border-amber-200 rounded-xl p-2 flex items-center justify-between text-xs"
+                      className="bg-white/95 border border-rose-200 rounded-xl p-2.5 flex items-center justify-between text-xs shadow-3xs"
                     >
                       <span className="font-bold text-slate-700">
                         📅 Buổi ngày: <strong className="text-slate-900 font-mono">{formatDateVN(r.date)}</strong>
                       </span>
                       <span
-                        className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${
+                        className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border ${
                           isLate
                             ? 'bg-amber-100 text-amber-900 border-amber-300'
                             : isExcused
@@ -306,26 +366,27 @@ export const AttendanceStudentModal: React.FC<AttendanceStudentModalProps> = ({
           )}
         </div>
 
-        {/* Footer Actions */}
-        <div className="bg-[#dfccb0] border-t border-[#cbb89d] p-3.5 flex flex-wrap items-center justify-between gap-2">
+        {/* Modal Footer: Chuẩn phong cách Quản trị hệ thống */}
+        <div className="p-5 pt-0 flex items-center justify-end gap-3 shrink-0">
           <button
             type="button"
             onClick={handleCopyMessage}
-            className="bg-amber-700 hover:bg-amber-800 text-white font-extrabold text-xs py-2 px-4 rounded-xl border border-amber-800 transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95"
+            className="px-5 py-2.5 rounded-2xl bg-[#ecdcc7] hover:bg-[#dfcdb5] text-[#4a2e16] font-black text-xs border border-[#d6c4a8] transition-all cursor-pointer shadow-xs active:scale-95 flex items-center gap-1.5"
           >
-            {copied ? <Check className="w-4 h-4 text-emerald-300" /> : <Copy className="w-4 h-4 text-amber-200" />}
-            <span>{copied ? 'Đã Sao Chép Tin Nhắn!' : 'Soạn Tin Nhắn Zalo Trao Đổi'}</span>
+            {copied ? <Check className="w-3.5 h-3.5 text-emerald-700" /> : <Copy className="w-3.5 h-3.5" />}
+            <span>{copied ? 'Đã sao chép tin nhắn!' : 'Sao chép tin nhắn trao đổi'}</span>
           </button>
-
           <button
             type="button"
             onClick={onClose}
-            className="bg-white hover:bg-slate-100 text-slate-800 font-bold text-xs py-2 px-5 rounded-xl border border-slate-300 transition shadow-2xs cursor-pointer"
+            className="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 font-black text-white text-xs shadow-md shadow-amber-600/25 active:scale-95 transition-all cursor-pointer"
           >
-            Đóng
+            Đóng (Esc)
           </button>
         </div>
+
       </div>
-    </div>
+    </div>,
+    (typeof document !== 'undefined' && (document.getElementById('deskos-window-body') || document.getElementById('deskos-active-window'))) || document.body
   );
 };
