@@ -155,22 +155,20 @@ export const AttendanceStudentModal: React.FC<AttendanceStudentModalProps> = ({
         className="bg-[#faf5ec] w-full max-w-2xl rounded-3xl shadow-2xl border-2 border-[#d6c4a8] flex flex-col relative overflow-hidden animate-in zoom-in-95 duration-200 my-auto text-left max-h-[88vh] outline-none focus:outline-none"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header Gradient Chuẩn Phong Cách Vườn Tri Thức */}
-        <div className="bg-gradient-to-r from-[#dfccb0] via-[#e8d9c2] to-[#dfccb0] px-5 py-3.5 border-b border-[#c8b598] flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2.5">
-            <span className="text-xl p-1.5 bg-amber-100/90 rounded-xl border border-amber-300/80 text-amber-800 shadow-2xs">
+        {/* Header Gradient Chuẩn Phong Cách Vườn Tri Thức - Tinh gọn */}
+        <div className="bg-gradient-to-r from-[#dfccb0] via-[#e8d9c2] to-[#dfccb0] px-4 py-2.5 border-b border-[#c8b598] flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="text-base p-1 bg-amber-100/90 rounded-lg border border-amber-300/80 text-amber-800 shadow-2xs">
               📅
             </span>
-            <div>
-              <h3 className="font-black text-sm text-[#42301c] uppercase tracking-wide">
-                Chi Tiết Lịch Điểm Danh Học Sinh
-              </h3>
-            </div>
+            <h3 className="font-black text-xs sm:text-sm text-[#42301c] uppercase tracking-wide">
+              Chi Tiết Lịch Điểm Danh Học Sinh
+            </h3>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="text-[#6e5334] hover:text-[#382613] bg-white/60 hover:bg-white p-1.5 rounded-full transition-all cursor-pointer shadow-xs focus:outline-none"
+            className="text-[#6e5334] hover:text-[#382613] bg-white/60 hover:bg-white p-1 rounded-full transition-all cursor-pointer shadow-xs focus:outline-none"
             title="Đóng cửa sổ (Esc)"
           >
             <X className="w-4 h-4" />
@@ -178,11 +176,11 @@ export const AttendanceStudentModal: React.FC<AttendanceStudentModalProps> = ({
         </div>
 
         {/* Modal Body: Nội dung chi tiết chuẩn phong cách Vườn Tri Thức */}
-        <div className="p-5 overflow-y-auto flex-1 space-y-4 text-xs font-bold text-[#42301c]">
+        <div className="p-3.5 sm:p-4 overflow-y-auto flex-1 space-y-3 text-xs font-bold text-[#42301c]">
           
-          {/* Card Thông tin học sinh chuẩn Vườn Tri Thức */}
-          <div className="bg-white border border-[#d6c4a8] rounded-2xl p-3.5 shadow-2xs flex items-center gap-3.5">
-            <div className="w-13 h-13 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center font-black text-amber-900 text-xl shrink-0 overflow-hidden shadow-xs">
+          {/* Card Thông tin học sinh chuẩn Vườn Tri Thức - Tinh gọn */}
+          <div className="bg-white border border-[#d6c4a8] rounded-2xl px-3.5 py-2.5 shadow-2xs flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-100 border border-amber-300 flex items-center justify-center font-black text-amber-900 text-lg shrink-0 overflow-hidden shadow-2xs">
               {student.avatarUrl ? (
                 <img src={student.avatarUrl} alt="" className="w-full h-full object-cover" />
               ) : (
@@ -191,12 +189,12 @@ export const AttendanceStudentModal: React.FC<AttendanceStudentModalProps> = ({
             </div>
             <div className="space-y-0.5 text-left flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <h4 className="font-black text-slate-900 text-base truncate">{student.name}</h4>
-                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black border ${ratingColor.bg} ${ratingColor.text} ${ratingColor.border}`}>
+                <h4 className="font-black text-slate-900 text-sm sm:text-base truncate">{student.name}</h4>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black border ${ratingColor.bg} ${ratingColor.text} ${ratingColor.border}`}>
                   {rating}
                 </span>
               </div>
-              <p className="text-[11px] font-bold text-slate-500 flex items-center gap-2 flex-wrap">
+              <p className="text-[10.5px] font-bold text-slate-500 flex items-center gap-2 flex-wrap">
                 <span>MSHS: <strong className="font-mono text-emerald-800">{student.code}</strong></span>
                 <span>•</span>
                 <span>Lớp: <strong className="text-amber-900 font-black">{student.classId}</strong></span>
