@@ -165,9 +165,6 @@ export const AttendanceStudentModal: React.FC<AttendanceStudentModalProps> = ({
               <h3 className="font-black text-sm text-[#42301c] uppercase tracking-wide">
                 Chi Tiết Lịch Điểm Danh Học Sinh
               </h3>
-              <p className="text-[11px] font-bold text-emerald-800">
-                Em {student.name} • MSHS: <span className="font-mono text-emerald-900 font-extrabold">{student.code}</span> • Lớp: <span className="font-black text-amber-900">{student.classId}</span>
-              </p>
             </div>
           </div>
           <button
