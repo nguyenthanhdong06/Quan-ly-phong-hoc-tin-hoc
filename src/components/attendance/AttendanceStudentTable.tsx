@@ -386,9 +386,10 @@ export const AttendanceStudentTable: React.FC<AttendanceStudentTableProps> = ({
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
+                          e.currentTarget.blur();
                           onSelectStudent(stat);
                         }}
-                        className="p-1.5 rounded-lg text-slate-500 hover:text-amber-800 hover:bg-amber-100 transition cursor-pointer"
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-amber-800 hover:bg-amber-100 transition cursor-pointer active:scale-95"
                         title="Bấm để xem ma trận lịch điểm danh chi tiết"
                       >
                         <Eye className="w-4 h-4" />

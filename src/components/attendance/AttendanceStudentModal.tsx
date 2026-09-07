@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { StudentAttendanceStat, formatDateVN } from './attendanceStatsUtils';
 import { AttendanceStatus } from '../../types';
@@ -29,12 +29,26 @@ export const AttendanceStudentModal: React.FC<AttendanceStudentModalProps> = ({
   showToast
 }) => {
   const [copied, setCopied] = useState(false);
+  const modalContainerRef = useRef<HTMLDivElement>(null);
+
+  // Tự động focus vào popup modal khi mở (chuẩn accessibility & UX như Vườn Tri Thức)
+  useEffect(() => {
+    if (stat) {
+      const timer = setTimeout(() => {
+        if (modalContainerRef.current) {
+          modalContainerRef.current.focus({ preventScroll: true });
+        }
+      }, 70);
+      return () => clearTimeout(timer);
+    }
+  }, [stat]);
 
   // Lắng nghe phím Escape để đóng modal mượt mà
   useEffect(() => {
     if (!stat) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        e.preventDefault();
         onClose();
       }
     };
@@ -136,9 +150,10 @@ export const AttendanceStudentModal: React.FC<AttendanceStudentModalProps> = ({
       }}
     >
       <div 
-        className="bg-[#faf5ec] w-full max-w-2xl rounded-3xl shadow-2xl border-2 border-[#d6c4a8] flex flex-col relative overflow-hidden animate-in zoom-in-95 duration-200 my-auto text-left max-h-[88vh]"
-        onClick={(e) => e.stopPropagation()}
+        ref={modalContainerRef}
         tabIndex={-1}
+        className="bg-[#faf5ec] w-full max-w-2xl rounded-3xl shadow-2xl border-2 border-[#d6c4a8] flex flex-col relative overflow-hidden animate-in zoom-in-95 duration-200 my-auto text-left max-h-[88vh] outline-none focus:outline-none"
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header Gradient Chuẩn Phong Cách Vườn Tri Thức */}
         <div className="bg-gradient-to-r from-[#dfccb0] via-[#e8d9c2] to-[#dfccb0] px-5 py-3.5 border-b border-[#c8b598] flex items-center justify-between shrink-0">

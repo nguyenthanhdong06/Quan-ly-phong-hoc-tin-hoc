@@ -196,8 +196,11 @@ export const AttendanceAlerts: React.FC<AttendanceAlertsProps> = ({
                   {targetStat && (
                     <button
                       type="button"
-                      onClick={() => onSelectStudent(targetStat)}
-                      className="inline-flex items-center gap-1 font-extrabold text-[11px] text-amber-800 hover:text-amber-950 bg-amber-100/70 hover:bg-amber-200/70 px-2.5 py-1 rounded-lg border border-amber-300 transition cursor-pointer"
+                      onClick={(e) => {
+                        e.currentTarget.blur();
+                        onSelectStudent(targetStat);
+                      }}
+                      className="inline-flex items-center gap-1 font-extrabold text-[11px] text-amber-800 hover:text-amber-950 bg-amber-100/70 hover:bg-amber-200/70 px-2.5 py-1 rounded-lg border border-amber-300 transition cursor-pointer active:scale-95"
                     >
                       <Eye className="w-3.5 h-3.5" />
                       <span>Xem lịch chi tiết</span>
