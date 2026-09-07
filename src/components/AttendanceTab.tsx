@@ -1,10 +1,11 @@
 import React from 'react';
 import { Student, AttendanceData, ClassItem, AttendanceStatus } from '../types';
-import { Check, ClipboardCheck, Calendar, UserCheck, AlertTriangle, AlertCircle, Search, X, Sparkles, CheckCircle, Save, BarChart3, ArrowLeft, Clock } from 'lucide-react';
+import { Check, ClipboardCheck, Calendar, UserCheck, AlertTriangle, AlertCircle, Search, X, Sparkles, CheckCircle, Save, BarChart3, ArrowLeft, Clock, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { VietnameseDatePicker } from './common/VietnameseDatePicker';
 import { AttendanceStatsView } from './attendance/AttendanceStatsView';
 import { matchStudentSearch } from '../utils/nameFormatter';
+import { saveDayPartitionedAttendance } from '../utils/attendancePartition';
 
 interface AttendanceTabProps {
   selectedClass: string;
@@ -17,6 +18,7 @@ interface AttendanceTabProps {
   systemDateText: string;
   classes?: ClassItem[];
   setClasses?: React.Dispatch<React.SetStateAction<ClassItem[]>>;
+  workspaceId?: string;
 }
 
 interface AttendanceStudentRowProps {
@@ -167,13 +169,16 @@ export default function AttendanceTab({
   showToast,
   systemDateText,
   classes,
-  setClasses
+  setClasses,
+  workspaceId
 }: AttendanceTabProps) {
   
   const [searchTerm, setSearchTerm] = React.useState('');
   const [currentPage, setCurrentPage] = React.useState(1);
   const [pageSize, setPageSize] = React.useState(10);
   const [justUpdatedId, setJustUpdatedId] = React.useState<string | null>(null);
+  const [isSaving, setIsSaving] = React.useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = React.useState(false);
 
   // Subview toggle state: 'attendance' (default) | 'stats' (Bảng thống kê) | 'zalo' (Báo cáo Zalo/SMS 100% Inline View)
   const [subView, setSubView] = React.useState<'attendance' | 'stats' | 'zalo'>('attendance');
@@ -367,6 +372,7 @@ export default function AttendanceTab({
 
   // Set single student status with 0ms instant local mutation
   const handleSetState = React.useCallback((studentId: string, status: AttendanceStatus) => {
+    setHasUnsavedChanges(true);
     setAttendanceData(prev => {
       const dayData = { ...(prev[selectedDate] || {}) };
       const classData = { ...(dayData[selectedClass] || {}) };
@@ -378,6 +384,7 @@ export default function AttendanceTab({
 
   // Set all present
   const handleSetAllPresent = () => {
+    setHasUnsavedChanges(true);
     const allPresent: { [stId: string]: 'present' } = {};
     classStudents.forEach(s => {
       allPresent[s.id] = 'present';
@@ -391,9 +398,25 @@ export default function AttendanceTab({
     showToast(`Đã đồng loạt đánh dấu Có mặt tất cả học sinh lớp ${selectedClass}`);
   };
 
-  const handleSave = () => {
-    // Save is implicit due to useEffect syncing to localStorage, but we show a beautiful feedback
-    showToast(`Đã lưu trữ thành công thông tin điểm danh ngày ${selectedDate.split('-').reverse().join('/')} của lớp ${selectedClass}!`);
+  // 🛡️ CHỈ LƯU SỔ KHI BẤM NÚT 'LƯU SỔ': Lưu trực tiếp vào LocalStorage và Supabase Cloud
+  const handleSave = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+    try {
+      const targetWs = workspaceId || (typeof localStorage !== 'undefined' && localStorage.getItem('deskos_active_workspace')) || 'ws_u-1';
+      const success = await saveDayPartitionedAttendance(attendanceData, selectedDate, targetWs);
+      if (success) {
+        setHasUnsavedChanges(false);
+        showToast(`Đã lưu trữ thành công thông tin điểm danh ngày ${selectedDate.split('-').reverse().join('/')} của lớp ${selectedClass}!`, 'success');
+      } else {
+        showToast('Không thể lưu dữ liệu lên máy chủ đám mây, vui lòng kiểm tra kết nối!', 'error');
+      }
+    } catch (err) {
+      console.error('Lỗi khi lưu sổ điểm danh:', err);
+      showToast('Có lỗi xảy ra khi lưu sổ điểm danh!', 'error');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -425,7 +448,7 @@ export default function AttendanceTab({
               className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs py-2 px-3.5 rounded-xl border border-emerald-500 transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95"
               title="Đánh dấu tất cả học sinh trong lớp là Có Mặt"
             >
-              <CheckCircle className="w-4 h-4 text-emerald-100" />
+              <ClipboardCheck className="w-4 h-4 text-emerald-100" />
               Tất Cả Có Mặt
             </button>
 
@@ -434,9 +457,9 @@ export default function AttendanceTab({
               className={`font-extrabold text-xs py-2 px-3.5 rounded-xl border transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95 ${
                 subView === 'stats'
                   ? 'bg-amber-700 text-white border-amber-600 shadow-md ring-2 ring-amber-300'
-                  : 'bg-amber-600 hover:bg-amber-700 text-white border-amber-500'
+                  : 'bg-amber-500 hover:bg-amber-600 text-white border-amber-400'
               }`}
-              title="Mở Bảng Thống Kê Báo Cáo gửi Giáo Viên Chủ Nhiệm"
+              title="Mở Bảng phân tích & thống kê chuyên cần toàn diện"
             >
               <BarChart3 className="w-4 h-4 text-amber-100" />
               <span>Bảng Thống Kê</span>
@@ -459,11 +482,34 @@ export default function AttendanceTab({
             </button>
 
             <button
+              type="button"
               onClick={handleSave}
-              className="bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs py-2 px-4 rounded-xl border border-amber-500 transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95"
+              disabled={isSaving}
+              className={`font-extrabold text-xs py-2 px-4 rounded-xl border transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95 ${
+                isSaving
+                  ? 'bg-amber-400 text-amber-950 border-amber-300 opacity-85 cursor-wait'
+                  : hasUnsavedChanges
+                  ? 'bg-rose-600 hover:bg-rose-700 text-white border-rose-500 ring-2 ring-rose-400/60 animate-pulse'
+                  : 'bg-amber-600 hover:bg-amber-700 text-white border-amber-500'
+              }`}
+              title={hasUnsavedChanges ? "Có thay đổi chưa lưu! Bấm để lưu sổ điểm danh" : "Lưu sổ điểm danh"}
             >
-              <Save className="w-4 h-4 text-amber-100" />
-              Lưu Sổ
+              {isSaving ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                  <span>Đang lưu...</span>
+                </>
+              ) : hasUnsavedChanges ? (
+                <>
+                  <Save className="w-4 h-4 text-white" />
+                  <span>Lưu Sổ *</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 text-amber-100" />
+                  <span>Lưu Sổ</span>
+                </>
+              )}
             </button>
           </div>
         </div>

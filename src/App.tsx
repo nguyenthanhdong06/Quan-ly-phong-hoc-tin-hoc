@@ -937,15 +937,8 @@ export default function App() {
     }, 800);
   }, [seatingChart, isLoaded]);
 
-  useEffect(() => {
-    if (!isLoaded) return;
-    const wsId = currentWsRef.current;
-    if (!wsId || wsId === 'ws_default') return;
-    if (attendanceDebounceRef.current) clearTimeout(attendanceDebounceRef.current);
-    attendanceDebounceRef.current = setTimeout(() => {
-      saveDayPartitionedAttendance(attendanceData, selectedDate, wsId);
-    }, 800);
-  }, [attendanceData, selectedDate, isLoaded]);
+  // 🛡️ ĐIỂM DANH: Đã loại bỏ hoàn toàn cơ chế auto-save ngầm.
+  // Dữ liệu điểm danh CHỈ ĐƯỢC LƯU khi Thầy/Cô chủ động bấm nút 'Lưu Sổ' trong sổ điểm danh.
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -1772,6 +1765,7 @@ export default function App() {
                 systemDateText={systemDateText}
                 classes={userAssignedClasses}
                 setClasses={setClasses}
+                workspaceId={activeWorkspaceId}
               />
             )}
 

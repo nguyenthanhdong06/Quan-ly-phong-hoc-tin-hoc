@@ -11,17 +11,19 @@ import { saveSupabaseState } from '../supabaseClient';
 
 /**
  * Lưu dữ liệu điểm danh phân mảnh nhẹ theo từng ngày và không gian làm việc
- * 🚀 TỐI ƯU HÓA SUPABASE: Lưu 1 khóa tổng duy nhất (${prefix}school_attendance_data)
- * giúp giảm 90% số lượng khóa trên Cloud và tránh rác ws_default.
+ * 🛡️ LOẠI BỎ KHÓA MẶC ĐỊNH: Tuyệt đối không lưu nếu là workspace mặc định ws_default hoặc rỗng.
+ * Chỉ lưu duy nhất cho workspace giáo viên thực tế (${prefix}school_attendance_data).
  */
 export async function saveDayPartitionedAttendance(
   attendanceData: AttendanceData,
   targetDate?: string,
-  workspaceId: string = 'ws_default'
+  workspaceId?: string
 ): Promise<boolean> {
   if (!attendanceData) return true;
-  // 🛡️ Ngăn chặn lưu nếu là workspace mặc định chưa đăng nhập (tránh rác ws_default trên Supabase)
-  if (!workspaceId || workspaceId === 'ws_default') return true;
+  // 🛡️ Chặn triệt để khóa điểm danh mặc định (ws_default hoặc rỗng)
+  if (!workspaceId || workspaceId === 'ws_default') {
+    return true;
+  }
 
   const prefix = `${workspaceId}_`;
 
@@ -36,13 +38,33 @@ export async function saveDayPartitionedAttendance(
 }
 
 /**
- * Tải và hợp nhất toàn bộ dữ liệu điểm danh phân mảnh cho một Workspace cụ thể
+ * Tải và hợp nhất toàn bộ dữ liệu điểm danh cho một Workspace cụ thể
+ * 🛡️ LOẠI BỎ KHÓA MẶC ĐỊNH: Không bao giờ tải từ khóa mặc định ws_default_school_attendance_data.
  */
 export function loadDayPartitionedAttendance(
   dbStates?: Record<string, any>,
   fallbackData: AttendanceData = {},
-  workspaceId: string = 'ws_default'
+  workspaceId?: string
 ): AttendanceData {
+  // Dọn dẹp các khóa mặc định còn sót lại trong LocalStorage
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('ws_default_school_attendance_data');
+      localStorage.removeItem('school_attendance_data');
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const k = localStorage.key(i);
+        if (k && (k.startsWith('ws_default_school_attendance_') || k === 'school_attendance_data')) {
+          localStorage.removeItem(k);
+        }
+      }
+    }
+  } catch (e) {}
+
+  // Nếu không có workspace hoặc là ws_default, không tải khóa mặc định
+  if (!workspaceId || workspaceId === 'ws_default') {
+    return { ...fallbackData };
+  }
+
   const prefix = `${workspaceId}_`;
   const merged: AttendanceData = { ...fallbackData };
 
@@ -101,9 +123,10 @@ export function applyPartitionedAttendanceUpdate(
   prev: AttendanceData,
   key: string,
   value: any,
-  workspaceId: string = 'ws_default'
+  workspaceId?: string
 ): AttendanceData {
   if (!value || typeof value !== 'object') return prev;
+  if (!workspaceId || workspaceId === 'ws_default') return prev;
 
   const prefix = `${workspaceId}_`;
 
