@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { StudentAttendanceStat } from './attendanceStatsUtils';
 import { 
   Search, 
+  X,
   ArrowUpDown, 
   ArrowUp, 
   ArrowDown, 
@@ -11,6 +12,7 @@ import {
   Award,
   Users
 } from 'lucide-react';
+import { matchStudentSearch } from '../../utils/nameFormatter';
 
 interface AttendanceStudentTableProps {
   studentStats: StudentAttendanceStat[];
@@ -30,16 +32,10 @@ export const AttendanceStudentTable: React.FC<AttendanceStudentTableProps> = ({
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
 
-  // Lọc theo từ khóa tìm kiếm
+  // Lọc theo từ khóa tìm kiếm (Smart Vietnamese Search: NFC/NFD, unaccented, multi-tokens)
   const filteredList = useMemo(() => {
-    const term = searchTerm.toLowerCase().trim();
-    if (!term) return studentStats;
-    return studentStats.filter(
-      (item) =>
-        item.student.name.toLowerCase().includes(term) ||
-        item.student.code.toLowerCase().includes(term) ||
-        item.student.classId.toLowerCase().includes(term)
-    );
+    if (!searchTerm.trim()) return studentStats;
+    return studentStats.filter((item) => matchStudentSearch(item.student, searchTerm));
   }, [studentStats, searchTerm]);
 
   // Sắp xếp theo cột
@@ -127,8 +123,8 @@ export const AttendanceStudentTable: React.FC<AttendanceStudentTableProps> = ({
 
         {/* Search & Page size selector */}
         <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
-          <div className="relative flex-1 sm:w-60">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <div className="relative flex-1 sm:w-60 flex items-center">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={searchTerm}
@@ -137,8 +133,23 @@ export const AttendanceStudentTable: React.FC<AttendanceStudentTableProps> = ({
                 setCurrentPage(1);
               }}
               placeholder="Tìm theo tên, mã HS, lớp..."
-              className="w-full bg-white border border-[#cbb89d] rounded-xl py-1.5 pl-8 pr-3 text-xs font-bold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500 shadow-2xs"
+              autoComplete="off"
+              spellCheck={false}
+              className="w-full bg-white border border-[#cbb89d] rounded-xl py-1.5 pl-8 pr-8 text-xs font-bold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500 shadow-2xs"
             />
+            {searchTerm && (
+              <button 
+                type="button"
+                onClick={() => {
+                  setSearchTerm('');
+                  setCurrentPage(1);
+                }}
+                title="Xóa tìm kiếm"
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full bg-slate-200/70 hover:bg-amber-200 text-slate-500 hover:text-slate-800 transition-colors focus:outline-none cursor-pointer"
+              >
+                <X className="w-3 h-3 stroke-[2.5]" />
+              </button>
+            )}
           </div>
 
           <div className="flex items-center gap-1 text-xs">

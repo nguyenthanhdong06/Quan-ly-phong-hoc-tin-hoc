@@ -19,6 +19,21 @@ html, body {
   scrollbar-width: none;  /* Firefox */
 }
 
+/* Triệt tiêu nút clear / cancel mặc định của trình duyệt để không làm xô lệch hoặc nhân đôi nút X */
+input[type="text"]::-ms-clear,
+input[type="text"]::-ms-reveal {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+input[type="search"]::-webkit-search-decoration,
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-results-button,
+input[type="search"]::-webkit-search-results-decoration {
+  display: none !important;
+  -webkit-appearance: none !important;
+}
+
 /* Smooth accordion transition using grid-template-rows */
 .submenu-transition {
   display: grid;

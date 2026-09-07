@@ -4,6 +4,7 @@ import { Student } from '../types';
 import { Trash2, UserPlus, FileSpreadsheet, Search, AlertCircle, Plus, Pencil, Check, X, IdCard, ArrowLeft, UploadCloud } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { StudentCard3D } from './StudentCard3D';
+import { matchStudentSearch } from '../utils/nameFormatter';
 
 interface StudentsTabProps {
   selectedClass: string;
@@ -330,11 +331,7 @@ export default function StudentsTab({
   }, [students, selectedClass]);
 
   const filteredStudents = useMemo(() => {
-    return classStudents.filter(s => {
-      const matchSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          s.code.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchSearch;
-    });
+    return classStudents.filter(s => matchStudentSearch(s, searchTerm));
   }, [classStudents, searchTerm]);
 
   // Tính toán dữ liệu phân trang
@@ -880,15 +877,27 @@ export default function StudentsTab({
 
             {/* Filter & Search Bar */}
             <div className="p-4 bg-[#fffbf0] flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
-              <div className="relative w-full sm:w-72">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <div className="relative w-full sm:w-72 flex items-center">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Tìm kiếm theo Tên hoặc Mã..."
-                  className="w-full text-xs border border-slate-200 rounded-xl pl-9 pr-4 py-2 focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white font-medium shadow-3xs"
+                  autoComplete="off"
+                  spellCheck={false}
+                  className="w-full text-xs border border-slate-200 rounded-xl pl-9 pr-8 py-2 focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white font-medium shadow-3xs"
                 />
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchTerm('')}
+                    title="Xóa tìm kiếm"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full bg-slate-200/70 hover:bg-amber-200 text-slate-500 hover:text-slate-800 transition-colors focus:outline-none cursor-pointer"
+                  >
+                    <X className="w-3 h-3 stroke-[2.5]" />
+                  </button>
+                )}
               </div>
 
               <div className="flex items-center gap-2 w-full sm:w-auto justify-end">

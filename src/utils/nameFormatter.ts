@@ -106,3 +106,94 @@ export function formatComputerName(val: number | string | null | undefined): str
   return `Máy ${str}`;
 }
 
+/**
+ * Chuyển đổi chuỗi tiếng Việt có dấu thành không dấu
+ * Hỗ trợ cả 2 chuẩn Unicode: NFC (Dựng sẵn) và NFD (Tổ hợp)
+ */
+export function removeVietnameseTones(str: string | null | undefined): string {
+  if (!str) return '';
+  // 1. Chuẩn hóa về NFD để tách các ký tự dấu tổ hợp (Combining Diacritical Marks)
+  let result = str.normalize('NFD');
+  // 2. Xóa các ký tự dấu tổ hợp (dải Unicode \u0300 - \u036f)
+  result = result.replace(/[\u0300-\u036f]/g, '');
+  // 3. Thay thế các ký tự Đ / đ đặc thù của tiếng Việt
+  result = result.replace(/[đĐ]/g, (m) => (m === 'đ' ? 'd' : 'D'));
+  // 4. Chuẩn hóa lại về NFC
+  return result.normalize('NFC');
+}
+
+/**
+ * Chuẩn hóa chuỗi tiếng Việt:
+ * - Chuẩn hóa NFC
+ * - Chuyển chữ thường toLowerCase
+ * - Bỏ khoảng trắng thừa ở 2 đầu và giữa chuỗi
+ */
+export function normalizeVietnameseString(str: string | null | undefined): string {
+  if (!str) return '';
+  return str
+    .normalize('NFC')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+/**
+ * So khớp thông minh giữa chuỗi đích (target) và từ khóa tìm kiếm (query)
+ * Hỗ trợ:
+ * 1. Tìm chính xác có dấu (chuẩn hóa Unicode NFC/NFD)
+ * 2. Tìm không dấu (gõ "phat" tìm ra "Phát")
+ * 3. Tìm đa từ / từng token (gõ "nguyen phat" tìm ra "Nguyễn Tấn Phát")
+ * 4. Tìm không phân biệt chữ hoa, chữ thường
+ */
+export function matchVietnameseSearch(
+  target: string | null | undefined,
+  query: string | null | undefined
+): boolean {
+  if (!query || !query.trim()) return true;
+  if (!target || !target.trim()) return false;
+
+  const normQuery = normalizeVietnameseString(query);
+  const normTarget = normalizeVietnameseString(target);
+
+  // 1. Chuỗi target chứa toàn bộ query (chuẩn hóa Unicode có dấu)
+  if (normTarget.includes(normQuery)) return true;
+
+  // 2. Chuỗi target không dấu chứa query không dấu
+  const unaccentQuery = removeVietnameseTones(normQuery);
+  const unaccentTarget = removeVietnameseTones(normTarget);
+  if (unaccentTarget.includes(unaccentQuery)) return true;
+
+  // 3. Token-based match (tất cả các từ trong query đều xuất hiện trong target)
+  // Ví dụ query "Nguyen Phat" -> tokens: ["nguyen", "phat"]
+  // Target: "Nguyễn Tấn Phát" -> unaccent tokens: ["nguyen", "tan", "phat"]
+  const queryTokens = unaccentQuery.split(' ').filter(Boolean);
+  if (queryTokens.length > 1) {
+    const isAllTokensMatched = queryTokens.every(token => 
+      unaccentTarget.includes(token) || normTarget.includes(token)
+    );
+    if (isAllTokensMatched) return true;
+  }
+
+  return false;
+}
+
+/**
+ * Kiểm tra xem một học sinh có khớp với từ khóa tìm kiếm hay không
+ * Tìm linh hoạt trên: Họ và tên, Mã học sinh (code), Chức vụ (duty), Ghi chú (notes), Lớp (classId)
+ */
+export function matchStudentSearch(
+  student: { name: string; code?: string; duty?: string; notes?: string; classId?: string } | null | undefined,
+  query: string | null | undefined
+): boolean {
+  if (!query || !query.trim()) return true;
+  if (!student) return false;
+
+  return (
+    matchVietnameseSearch(student.name, query) ||
+    matchVietnameseSearch(student.code, query) ||
+    matchVietnameseSearch(student.duty, query) ||
+    matchVietnameseSearch(student.classId, query) ||
+    matchVietnameseSearch(student.notes, query)
+  );
+}
+
