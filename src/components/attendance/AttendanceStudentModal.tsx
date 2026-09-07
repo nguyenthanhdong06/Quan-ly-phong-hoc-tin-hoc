@@ -140,19 +140,18 @@ export const AttendanceStudentModal: React.FC<AttendanceStudentModalProps> = ({
         onClick={(e) => e.stopPropagation()}
         tabIndex={-1}
       >
-        {/* Modal Header: Đồng bộ chuẩn giao diện Popup Nút Xem của Quản trị hệ thống */}
+        {/* Header Gradient Chuẩn Phong Cách Vườn Tri Thức */}
         <div className="bg-gradient-to-r from-[#dfccb0] via-[#e8d9c2] to-[#dfccb0] px-5 py-3.5 border-b border-[#c8b598] flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
-            <span className="text-xl">📅</span>
+            <span className="text-xl p-1.5 bg-amber-100/90 rounded-xl border border-amber-300/80 text-amber-800 shadow-2xs">
+              📅
+            </span>
             <div>
-              <h3 className="font-black text-sm text-[#42301c] uppercase tracking-wide flex items-center gap-2">
-                Chi Tiết Lịch Điểm Danh: <span className="font-black text-slate-900">{student.name}</span>
-                <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${ratingColor.bg} ${ratingColor.text} ${ratingColor.border}`}>
-                  {rating}
-                </span>
+              <h3 className="font-black text-sm text-[#42301c] uppercase tracking-wide">
+                Chi Tiết Lịch Điểm Danh Học Sinh
               </h3>
-              <p className="text-[11px] font-bold text-amber-900">
-                Lớp: <strong className="font-black text-amber-950">{student.classId}</strong> • MSHS: <strong className="font-mono text-emerald-800">{student.code}</strong> • Giới tính: {student.gender}
+              <p className="text-[11px] font-bold text-emerald-800">
+                Em {student.name} • MSHS: <span className="font-mono text-emerald-900 font-extrabold">{student.code}</span> • Lớp: <span className="font-black text-amber-900">{student.classId}</span>
               </p>
             </div>
           </div>
@@ -166,117 +165,95 @@ export const AttendanceStudentModal: React.FC<AttendanceStudentModalProps> = ({
           </button>
         </div>
 
-        {/* Modal Body: Nội dung chi tiết chuẩn phong cách DeskOS */}
+        {/* Modal Body: Nội dung chi tiết chuẩn phong cách Vườn Tri Thức */}
         <div className="p-5 overflow-y-auto flex-1 space-y-4 text-xs font-bold text-[#42301c]">
           
-          {/* Thanh phụ: Tóm tắt trạng thái & Nút thao tác nhanh */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-[#78350f] font-black">
-            <span>Tổng hợp chuyên cần & nhật ký điểm danh:</span>
-            <button
-              type="button"
-              onClick={handleCopyMessage}
-              className="inline-flex items-center gap-1.5 bg-[#ecdcc7] hover:bg-[#dfcdb5] text-[#4a2e16] text-xs font-black px-3.5 py-1.5 rounded-full border border-[#d6c4a8] transition-all cursor-pointer active:scale-95 shadow-3xs self-start sm:self-auto"
-            >
-              {copied ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-emerald-700" /> Đã sao chép tin nhắn!
-                </>
+          {/* Card Thông tin học sinh chuẩn Vườn Tri Thức */}
+          <div className="bg-white border border-[#d6c4a8] rounded-2xl p-3.5 shadow-2xs flex items-center gap-3.5">
+            <div className="w-13 h-13 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center font-black text-amber-900 text-xl shrink-0 overflow-hidden shadow-xs">
+              {student.avatarUrl ? (
+                <img src={student.avatarUrl} alt="" className="w-full h-full object-cover" />
               ) : (
-                <>
-                  <Copy className="w-3.5 h-3.5" /> Soạn tin nhắn gửi GVCN / Phụ huynh
-                </>
+                <span>{student.gender === 'Nữ' ? '👧' : '👦'}</span>
               )}
-            </button>
+            </div>
+            <div className="space-y-0.5 text-left flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <h4 className="font-black text-slate-900 text-base truncate">{student.name}</h4>
+                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black border ${ratingColor.bg} ${ratingColor.text} ${ratingColor.border}`}>
+                  {rating}
+                </span>
+              </div>
+              <p className="text-[11px] font-bold text-slate-500 flex items-center gap-2 flex-wrap">
+                <span>MSHS: <strong className="font-mono text-emerald-800">{student.code}</strong></span>
+                <span>•</span>
+                <span>Lớp: <strong className="text-amber-900 font-black">{student.classId}</strong></span>
+                <span>•</span>
+                <span>Giới tính: <strong className="text-slate-700">{student.gender}</strong></span>
+              </p>
+            </div>
           </div>
 
-          {/* Card Thông tin học sinh & 5 chỉ số KPI chuyên cần */}
-          <div className="bg-white/95 p-4 rounded-2xl border border-[#d6c4a8] text-xs text-[#5c4326] space-y-3 shadow-xs">
-            <div className="flex items-center gap-3.5">
-              <div className="w-13 h-13 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center font-black text-amber-900 text-xl shrink-0 overflow-hidden shadow-xs">
-                {student.avatarUrl ? (
-                  <img src={student.avatarUrl} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <span>{student.gender === 'Nữ' ? '👧' : '👦'}</span>
-                )}
-              </div>
-              <div className="space-y-1 text-left flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <h4 className="font-black text-slate-900 text-base truncate">{student.name}</h4>
-                  <span className={`px-2 py-0.5 rounded-full border text-[10px] font-black ${ratingColor.bg} ${ratingColor.text} ${ratingColor.border}`}>
-                    {rating}
-                  </span>
-                </div>
-                <p className="text-[11px] font-bold text-slate-500 flex items-center gap-2 flex-wrap">
-                  <span>Mã định danh (MSHS): <strong className="font-mono text-emerald-800">{student.code}</strong></span>
-                  <span>•</span>
-                  <span>Lớp: <strong className="text-amber-900 font-black">{student.classId}</strong></span>
-                  <span>•</span>
-                  <span>Giới tính: <strong className="text-slate-700">{student.gender}</strong></span>
-                </p>
-              </div>
+          {/* 5 Quick KPI Cards chuẩn Vườn Tri Thức */}
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+            <div className="bg-white border border-[#d6c4a8] rounded-2xl p-2.5 text-center shadow-2xs">
+              <span className="text-[10px] font-bold text-slate-500 block">Tổng số buổi</span>
+              <strong className="text-base sm:text-lg font-black text-slate-800 font-mono">{totalSessions}</strong>
             </div>
 
-            {/* 5 Quick KPI Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-2 border-t border-[#f0e4d0]">
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-center shadow-3xs">
-                <span className="text-[10px] font-bold text-slate-500 block">Tổng số buổi</span>
-                <strong className="text-base sm:text-lg font-black text-slate-800 font-mono">{totalSessions}</strong>
-              </div>
-
-              <div className="bg-emerald-50/80 border border-emerald-300 rounded-xl p-2.5 text-center shadow-3xs">
-                <span className="text-[10px] font-bold text-emerald-800 block">Có mặt</span>
-                <strong className="text-base sm:text-lg font-black text-emerald-800 font-mono">{presentCount}</strong>
-              </div>
-
-              <div className="bg-amber-50/80 border border-amber-300 rounded-xl p-2.5 text-center shadow-3xs">
-                <span className="text-[10px] font-bold text-amber-800 block">Đi trễ</span>
-                <strong className="text-base sm:text-lg font-black text-amber-800 font-mono">{lateCount}</strong>
-              </div>
-
-              <div className="bg-sky-50/80 border border-sky-300 rounded-xl p-2.5 text-center shadow-3xs">
-                <span className="text-[10px] font-bold text-sky-800 block">Có phép</span>
-                <strong className="text-base sm:text-lg font-black text-sky-800 font-mono">{excusedCount}</strong>
-              </div>
-
-              <div className="bg-rose-50/80 border border-rose-300 rounded-xl p-2.5 text-center shadow-3xs col-span-2 sm:col-span-1">
-                <span className="text-[10px] font-bold text-rose-800 block">Không phép</span>
-                <strong className="text-base sm:text-lg font-black text-rose-700 font-mono">{unexcusedCount}</strong>
-              </div>
+            <div className="bg-emerald-50/80 border border-emerald-300 rounded-2xl p-2.5 text-center shadow-2xs">
+              <span className="text-[10px] font-bold text-emerald-800 block">Có mặt</span>
+              <strong className="text-base sm:text-lg font-black text-emerald-800 font-mono">{presentCount}</strong>
             </div>
 
-            {/* Tỷ lệ chuyên cần progress */}
-            <div className="pt-2 border-t border-[#f0e4d0] space-y-1.5">
-              <div className="flex items-center justify-between text-xs font-bold">
-                <span className="text-[#5c4326] uppercase tracking-wider text-[11px]">
-                  Tỷ Lệ Chuyên Cần Khóa Học:
-                </span>
-                <span className="font-black text-sm sm:text-base text-amber-900 font-mono">
-                  {attendanceRate}%
-                </span>
-              </div>
-              <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden border border-slate-200">
-                <div
-                  className={`h-2.5 rounded-full transition-all duration-500 ${
-                    attendanceRate >= 95
-                      ? 'bg-emerald-500'
-                      : attendanceRate >= 85
-                      ? 'bg-amber-500'
-                      : 'bg-rose-500'
-                  }`}
-                  style={{ width: `${attendanceRate}%` }}
-                />
-              </div>
+            <div className="bg-amber-50/80 border border-amber-300 rounded-2xl p-2.5 text-center shadow-2xs">
+              <span className="text-[10px] font-bold text-amber-800 block">Đi trễ</span>
+              <strong className="text-base sm:text-lg font-black text-amber-800 font-mono">{lateCount}</strong>
+            </div>
+
+            <div className="bg-sky-50/80 border border-sky-300 rounded-2xl p-2.5 text-center shadow-2xs">
+              <span className="text-[10px] font-bold text-sky-800 block">Có phép</span>
+              <strong className="text-base sm:text-lg font-black text-sky-800 font-mono">{excusedCount}</strong>
+            </div>
+
+            <div className="bg-rose-50/80 border border-rose-300 rounded-2xl p-2.5 text-center shadow-2xs col-span-2 sm:col-span-1">
+              <span className="text-[10px] font-bold text-rose-800 block">Không phép</span>
+              <strong className="text-base sm:text-lg font-black text-rose-700 font-mono">{unexcusedCount}</strong>
+            </div>
+          </div>
+
+          {/* Tỷ lệ chuyên cần progress */}
+          <div className="bg-white border border-[#d6c4a8] rounded-2xl p-3.5 shadow-2xs space-y-2">
+            <div className="flex items-center justify-between text-xs font-bold">
+              <span className="text-[#5c4326] uppercase tracking-wider text-[11px]">
+                Tỷ Lệ Chuyên Cần Khóa Học:
+              </span>
+              <span className="font-black text-base text-amber-900 font-mono">
+                {attendanceRate}%
+              </span>
+            </div>
+            <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden border border-[#d6c4a8]/60">
+              <div
+                className={`h-2.5 rounded-full transition-all duration-500 ${
+                  attendanceRate >= 95
+                    ? 'bg-emerald-500'
+                    : attendanceRate >= 85
+                    ? 'bg-amber-500'
+                    : 'bg-rose-500'
+                }`}
+                style={{ width: `${attendanceRate}%` }}
+              />
             </div>
           </div>
 
           {/* Khối Ma Trận Lịch Điểm Danh (Calendar Matrix View) */}
-          <div className="bg-white/95 p-4 rounded-2xl border border-[#d6c4a8] shadow-xs space-y-3">
+          <div className="bg-white border border-[#d6c4a8] rounded-2xl p-4 shadow-2xs space-y-3">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-slate-100 pb-2">
               <h4 className="text-xs font-black uppercase text-[#3d2b17] tracking-wider flex items-center gap-1.5">
                 <Calendar className="w-4 h-4 text-amber-700" />
                 <span>MA TRẬN LỊCH ĐIỂM DANH CÁC BUỔI HỌC</span>
               </h4>
-              <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full">
+              <span className="text-[10px] font-bold text-slate-600 bg-[#faf5ec] border border-[#e8d9c2] px-2.5 py-0.5 rounded-full">
                 {dailyRecords.length} buổi đã ghi nhận
               </span>
             </div>
@@ -313,7 +290,7 @@ export const AttendanceStudentModal: React.FC<AttendanceStudentModalProps> = ({
                   return (
                     <div
                       key={rec.date}
-                      className={`p-2 rounded-xl border flex flex-col items-center justify-center text-center transition hover:scale-105 cursor-default ${colorConfig.bg} ${colorConfig.text} ${colorConfig.border} shadow-3xs`}
+                      className={`p-2 rounded-xl border flex flex-col items-center justify-center text-center transition hover:scale-105 active:scale-95 cursor-default ${colorConfig.bg} ${colorConfig.text} ${colorConfig.border} shadow-3xs`}
                       title={`Ngày: ${formatDateVN(rec.date)} | Trạng thái: ${colorConfig.label}`}
                     >
                       <span className="text-[10px] font-mono font-bold opacity-90">{dateShort}</span>
@@ -330,7 +307,7 @@ export const AttendanceStudentModal: React.FC<AttendanceStudentModalProps> = ({
 
           {/* Nhật ký các ngày vắng hoặc trễ (nếu có) */}
           {abnormalRecords.length > 0 && (
-            <div className="bg-rose-50/90 border border-rose-200 rounded-2xl p-3.5 shadow-xs space-y-2 text-left">
+            <div className="bg-rose-50/90 border border-rose-200 rounded-2xl p-3.5 shadow-2xs space-y-2 text-left">
               <div className="flex items-center gap-1.5 font-black text-xs text-rose-900">
                 <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
                 <span>NHẬT KÝ CÁC BUỔI CẦN LƯU Ý ({abnormalRecords.length} buổi):</span>
@@ -342,7 +319,7 @@ export const AttendanceStudentModal: React.FC<AttendanceStudentModalProps> = ({
                   return (
                     <div
                       key={i}
-                      className="bg-white/95 border border-rose-200 rounded-xl p-2.5 flex items-center justify-between text-xs shadow-3xs"
+                      className="bg-white border border-rose-200 rounded-xl p-2.5 flex items-center justify-between text-xs shadow-3xs"
                     >
                       <span className="font-bold text-slate-700">
                         📅 Buổi ngày: <strong className="text-slate-900 font-mono">{formatDateVN(r.date)}</strong>
@@ -366,20 +343,21 @@ export const AttendanceStudentModal: React.FC<AttendanceStudentModalProps> = ({
           )}
         </div>
 
-        {/* Modal Footer: Chuẩn phong cách Quản trị hệ thống */}
-        <div className="p-5 pt-0 flex items-center justify-end gap-3 shrink-0">
+        {/* Modal Footer Chuẩn Vườn Tri Thức */}
+        <div className="p-4 bg-[#f5ecdd] border-t border-[#d6c4a8] flex flex-wrap items-center justify-between gap-3 shrink-0">
           <button
             type="button"
             onClick={handleCopyMessage}
-            className="px-5 py-2.5 rounded-2xl bg-[#ecdcc7] hover:bg-[#dfcdb5] text-[#4a2e16] font-black text-xs border border-[#d6c4a8] transition-all cursor-pointer shadow-xs active:scale-95 flex items-center gap-1.5"
+            className="py-2.5 px-4 rounded-2xl bg-white hover:bg-emerald-50 border border-[#d6c4a8] text-[#3d2b17] font-black text-xs transition-all cursor-pointer shadow-xs active:scale-95 flex items-center gap-1.5"
           >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-700" /> : <Copy className="w-3.5 h-3.5" />}
-            <span>{copied ? 'Đã sao chép tin nhắn!' : 'Sao chép tin nhắn trao đổi'}</span>
+            {copied ? <Check className="w-4 h-4 text-emerald-700" /> : <Copy className="w-4 h-4 text-amber-700" />}
+            <span>{copied ? 'Đã sao chép tin nhắn!' : 'Soạn Tin Nhắn Zalo Trao Đổi'}</span>
           </button>
+
           <button
             type="button"
             onClick={onClose}
-            className="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 font-black text-white text-xs shadow-md shadow-amber-600/25 active:scale-95 transition-all cursor-pointer"
+            className="py-2.5 px-6 rounded-2xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 font-black text-white text-xs shadow-md shadow-amber-600/20 active:scale-95 transition-all cursor-pointer"
           >
             Đóng (Esc)
           </button>
