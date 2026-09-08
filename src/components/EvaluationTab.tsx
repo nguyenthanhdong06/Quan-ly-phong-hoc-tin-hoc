@@ -1,7 +1,7 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { Student, EvaluationData, SeatingChart, Computer, EmulationDataState, AttendanceData } from '../types';
-import { Star, Calendar, Search, X, Award, MessageSquare, Tag } from 'lucide-react';
+import { Student, EvaluationData, SeatingChart, Computer, EmulationDataState, AttendanceData, ClassItem } from '../types';
+import { Star, Calendar, Search, X, Award, MessageSquare, Tag, ArrowLeft } from 'lucide-react';
 import { triggerStarsConfetti } from '../utils/confetti';
 import { playStarRewardSound, playWarningDeductSound } from '../utils/audioEffects';
 import { CyberRobotCardFrameDecoration } from './CyberRobotCardFrameDecoration';
@@ -19,11 +19,12 @@ interface EvaluationTabProps {
   seatingChart: SeatingChart;
   evaluationData: EvaluationData;
   setEvaluationData: React.Dispatch<React.SetStateAction<EvaluationData>>;
-  showToast: (message: string, type?: 'success' | 'error') => void;
+  showToast: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
   systemDateText: string;
   setEmulationDataState: any;
   emulationDataState: EmulationDataState;
   attendanceData: AttendanceData;
+  classes?: ClassItem[];
 }
 
 // Simple Avatar Component to render clean, flat circle avatars with student-specific background colors with gorgeous hover effects
@@ -139,12 +140,34 @@ export default function EvaluationTab({
   systemDateText,
   setEmulationDataState,
   emulationDataState,
-  attendanceData
+  attendanceData,
+  classes = []
 }: EvaluationTabProps) {
   
   const [searchTerm, setSearchTerm] = React.useState('');
   const [selectedStudent, setSelectedStudent] = React.useState<Student | null>(null);
   const commentInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Subview toggle state: 'evaluation' (default) | 'zalo' (Báo cáo Zalo/SMS 100% Inline View)
+  const [subView, setSubView] = React.useState<'evaluation' | 'zalo'>('evaluation');
+  const [reportTemplate, setReportTemplate] = React.useState<'zalo' | 'sms' | 'full'>('zalo');
+  const [customMessageText, setCustomMessageText] = React.useState<string>('');
+
+  // 💻 / 📱 Device Auto-Detection for Zalo PC vs Zalo Mobile
+  const isMobileInitial = typeof window !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const [zaloTargetMode, setZaloTargetMode] = React.useState<'pc' | 'mobile'>(isMobileInitial ? 'mobile' : 'pc');
+
+  // Find GVCN info for the selected class from classes array
+  const currentClassObj = React.useMemo(() => {
+    if (!classes || classes.length === 0) return null;
+    return classes.find(c => 
+      c.id === selectedClass || 
+      (c.name && c.name.trim().toLowerCase() === selectedClass.trim().toLowerCase())
+    );
+  }, [classes, selectedClass]);
+
+  const gvcnName = currentClassObj?.teacher?.trim() || 'Chưa cập nhật GVCN';
+  const gvcnPhone = currentClassObj?.teacherPhone?.trim() || '';
 
   const handleSelectStudent = React.useCallback((student: Student) => {
     setSelectedStudent(student);
@@ -173,7 +196,7 @@ export default function EvaluationTab({
     }
   }, [selectedStudent?.id]);
 
-  // Reset search term when class changes for perfect UX
+  // Reset search term & update Zalo report text if open when class changes
   React.useEffect(() => {
     setSearchTerm('');
     setSelectedStudent(null);
@@ -296,6 +319,176 @@ export default function EvaluationTab({
     showToast(`Đã ${delta > 0 ? 'khen thưởng (+)' : 'nhắc nhở (-)'}${Math.abs(delta)} ⭐: ${label}`);
   };
 
+  const isReminderOrViolationTag = (tag: string) => {
+    const lower = tag.toLowerCase();
+    return (
+      tag.includes('🔴') ||
+      lower.includes('nói chuyện') ||
+      lower.includes('chưa tập trung') ||
+      lower.includes('muộn') ||
+      lower.includes('sách') ||
+      lower.includes('vở') ||
+      lower.includes('vệ sinh') ||
+      lower.includes('nhắc nhở') ||
+      lower.includes('vi phạm') ||
+      tag.includes('-')
+    );
+  };
+
+  const isPraiseTag = (tag: string) => {
+    const lower = tag.toLowerCase();
+    return (
+      tag.includes('🟢') ||
+      lower.includes('hăng hái') ||
+      lower.includes('thực hành tốt') ||
+      lower.includes('giúp đỡ') ||
+      lower.includes('phát biểu') ||
+      lower.includes('trực nhật') ||
+      lower.includes('khen thưởng') ||
+      tag.includes('+')
+    );
+  };
+
+  // 💬 Auto Generator for Zalo / SMS Homeroom Teacher Evaluation Report Text
+  const generateReportText = React.useCallback((template: 'zalo' | 'sms' | 'full') => {
+    const total = classStudents.length;
+    const femaleTotal = classStudents.filter(s => s.gender === 'Nữ').length;
+    const formattedDate = selectedDate.split('-').reverse().join('/');
+
+    // Tìm các học sinh cần nhắc nhở / có vi phạm hoặc nhận xét của giáo viên
+    const violatingStudents = classStudents.filter(s => {
+      const evalObj = currentDaysEvaluations[s.id] || { rating: 0, comment: '', tags: [] };
+      const comment = (evalObj.comment || '').trim();
+      const tags: string[] = Array.isArray(evalObj.tags) ? evalObj.tags : [];
+      const reminderOrDeductTags = tags.filter(isReminderOrViolationTag);
+      return Boolean(comment || reminderOrDeductTags.length > 0);
+    });
+
+    // Tìm các học sinh tiêu biểu / được khen thưởng
+    const praisedStudents = classStudents.filter(s => {
+      const evalObj = currentDaysEvaluations[s.id] || { rating: 0, comment: '', tags: [] };
+      const tags: string[] = Array.isArray(evalObj.tags) ? evalObj.tags : [];
+      const praiseTags = tags.filter(isPraiseTag);
+      return Boolean(praiseTags.length > 0 || evalObj.rating >= 4);
+    });
+
+    if (template === 'sms') {
+      if (violatingStudents.length === 0) {
+        return `[TIN HOC ${selectedClass} ${formattedDate}] Si so ${total} HS. Gio hoc tot, khong co HS vi pham.`;
+      }
+      const items = violatingStudents.map(s => {
+        const evalObj = currentDaysEvaluations[s.id] || { rating: 0, comment: '', tags: [] };
+        const comment = (evalObj.comment || '').trim();
+        const tags: string[] = Array.isArray(evalObj.tags) ? evalObj.tags : [];
+        const reminderTags = tags.filter(isReminderOrViolationTag);
+        const reason = comment || reminderTags.map(t => t.replace(/🔴|\(.*\)/g, '').trim()).filter(Boolean).join(', ');
+        const seatId = Object.keys(seatingChart[selectedClass] || {}).find(k => seatingChart[selectedClass][k] === s.id);
+        const seatObj = seatId ? computers.find(c => c.id === seatId) : null;
+        const machineLabel = seatObj ? `-${seatObj.name}` : '';
+        return `${s.name}${machineLabel}${reason ? ` (${reason})` : ''}`;
+      }).join('; ');
+      return `[TIN HOC ${selectedClass} ${formattedDate}] Co ${violatingStudents.length} HS can nhac nho: ${items}. Nho GVCN phoi hop!`.trim();
+    }
+
+    if (template === 'full') {
+      let msg = `📋 BÁO CÁO CHI TIẾT TIẾT HỌC & ĐÁNH GIÁ NỀN NẾP\n`;
+      msg += `Môn: Tin học | Lớp: ${selectedClass}\n`;
+      msg += `📅 Ngày: ${formattedDate}\n`;
+      msg += `------------------------------------\n`;
+      msg += `📊 Sĩ số lớp: ${total} học sinh (Nữ: ${femaleTotal})\n`;
+      msg += `🌟 Học sinh tích cực/khen thưởng: ${praisedStudents.length} em\n`;
+      msg += `⚠️ Học sinh cần nhắc nhở/vi phạm: ${violatingStudents.length} em\n`;
+      msg += `------------------------------------\n`;
+
+      if (violatingStudents.length === 0) {
+        msg += `🎉 Không có học sinh vi phạm trong tiết học.\n`;
+      } else {
+        msg += `⚠️ DANH SÁCH CHI TIẾT HỌC SINH CẦN NHẮC NHỞ:\n`;
+        violatingStudents.forEach((s, idx) => {
+          const evalObj = currentDaysEvaluations[s.id] || { rating: 0, comment: '', tags: [] };
+          const comment = (evalObj.comment || '').trim();
+          const tags: string[] = Array.isArray(evalObj.tags) ? evalObj.tags : [];
+          const reminderTags = tags.filter(isReminderOrViolationTag);
+          const seatId = Object.keys(seatingChart[selectedClass] || {}).find(k => seatingChart[selectedClass][k] === s.id);
+          const seatObj = seatId ? computers.find(c => c.id === seatId) : null;
+          const machineLabel = seatObj ? ` | ${seatObj.name}` : '';
+
+          msg += `${idx + 1}. ${s.name} (MSHS: ${s.code}${machineLabel})\n`;
+          if (comment) msg += `   - Nhận xét giáo viên: ${comment}\n`;
+          if (reminderTags.length > 0) msg += `   - Thẻ nhắc nhở/vi phạm: ${reminderTags.join(', ')}\n`;
+        });
+      }
+
+      if (praisedStudents.length > 0) {
+        msg += `\n🌟 DANH SÁCH HỌC SINH ĐƯỢC KHEN THƯỞNG:\n`;
+        praisedStudents.forEach((s, idx) => {
+          const evalObj = currentDaysEvaluations[s.id] || { rating: 0, comment: '', tags: [] };
+          const tags: string[] = Array.isArray(evalObj.tags) ? evalObj.tags : [];
+          const praiseTags = tags.filter(isPraiseTag);
+          const seatId = Object.keys(seatingChart[selectedClass] || {}).find(k => seatingChart[selectedClass][k] === s.id);
+          const seatObj = seatId ? computers.find(c => c.id === seatId) : null;
+          const machineLabel = seatObj ? ` | ${seatObj.name}` : '';
+
+          msg += `${idx + 1}. ${s.name} (MSHS: ${s.code}${machineLabel})\n`;
+          if (praiseTags.length > 0) msg += `   - Thưởng: ${praiseTags.join(', ')}\n`;
+        });
+      }
+
+      msg += `\n------------------------------------\n`;
+      msg += `Kính gửi GVCN Lớp ${selectedClass} phối hợp đôn đốc các em học sinh. Trân trọng cảm ơn Thầy/Cô!`;
+      return msg;
+    }
+
+    // Default Zalo Standard Template
+    let msg = `📋 BÁO CÁO NỀN NẾP TIẾT TIN HỌC - LỚP ${selectedClass}\n`;
+    msg += `📅 Ngày: ${formattedDate}\n`;
+    msg += `------------------------------------\n`;
+    msg += `👨‍🏫 Kính gửi Giáo viên chủ nhiệm Lớp ${selectedClass},\n`;
+    msg += `Em xin gửi Thầy/Cô tình hình học tập và nền nếp của lớp trong tiết Tin học hôm nay (${formattedDate}):\n\n`;
+    msg += `📊 Sĩ số lớp: ${total} học sinh\n`;
+
+    if (violatingStudents.length === 0) {
+      msg += `🎉 TÌNH HÌNH NỀN NẾP RẤT TỐT: Lớp học chăm ngoan, nghiêm túc, không có học sinh vi phạm hay bị nhắc nhở trong giờ học.\n`;
+    } else {
+      msg += `⚠️ DANH SÁCH HỌC SINH CẦN NHẮC NHỞ / VI PHẠM NỀN NẾP (${violatingStudents.length} em):\n`;
+      violatingStudents.forEach((s, idx) => {
+        const evalObj = currentDaysEvaluations[s.id] || { rating: 0, comment: '', tags: [] };
+        const comment = (evalObj.comment || '').trim();
+        const tags: string[] = Array.isArray(evalObj.tags) ? evalObj.tags : [];
+        const reminderTags = tags.filter(isReminderOrViolationTag);
+        const seatId = Object.keys(seatingChart[selectedClass] || {}).find(k => seatingChart[selectedClass][k] === s.id);
+        const seatObj = seatId ? computers.find(c => c.id === seatId) : null;
+        const machineLabel = seatObj ? ` (${seatObj.name})` : '';
+
+        msg += `${idx + 1}. ${s.name}${machineLabel}:\n`;
+        if (comment) {
+          msg += `   - Ý kiến/Nhận xét: ${comment}\n`;
+        }
+        if (reminderTags.length > 0) {
+          msg += `   - Nhắc nhở: ${reminderTags.join(', ')}\n`;
+        }
+      });
+      msg += `\nKính mong Thầy/Cô phối hợp nhắc nhở các em để tiết học sau đạt kết quả tốt hơn!\n`;
+    }
+
+    if (praisedStudents.length > 0) {
+      msg += `\n🌟 HỌC SINH TÍCH CỰC / KHEN THƯỞNG TRONG TIẾT (${praisedStudents.length} em):\n`;
+      praisedStudents.forEach((s, idx) => {
+        const evalObj = currentDaysEvaluations[s.id] || { rating: 0, comment: '', tags: [] };
+        const tags: string[] = Array.isArray(evalObj.tags) ? evalObj.tags : [];
+        const praiseTags = tags.filter(isPraiseTag);
+        const seatId = Object.keys(seatingChart[selectedClass] || {}).find(k => seatingChart[selectedClass][k] === s.id);
+        const seatObj = seatId ? computers.find(c => c.id === seatId) : null;
+        const machineLabel = seatObj ? ` (${seatObj.name})` : '';
+        const tagText = praiseTags.length > 0 ? ` - ${praiseTags.join(', ')}` : '';
+        msg += `${idx + 1}. ${s.name}${machineLabel}${tagText}\n`;
+      });
+    }
+
+    msg += `\nEm trân trọng cảm ơn Thầy/Cô!`;
+    return msg;
+  }, [classStudents, currentDaysEvaluations, selectedClass, selectedDate, seatingChart, computers]);
+
   const handleSave = () => {
     showToast(`Đã lưu thành công ý kiến đánh giá học kỳ ngày ${selectedDate.split('-').reverse().join('/')} cho lớp ${selectedClass}!`);
   };
@@ -325,6 +518,23 @@ export default function EvaluationTab({
             />
 
             <button
+              type="button"
+              onClick={() => {
+                setReportTemplate('zalo');
+                setCustomMessageText(generateReportText('zalo'));
+                setSubView(prev => prev === 'zalo' ? 'evaluation' : 'zalo');
+              }}
+              className={`font-black text-xs py-2 px-3.5 rounded-xl border transition shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 w-full sm:w-auto active:scale-95 ${
+                subView === 'zalo'
+                  ? 'bg-sky-700 hover:bg-sky-800 text-white border-sky-600 ring-2 ring-sky-300'
+                  : 'bg-sky-600 hover:bg-sky-700 text-white border-sky-500'
+              }`}
+              title="Tạo tin nhắn Zalo/SMS gửi tình hình học sinh vi phạm tới Giáo viên chủ nhiệm"
+            >
+              <span>💬</span> Báo Cáo Zalo
+            </button>
+
+            <button
               onClick={handleSave}
               className="bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs py-2 px-4 rounded-xl border border-amber-500 transition shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 w-full sm:w-auto active:scale-95"
             >
@@ -334,10 +544,13 @@ export default function EvaluationTab({
         </div>
       </div>
 
-      {/* Student Search and quick info bar - Positioned wonderfully at the head of student list */}
-      <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-        <div className="text-left">
-          <h3 className="font-extrabold text-slate-800 text-sm">Danh sách học sinh đánh giá ({filteredStudents.length}/{classStudents.length})</h3>
+      {/* VIEW CHÍNH: DANH SÁCH HỌC SINH ĐÁNH GIÁ */}
+      {subView === 'evaluation' && (
+        <>
+          {/* Student Search and quick info bar - Positioned wonderfully at the head of student list */}
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div className="text-left">
+              <h3 className="font-extrabold text-slate-800 text-sm">Danh sách học sinh đánh giá ({filteredStudents.length}/{classStudents.length})</h3>
           <p className="text-[11px] text-slate-400">
             Tìm kiếm nhanh học sinh và tăng/giảm sao, click chọn vào thẻ học sinh để đánh giá chi tiết.
           </p>
@@ -596,7 +809,257 @@ export default function EvaluationTab({
           </div>
         );
       })(), (typeof document !== 'undefined' && (document.getElementById('deskos-window-body') || document.getElementById('deskos-active-window'))) || document.body)}
+        </>
+      )}
 
+      {/* ====================================================================
+          BÁO CÁO ZALO/SMS CHO GVCN (INLINE VIEW 100%)
+          ==================================================================== */}
+      {subView === 'zalo' && (
+        <div className="space-y-6 animate-fadeIn w-full">
+          {/* Top navigation bar with Quay về button */}
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-[#fffbf0] border border-[#cbb89d] p-4 rounded-2xl shadow-xs">
+            <button
+              type="button"
+              onClick={() => setSubView('evaluation')}
+              className="bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-xs py-2.5 px-4.5 rounded-xl border border-slate-700 transition shadow-2xs cursor-pointer flex items-center gap-2 active:scale-95"
+            >
+              <ArrowLeft className="w-4 h-4 text-slate-200" />
+              <span>Quay Về Sổ Đánh Giá</span>
+            </button>
+
+            <h3 className="text-sm sm:text-base font-black text-slate-800 flex items-center gap-1.5">
+              <span>💬</span> BÁO CÁO ZALO/SMS CHO GVCN LỚP <span className="text-sky-700 font-mono bg-sky-50 px-2.5 py-0.5 rounded-lg border border-sky-200">{selectedClass}</span>
+            </h3>
+
+            <span className="text-xs font-bold text-slate-500">
+              Ngày chấm: <strong className="text-slate-800 font-mono">{systemDateText}</strong>
+            </span>
+          </div>
+
+          {/* Inline View 100% Full Width Container */}
+          <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-md border border-[#cbb89d] space-y-5 text-left w-full">
+            
+            {/* Report Template Selector Strip */}
+            <div className="flex flex-wrap items-center gap-2 bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200">
+              <button
+                type="button"
+                onClick={() => {
+                  setReportTemplate('zalo');
+                  setCustomMessageText(generateReportText('zalo'));
+                }}
+                className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                  reportTemplate === 'zalo' ? 'bg-sky-600 text-white shadow-xs' : 'text-slate-700 hover:bg-white/60'
+                }`}
+              >
+                💬 Mẫu Zalo Chuẩn
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setReportTemplate('sms');
+                  setCustomMessageText(generateReportText('sms'));
+                }}
+                className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                  reportTemplate === 'sms' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-700 hover:bg-white/60'
+                }`}
+              >
+                📱 Mẫu SMS Ngắn
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setReportTemplate('full');
+                  setCustomMessageText(generateReportText('full'));
+                }}
+                className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                  reportTemplate === 'full' ? 'bg-amber-600 text-white shadow-xs' : 'text-slate-700 hover:bg-white/60'
+                }`}
+              >
+                📑 Mẫu Chi Tiết Đầy Đủ
+              </button>
+            </div>
+
+            {/* GVCN Info Configuration Box (Read-Only Linked from Class Management) */}
+            <div className="bg-sky-50/90 p-4 rounded-2xl border border-sky-200 text-left space-y-3">
+              
+              {/* Device Auto-Detect Switcher Strip */}
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sky-200/80 pb-2.5">
+                <span className="text-xs font-black text-sky-950 flex items-center gap-1.5">
+                  ⚙️ KÍCH HOẠT KẾT NỐI ZALO LỚP <span className="text-sky-700 bg-white px-2 py-0.5 rounded-lg border border-sky-300">{selectedClass}</span>:
+                </span>
+
+                <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-sky-300 shadow-3xs">
+                  <span className="text-[10px] font-bold text-slate-500 px-1">Chế độ:</span>
+                  <button
+                    type="button"
+                    onClick={() => setZaloTargetMode('pc')}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-black transition cursor-pointer flex items-center gap-1 ${
+                      zaloTargetMode === 'pc' ? 'bg-sky-600 text-white shadow-2xs' : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    💻 Zalo PC (Máy tính)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setZaloTargetMode('mobile')}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-black transition cursor-pointer flex items-center gap-1 ${
+                      zaloTargetMode === 'mobile' ? 'bg-sky-600 text-white shadow-2xs' : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    📱 Zalo Mobile (Điện thoại)
+                  </button>
+                </div>
+              </div>
+
+              {/* GVCN Name & Phone Display Grid (Read-Only linked from Class Management) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white p-3.5 rounded-2xl border border-sky-200 shadow-2xs text-left">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black text-sky-950 whitespace-nowrap flex items-center gap-1">
+                    👤 GVCN Lớp {selectedClass}:
+                  </span>
+                  <span className="text-xs font-black text-slate-800 bg-sky-50/90 px-3 py-1 rounded-xl border border-sky-200">
+                    {gvcnName}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black text-sky-950 whitespace-nowrap flex items-center gap-1">
+                    📱 SĐT Zalo:
+                  </span>
+                  <span className={`text-xs font-extrabold px-3 py-1 rounded-xl border ${
+                    gvcnPhone 
+                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200 font-mono font-black' 
+                      : 'bg-rose-50 text-rose-700 border-rose-200 font-normal italic'
+                  }`}>
+                    {gvcnPhone || 'Chưa cập nhật bên Quản Lý Lớp'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Linked Info Status Helper */}
+              {(() => {
+                const clean = gvcnPhone.trim().replace(/\D/g, '');
+                if (!gvcnPhone) {
+                  return (
+                    <p className="text-[11px] text-amber-700 font-bold flex items-center gap-1 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
+                      <span>⚠️</span> Lớp <strong>{selectedClass}</strong> chưa được nhập SĐT Zalo GVCN. Thầy/Cô bổ sung SĐT tại mục <strong>"Quản Lý Lớp Học"</strong>.
+                    </p>
+                  );
+                }
+                if (clean.length !== 10) {
+                  return (
+                    <p className="text-[11px] text-rose-600 font-bold flex items-center gap-1 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200">
+                      <span>⚠️</span> SĐT Zalo GVCN đang có <strong>{clean.length}</strong> chữ số (Cần đúng 10 số). Vui lòng kiểm tra lại bên "Quản Lý Lớp Học"!
+                    </p>
+                  );
+                }
+                return (
+                  <p className="text-[11px] text-emerald-700 font-extrabold flex items-center gap-1 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                    <span>✅</span> Thông tin móc nối trực tiếp từ Quản Lý Lớp Học. Sẵn sàng kết nối Zalo với GVCN: <strong>{gvcnName}</strong> ({gvcnPhone}).
+                  </p>
+                );
+              })()}
+            </div>
+
+            {/* Live Preview Textarea */}
+            <div className="space-y-1.5 text-left">
+              <label className="block text-xs font-black text-slate-700">Xem trước & Chỉnh sửa nội dung tin nhắn gửi GVCN:</label>
+              <textarea
+                rows={10}
+                value={customMessageText}
+                onChange={(e) => setCustomMessageText(e.target.value)}
+                placeholder="Nội dung báo cáo gửi Giáo viên chủ nhiệm..."
+                className="w-full p-4 text-xs font-mono font-bold rounded-2xl border border-[#cbb89d] bg-white focus:outline-none focus:border-sky-600 shadow-inner leading-relaxed text-slate-800"
+              />
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex flex-wrap items-center justify-between gap-2.5 pt-3 border-t border-[#cbb89d]">
+              <button
+                type="button"
+                onClick={() => setSubView('evaluation')}
+                className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 cursor-pointer flex items-center gap-1.5"
+              >
+                <ArrowLeft className="w-4 h-4 text-slate-600" />
+                <span>Quay Về</span>
+              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(customMessageText);
+                    showToast('Đã sao chép tin nhắn thành công! Thầy/Cô có thể dán (Ctrl+V) vào Zalo ngay.', 'success');
+                  }}
+                  className="px-4.5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95"
+                >
+                  <span>📋</span> Sao Chép Nội Dung
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const cleanPhone = gvcnPhone.trim().replace(/\D/g, '');
+                    if (gvcnPhone.trim() && cleanPhone.length !== 10) {
+                      showToast(`⚠️ SĐT Zalo GVCN chưa đúng 10 chữ số (Hiện tại đang có ${cleanPhone.length} số). Vui lòng gõ đủ 10 số!`, 'error');
+                      return;
+                    }
+
+                    navigator.clipboard.writeText(customMessageText);
+
+                    if (zaloTargetMode === 'pc') {
+                      let zaloNativeAppUri = 'zalo://';
+                      if (cleanPhone) {
+                        zaloNativeAppUri = `zalo://conversation?phone=${cleanPhone}`;
+                      }
+
+                      const nativeLink = document.createElement('a');
+                      nativeLink.href = zaloNativeAppUri;
+                      document.body.appendChild(nativeLink);
+                      nativeLink.click();
+                      document.body.removeChild(nativeLink);
+
+                      setTimeout(() => {
+                        window.location.href = zaloNativeAppUri;
+                      }, 150);
+
+                      showToast(`Đã sao chép tin nhắn & Mở Zalo PC App ${cleanPhone ? `chat với SĐT ${cleanPhone}` : ''}!`, 'success');
+                    } else {
+                      let mobileUri = 'https://zalo.me/';
+                      if (cleanPhone) {
+                        mobileUri = `https://zalo.me/${cleanPhone}`;
+                      }
+
+                      window.open(mobileUri, '_blank');
+                      showToast(`Đã sao chép tin nhắn & Mở Zalo Mobile App ${cleanPhone ? `với SĐT ${cleanPhone}` : ''}!`, 'success');
+                    }
+                  }}
+                  className="px-4.5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-black text-xs transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95 border border-sky-500"
+                  title={zaloTargetMode === 'pc' ? 'Kích hoạt ứng dụng Zalo PC trên máy tính' : 'Mở ứng dụng Zalo Mobile trên điện thoại'}
+                >
+                  <span>💬</span> {zaloTargetMode === 'pc' ? 'Mở Zalo PC App' : 'Mở App Zalo Mobile'}
+                </button>
+
+                <a
+                  href={
+                    gvcnPhone.trim().replace(/\D/g, '') 
+                      ? `sms:${gvcnPhone.trim().replace(/\D/g, '')}?body=${encodeURIComponent(customMessageText)}` 
+                      : `sms:?body=${encodeURIComponent(customMessageText)}`
+                  }
+                  onClick={() => {
+                    navigator.clipboard.writeText(customMessageText);
+                    showToast('Đã sao chép & Kích hoạt ứng dụng Tin nhắn SMS!', 'success');
+                  }}
+                  className="px-4.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95 no-underline"
+                >
+                  <span>📱</span> Gửi SMS
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

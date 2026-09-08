@@ -1784,6 +1784,7 @@ export default function App() {
                 setEmulationDataState={setEmulationDataState}
                 emulationDataState={emulationDataState}
                 attendanceData={attendanceData}
+                classes={userAssignedClasses}
               />
             )}
 
