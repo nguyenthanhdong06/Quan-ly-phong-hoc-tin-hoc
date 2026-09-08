@@ -677,7 +677,10 @@ export default function App() {
           latestDbStatesRef.current = dbStates;
 
           if (Array.isArray(dbStates['school_grades'])) setGrades(dbStates['school_grades'].length > 0 ? dbStates['school_grades'] : defaultGrades);
-          if (Array.isArray(dbStates['school_classes'])) setClasses(sortClasses(dbStates['school_classes']));
+          if (Array.isArray(dbStates['school_classes'])) {
+            setClasses(sortClasses(dbStates['school_classes']));
+            safeSetLocalStorage('school_classes', dbStates['school_classes']);
+          }
           if (Array.isArray(dbStates['school_students'])) setStudents(dbStates['school_students']);
           if (Array.isArray(dbStates['school_computers']) && dbStates['school_computers'].length > 0) {
             setComputers(dbStates['school_computers']);
@@ -1199,7 +1202,10 @@ export default function App() {
       const dbStates = await loadAllSupabaseStates();
       if (dbStates && Object.keys(dbStates).length > 0) {
         if (dbStates['school_grades']) setGrades(dbStates['school_grades']);
-        if (dbStates['school_classes']) setClasses(sortClasses(dbStates['school_classes']));
+        if (dbStates['school_classes']) {
+          setClasses(sortClasses(dbStates['school_classes']));
+          safeSetLocalStorage('school_classes', dbStates['school_classes']);
+        }
         if (dbStates['school_students']) setStudents(dbStates['school_students']);
         if (dbStates['school_computers']) setComputers(dbStates['school_computers']);
         
@@ -1763,7 +1769,7 @@ export default function App() {
                 setAttendanceData={setAttendanceData}
                 showToast={showToast}
                 systemDateText={systemDateText}
-                classes={userAssignedClasses}
+                classes={classes}
                 setClasses={setClasses}
                 workspaceId={activeWorkspaceId}
               />
@@ -1784,7 +1790,7 @@ export default function App() {
                 setEmulationDataState={setEmulationDataState}
                 emulationDataState={emulationDataState}
                 attendanceData={attendanceData}
-                classes={userAssignedClasses}
+                classes={classes}
               />
             )}
 

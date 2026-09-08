@@ -157,14 +157,37 @@ export default function EvaluationTab({
   const isMobileInitial = typeof window !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   const [zaloTargetMode, setZaloTargetMode] = React.useState<'pc' | 'mobile'>(isMobileInitial ? 'mobile' : 'pc');
 
-  // Find GVCN info for the selected class from classes array
+  // Find GVCN info for the selected class from classes array or localStorage 'school_classes'
   const currentClassObj = React.useMemo(() => {
-    if (!classes || classes.length === 0) return null;
-    return classes.find(c => 
+    // 1. Search in passed prop `classes`
+    let found = classes?.find(c => 
       c.id === selectedClass || 
-      (c.name && c.name.trim().toLowerCase() === selectedClass.trim().toLowerCase())
+      (c.name && c.name.trim().toLowerCase() === selectedClass.trim().toLowerCase()) ||
+      (c.id && selectedClass && c.id.trim().toLowerCase() === selectedClass.trim().toLowerCase())
     );
-  }, [classes, selectedClass]);
+
+    // 2. If not found or if teacher/phone is missing, search directly in localStorage 'school_classes'
+    if (!found || (!found.teacher && !found.teacherPhone)) {
+      try {
+        const local = localStorage.getItem('school_classes');
+        if (local) {
+          const parsed = JSON.parse(local);
+          if (Array.isArray(parsed)) {
+            const localFound = parsed.find((c: any) => 
+              c.id === selectedClass || 
+              (c.name && c.name.trim().toLowerCase() === selectedClass.trim().toLowerCase()) ||
+              (c.id && selectedClass && c.id.trim().toLowerCase() === selectedClass.trim().toLowerCase())
+            );
+            if (localFound) found = localFound;
+          }
+        }
+      } catch (e) {
+        console.error('Error loading school_classes fallback in EvaluationTab:', e);
+      }
+    }
+
+    return found || null;
+  }, [classes, selectedClass, subView]);
 
   const gvcnName = currentClassObj?.teacher?.trim() || 'Chưa cập nhật GVCN';
   const gvcnPhone = currentClassObj?.teacherPhone?.trim() || '';
@@ -387,7 +410,8 @@ export default function EvaluationTab({
         const machineLabel = seatObj ? `-${seatObj.name}` : '';
         return `${s.name}${machineLabel}${reason ? ` (${reason})` : ''}`;
       }).join('; ');
-      return `[TIN HOC ${selectedClass} ${formattedDate}] Co ${violatingStudents.length} HS can nhac nho: ${items}. Nho GVCN phoi hop!`.trim();
+      const gvcnRecipient = gvcnName && gvcnName !== 'Chưa cập nhật GVCN' ? ` (${gvcnName})` : '';
+      return `[TIN HOC ${selectedClass} ${formattedDate}] Co ${violatingStudents.length} HS can nhac nho: ${items}. Nho GVCN${gvcnRecipient} phoi hop!`.trim();
     }
 
     if (template === 'full') {
@@ -435,7 +459,8 @@ export default function EvaluationTab({
       }
 
       msg += `\n------------------------------------\n`;
-      msg += `Kính gửi GVCN Lớp ${selectedClass} phối hợp đôn đốc các em học sinh. Trân trọng cảm ơn Thầy/Cô!`;
+      const gvcnRecipient = gvcnName && gvcnName !== 'Chưa cập nhật GVCN' ? ` (${gvcnName})` : '';
+      msg += `Kính gửi GVCN Lớp ${selectedClass}${gvcnRecipient} phối hợp đôn đốc các em học sinh. Trân trọng cảm ơn Thầy/Cô!`;
       return msg;
     }
 
@@ -443,7 +468,8 @@ export default function EvaluationTab({
     let msg = `📋 BÁO CÁO NỀN NẾP TIẾT TIN HỌC - LỚP ${selectedClass}\n`;
     msg += `📅 Ngày: ${formattedDate}\n`;
     msg += `------------------------------------\n`;
-    msg += `👨‍🏫 Kính gửi Giáo viên chủ nhiệm Lớp ${selectedClass},\n`;
+    const gvcnRecipient = gvcnName && gvcnName !== 'Chưa cập nhật GVCN' ? ` (${gvcnName})` : '';
+    msg += `👨‍🏫 Kính gửi Giáo viên chủ nhiệm Lớp ${selectedClass}${gvcnRecipient},\n`;
     msg += `Em xin gửi Thầy/Cô tình hình học tập và nền nếp của lớp trong tiết Tin học hôm nay (${formattedDate}):\n\n`;
     msg += `📊 Sĩ số lớp: ${total} học sinh\n`;
 
@@ -487,7 +513,7 @@ export default function EvaluationTab({
 
     msg += `\nEm trân trọng cảm ơn Thầy/Cô!`;
     return msg;
-  }, [classStudents, currentDaysEvaluations, selectedClass, selectedDate, seatingChart, computers]);
+  }, [classStudents, currentDaysEvaluations, selectedClass, selectedDate, seatingChart, computers, gvcnName]);
 
   const handleSave = () => {
     showToast(`Đã lưu thành công ý kiến đánh giá học kỳ ngày ${selectedDate.split('-').reverse().join('/')} cho lớp ${selectedClass}!`);

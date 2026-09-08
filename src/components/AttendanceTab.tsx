@@ -187,8 +187,36 @@ export default function AttendanceTab({
   const [reportTemplate, setReportTemplate] = React.useState<'zalo' | 'sms' | 'full'>('zalo');
   const [customMessageText, setCustomMessageText] = React.useState('');
 
-  // 📱 Homeroom Teacher (GVCN) Info linked directly from Class Management (classes prop)
-  const currentClassObj = classes?.find(c => c.id === selectedClass);
+  // 📱 Homeroom Teacher (GVCN) Info linked directly from Class Management (classes prop or localStorage 'school_classes')
+  const currentClassObj = React.useMemo(() => {
+    let found = classes?.find(c => 
+      c.id === selectedClass || 
+      (c.name && c.name.trim().toLowerCase() === selectedClass.trim().toLowerCase()) ||
+      (c.id && selectedClass && c.id.trim().toLowerCase() === selectedClass.trim().toLowerCase())
+    );
+
+    if (!found || (!found.teacher && !found.teacherPhone)) {
+      try {
+        const local = localStorage.getItem('school_classes');
+        if (local) {
+          const parsed = JSON.parse(local);
+          if (Array.isArray(parsed)) {
+            const localFound = parsed.find((c: any) => 
+              c.id === selectedClass || 
+              (c.name && c.name.trim().toLowerCase() === selectedClass.trim().toLowerCase()) ||
+              (c.id && selectedClass && c.id.trim().toLowerCase() === selectedClass.trim().toLowerCase())
+            );
+            if (localFound) found = localFound;
+          }
+        }
+      } catch (e) {
+        console.error('Error loading school_classes fallback in AttendanceTab:', e);
+      }
+    }
+
+    return found || null;
+  }, [classes, selectedClass, subView]);
+
   const gvcnName = currentClassObj?.teacher || 'Chưa cập nhật';
   const gvcnPhone = currentClassObj?.teacherPhone || '';
 
