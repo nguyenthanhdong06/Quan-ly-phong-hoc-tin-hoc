@@ -1690,23 +1690,23 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                   </button>
                 </div>
 
-                <div className="relative w-full sm:w-64 flex items-center">
-                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <div className="relative w-44 sm:w-52 flex items-center">
+                  <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                   <input
                     type="text"
                     value={classSearch}
                     onChange={(e) => setClassSearch(e.target.value)}
-                    placeholder="Tìm tên hoặc MSHS..."
+                    placeholder="Tìm tên, MSHS..."
                     autoComplete="off"
                     spellCheck={false}
-                    className="w-full pl-8.5 pr-8 py-1.5 text-xs font-bold rounded-xl border border-[#cbb89d] bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-2xs"
+                    className="w-full pl-8 pr-7 py-1.5 text-xs font-bold rounded-xl border border-[#cbb89d] bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-2xs"
                   />
                   {classSearch && (
                     <button
                       type="button"
                       onClick={() => setClassSearch('')}
                       title="Xóa tìm kiếm"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full bg-slate-200/70 hover:bg-emerald-200 text-slate-500 hover:text-slate-800 transition-colors focus:outline-none cursor-pointer"
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 flex items-center justify-center rounded-full bg-slate-200/70 hover:bg-emerald-200 text-slate-500 hover:text-slate-800 transition-colors focus:outline-none cursor-pointer"
                     >
                       <X className="w-3 h-3 stroke-[2.5]" />
                     </button>
