@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { safeSetLocalStorage } from '../utils/safeStorage';
 import { Question, Member } from '../types';
+import { matchVietnameseSearch } from '../utils/nameFormatter';
 import { 
   Plus, 
   Search, 
@@ -554,9 +555,9 @@ export function PersonalQuestionsTab({ currentUser, showToast, selectedGrade = 3
   // Filtered List
   const filteredQuestions = useMemo(() => {
     return selectedSubjectQuestions.filter(q => {
-      const matchSearch = q.title.toLowerCase().includes(searchText.toLowerCase()) || 
-                          (q.explanation && q.explanation.toLowerCase().includes(searchText.toLowerCase())) ||
-                          q.category.toLowerCase().includes(searchText.toLowerCase());
+      const matchSearch = matchVietnameseSearch(q.title, searchText) || 
+                          matchVietnameseSearch(q.explanation, searchText) ||
+                          matchVietnameseSearch(q.category, searchText);
       const matchDiff = filterDifficulty === 'all' ? true : q.difficulty === filterDifficulty;
       const matchCat = filterCategory === 'all' ? true : q.category === filterCategory;
       return matchSearch && matchDiff && matchCat;

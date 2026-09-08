@@ -3,6 +3,7 @@ import { Student, ClassItem } from '../types';
 import { Image, User, Check, RotateCcw, Sparkles, UploadCloud, Link as LinkIcon, X, Plus, Trash2, FolderPlus, Search, ArrowLeft } from 'lucide-react';
 import { saveSupabaseState } from '../supabaseClient';
 import { StudentAvatar3D } from './StudentAvatar3D';
+import { matchStudentSearch } from '../utils/nameFormatter';
 
 interface AvatarGalleryTabProps {
   students: Student[];
@@ -190,15 +191,13 @@ export const AvatarGalleryTab: React.FC<AvatarGalleryTabProps> = ({
     }
   }, [subView]);
 
-  const classStudents = students.filter(s => s.classId === selectedClass);
-  const filteredClassStudents = classStudents.filter(s => {
-    if (!studentSearchQuery.trim()) return true;
-    const q = studentSearchQuery.toLowerCase().trim();
-    return (
-      s.name.toLowerCase().includes(q) ||
-      (s.code && s.code.toLowerCase().includes(q))
-    );
-  });
+  const classStudents = students.filter(s => 
+    s.classId === selectedClass || 
+    (s.classId && selectedClass && s.classId.trim().toLowerCase() === selectedClass.trim().toLowerCase())
+  );
+  const filteredClassStudents = classStudents.filter(s => 
+    matchStudentSearch(s, studentSearchQuery, classStudents)
+  );
   const selectedStudentObj = students.find(s => s.id === selectedStudentId);
 
   // Combine custom avatars with default categorized avatars

@@ -10,7 +10,7 @@ import {
   ListFilter, UserPlus, Layers, Settings, FileSpreadsheet, Armchair, Trash2, User, FileText
 } from 'lucide-react';
 import { StudentAvatar3D, formatStudentNameFirstAndMiddle } from './StudentAvatar3D';
-import { formatComputerName } from '../utils/nameFormatter';
+import { formatComputerName, matchStudentSearch } from '../utils/nameFormatter';
 import { exportSeatingChartToWord } from '../utils/wordExportHelper';
 import { extractGoogleDriveFileId, convertGoogleDriveUrl } from '../utils/googleDriveImageHelper';
 import { compressImageFile } from './KnowledgeGardenTab';
@@ -474,12 +474,7 @@ export default function LabRoomTab({
     }
 
     if (!unassignedSearch.trim()) return list;
-    const q = unassignedSearch.toLowerCase();
-    return list.filter(s => 
-      s.name.toLowerCase().includes(q) || 
-      (s.code && s.code.toLowerCase().includes(q)) ||
-      formatStudentNameFirstAndMiddle(s.name).toLowerCase().includes(q)
-    );
+    return list.filter(s => matchStudentSearch(s, unassignedSearch, classStudents));
   }, [classStudents, unassignedStudents, assignedStudentIdsList, panelFilterMode, unassignedSearch]);
 
   // Quick Student Finder Search State
@@ -488,7 +483,6 @@ export default function LabRoomTab({
 
   const matchingPcIdsForSearch = useMemo(() => {
     if (!searchStudentSeat.trim()) return new Set<string>();
-    const q = searchStudentSeat.toLowerCase().trim();
     const matchedPcs = new Set<string>();
 
     Object.entries(currentClassSeating).forEach(([pcId, valStr]) => {
@@ -496,9 +490,7 @@ export default function LabRoomTab({
       const hasMatch = studentIds.some(id => {
         const st = studentsByIdMap.get(id);
         if (!st) return false;
-        return st.name.toLowerCase().includes(q) || 
-               st.code.toLowerCase().includes(q) || 
-               formatStudentNameFirstAndMiddle(st.name).toLowerCase().includes(q);
+        return matchStudentSearch(st, searchStudentSeat, classStudents);
       });
       if (hasMatch) {
         matchedPcs.add(pcId);
@@ -506,7 +498,7 @@ export default function LabRoomTab({
     });
 
     return matchedPcs;
-  }, [searchStudentSeat, currentClassSeating, studentsByIdMap, getAssignedStudentIds]);
+  }, [searchStudentSeat, currentClassSeating, studentsByIdMap, getAssignedStudentIds, classStudents]);
 
   // Zoom Level Control State (70% to 140%)
   const [zoomLevel, setZoomLevel] = useState<number>(100);

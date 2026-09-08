@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { safeSetLocalStorage } from '../utils/safeStorage';
 import { Question, Member, Student, ClassItem } from '../types';
+import { matchVietnameseSearch } from '../utils/nameFormatter';
 import { triggerConfetti, triggerStarsConfetti, triggerVictoryConfetti, triggerFireworksConfetti } from '../utils/confetti';
 import { 
   Gamepad2, 
@@ -1954,8 +1955,8 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
   ];
 
   const filteredGames = gamesList.filter(game => {
-    const matchesSearch = game.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          game.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = matchVietnameseSearch(game.title, searchQuery) || 
+                          matchVietnameseSearch(game.description, searchQuery);
     return matchesSearch;
   });
 

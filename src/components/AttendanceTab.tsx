@@ -206,13 +206,16 @@ export default function AttendanceTab({
     setCurrentPage(1);
   }, [selectedClass, searchTerm, pageSize]);
 
-  const classStudents = students.filter(s => s.classId === selectedClass);
+  const classStudents = students.filter(s => 
+    s.classId === selectedClass || 
+    (s.classId && selectedClass && s.classId.trim().toLowerCase() === selectedClass.trim().toLowerCase())
+  );
   const currentDaysAttendance = attendanceData[selectedDate]?.[selectedClass] || {};
 
   // Filter students based on search term (Smart Vietnamese Search: NFC/NFD, unaccented, multi-tokens)
   const filteredStudents = React.useMemo(() => {
     if (!searchTerm.trim()) return classStudents;
-    return classStudents.filter(s => matchStudentSearch(s, searchTerm));
+    return classStudents.filter(s => matchStudentSearch(s, searchTerm, classStudents));
   }, [classStudents, searchTerm]);
 
   const totalStudents = filteredStudents.length;

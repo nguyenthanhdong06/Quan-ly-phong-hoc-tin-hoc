@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { Member } from '../types';
+import { matchVietnameseSearch } from '../utils/nameFormatter';
 
 export interface CloudKeyRow {
   key: string;
@@ -389,12 +390,11 @@ export const CloudKeysExplorer: React.FC<CloudKeysExplorerProps> = ({
   // 3. FILTER & SORT
   const filteredAndSortedKeys = useMemo(() => {
     let result = keysData.filter(item => {
-      // Search filter
-      const q = searchQuery.toLowerCase().trim();
+      const q = searchQuery.trim();
       const matchSearch = !q || 
-        item.key.toLowerCase().includes(q) || 
-        item.description.toLowerCase().includes(q) || 
-        item.categoryLabel.toLowerCase().includes(q);
+        matchVietnameseSearch(item.key, q) || 
+        matchVietnameseSearch(item.description, q) || 
+        matchVietnameseSearch(item.categoryLabel, q);
 
       // Category filter
       const matchCat = categoryFilter === 'ALL' || item.category === categoryFilter;

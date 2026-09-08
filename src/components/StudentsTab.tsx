@@ -327,11 +327,14 @@ export default function StudentsTab({
 
   // Lọc danh sách học sinh theo Lớp đang chọn và Từ khóa tìm kiếm
   const classStudents = useMemo(() => {
-    return students.filter(s => s.classId === selectedClass);
+    return students.filter(s => 
+      s.classId === selectedClass ||
+      (s.classId && selectedClass && s.classId.trim().toLowerCase() === selectedClass.trim().toLowerCase())
+    );
   }, [students, selectedClass]);
 
   const filteredStudents = useMemo(() => {
-    return classStudents.filter(s => matchStudentSearch(s, searchTerm));
+    return classStudents.filter(s => matchStudentSearch(s, searchTerm, classStudents));
   }, [classStudents, searchTerm]);
 
   // Tính toán dữ liệu phân trang

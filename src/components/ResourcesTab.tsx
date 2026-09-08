@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { DocumentItem } from '../types';
+import { matchVietnameseSearch } from '../utils/nameFormatter';
 import { UploadCloud, FileText, Trash2, Download, BookOpen, Layers, CheckCircle2, Search, X, AlertCircle, ShieldCheck, Pencil, ExternalLink } from 'lucide-react';
 
 interface ResourcesTabProps {
@@ -643,13 +644,13 @@ export default function ResourcesTab({
           </div>
 
           {(() => {
-            const query = searchQuery.toLowerCase().trim();
+            const query = searchQuery.trim();
             const filteredDocs = documents.filter(doc => {
               if (!query) return true;
               return (
-                doc.title.toLowerCase().includes(query) ||
-                (doc.description && doc.description.toLowerCase().includes(query)) ||
-                doc.type.toLowerCase().includes(query)
+                matchVietnameseSearch(doc.title, query) ||
+                matchVietnameseSearch(doc.description, query) ||
+                matchVietnameseSearch(doc.type, query)
               );
             });
 

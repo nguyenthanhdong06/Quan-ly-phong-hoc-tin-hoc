@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { safeSetLocalStorage } from '../utils/safeStorage';
 import { saveSupabaseState } from '../supabaseClient';
-import { formatComputerName } from '../utils/nameFormatter';
+import { formatComputerName, matchVietnameseSearch } from '../utils/nameFormatter';
 
 interface LabBookingTabProps {
   members: Member[];
@@ -749,12 +749,12 @@ export default function LabBookingTab({
       if (logFilterPC !== 'All' && logFilterPC !== 'lab' && Number(log.pcNumber) !== Number(logFilterPC)) return false;
 
       if (logSearchTerm.trim() !== '') {
-        const term = logSearchTerm.toLowerCase();
+        const term = logSearchTerm.trim();
         return (
-          log.title.toLowerCase().includes(term) ||
-          log.description.toLowerCase().includes(term) ||
-          log.technician.toLowerCase().includes(term) ||
-          (log.pcLabel && log.pcLabel.toLowerCase().includes(term))
+          matchVietnameseSearch(log.title, term) ||
+          matchVietnameseSearch(log.description, term) ||
+          matchVietnameseSearch(log.technician, term) ||
+          (log.pcLabel && matchVietnameseSearch(log.pcLabel, term))
         );
       }
       return true;
@@ -766,20 +766,24 @@ export default function LabBookingTab({
   }, [filteredLogs]);
 
   const filteredBookings = useMemo(() => {
+    const q = adminSearchTerm.trim();
+    if (!q) return bookings;
     return bookings.filter(b => 
-      b.teacherName.toLowerCase().includes(adminSearchTerm.toLowerCase()) ||
-      b.className.toLowerCase().includes(adminSearchTerm.toLowerCase()) ||
-      b.subject.toLowerCase().includes(adminSearchTerm.toLowerCase()) ||
-      b.labId.toLowerCase().includes(adminSearchTerm.toLowerCase())
+      matchVietnameseSearch(b.teacherName, q) ||
+      matchVietnameseSearch(b.className, q) ||
+      matchVietnameseSearch(b.subject, q) ||
+      matchVietnameseSearch(b.labId, q)
     );
   }, [bookings, adminSearchTerm]);
 
   const filteredIncidents = useMemo(() => {
+    const q = adminSearchTerm.trim();
+    if (!q) return incidents;
     return incidents.filter(i => 
-      i.reporter.toLowerCase().includes(adminSearchTerm.toLowerCase()) ||
-      i.issue.toLowerCase().includes(adminSearchTerm.toLowerCase()) ||
-      i.labId.toLowerCase().includes(adminSearchTerm.toLowerCase()) ||
-      String(i.pcNumber).includes(adminSearchTerm)
+      matchVietnameseSearch(i.reporter, q) ||
+      matchVietnameseSearch(i.issue, q) ||
+      matchVietnameseSearch(i.labId, q) ||
+      String(i.pcNumber).includes(q)
     );
   }, [incidents, adminSearchTerm]);
 

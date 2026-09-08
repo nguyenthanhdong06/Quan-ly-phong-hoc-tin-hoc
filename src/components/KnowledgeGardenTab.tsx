@@ -390,7 +390,10 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
   }, [rewards]);
 
   // Sync active student with current class
-  const classStudents = students.filter(s => s.classId === selectedClass);
+  const classStudents = students.filter(s => 
+    s.classId === selectedClass || 
+    (s.classId && selectedClass && s.classId.trim().toLowerCase() === selectedClass.trim().toLowerCase())
+  );
 
   useEffect(() => {
     if (classStudents.length > 0) {
@@ -962,14 +965,15 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
 
   // Filtered lists (Smart Vietnamese Search: NFC/NFD, unaccented, multi-tokens)
   const filteredClassGarden = (gradeFilter === 'ALL' ? classStudents : gradeFilteredStudents).filter(s => {
-    const matchName = matchStudentSearch(s, classSearch);
+    const matchName = matchStudentSearch(s, classSearch, classStudents);
     const g = getStudentGarden(s.id);
     const { currentStage } = getStageInfo(g.water);
-    const matchStage = classStageFilter === 'ALL' || currentStage.level === parseInt(classStageFilter);
+    // Khi đang chủ động gõ tìm kiếm, ưu tiên hiển thị kết quả khớp tên/mã mà không bị ẩn do bộ lọc cấp độ trước đó
+    const matchStage = classStageFilter === 'ALL' || !classSearch.trim() || currentStage.level === parseInt(classStageFilter);
     return matchName && matchStage;
   });
 
-  const filteredTeacherStudents = classStudents.filter(s => matchStudentSearch(s, teacherSearch));
+  const filteredTeacherStudents = classStudents.filter(s => matchStudentSearch(s, teacherSearch, classStudents));
 
   // --- INLINE SUB-VIEW 1: THIẾT LẬP / SỬA BỘ HẠT GIỐNG MỚI (100% TAKEOVER) ---
   if (isSeedFormModalOpen) {
@@ -1686,15 +1690,27 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                   </button>
                 </div>
 
-                <div className="relative w-full sm:w-44">
-                  <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
+                <div className="relative w-full sm:w-64 flex items-center">
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                   <input
                     type="text"
                     value={classSearch}
                     onChange={(e) => setClassSearch(e.target.value)}
-                    placeholder="Tìm bạn..."
-                    className="w-full pl-9 pr-3 py-1.5 text-xs font-bold rounded-xl border border-[#cbb89d] bg-white focus:outline-none focus:border-emerald-500"
+                    placeholder="Tìm tên hoặc MSHS..."
+                    autoComplete="off"
+                    spellCheck={false}
+                    className="w-full pl-8.5 pr-8 py-1.5 text-xs font-bold rounded-xl border border-[#cbb89d] bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-2xs"
                   />
+                  {classSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setClassSearch('')}
+                      title="Xóa tìm kiếm"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full bg-slate-200/70 hover:bg-emerald-200 text-slate-500 hover:text-slate-800 transition-colors focus:outline-none cursor-pointer"
+                    >
+                      <X className="w-3 h-3 stroke-[2.5]" />
+                    </button>
+                  )}
                 </div>
 
                 <select
