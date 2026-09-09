@@ -179,11 +179,16 @@ export default function App() {
   });
   const [computers, setComputers] = useState<Computer[]>(() => safeParse('school_computers', generateDefaultComputers()));
   
-  // Authentication session
-  const [currentUser, setCurrentUser] = useState<Member | null>(() => safeParse('school_current_user', null, true));
+  // Authentication session (Đọc ưu tiên Session, fallback LocalStorage để không mất phiên khi mở tab mới)
+  const [currentUser, setCurrentUser] = useState<Member | null>(() => {
+    return safeParse('school_current_user', null, true) || safeParse('school_current_user', null, false);
+  });
   
   // 🏢 Active Workspace ID (Multi-User Isolation)
-  const [activeWorkspaceId, setActiveWorkspaceId] = useState<string>(() => getWorkspaceId(safeParse('school_current_user', null, true)));
+  const [activeWorkspaceId, setActiveWorkspaceId] = useState<string>(() => {
+    const user = safeParse('school_current_user', null, true) || safeParse('school_current_user', null, false);
+    return getWorkspaceId(user);
+  });
 
   // User-Scoped Workspace States
   const [seatingChart, setSeatingChart] = useState<SeatingChart>(() => loadWorkspaceSeatingChart(activeWorkspaceId));
@@ -690,11 +695,18 @@ export default function App() {
             saveSupabaseState('school_computers', defaultComps);
           }
           
-          // 🏢 User-Scoped Workspace States
-          setSeatingChart(loadWorkspaceSeatingChart(activeWorkspaceId, dbStates));
-          setAttendanceData(loadDayPartitionedAttendance(dbStates, {}, activeWorkspaceId));
-          setEvaluationData(loadDayPartitionedEvaluation(dbStates, {}, activeWorkspaceId));
-          setEmulationDataState(loadWorkspaceEmulationState(activeWorkspaceId, dbStates));
+          // 🏢 User-Scoped Workspace States (Luôn lấy Workspace thực tế hiệu lực cao nhất)
+          let effectiveWsId = currentWsRef.current || activeWorkspaceId;
+          if (!effectiveWsId || effectiveWsId === 'ws_default') {
+            const savedUser = safeParse('school_current_user', null, false);
+            if (savedUser) {
+              effectiveWsId = getWorkspaceId(savedUser);
+            }
+          }
+          setSeatingChart(loadWorkspaceSeatingChart(effectiveWsId, dbStates));
+          setAttendanceData(loadDayPartitionedAttendance(dbStates, {}, effectiveWsId));
+          setEvaluationData(loadDayPartitionedEvaluation(dbStates, {}, effectiveWsId));
+          setEmulationDataState(loadWorkspaceEmulationState(effectiveWsId, dbStates));
 
           if (Array.isArray(dbStates['school_documents'])) setDocuments(dbStates['school_documents']);
           if (Array.isArray(dbStates['school_members']) && dbStates['school_members'].length > 0) {
@@ -824,6 +836,16 @@ export default function App() {
               safeSetLocalStorage('school_timetable_data', next);
               return next;
             });
+          }
+
+          // 📡 Realtime đồng bộ điểm danh & đánh giá đa thiết bị theo Workspace hiện tại
+          const targetWs = currentWsRef.current || activeWorkspaceId;
+          if (targetWs && targetWs !== 'ws_default') {
+            if (row.key.includes('school_attendance') && row.key.startsWith(targetWs)) {
+              setAttendanceData(prev => applyPartitionedAttendanceUpdate(prev, row.key, row.value, targetWs));
+            } else if (row.key.includes('school_evaluation') && row.key.startsWith(targetWs)) {
+              setEvaluationData(prev => applyPartitionedEvaluationUpdate(prev, row.key, row.value, targetWs));
+            }
           }
         }
       )
@@ -1209,11 +1231,12 @@ export default function App() {
         if (dbStates['school_students']) setStudents(dbStates['school_students']);
         if (dbStates['school_computers']) setComputers(dbStates['school_computers']);
         
-        // 🏢 User-Scoped Workspace States
-        setSeatingChart(loadWorkspaceSeatingChart(activeWorkspaceId, dbStates));
-        setAttendanceData(loadDayPartitionedAttendance(dbStates, defaultAttendance, activeWorkspaceId));
-        setEvaluationData(loadDayPartitionedEvaluation(dbStates, defaultEvaluation, activeWorkspaceId));
-        setEmulationDataState(loadWorkspaceEmulationState(activeWorkspaceId, dbStates));
+        // 🏢 User-Scoped Workspace States (Luôn ưu tiên Workspace thực tế hiệu lực)
+        const effectivePullWs = currentWsRef.current || activeWorkspaceId;
+        setSeatingChart(loadWorkspaceSeatingChart(effectivePullWs, dbStates));
+        setAttendanceData(loadDayPartitionedAttendance(dbStates, defaultAttendance, effectivePullWs));
+        setEvaluationData(loadDayPartitionedEvaluation(dbStates, defaultEvaluation, effectivePullWs));
+        setEmulationDataState(loadWorkspaceEmulationState(effectivePullWs, dbStates));
 
         if (dbStates['school_documents']) setDocuments(dbStates['school_documents']);
         if (dbStates['school_members']) setMembers(dbStates['school_members']);

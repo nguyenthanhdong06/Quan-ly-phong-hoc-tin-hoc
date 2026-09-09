@@ -429,13 +429,40 @@ export default function AttendanceTab({
     showToast(`Đã đồng loạt đánh dấu Có mặt tất cả học sinh lớp ${selectedClass}`);
   };
 
-  // 🛡️ CHỈ LƯU SỔ KHI BẤM NÚT 'LƯU SỔ': Lưu trực tiếp vào LocalStorage và Supabase Cloud
+  // 🛡️ CHỈ LƯU SỔ KHI BẤM NÚT 'LƯU SỔ': Lưu trực tiếp vào LocalStorage và Supabase Cloud với Deep Merge
   const handleSave = async () => {
     if (isSaving) return;
     setIsSaving(true);
     try {
       const targetWs = workspaceId || (typeof localStorage !== 'undefined' && localStorage.getItem('deskos_active_workspace')) || 'ws_u-1';
-      const success = await saveDayPartitionedAttendance(attendanceData, selectedDate, targetWs);
+      
+      // 🌟 Đảm bảo lớp hiện tại được ghi nhận đầy đủ (nếu đi đủ 100% chưa bấm sửa em nào thì tự động ghi nhận tất cả Có mặt)
+      let dataToSave = attendanceData;
+      const currentClassAttendance = attendanceData[selectedDate]?.[selectedClass];
+      if (!currentClassAttendance || Object.keys(currentClassAttendance).length === 0) {
+        const autoPresent: { [stId: string]: 'present' } = {};
+        classStudents.forEach(s => {
+          autoPresent[s.id] = 'present';
+        });
+        dataToSave = {
+          ...attendanceData,
+          [selectedDate]: {
+            ...(attendanceData[selectedDate] || {}),
+            [selectedClass]: autoPresent
+          }
+        };
+        setAttendanceData(dataToSave);
+      }
+
+      const success = await saveDayPartitionedAttendance(
+        dataToSave,
+        selectedDate,
+        targetWs,
+        (merged) => {
+          setAttendanceData(merged);
+        }
+      );
+
       if (success) {
         setHasUnsavedChanges(false);
         showToast(`Đã lưu trữ thành công thông tin điểm danh ngày ${selectedDate.split('-').reverse().join('/')} của lớp ${selectedClass}!`, 'success');
