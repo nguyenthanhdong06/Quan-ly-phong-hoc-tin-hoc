@@ -2176,7 +2176,7 @@ export default function LabRoomTab({
                             draggable={true}
                             onDragStart={(e) => handleStudentDragStart(e, st.id, pcId)}
                             onDragEnd={handleStudentDragEnd}
-                            className={`rounded-lg px-2.5 py-1 flex items-center justify-between relative transition-all cursor-grab active:cursor-grabbing group text-center shadow-2xs border ${pillBgStyle}`}
+                            className={`rounded-lg px-2.5 py-1 flex items-center justify-center relative transition-all cursor-grab active:cursor-grabbing text-center shadow-2xs border ${pillBgStyle}`}
                           >
                             <span className="font-black text-xs text-center truncate mx-auto flex items-center justify-center gap-1" title={st.name}>
                               {role === 'L. Trưởng' && <Star className="w-3 h-3 text-amber-950 fill-amber-300" />}
@@ -2185,27 +2185,6 @@ export default function LabRoomTab({
                               {isExcused && <span className="text-[9px] font-black bg-slate-950/70 px-1 rounded text-amber-200">P</span>}
                               <span className={isAbsent ? 'line-through opacity-90' : ''}>{formatStudentNameFirstAndMiddle(st.name)}</span>
                             </span>
-
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                e.preventDefault();
-                                unassignStudentFromComputer(pcId, st.id);
-                              }}
-                              onMouseDown={(e) => {
-                                e.stopPropagation();
-                                e.preventDefault();
-                              }}
-                              onTouchStart={(e) => {
-                                e.stopPropagation();
-                                e.preventDefault();
-                              }}
-                              className="absolute right-1 top-1/2 -translate-y-1/2 text-slate-900/70 hover:text-white hover:bg-rose-600 p-1 rounded-full cursor-pointer z-30 transition-all shadow-2xs border border-transparent hover:border-rose-700 active:scale-90"
-                              title="Xóa học sinh khỏi máy"
-                            >
-                              <X className="w-3.5 h-3.5 stroke-[2.5]" />
-                            </button>
                           </div>
                         );
                       })}
