@@ -285,6 +285,8 @@ export default function LabRoomTab({
           cells.push({ row: r, col: c, type: 'pc', label: pcLabel, pcNum: num });
           pcList.push({ id: pcLabel, label: pcLabel, pcNum: num });
           pCounter++;
+        } else if (tile.type === 'desk') {
+          cells.push({ row: r, col: c, type: 'desk', label: tile.label || 'Bàn GV', pcNum: 0 });
         } else {
           cells.push({ row: r, col: c, type: 'aisle', label: 'Lối đi', pcNum: 0 });
         }
@@ -294,11 +296,11 @@ export default function LabRoomTab({
     return { rows, cols, cells, pcList };
   }, [activeLab]);
 
-  // Columns containing at least 1 PC (for 1-page A4 aisle hiding compaction)
+  // Columns containing at least 1 PC or Desk (for 1-page A4 aisle hiding compaction)
   const pcColumnIndices = useMemo(() => {
     const colsWithPc = new Set<number>();
     activeLabGrid.cells.forEach(c => {
-      if (c.type === 'pc') colsWithPc.add(c.col);
+      if (c.type === 'pc' || c.type === 'desk') colsWithPc.add(c.col);
     });
     return colsWithPc;
   }, [activeLabGrid.cells]);
@@ -988,6 +990,15 @@ export default function LabRoomTab({
             );
           }
 
+          if (tile.type === 'desk') {
+            return (
+              <div key={`print_desk_${tile.row}_${tile.col}`} className="bg-amber-100/90 border-2 border-amber-600 rounded p-1 text-center min-h-[60px] flex flex-col items-center justify-center shadow-xs">
+                <span className="font-black text-amber-950 text-[10px] uppercase tracking-wide">👨‍🏫 {tile.label || 'BÀN GIÁO VIÊN'}</span>
+                <span className="text-[7.5px] font-semibold text-amber-800 italic mt-0.5">(Giáo viên bộ môn)</span>
+              </div>
+            );
+          }
+
           const pcId = tile.label;
           const cellData = computedCellDataMap[pcId] || { assignedStudents: [] };
           const assignedSts = cellData.assignedStudents;
@@ -1322,6 +1333,25 @@ export default function LabRoomTab({
                   return (
                     <div key={`aisle_${tile.row}_${tile.col}`} className="bg-amber-100/40 border border-amber-200/50 rounded-xl p-2 flex items-center justify-center min-h-[90px] select-none">
                       <span className="text-[10px] font-black text-amber-800/40 uppercase tracking-wider">Lối đi</span>
+                    </div>
+                  );
+                }
+
+                if (tile.type === 'desk') {
+                  return (
+                    <div 
+                      key={`desk_${tile.row}_${tile.col}`} 
+                      className={`bg-gradient-to-br from-amber-100 via-amber-200/70 to-amber-300/60 border-2 border-amber-500 rounded-xl p-2.5 flex flex-col items-center justify-center select-none shadow-sm text-center ${cardSizeClasses[frameConfig.cardSize]}`}
+                    >
+                      <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-900 flex items-center justify-center text-lg shadow-inner mb-1">
+                        👨‍🏫
+                      </div>
+                      <span className="text-[11px] font-black text-amber-950 uppercase tracking-wider text-center leading-tight">
+                        {tile.label || 'BÀN GIÁO VIÊN'}
+                      </span>
+                      <span className="text-[9px] font-bold text-amber-800/80 italic mt-0.5">
+                        Khu vực Giáo viên
+                      </span>
                     </div>
                   );
                 }
@@ -2033,6 +2063,25 @@ export default function LabRoomTab({
                     className="bg-amber-100/40 border border-amber-200/50 rounded-xl p-2 flex items-center justify-center min-h-[90px] select-none"
                   >
                     <span className="text-[10px] font-black text-amber-800/40 uppercase tracking-wider">Lối đi</span>
+                  </div>
+                );
+              }
+
+              if (tile.type === 'desk') {
+                return (
+                  <div 
+                    key={`desk_${tile.row}_${tile.col}`}
+                    className={`bg-gradient-to-br from-[#fffbeb] via-[#fef3c7] to-[#fde68a] border-2 border-amber-500 rounded-xl p-3 flex flex-col items-center justify-center select-none shadow-md shadow-amber-900/10 text-center transition-all ${cardSizeClasses[frameConfig.cardSize]}`}
+                  >
+                    <div className="w-10 h-10 rounded-2xl bg-amber-400/30 border border-amber-400/60 text-amber-900 flex items-center justify-center text-xl shadow-inner mb-2">
+                      👨‍🏫
+                    </div>
+                    <span className="font-mono font-black text-xs px-2.5 py-0.5 rounded-lg bg-amber-500 text-amber-950 border border-amber-600/40 shadow-xs uppercase tracking-wider text-center">
+                      {tile.label || 'BÀN GIÁO VIÊN'}
+                    </span>
+                    <span className="text-[10px] font-bold text-amber-800/90 italic mt-1 text-center">
+                      (Giáo viên bộ môn)
+                    </span>
                   </div>
                 );
               }

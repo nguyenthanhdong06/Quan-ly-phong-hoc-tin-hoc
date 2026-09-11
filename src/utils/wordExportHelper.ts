@@ -28,10 +28,10 @@ export function exportSeatingChartToWord({
 }: ExportWordSeatingChartOptions) {
   const dateStr = new Date().toLocaleDateString('vi-VN');
 
-  // 1. Identify columns containing at least 1 PC
+  // 1. Identify columns containing at least 1 PC or Desk
   const pcColsSet = new Set<number>();
   gridCells.forEach(cell => {
-    if (cell.type === 'pc') pcColsSet.add(cell.col);
+    if (cell.type === 'pc' || cell.type === 'desk') pcColsSet.add(cell.col);
   });
 
   const shouldHideAisles = hideAisles !== false && pcColsSet.size > 0;
@@ -156,6 +156,23 @@ export function exportSeatingChartToWord({
           vertical-align: middle !important;
           height: 35px;
         }
+        .desk-box {
+          background-color: #fef3c7;
+          border: 2px solid #b45309;
+          text-align: center;
+          vertical-align: middle !important;
+          padding: 4px;
+        }
+        .desk-title {
+          font-weight: bold;
+          font-size: 9pt;
+          color: #78350f;
+        }
+        .desk-sub {
+          font-size: 7.5pt;
+          color: #92400e;
+          font-style: italic;
+        }
         .footer-table td {
           text-align: center;
           font-weight: bold;
@@ -198,6 +215,11 @@ export function exportSeatingChartToWord({
       const tile = gridCells.find(cell => cell.row === r && cell.col === c);
       if (!tile || tile.type === 'aisle') {
         htmlContent += `<td class="aisle-box">Lối đi</td>`;
+        continue;
+      }
+
+      if (tile.type === 'desk') {
+        htmlContent += `<td class="desk-box"><div class="desk-title">👨‍🏫 ${tile.label || 'BÀN GIÁO VIÊN'}</div><div class="desk-sub">(Giáo viên bộ môn)</div></td>`;
         continue;
       }
 
