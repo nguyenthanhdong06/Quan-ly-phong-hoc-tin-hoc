@@ -186,6 +186,9 @@ button:has(svg[class*="lucide-x"]) {
   border-radius: 9999px !important;
   transform: none !important;
   filter: none !important;
+  min-width: unset !important;
+  min-height: unset !important;
+  padding: 0 !important;
 }
 
 /* ==========================================================================

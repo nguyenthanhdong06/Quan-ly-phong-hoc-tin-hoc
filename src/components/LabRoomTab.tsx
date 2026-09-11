@@ -1180,15 +1180,27 @@ export default function LabRoomTab({
                 </div>
               </div>
 
-              <div className="relative">
-                <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
+              <div className="relative flex items-center">
+                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                 <input
                   type="text"
                   value={unassignedSearch}
                   onChange={(e) => setUnassignedSearch(e.target.value)}
                   placeholder="Tìm kiếm học sinh trong danh sách..."
-                  className="w-full pl-9 pr-3 py-1.5 text-xs font-bold rounded-xl border border-[#cbb89d] bg-white focus:outline-none focus:border-emerald-600"
+                  autoComplete="off"
+                  spellCheck={false}
+                  className="w-full pl-9 pr-8 py-1.5 text-xs font-bold rounded-xl border border-[#cbb89d] bg-white focus:outline-none focus:border-emerald-600 shadow-2xs"
                 />
+                {unassignedSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setUnassignedSearch('')}
+                    title="Xóa tìm kiếm"
+                    className="btn-raw btn-plain !absolute right-2 top-1/2 -translate-y-1/2 w-4.5 h-4.5 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-200/70 transition-colors focus:outline-none cursor-pointer"
+                  >
+                    <X className="w-3 h-3 stroke-[2.5]" />
+                  </button>
+                )}
               </div>
 
               <div className="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[520px]">
@@ -1937,21 +1949,25 @@ export default function LabRoomTab({
           </div>
 
           {/* Quick Student Finder */}
-          <div className="relative flex-1 min-w-[180px] max-w-[260px]">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-amber-700" />
+          <div className="relative flex-1 min-w-[180px] max-w-[260px] flex items-center">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-amber-700 pointer-events-none" />
             <input
               type="text"
               value={searchStudentSeat}
               onChange={(e) => setSearchStudentSeat(e.target.value)}
               placeholder="Tìm vị trí chỗ ngồi HS..."
-              className="w-full pl-9 pr-7 py-1.5 text-xs font-black rounded-xl border border-amber-300 bg-amber-50/80 text-amber-950 focus:outline-none focus:border-amber-500 shadow-2xs placeholder:text-amber-700/60"
+              autoComplete="off"
+              spellCheck={false}
+              className="w-full pl-9 pr-8 py-1.5 text-xs font-black rounded-xl border border-amber-300 bg-amber-50/80 text-amber-950 focus:outline-none focus:border-amber-500 focus:bg-white shadow-2xs placeholder:text-amber-700/60 transition-all"
             />
             {searchStudentSeat && (
               <button
+                type="button"
                 onClick={() => setSearchStudentSeat('')}
-                className="absolute right-2 top-2 text-amber-700 hover:text-amber-950 text-xs font-black cursor-pointer"
+                title="Xóa tìm kiếm"
+                className="btn-raw btn-plain !absolute right-2 top-1/2 -translate-y-1/2 w-4.5 h-4.5 flex items-center justify-center rounded-full text-amber-800 hover:text-amber-950 hover:bg-amber-200/80 transition-colors focus:outline-none cursor-pointer"
               >
-                ✕
+                <X className="w-3 h-3 stroke-[2.5]" />
               </button>
             )}
           </div>
