@@ -1671,15 +1671,27 @@ export default function LabBookingTab({
                   </select>
                 </div>
 
-                <div className="w-full md:w-80 relative">
-                  <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <div className="w-full md:w-80 relative flex items-center">
+                  <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                   <input
                     type="text"
                     placeholder="Tìm tiêu đề, người sửa, linh kiện..."
                     value={logSearchTerm}
                     onChange={e => setLogSearchTerm(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 rounded-2xl border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-indigo-500 outline-none shadow-2xs"
+                    autoComplete="off"
+                    spellCheck={false}
+                    className="w-full pl-9 pr-8 py-2 rounded-2xl border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-indigo-500 outline-none shadow-2xs"
                   />
+                  {logSearchTerm && (
+                    <button
+                      type="button"
+                      onClick={() => setLogSearchTerm('')}
+                      title="Xóa tìm kiếm"
+                      className="btn-raw btn-plain !absolute right-2 top-1/2 -translate-y-1/2 w-4.5 h-4.5 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-200/70 transition-colors focus:outline-none cursor-pointer"
+                    >
+                      <X className="w-3 h-3 stroke-[2.5]" />
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -2167,15 +2179,27 @@ export default function LabBookingTab({
                   <span>Bảng Quản Lý Duyệt Phiếu & Sửa Chữa Sự Cố</span>
                 </h3>
 
-                <div className="w-full md:w-80 relative">
-                  <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <div className="w-full md:w-80 relative flex items-center">
+                  <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                   <input
                     type="text"
                     placeholder="Tìm tên giáo viên, lớp, máy hỏng..."
                     value={adminSearchTerm}
                     onChange={e => setAdminSearchTerm(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 rounded-2xl border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-indigo-500 outline-none shadow-2xs"
+                    autoComplete="off"
+                    spellCheck={false}
+                    className="w-full pl-9 pr-8 py-2 rounded-2xl border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-indigo-500 outline-none shadow-2xs"
                   />
+                  {adminSearchTerm && (
+                    <button
+                      type="button"
+                      onClick={() => setAdminSearchTerm('')}
+                      title="Xóa tìm kiếm"
+                      className="btn-raw btn-plain !absolute right-2 top-1/2 -translate-y-1/2 w-4.5 h-4.5 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-200/70 transition-colors focus:outline-none cursor-pointer"
+                    >
+                      <X className="w-3 h-3 stroke-[2.5]" />
+                    </button>
+                  )}
                 </div>
               </div>
 

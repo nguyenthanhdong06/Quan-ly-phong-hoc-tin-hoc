@@ -145,7 +145,7 @@ export const AttendanceStudentTable: React.FC<AttendanceStudentTableProps> = ({
                   setCurrentPage(1);
                 }}
                 title="Xóa tìm kiếm"
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full bg-slate-200/70 hover:bg-amber-200 text-slate-500 hover:text-slate-800 transition-colors focus:outline-none cursor-pointer"
+                className="btn-raw btn-plain !absolute right-2 top-1/2 -translate-y-1/2 w-4.5 h-4.5 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-200/70 transition-colors focus:outline-none cursor-pointer"
               >
                 <X className="w-3 h-3 stroke-[2.5]" />
               </button>

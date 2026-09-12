@@ -1457,21 +1457,25 @@ export default function TimetableTab({
       {viewMode === 'search' && (
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 space-y-6 text-left animate-fadeIn">
           <div className="flex flex-col md:flex-row gap-4 items-center">
-            <div className="relative flex-1 w-full">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+            <div className="relative flex-1 w-full flex items-center">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 pointer-events-none" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Nhập tên lớp (ví dụ: 4/3), tên môn học (Tin học), hoặc tên giáo viên..."
-                className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-semibold text-slate-800 shadow-inner"
+                autoComplete="off"
+                spellCheck={false}
+                className="w-full pl-12 pr-10 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-semibold text-slate-800 shadow-inner"
               />
               {searchQuery && (
                 <button
+                  type="button"
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 font-bold"
+                  title="Xóa tìm kiếm"
+                  className="btn-raw btn-plain !absolute right-3.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-200/70 transition-colors focus:outline-none cursor-pointer"
                 >
-                  Xóa
+                  <X className="w-3.5 h-3.5 stroke-[2.5]" />
                 </button>
               )}
             </div>

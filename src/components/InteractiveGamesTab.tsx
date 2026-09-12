@@ -2134,7 +2134,7 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
 
           {/* Search bar & filter */}
           <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
-            <div className="relative w-full sm:max-w-xs">
+            <div className="relative w-full sm:max-w-xs flex items-center">
               <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search className="h-4 w-4 text-slate-400" />
               </span>
@@ -2143,8 +2143,20 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
                 placeholder="Tìm tên trò chơi..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                autoComplete="off"
+                spellCheck={false}
+                className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-8 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  title="Xóa tìm kiếm"
+                  className="btn-raw btn-plain !absolute right-2 top-1/2 -translate-y-1/2 w-4.5 h-4.5 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-200/70 transition-colors focus:outline-none cursor-pointer"
+                >
+                  <X className="w-3 h-3 stroke-[2.5]" />
+                </button>
+              )}
             </div>
             
             <div className="text-[11px] font-bold text-slate-400 italic">

@@ -621,7 +621,7 @@ export default function ResourcesTab({
           )}
 
           {/* Search bar inside the right block */}
-          <div className="relative">
+          <div className="relative flex items-center">
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none w-10">
               <Search className="h-4 w-4 text-slate-400" />
             </div>
@@ -630,15 +630,18 @@ export default function ResourcesTab({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="🔎 Tìm kiếm học liệu, kế hoạch giáo án, bài tập hoặc slide bài giảng..."
+              autoComplete="off"
+              spellCheck={false}
               className="block w-full pl-10 pr-10 py-2.5 border border-slate-200 rounded-xl text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-amber-500 hover:border-slate-300 transition-all outline-none text-slate-700 font-medium"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                title="Xóa tìm kiếm"
+                className="btn-raw btn-plain !absolute right-2.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-200/70 transition-colors focus:outline-none cursor-pointer"
               >
-                <X className="h-4 w-4" />
+                <X className="w-3.5 h-3.5 stroke-[2.5]" />
               </button>
             )}
           </div>
