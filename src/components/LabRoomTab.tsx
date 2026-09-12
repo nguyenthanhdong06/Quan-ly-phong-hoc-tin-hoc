@@ -2253,12 +2253,6 @@ export default function LabRoomTab({
                           </div>
                         );
                       })}
-
-                      {assignedStudents.length === 2 && (
-                        <div className="text-[10px] font-black text-[#3d2b17] bg-[#dfccb0]/90 px-2 py-0.5 rounded-md border border-[#cbb89d] text-center justify-center tracking-tight truncate mx-auto w-full">
-                          {formatStudentNameFirstAndMiddle(assignedStudents[0].name)} + {formatStudentNameFirstAndMiddle(assignedStudents[1].name)}
-                        </div>
-                      )}
                     </div>
                   ) : (
                     <div className="my-auto py-1.5 text-center justify-center flex items-center text-[#5c4327]/60 font-bold text-[10px] border border-dashed border-[#cbb89d] rounded-lg bg-white/40">
