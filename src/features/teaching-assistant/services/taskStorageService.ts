@@ -8,74 +8,18 @@ const TASKS_BASE_KEY = 'teaching_tasks';
 const NOTES_BASE_KEY = 'teaching_quick_notes';
 
 /**
- * 📦 Dữ liệu mẫu ban đầu cho giáo viên mới làm quen hệ thống
+ * 📦 Dữ liệu mặc định (hoàn toàn trống, không dùng dữ liệu mẫu)
  */
-export function getDefaultTeachingTasks(workspaceId: string, userId: string): TeachingTask[] {
-  const now = new Date();
-  const todayStr = now.toISOString().split('T')[0];
+export function getDefaultTeachingTasks(_workspaceId?: string, _userId?: string): TeachingTask[] {
+  return [];
+}
 
-  return [
-    {
-      id: `task-sample-1`,
-      workspaceId,
-      userId,
-      title: 'Bật máy chủ và kiểm tra 35 máy tính phòng Lab',
-      description: 'Khởi động máy học sinh, kiểm tra kết nối mạng LAN và phần mềm luyện gõ.',
-      gradeId: 3,
-      classId: '3A',
-      subject: 'Tin học',
-      category: 'Chuẩn bị thiết bị',
-      priority: 'urgent',
-      status: 'todo',
-      scheduleDay: '2',
-      schedulePeriod: '1',
-      plannedDate: todayStr,
-      dueDate: `${todayStr}T07:30:00`,
-      reminderBeforeMinutes: 30,
-      createdAt: now.toISOString(),
-      updatedAt: now.toISOString(),
-    },
-    {
-      id: `task-sample-2`,
-      workspaceId,
-      userId,
-      title: 'Chuẩn bị bài giảng PowerPoint: Bài 8 - Làm quen với thư mục',
-      description: 'Chèn thêm hình ảnh minh họa cây thư mục cho các em dễ hình dung.',
-      gradeId: 3,
-      classId: '3A',
-      subject: 'Tin học',
-      category: 'Soạn giáo án',
-      priority: 'high',
-      status: 'in_progress',
-      scheduleDay: '2',
-      schedulePeriod: '2',
-      plannedDate: todayStr,
-      dueDate: `${todayStr}T08:15:00`,
-      reminderBeforeMinutes: 60,
-      createdAt: now.toISOString(),
-      updatedAt: now.toISOString(),
-    },
-    {
-      id: `task-sample-3`,
-      workspaceId,
-      userId,
-      title: 'In 35 phiếu bài tập thực hành vẽ hình Paint',
-      description: 'In trước giờ học chiều cho lớp 4B.',
-      gradeId: 4,
-      classId: '4B',
-      subject: 'Tin học',
-      category: 'In tài liệu',
-      priority: 'medium',
-      status: 'todo',
-      scheduleDay: '3',
-      schedulePeriod: '5',
-      plannedDate: todayStr,
-      dueDate: `${todayStr}T13:30:00`,
-      reminderBeforeMinutes: 30,
-      createdAt: now.toISOString(),
-      updatedAt: now.toISOString(),
-    },
-  ];
+/**
+ * 🧹 Lọc bỏ triệt để các công việc mẫu cũ nếu còn lưu trong bộ nhớ
+ */
+function filterOutSampleTasks(tasks: TeachingTask[]): TeachingTask[] {
+  if (!Array.isArray(tasks)) return [];
+  return tasks.filter(t => !t.id.startsWith('task-sample-') && !t.id.includes('sample'));
 }
 
 /**
@@ -87,25 +31,40 @@ export async function loadTeachingTasks(
 ): Promise<TeachingTask[]> {
   const workspaceId = getWorkspaceId(currentUser);
   const scopedKey = `${workspaceId}_${TASKS_BASE_KEY}`;
-  const userId = currentUser?.id || currentUser?.username || 'user';
+
+  // Tự động dọn dẹp các row mẫu trong Supabase nếu có
+  try {
+    supabase.from('teaching_tasks').delete().like('id', 'task-sample%').then(() => {});
+  } catch {
+    // Bỏ qua nếu bảng chưa khởi tạo
+  }
 
   // 1. Kiểm tra từ Supabase dbStates
   if (dbStates && dbStates[scopedKey] && Array.isArray(dbStates[scopedKey])) {
-    safeSetLocalStorage(scopedKey, dbStates[scopedKey]);
-    return dbStates[scopedKey];
+    const cleaned = filterOutSampleTasks(dbStates[scopedKey]);
+    if (cleaned.length !== dbStates[scopedKey].length) {
+      safeSetLocalStorage(scopedKey, cleaned);
+      saveSupabaseState(scopedKey, cleaned).catch(() => {});
+    } else {
+      safeSetLocalStorage(scopedKey, cleaned);
+    }
+    return cleaned;
   }
 
   // 2. Kiểm tra từ LocalStorage
   const localData = safeGetLocalStorage<TeachingTask[] | null>(scopedKey, null);
-  if (localData && Array.isArray(localData) && localData.length > 0) {
-    return localData;
+  if (localData && Array.isArray(localData)) {
+    const cleaned = filterOutSampleTasks(localData);
+    if (cleaned.length !== localData.length) {
+      safeSetLocalStorage(scopedKey, cleaned);
+      saveSupabaseState(scopedKey, cleaned).catch(() => {});
+    }
+    return cleaned;
   }
 
-  // 3. Nếu chưa có, trả về dữ liệu mẫu và lưu vào workspace của user
-  const initialTasks = getDefaultTeachingTasks(workspaceId, userId);
-  safeSetLocalStorage(scopedKey, initialTasks);
-  saveSupabaseState(scopedKey, initialTasks).catch(() => {});
-  return initialTasks;
+  // 3. Nếu chưa có, trả về mảng rỗng
+  safeSetLocalStorage(scopedKey, []);
+  return [];
 }
 
 /**
