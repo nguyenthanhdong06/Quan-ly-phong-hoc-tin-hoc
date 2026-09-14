@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom';
 import { CurrentClassContext, TeachingQuickNote } from '../types';
 import { Zap, Save, CalendarPlus, X, Clock, School, BookOpen } from 'lucide-react';
 import { ClassItem } from '../../../types';
-import { VietnameseDatePicker } from '../../../components/common/VietnameseDatePicker';
 
 interface QuickNoteModalProps {
   isOpen: boolean;
@@ -29,15 +28,13 @@ export const QuickNoteModal: React.FC<QuickNoteModalProps> = ({
   const [content, setContent] = useState('');
   const [selectedClass, setSelectedClass] = useState(currentContext.className || '');
   const [selectedSubject, setSelectedSubject] = useState(currentContext.subject || 'Tin học');
-  const [noteDate, setNoteDate] = useState(() => new Date().toISOString().split('T')[0]);
 
-  // Khi modal mở, cập nhật lớp, môn và ngày theo ngữ cảnh hiện tại
+  // Khi modal mở, cập nhật lớp và môn theo tiết học hiện tại
   useEffect(() => {
     if (isOpen) {
       setSelectedClass(currentContext.className || (classes[0]?.name || ''));
       setSelectedSubject(currentContext.subject || 'Tin học');
       setContent('');
-      setNoteDate(new Date().toISOString().split('T')[0]);
     }
   }, [isOpen, currentContext, classes]);
 
@@ -65,7 +62,7 @@ export const QuickNoteModal: React.FC<QuickNoteModalProps> = ({
       classId: selectedClass || undefined,
       subject: selectedSubject || undefined,
       period: currentContext.period || undefined,
-      noteDate: noteDate || new Date().toISOString().split('T')[0],
+      noteDate: new Date().toISOString().split('T')[0],
     });
 
     onClose();
@@ -119,28 +116,22 @@ export const QuickNoteModal: React.FC<QuickNoteModalProps> = ({
 
         {/* Thân Form */}
         <form onSubmit={handleSaveOnly} className="p-5 space-y-4">
-          {/* Thông tin ngữ cảnh tiết học hiện tại & Bộ chọn ngày chuẩn cấu trúc */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 p-3 rounded-2xl bg-amber-100/60 border border-amber-300/80 text-xs font-bold text-amber-950">
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-amber-800 shrink-0" />
+          {/* Thông tin ngữ cảnh tiết học hiện tại */}
+          <div className="p-3 rounded-2xl bg-amber-100/60 border border-amber-300/80 flex items-center justify-between flex-wrap gap-2 text-xs font-bold text-amber-950">
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-4 h-4 text-amber-800" />
               <span>
                 {currentContext.isTeachingNow
-                  ? `Tiết ${currentContext.period} (${currentContext.startTime} - ${currentContext.endTime})`
-                  : 'Ngoài giờ học / Giờ ra chơi'}
+                  ? `Đang trong Tiết ${currentContext.period} (${currentContext.startTime} - ${currentContext.endTime})`
+                  : 'Ngoài giờ học hoặc giờ ra chơi'}
               </span>
-              {currentContext.isTeachingNow && (
-                <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-black animate-pulse">
-                  Đang dạy
-                </span>
-              )}
             </div>
 
-            <VietnameseDatePicker
-              label="Ngày ghi:"
-              value={noteDate}
-              onChange={(newDate) => setNoteDate(newDate)}
-              className="bg-white/95"
-            />
+            {currentContext.isTeachingNow && (
+              <span className="px-2.5 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-black animate-pulse">
+                Đang đứng lớp
+              </span>
+            )}
           </div>
 
           {/* Chọn Lớp & Môn */}

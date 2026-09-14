@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   TeachingTask, 
@@ -14,7 +14,6 @@ import {
 } from '../constants';
 import { ClassItem, Grade, TimetableCell } from '../../../types';
 import { findMatchingSlotsForClass, getDateOfWeekDay } from '../services/scheduleMatchingEngine';
-import { VietnameseDatePicker } from '../../../components/common/VietnameseDatePicker';
 import { 
   X, 
   CheckSquare, 
@@ -27,6 +26,213 @@ import {
   Bell, 
   Flag 
 } from 'lucide-react';
+
+/**
+ * 📅 Ô nhập ngày theo cấu trúc ô form chuẩn ban đầu,
+ * hiển thị định dạng chuẩn Việt Nam DD/MM/YYYY
+ */
+const VietnameseDateInput: React.FC<{
+  value: string; // YYYY-MM-DD
+  onChange: (newYMD: string) => void;
+  placeholder?: string;
+}> = ({ value, onChange, placeholder = 'DD/MM/YYYY' }) => {
+  const hiddenInputRef = useRef<HTMLInputElement>(null);
+
+  const formatYMDtoDMY = (ymd: string): string => {
+    if (!ymd) return '';
+    const parts = ymd.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return ymd;
+  };
+
+  const parseDMYtoYMD = (dmy: string): string | null => {
+    if (!dmy) return null;
+    const cleanStr = dmy.trim().replace(/[-.]/g, '/');
+    const parts = cleanStr.split('/');
+    if (parts.length === 3) {
+      const [d, m, y] = parts;
+      if (y.length === 4 && d.length >= 1 && m.length >= 1) {
+        const dNum = Number(d);
+        const mNum = Number(m);
+        const yNum = Number(y);
+        if (!isNaN(dNum) && !isNaN(mNum) && !isNaN(yNum)) {
+          if (mNum >= 1 && mNum <= 12 && dNum >= 1 && dNum <= 31 && yNum >= 1900 && yNum <= 2100) {
+            return `${y}-${String(mNum).padStart(2, '0')}-${String(dNum).padStart(2, '0')}`;
+          }
+        }
+      }
+    }
+    return null;
+  };
+
+  const [inputText, setInputText] = useState(() => formatYMDtoDMY(value));
+  const [isFocused, setIsFocused] = useState(false);
+
+  useEffect(() => {
+    if (!isFocused) {
+      setInputText(formatYMDtoDMY(value));
+    }
+  }, [value, isFocused]);
+
+  const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setInputText(val);
+    const parsed = parseDMYtoYMD(val);
+    if (parsed && parsed !== value) {
+      onChange(parsed);
+    }
+  };
+
+  const handleBlur = () => {
+    setIsFocused(false);
+    const parsed = parseDMYtoYMD(inputText);
+    if (parsed) {
+      onChange(parsed);
+      setInputText(formatYMDtoDMY(parsed));
+    } else {
+      setInputText(formatYMDtoDMY(value));
+    }
+  };
+
+  const handleOpenCalendar = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (hiddenInputRef.current) {
+      if ('showPicker' in hiddenInputRef.current && typeof (hiddenInputRef.current as any).showPicker === 'function') {
+        try {
+          (hiddenInputRef.current as any).showPicker();
+          return;
+        } catch (err) {}
+      }
+      hiddenInputRef.current.focus();
+      hiddenInputRef.current.click();
+    }
+  };
+
+  return (
+    <div 
+      onClick={handleOpenCalendar}
+      className="w-full px-3 py-2 rounded-xl bg-white border border-[#d6c4a8] font-bold text-[#3d2b17] focus-within:ring-2 focus-within:ring-amber-500 shadow-2xs flex items-center justify-between cursor-pointer hover:border-amber-400 transition-all relative"
+    >
+      <input
+        type="text"
+        value={inputText}
+        onChange={handleTextChange}
+        onFocus={() => setIsFocused(true)}
+        onBlur={handleBlur}
+        placeholder={placeholder}
+        maxLength={10}
+        className="w-full bg-transparent border-none text-xs sm:text-sm font-bold text-[#3d2b17] focus:outline-none focus:ring-0 tracking-wide cursor-text placeholder:text-slate-400 placeholder:font-normal"
+        title="Nhập ngày tháng theo định dạng DD/MM/YYYY hoặc nhấp vào biểu tượng lịch"
+      />
+      <button
+        type="button"
+        onClick={handleOpenCalendar}
+        className="p-0.5 text-amber-800 hover:text-amber-950 transition-colors cursor-pointer shrink-0"
+        title="Chọn ngày từ lịch"
+      >
+        <Calendar className="w-4 h-4" />
+      </button>
+
+      <input
+        ref={hiddenInputRef}
+        type="date"
+        value={value}
+        onChange={(e) => {
+          if (e.target.value) {
+            onChange(e.target.value);
+            setInputText(formatYMDtoDMY(e.target.value));
+          }
+        }}
+        className="absolute opacity-0 pointer-events-none w-0 h-0"
+        tabIndex={-1}
+      />
+    </div>
+  );
+};
+
+/**
+ * ⏰ Ô nhập hạn hoàn thành theo cấu trúc ô form chuẩn ban đầu,
+ * hiển thị định dạng chuẩn Việt Nam DD/MM/YYYY HH:mm
+ */
+const VietnameseDateTimeInput: React.FC<{
+  value: string; // YYYY-MM-DDTHH:mm
+  onChange: (newVal: string) => void;
+  placeholder?: string;
+}> = ({ value, onChange, placeholder = 'DD/MM/YYYY --:--' }) => {
+  const hiddenInputRef = useRef<HTMLInputElement>(null);
+
+  const formatToDisplay = (val: string): string => {
+    if (!val) return '';
+    const [datePart, timePart] = val.split('T');
+    if (!datePart) return val;
+    const parts = datePart.split('-');
+    if (parts.length === 3) {
+      const dmy = `${parts[2]}/${parts[1]}/${parts[0]}`;
+      return timePart ? `${dmy} ${timePart.slice(0, 5)}` : dmy;
+    }
+    return val;
+  };
+
+  const handleOpenPicker = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (hiddenInputRef.current) {
+      if ('showPicker' in hiddenInputRef.current && typeof (hiddenInputRef.current as any).showPicker === 'function') {
+        try {
+          (hiddenInputRef.current as any).showPicker();
+          return;
+        } catch (err) {}
+      }
+      hiddenInputRef.current.focus();
+      hiddenInputRef.current.click();
+    }
+  };
+
+  return (
+    <div 
+      onClick={handleOpenPicker}
+      className="w-full px-3 py-2 rounded-xl bg-white border border-[#d6c4a8] font-bold text-[#3d2b17] focus-within:ring-2 focus-within:ring-amber-500 shadow-2xs flex items-center justify-between cursor-pointer hover:border-amber-400 transition-all relative"
+    >
+      <span className={`text-xs sm:text-sm font-bold tracking-wide select-none ${value ? 'text-[#3d2b17]' : 'text-slate-400 font-normal'}`}>
+        {value ? formatToDisplay(value) : placeholder}
+      </span>
+
+      <div className="flex items-center gap-1.5 shrink-0">
+        {value && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onChange('');
+            }}
+            className="p-0.5 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+            title="Xóa hạn chót"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={handleOpenPicker}
+          className="p-0.5 text-amber-800 hover:text-amber-950 transition-colors cursor-pointer"
+          title="Chọn ngày và giờ hoàn thành"
+        >
+          <Clock className="w-4 h-4" />
+        </button>
+      </div>
+
+      <input
+        ref={hiddenInputRef}
+        type="datetime-local"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="absolute opacity-0 pointer-events-none w-0 h-0"
+        tabIndex={-1}
+      />
+    </div>
+  );
+};
 
 interface TaskDetailModalProps {
   isOpen: boolean;
@@ -124,23 +330,6 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   }, [scheduleMap, selectedClass, subject]);
 
   if (!isOpen) return null;
-
-  // Tách ngày và giờ cho Hạn hoàn thành
-  const dueDatePart = dueDate ? dueDate.slice(0, 10) : '';
-  const dueTimePart = dueDate && dueDate.includes('T') ? dueDate.slice(11, 16) : '17:00';
-
-  const handleDueDateChange = (newDate: string) => {
-    if (!newDate) {
-      setDueDate('');
-    } else {
-      setDueDate(`${newDate}T${dueTimePart || '17:00'}`);
-    }
-  };
-
-  const handleDueTimeChange = (newTime: string) => {
-    const baseDate = dueDatePart || plannedDate || new Date().toISOString().split('T')[0];
-    setDueDate(`${baseDate}T${newTime}`);
-  };
 
   // Khi click vào 1 tiết TKB gợi ý: Tự động điền Thứ, Tiết và tính ngày/giờ
   const handleSelectSlot = (slot: MatchedScheduleSlot) => {
@@ -394,17 +583,16 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
             </div>
           </div>
 
-          {/* Ngày thực hiện & Hạn chót & Nhắc việc - Đồng bộ VietnameseDatePicker cấu trúc DD/MM/YYYY */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+          {/* Ngày thực hiện & Hạn chót & Nhắc việc - Cấu trúc ô form chuẩn ban đầu, hiển thị DD/MM/YYYY */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-black text-[#5c4327] mb-1 flex items-center gap-1">
                 <Calendar className="w-3.5 h-3.5 text-amber-800" /> Ngày thực hiện:
               </label>
-              <VietnameseDatePicker
-                label="Ngày làm:"
+              <VietnameseDateInput
                 value={plannedDate}
                 onChange={(newDate) => setPlannedDate(newDate)}
-                className="w-full justify-between"
+                placeholder="DD/MM/YYYY"
               />
             </div>
 
@@ -412,23 +600,11 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               <label className="block text-xs font-black text-[#5c4327] mb-1 flex items-center gap-1">
                 <Clock className="w-3.5 h-3.5 text-amber-800" /> Hạn hoàn thành:
               </label>
-              <div className="flex items-center gap-1.5">
-                <VietnameseDatePicker
-                  label="Hạn:"
-                  value={dueDatePart}
-                  onChange={handleDueDateChange}
-                  className="flex-1 justify-between"
-                />
-                <div className="flex items-center bg-white border border-[#cbb89d] px-2 py-1.5 rounded-xl shadow-2xs">
-                  <input
-                    type="time"
-                    value={dueTimePart}
-                    onChange={(e) => handleDueTimeChange(e.target.value)}
-                    className="bg-transparent border-none text-xs font-bold font-mono text-[#3d2b17] focus:outline-none focus:ring-0 cursor-pointer w-14 text-center"
-                    title="Giờ hạn chót (HH:mm)"
-                  />
-                </div>
-              </div>
+              <VietnameseDateTimeInput
+                value={dueDate}
+                onChange={(newDueDate) => setDueDate(newDueDate)}
+                placeholder="DD/MM/YYYY --:--"
+              />
             </div>
 
             <div>
