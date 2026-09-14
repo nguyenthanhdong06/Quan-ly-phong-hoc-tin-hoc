@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { CurrentClassContext, TeachingQuickNote, TeachingTask } from '../types';
+import { createPortal } from 'react-dom';
+import { CurrentClassContext, TeachingQuickNote } from '../types';
 import { Zap, Save, CalendarPlus, X, Clock, School, BookOpen } from 'lucide-react';
 import { ClassItem } from '../../../types';
+import { VietnameseDatePicker } from '../../../components/common/VietnameseDatePicker';
 
 interface QuickNoteModalProps {
   isOpen: boolean;
@@ -27,15 +29,28 @@ export const QuickNoteModal: React.FC<QuickNoteModalProps> = ({
   const [content, setContent] = useState('');
   const [selectedClass, setSelectedClass] = useState(currentContext.className || '');
   const [selectedSubject, setSelectedSubject] = useState(currentContext.subject || 'Tin học');
+  const [noteDate, setNoteDate] = useState(() => new Date().toISOString().split('T')[0]);
 
-  // Khi modal mở, cập nhật lớp và môn theo tiết học hiện tại
+  // Khi modal mở, cập nhật lớp, môn và ngày theo ngữ cảnh hiện tại
   useEffect(() => {
     if (isOpen) {
       setSelectedClass(currentContext.className || (classes[0]?.name || ''));
       setSelectedSubject(currentContext.subject || 'Tin học');
       setContent('');
+      setNoteDate(new Date().toISOString().split('T')[0]);
     }
   }, [isOpen, currentContext, classes]);
+
+  // Phím tắt Esc để đóng modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -50,7 +65,7 @@ export const QuickNoteModal: React.FC<QuickNoteModalProps> = ({
       classId: selectedClass || undefined,
       subject: selectedSubject || undefined,
       period: currentContext.period || undefined,
-      noteDate: new Date().toISOString().split('T')[0],
+      noteDate: noteDate || new Date().toISOString().split('T')[0],
     });
 
     onClose();
@@ -64,47 +79,68 @@ export const QuickNoteModal: React.FC<QuickNoteModalProps> = ({
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
-      <div className="bg-[#fffbf0] border-2 border-amber-500/70 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden text-slate-800">
-        {/* Header Modal */}
-        <div className="bg-gradient-to-r from-amber-400 via-amber-300 to-amber-400 px-5 py-3.5 border-b border-amber-500/40 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-lg bg-amber-500 text-amber-950 shadow-2xs">
+  const portalTarget = typeof document !== 'undefined'
+    ? (document.getElementById('deskos-window-body') || document.getElementById('deskos-active-window') || document.body)
+    : null;
+  const isBodyTarget = portalTarget === (typeof document !== 'undefined' ? document.body : null);
+
+  return typeof document !== 'undefined' && portalTarget ? createPortal(
+    <div 
+      className={`${isBodyTarget ? 'fixed' : 'absolute'} inset-0 bg-slate-900/65 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200`}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div 
+        className="bg-[#faf5ec] w-full max-w-lg rounded-3xl shadow-2xl border-2 border-[#d6c4a8] flex flex-col relative overflow-hidden animate-in zoom-in-95 duration-200 my-auto text-left outline-none"
+        onClick={(e) => e.stopPropagation()}
+        tabIndex={-1}
+      >
+        {/* Header Modal chuẩn phong cách Vườn tri thức */}
+        <div className="bg-gradient-to-r from-[#dfccb0] via-[#e8d9c2] to-[#dfccb0] px-5 py-3.5 border-b border-[#c8b598] flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2.5">
+            <span className="p-1.5 rounded-xl bg-amber-500 text-amber-950 shadow-2xs">
               <Zap className="w-5 h-5 fill-amber-950 stroke-[2.5]" />
             </span>
             <div>
-              <h3 className="font-black text-base text-amber-950">Ghi chú nhanh trong tiết dạy</h3>
-              <p className="text-[11px] font-bold text-amber-900/80">Lưu nhanh sự việc hoặc việc cần khắc phục</p>
+              <h3 className="font-black text-base text-[#42301c]">Ghi chú nhanh trong tiết dạy</h3>
+              <p className="text-[11px] font-bold text-[#6e5334]">Lưu nhanh sự việc hoặc phát sinh cần xử lý</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded-full text-amber-950/70 hover:text-amber-950 hover:bg-amber-500/30 transition cursor-pointer"
+            className="text-[#6e5334] hover:text-[#382613] bg-white/60 hover:bg-white p-1.5 rounded-full transition-all cursor-pointer shadow-xs focus:outline-none"
+            title="Đóng cửa sổ (Esc)"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Thân Form */}
         <form onSubmit={handleSaveOnly} className="p-5 space-y-4">
-          {/* Thông tin ngữ cảnh tiết học hiện tại */}
-          <div className="p-3 rounded-xl bg-amber-100/70 border border-amber-300/80 flex items-center justify-between flex-wrap gap-2 text-xs font-bold text-amber-950">
-            <div className="flex items-center gap-1.5">
-              <Clock className="w-4 h-4 text-amber-800" />
+          {/* Thông tin ngữ cảnh tiết học hiện tại & Bộ chọn ngày chuẩn cấu trúc */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 p-3 rounded-2xl bg-amber-100/60 border border-amber-300/80 text-xs font-bold text-amber-950">
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-amber-800 shrink-0" />
               <span>
                 {currentContext.isTeachingNow
-                  ? `Đang trong Tiết ${currentContext.period} (${currentContext.startTime} - ${currentContext.endTime})`
-                  : 'Ngoài giờ học hoặc giờ ra chơi'}
+                  ? `Tiết ${currentContext.period} (${currentContext.startTime} - ${currentContext.endTime})`
+                  : 'Ngoài giờ học / Giờ ra chơi'}
               </span>
+              {currentContext.isTeachingNow && (
+                <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-black animate-pulse">
+                  Đang dạy
+                </span>
+              )}
             </div>
 
-            {currentContext.isTeachingNow && (
-              <span className="px-2 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] font-black animate-pulse">
-                Đang đứng lớp
-              </span>
-            )}
+            <VietnameseDatePicker
+              label="Ngày ghi:"
+              value={noteDate}
+              onChange={(newDate) => setNoteDate(newDate)}
+              className="bg-white/95"
+            />
           </div>
 
           {/* Chọn Lớp & Môn */}
@@ -116,7 +152,7 @@ export const QuickNoteModal: React.FC<QuickNoteModalProps> = ({
               <select
                 value={selectedClass}
                 onChange={(e) => setSelectedClass(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-white border border-[#cbb89d] text-xs font-bold text-[#3d2b17] focus:ring-2 focus:ring-amber-500 cursor-pointer"
+                className="w-full px-3 py-2 rounded-xl bg-white border border-[#d6c4a8] text-xs font-bold text-[#3d2b17] focus:ring-2 focus:ring-amber-500 cursor-pointer shadow-2xs"
               >
                 <option value="">-- Không gắn lớp --</option>
                 {classes.map(c => (
@@ -136,7 +172,7 @@ export const QuickNoteModal: React.FC<QuickNoteModalProps> = ({
                 value={selectedSubject}
                 onChange={(e) => setSelectedSubject(e.target.value)}
                 placeholder="VD: Tin học"
-                className="w-full px-3 py-2 rounded-xl bg-white border border-[#cbb89d] text-xs font-bold text-[#3d2b17] focus:ring-2 focus:ring-amber-500"
+                className="w-full px-3 py-2 rounded-xl bg-white border border-[#d6c4a8] text-xs font-bold text-[#3d2b17] focus:ring-2 focus:ring-amber-500 shadow-2xs"
               />
             </div>
           </div>
@@ -152,24 +188,24 @@ export const QuickNoteModal: React.FC<QuickNoteModalProps> = ({
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="VD: Máy 8 chuột bị kẹt, Lớp 3A chưa hoàn thành bài tập Scratch bài 4, chuẩn bị đồ dùng..."
-              className="w-full p-3 rounded-xl bg-white border border-[#cbb89d] text-sm font-semibold text-[#3d2b17] placeholder:text-[#5c4327]/40 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              className="w-full p-3 rounded-xl bg-white border border-[#d6c4a8] text-sm font-semibold text-[#3d2b17] placeholder:text-[#5c4327]/40 focus:ring-2 focus:ring-amber-500 focus:outline-none shadow-2xs"
             />
           </div>
 
-          {/* Cụm nút bấm hành động */}
-          <div className="pt-2 flex items-center justify-end gap-2.5">
+          {/* Cụm nút bấm hành động chuẩn phong cách Vườn tri thức */}
+          <div className="pt-2 border-t border-[#c8b598]/50 flex items-center justify-end gap-2.5">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl font-bold text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 transition cursor-pointer"
+              className="px-4 py-2.5 rounded-2xl font-black text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
             >
-              Hủy
+              Hủy (Esc)
             </button>
 
             <button
               type="submit"
               disabled={!content.trim()}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl font-black text-xs bg-[#dfccb0] hover:bg-[#d0bea0] text-[#3d2b17] border border-[#cbb89d] disabled:opacity-50 transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl font-black text-xs bg-[#dfccb0] hover:bg-[#d0bea0] text-[#3d2b17] border border-[#cbb89d] disabled:opacity-50 active:scale-95 transition cursor-pointer shadow-xs"
             >
               <Save className="w-4 h-4" />
               <span>Chỉ lưu ghi chú</span>
@@ -179,7 +215,7 @@ export const QuickNoteModal: React.FC<QuickNoteModalProps> = ({
               type="button"
               onClick={handleSaveAndConvert}
               disabled={!content.trim()}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl font-black text-xs bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white shadow-xs disabled:opacity-50 transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-2xl font-black text-xs bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white shadow-md shadow-amber-600/20 disabled:opacity-50 active:scale-95 transition cursor-pointer"
             >
               <CalendarPlus className="w-4 h-4" />
               <span>Tạo việc tuần tới 👉</span>
@@ -187,6 +223,7 @@ export const QuickNoteModal: React.FC<QuickNoteModalProps> = ({
           </div>
         </form>
       </div>
-    </div>
-  );
+    </div>,
+    portalTarget
+  ) : null;
 };

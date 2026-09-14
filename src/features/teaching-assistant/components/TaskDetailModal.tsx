@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   TeachingTask, 
   TaskPriority, 
@@ -8,15 +9,12 @@ import {
 } from '../types';
 import { 
   DEFAULT_CATEGORIES, 
-  PRIORITY_CONFIG, 
-  STATUS_CONFIG, 
   INFORMATICS_TASK_TEMPLATES, 
-  GENERAL_TASK_TEMPLATES, 
-  DAY_NAMES,
-  PERIOD_TIMES
+  DAY_NAMES
 } from '../constants';
 import { ClassItem, Grade, TimetableCell } from '../../../types';
 import { findMatchingSlotsForClass, getDateOfWeekDay } from '../services/scheduleMatchingEngine';
+import { VietnameseDatePicker } from '../../../components/common/VietnameseDatePicker';
 import { 
   X, 
   CheckSquare, 
@@ -27,7 +25,6 @@ import {
   BookOpen, 
   Repeat, 
   Bell, 
-  Zap, 
   Flag 
 } from 'lucide-react';
 
@@ -109,6 +106,17 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     }
   }, [isOpen, taskToEdit, initialValues]);
 
+  // Phím tắt Esc để đóng modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   // Tìm các tiết TKB phù hợp khi chọn lớp
   const matchingSlots: MatchedScheduleSlot[] = useMemo(() => {
     if (!selectedClass) return [];
@@ -116,6 +124,23 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   }, [scheduleMap, selectedClass, subject]);
 
   if (!isOpen) return null;
+
+  // Tách ngày và giờ cho Hạn hoàn thành
+  const dueDatePart = dueDate ? dueDate.slice(0, 10) : '';
+  const dueTimePart = dueDate && dueDate.includes('T') ? dueDate.slice(11, 16) : '17:00';
+
+  const handleDueDateChange = (newDate: string) => {
+    if (!newDate) {
+      setDueDate('');
+    } else {
+      setDueDate(`${newDate}T${dueTimePart || '17:00'}`);
+    }
+  };
+
+  const handleDueTimeChange = (newTime: string) => {
+    const baseDate = dueDatePart || plannedDate || new Date().toISOString().split('T')[0];
+    setDueDate(`${baseDate}T${newTime}`);
+  };
 
   // Khi click vào 1 tiết TKB gợi ý: Tự động điền Thứ, Tiết và tính ngày/giờ
   const handleSelectSlot = (slot: MatchedScheduleSlot) => {
@@ -170,25 +195,45 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150 overflow-y-auto">
-      <div className="bg-[#fffbf0] border-2 border-[#cbb89d] rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden my-auto max-h-[95vh] flex flex-col text-[#3d2b17]">
-        {/* Header Modal */}
-        <div className="bg-gradient-to-r from-[#dfccb0] via-[#e8d9c2] to-[#dfccb0] px-5 py-3.5 border-b border-[#cbb89d] flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-lg bg-amber-500 text-amber-950 shadow-2xs">
+  const portalTarget = typeof document !== 'undefined'
+    ? (document.getElementById('deskos-window-body') || document.getElementById('deskos-active-window') || document.body)
+    : null;
+  const isBodyTarget = portalTarget === (typeof document !== 'undefined' ? document.body : null);
+
+  return typeof document !== 'undefined' && portalTarget ? createPortal(
+    <div 
+      className={`${isBodyTarget ? 'fixed' : 'absolute'} inset-0 bg-slate-900/65 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200`}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div 
+        className="bg-[#faf5ec] w-full max-w-2xl rounded-3xl shadow-2xl border-2 border-[#d6c4a8] flex flex-col relative overflow-hidden animate-in zoom-in-95 duration-200 my-auto text-left max-h-[92vh] outline-none"
+        onClick={(e) => e.stopPropagation()}
+        tabIndex={-1}
+      >
+        {/* Header Modal chuẩn phong cách Vườn tri thức */}
+        <div className="bg-gradient-to-r from-[#dfccb0] via-[#e8d9c2] to-[#dfccb0] px-5 py-3.5 border-b border-[#c8b598] flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2.5">
+            <span className="p-1.5 rounded-xl bg-amber-500 text-amber-950 shadow-2xs">
               <CheckSquare className="w-5 h-5 stroke-[2.5]" />
             </span>
-            <h3 className="font-black text-base sm:text-lg text-[#3d2b17]">
-              {taskToEdit ? 'Chỉnh sửa công việc giảng dạy' : 'Tạo công việc giảng dạy mới'}
-            </h3>
+            <div>
+              <h3 className="font-black text-base sm:text-lg text-[#42301c]">
+                {taskToEdit ? 'Chỉnh sửa công việc giảng dạy' : 'Tạo công việc giảng dạy mới'}
+              </h3>
+              <p className="text-[11px] font-bold text-[#6e5334]">
+                Kế hoạch chuẩn bị tiết học, đối chiếu TKB & nhắc việc tự động
+              </p>
+            </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded-full text-[#3d2b17]/70 hover:text-[#3d2b17] hover:bg-[#dfccb0] transition cursor-pointer"
+            className="text-[#6e5334] hover:text-[#382613] bg-white/60 hover:bg-white p-1.5 rounded-full transition-all cursor-pointer shadow-xs focus:outline-none"
+            title="Đóng cửa sổ (Esc)"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
@@ -196,7 +241,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
         <form onSubmit={handleSubmit} className="p-5 space-y-4 overflow-y-auto flex-1 text-xs sm:text-sm">
           {/* Gợi ý mẫu 1-chạm (Quick Templates) */}
           {!taskToEdit && (
-            <div className="p-3 rounded-xl bg-[#dfccb0]/40 border border-[#cbb89d] space-y-1.5">
+            <div className="p-3 rounded-2xl bg-[#dfccb0]/40 border border-[#d6c4a8] space-y-1.5">
               <span className="font-black text-[11px] text-[#5c4327] flex items-center gap-1">
                 <Sparkles className="w-3.5 h-3.5 text-amber-700" />
                 Mẫu việc chuẩn bị nhanh 1-chạm:
@@ -207,7 +252,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                     key={i}
                     type="button"
                     onClick={() => handleApplyTemplate(tpl)}
-                    className="text-[11px] font-bold px-2 py-1 rounded-lg bg-white/80 hover:bg-amber-100 text-[#3d2b17] border border-[#cbb89d] transition cursor-pointer"
+                    className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-white/90 hover:bg-amber-100 text-[#3d2b17] border border-[#cbb89d] transition cursor-pointer shadow-2xs"
                   >
                     + {tpl.title}
                   </button>
@@ -228,7 +273,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="VD: Chuẩn bị bài 8 - Làm quen với thư mục, In phiếu bài tập..."
-              className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#cbb89d] font-bold text-[#3d2b17] placeholder:text-slate-400 focus:ring-2 focus:ring-amber-500 focus:outline-none shadow-2xs"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#d6c4a8] font-bold text-[#3d2b17] placeholder:text-slate-400 focus:ring-2 focus:ring-amber-500 focus:outline-none shadow-2xs"
             />
           </div>
 
@@ -241,7 +286,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               <select
                 value={selectedClass}
                 onChange={(e) => setSelectedClass(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-white border border-[#cbb89d] font-bold text-[#3d2b17] focus:ring-2 focus:ring-amber-500 cursor-pointer"
+                className="w-full px-3 py-2 rounded-xl bg-white border border-[#d6c4a8] font-bold text-[#3d2b17] focus:ring-2 focus:ring-amber-500 cursor-pointer shadow-2xs"
               >
                 <option value="">-- Toàn khối / Việc chung --</option>
                 {classes.map(c => (
@@ -261,14 +306,14 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 placeholder="Tin học"
-                className="w-full px-3 py-2 rounded-xl bg-white border border-[#cbb89d] font-bold text-[#3d2b17] focus:ring-2 focus:ring-amber-500"
+                className="w-full px-3 py-2 rounded-xl bg-white border border-[#d6c4a8] font-bold text-[#3d2b17] focus:ring-2 focus:ring-amber-500 shadow-2xs"
               />
             </div>
           </div>
 
           {/* KHU VỰC LIÊN KẾT TKB THÔNG MINH */}
           {selectedClass && matchingSlots.length > 0 && (
-            <div className="p-3.5 rounded-xl bg-amber-100/60 border border-amber-300 space-y-2">
+            <div className="p-3.5 rounded-2xl bg-amber-100/60 border border-amber-300 space-y-2">
               <span className="font-black text-xs text-amber-950 flex items-center gap-1.5">
                 <Calendar className="w-4 h-4 text-amber-800" />
                 Hệ thống tìm thấy các tiết TKB Thầy dạy lớp {selectedClass}:
@@ -281,14 +326,14 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                       key={idx}
                       type="button"
                       onClick={() => handleSelectSlot(slot)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer border flex items-center gap-1.5 ${
+                      className={`px-3 py-1.5 rounded-xl text-xs font-black transition cursor-pointer border flex items-center gap-1.5 ${
                         isSelected
                           ? 'bg-[#3d2b17] text-[#fffbf0] border-[#3d2b17] shadow-xs'
                           : 'bg-white hover:bg-amber-200/80 text-amber-950 border-amber-400'
                       }`}
                     >
                       <span>📅 {DAY_NAMES[slot.day]} - Tiết {slot.period} ({slot.startTime})</span>
-                      {isSelected && <span className="text-[10px] bg-amber-400 text-amber-950 px-1 rounded">Đã chọn</span>}
+                      {isSelected && <span className="text-[10px] bg-amber-400 text-amber-950 px-1.5 py-0.5 rounded-full">Đã chọn</span>}
                     </button>
                   );
                 })}
@@ -304,8 +349,8 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               </label>
               <select
                 value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-white border border-[#cbb89d] font-bold text-[#3d2b17] focus:ring-2 focus:ring-amber-500 cursor-pointer"
+                onChange={(e) => setCategory(e.target.value as TaskCategory)}
+                className="w-full px-3 py-2 rounded-xl bg-white border border-[#d6c4a8] font-bold text-[#3d2b17] focus:ring-2 focus:ring-amber-500 cursor-pointer shadow-2xs"
               >
                 {DEFAULT_CATEGORIES.map((cat) => (
                   <option key={cat} value={cat}>
@@ -322,7 +367,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value as TaskPriority)}
-                className="w-full px-3 py-2 rounded-xl bg-white border border-[#cbb89d] font-bold text-[#3d2b17] focus:ring-2 focus:ring-amber-500 cursor-pointer"
+                className="w-full px-3 py-2 rounded-xl bg-white border border-[#d6c4a8] font-bold text-[#3d2b17] focus:ring-2 focus:ring-amber-500 cursor-pointer shadow-2xs"
               >
                 <option value="urgent">⚡ Khẩn cấp</option>
                 <option value="high">🚩 Ưu tiên cao</option>
@@ -338,7 +383,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as TaskStatus)}
-                className="w-full px-3 py-2 rounded-xl bg-white border border-[#cbb89d] font-bold text-[#3d2b17] focus:ring-2 focus:ring-amber-500 cursor-pointer"
+                className="w-full px-3 py-2 rounded-xl bg-white border border-[#d6c4a8] font-bold text-[#3d2b17] focus:ring-2 focus:ring-amber-500 cursor-pointer shadow-2xs"
               >
                 <option value="todo">🟡 Chưa làm</option>
                 <option value="in_progress">🔵 Đang làm</option>
@@ -349,40 +394,51 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
             </div>
           </div>
 
-          {/* Ngày thực hiện & Hạn chót & Nhắc việc */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* Ngày thực hiện & Hạn chót & Nhắc việc - Đồng bộ VietnameseDatePicker cấu trúc DD/MM/YYYY */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
             <div>
               <label className="block text-xs font-black text-[#5c4327] mb-1 flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5" /> Ngày thực hiện:
+                <Calendar className="w-3.5 h-3.5 text-amber-800" /> Ngày thực hiện:
               </label>
-              <input
-                type="date"
+              <VietnameseDatePicker
+                label="Ngày làm:"
                 value={plannedDate}
-                onChange={(e) => setPlannedDate(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-white border border-[#cbb89d] font-bold text-[#3d2b17] focus:ring-2 focus:ring-amber-500"
+                onChange={(newDate) => setPlannedDate(newDate)}
+                className="w-full justify-between"
               />
             </div>
 
             <div>
               <label className="block text-xs font-black text-[#5c4327] mb-1 flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5" /> Hạn hoàn thành:
+                <Clock className="w-3.5 h-3.5 text-amber-800" /> Hạn hoàn thành:
               </label>
-              <input
-                type="datetime-local"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-white border border-[#cbb89d] font-bold text-[#3d2b17] focus:ring-2 focus:ring-amber-500"
-              />
+              <div className="flex items-center gap-1.5">
+                <VietnameseDatePicker
+                  label="Hạn:"
+                  value={dueDatePart}
+                  onChange={handleDueDateChange}
+                  className="flex-1 justify-between"
+                />
+                <div className="flex items-center bg-white border border-[#cbb89d] px-2 py-1.5 rounded-xl shadow-2xs">
+                  <input
+                    type="time"
+                    value={dueTimePart}
+                    onChange={(e) => handleDueTimeChange(e.target.value)}
+                    className="bg-transparent border-none text-xs font-bold font-mono text-[#3d2b17] focus:outline-none focus:ring-0 cursor-pointer w-14 text-center"
+                    title="Giờ hạn chót (HH:mm)"
+                  />
+                </div>
+              </div>
             </div>
 
             <div>
               <label className="block text-xs font-black text-[#5c4327] mb-1 flex items-center gap-1">
-                <Bell className="w-3.5 h-3.5" /> Nhắc trước tiết học:
+                <Bell className="w-3.5 h-3.5 text-amber-800" /> Nhắc trước tiết học:
               </label>
               <select
                 value={reminderMinutes}
                 onChange={(e) => setReminderMinutes(Number(e.target.value))}
-                className="w-full px-3 py-2 rounded-xl bg-white border border-[#cbb89d] font-bold text-[#3d2b17] focus:ring-2 focus:ring-amber-500 cursor-pointer"
+                className="w-full px-3 py-2 rounded-xl bg-white border border-[#d6c4a8] font-bold text-[#3d2b17] focus:ring-2 focus:ring-amber-500 cursor-pointer shadow-2xs"
               >
                 <option value={15}>Trước 15 phút</option>
                 <option value={30}>Trước 30 phút</option>
@@ -394,7 +450,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
           </div>
 
           {/* Cấu hình lặp lại */}
-          <div className="p-3 rounded-xl bg-white/70 border border-[#cbb89d] flex items-center justify-between flex-wrap gap-2">
+          <div className="p-3 rounded-2xl bg-white/70 border border-[#d6c4a8] flex items-center justify-between flex-wrap gap-2 shadow-2xs">
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input
                 type="checkbox"
@@ -412,7 +468,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               <select
                 value={recurrenceType}
                 onChange={(e) => setRecurrenceType(e.target.value as any)}
-                className="px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-300 text-xs font-bold text-amber-950 cursor-pointer"
+                className="px-2.5 py-1 rounded-xl bg-amber-50 border border-amber-300 text-xs font-bold text-amber-950 cursor-pointer shadow-2xs"
               >
                 <option value="daily">Hằng ngày</option>
                 <option value="weekly">Hằng tuần (Vào ngày này)</option>
@@ -431,22 +487,22 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Chi tiết bài tập, dặn dò học sinh, lưu ý thiết bị..."
-              className="w-full p-2.5 rounded-xl bg-white border border-[#cbb89d] font-semibold text-[#3d2b17] focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              className="w-full p-2.5 rounded-xl bg-white border border-[#d6c4a8] font-semibold text-[#3d2b17] focus:ring-2 focus:ring-amber-500 focus:outline-none shadow-2xs"
             />
           </div>
 
-          {/* Nút bấm Lưu / Hủy */}
-          <div className="pt-2 border-t border-[#cbb89d]/40 flex items-center justify-end gap-2.5">
+          {/* Nút bấm Lưu / Hủy chuẩn phong cách Vườn tri thức */}
+          <div className="pt-3 border-t border-[#c8b598]/60 flex items-center justify-end gap-3 shrink-0">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl font-bold text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 transition cursor-pointer"
+              className="px-5 py-2.5 rounded-2xl font-black text-xs sm:text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
             >
-              Đóng
+              Hủy (Esc)
             </button>
             <button
               type="submit"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-black text-xs sm:text-sm bg-[#3d2b17] hover:bg-[#2a1d0f] text-[#fffbf0] shadow-md hover:scale-[1.01] active:scale-95 transition cursor-pointer"
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-2xl font-black text-xs sm:text-sm bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white shadow-md shadow-amber-600/20 active:scale-95 transition cursor-pointer"
             >
               <CheckSquare className="w-4 h-4" />
               <span>{taskToEdit ? 'Lưu thay đổi' : 'Tạo công việc'}</span>
@@ -454,6 +510,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
           </div>
         </form>
       </div>
-    </div>
-  );
+    </div>,
+    portalTarget
+  ) : null;
 };
