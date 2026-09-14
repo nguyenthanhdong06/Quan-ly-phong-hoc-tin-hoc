@@ -25,6 +25,7 @@ import ResourcesTab from './components/ResourcesTab';
 import { AvatarGalleryTab, loadCustomAvatars } from './components/AvatarGalleryTab';
 import AdminTab from './components/AdminTab';
 import TimetableTab from './components/TimetableTab';
+import TeachingAssistant from './features/teaching-assistant';
 import LabBookingTab from './components/LabBookingTab';
 import { getTeacherAssignedClasses } from './utils/classFilters';
 import { sortClasses } from './utils/classSorter';
@@ -1876,6 +1877,17 @@ export default function App() {
                 timetableData={timetableData}
                 members={members}
                 currentUser={currentUser}
+                showToast={showToast}
+              />
+            )}
+
+            {activeTab === 'teaching-assistant' && (
+              <TeachingAssistant
+                currentUser={currentUser}
+                members={members}
+                classes={userAssignedClasses}
+                grades={grades}
+                timetableData={timetableData}
                 showToast={showToast}
               />
             )}
