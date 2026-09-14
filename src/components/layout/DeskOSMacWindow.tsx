@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Minus, Square, X, Home, Users, School, ClipboardCheck, Star, Trophy, Monitor, Calendar, FolderOpen, Gamepad2, Settings, HelpCircle, Image as ImageIcon, FileText, Sprout, CalendarCheck } from 'lucide-react';
+import { Minus, Square, X, Home, Users, School, ClipboardCheck, Star, Trophy, Monitor, Calendar, FolderOpen, Gamepad2, Settings, HelpCircle, Image as ImageIcon, FileText, Sprout, CalendarCheck, CheckSquare } from 'lucide-react';
 import { Grade, ClassItem } from '../../types';
 import { playButtonClickSound } from '../../utils/audioEffects';
 import { sortClasses } from '../../utils/classSorter';
@@ -29,6 +29,7 @@ const TAB_METADATA: Record<string, { label: string; icon: React.ElementType }> =
   seating: { label: 'Sơ đồ Máy tính', icon: Monitor },
   'lab-room': { label: 'Phòng Lab', icon: Monitor },
   timetable: { label: 'Thời khóa biểu', icon: Calendar },
+  'teaching-assistant': { label: 'Trợ lý công việc', icon: CheckSquare },
   'lab-booking': { label: 'Đăng ký & Quản lý Phòng máy', icon: CalendarCheck },
   resources: { label: 'Kho tài nguyên Giáo án', icon: FolderOpen },
   'personal-questions': { label: 'Kho câu hỏi AI', icon: HelpCircle },

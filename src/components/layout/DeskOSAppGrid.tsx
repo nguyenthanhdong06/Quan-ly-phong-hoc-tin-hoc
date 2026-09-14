@@ -17,7 +17,8 @@ import {
   FileText,
   Sprout,
   CalendarCheck,
-  Download
+  Download,
+  CheckSquare
 } from 'lucide-react';
 import { Member } from '../../types';
 import { playAppLaunchSound } from '../../utils/audioEffects';
@@ -52,6 +53,7 @@ const ALL_POSSIBLE_APPS: AppItem[] = [
   { id: 'knowledge-garden', label: 'Vườn tri thức', icon: Sprout, bg: 'bg-[#dcfce7]', text: 'text-[#15803d]' },
   { id: 'lab-room', label: 'Phòng Lab', icon: Monitor, bg: 'bg-[#ccfbf1]', text: 'text-[#0f766e]', requiresTeacherRole: true },
   { id: 'timetable', label: 'Thời khóa biểu', icon: Calendar, bg: 'bg-[#bfdbfe]', text: 'text-[#1d4ed8]', requiresTeacherRole: true },
+  { id: 'teaching-assistant', label: 'Trợ lý công việc', icon: CheckSquare, bg: 'bg-[#fef3c7]', text: 'text-[#78350f]', requiresTeacherRole: true },
   { id: 'lab-booking', label: 'Đăng ký phòng máy', icon: CalendarCheck, bg: 'bg-[#c7d2fe]', text: 'text-[#3730a3]', requiresTeacherRole: true },
   { id: 'resources', label: 'Kho tài nguyên', icon: FolderOpen, bg: 'bg-[#fed7aa]', text: 'text-[#c2410c]' },
   { id: 'personal-questions', label: 'Kho câu hỏi', icon: HelpCircle, bg: 'bg-[#a7f3d0]', text: 'text-[#047857]', requiresTeacherRole: true },
