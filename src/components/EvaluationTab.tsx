@@ -1,7 +1,7 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { Student, EvaluationData, SeatingChart, Computer, EmulationDataState, AttendanceData, ClassItem } from '../types';
-import { Star, Calendar, Search, X, Award, MessageSquare, Tag, ArrowLeft } from 'lucide-react';
+import { Star, Calendar, Search, X, Award, MessageSquare, Tag, ArrowLeft, Save, RefreshCw } from 'lucide-react';
 import { triggerStarsConfetti } from '../utils/confetti';
 import { playStarRewardSound, playWarningDeductSound } from '../utils/audioEffects';
 import { CyberRobotCardFrameDecoration } from './CyberRobotCardFrameDecoration';
@@ -9,6 +9,9 @@ import { StudentCard3D } from './StudentCard3D';
 import { VietnameseDatePicker } from './common/VietnameseDatePicker';
 import { getStudentAvatar } from '../utils/studentAvatar';
 import { matchStudentSearch } from '../utils/nameFormatter';
+import { saveDayPartitionedEvaluation } from '../utils/evaluationPartition';
+import { safeSetLocalStorage } from '../utils/safeStorage';
+import { saveSupabaseState } from '../supabaseClient';
 
 interface EvaluationTabProps {
   selectedClass: string;
@@ -25,6 +28,7 @@ interface EvaluationTabProps {
   emulationDataState: EmulationDataState;
   attendanceData: AttendanceData;
   classes?: ClassItem[];
+  workspaceId?: string;
 }
 
 // Simple Avatar Component to render clean, flat circle avatars with student-specific background colors with gorgeous hover effects
@@ -141,11 +145,14 @@ export default function EvaluationTab({
   setEmulationDataState,
   emulationDataState,
   attendanceData,
-  classes = []
+  classes = [],
+  workspaceId
 }: EvaluationTabProps) {
   
   const [searchTerm, setSearchTerm] = React.useState('');
   const [selectedStudent, setSelectedStudent] = React.useState<Student | null>(null);
+  const [isSaving, setIsSaving] = React.useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = React.useState(false);
   const commentInputRef = React.useRef<HTMLInputElement>(null);
 
   // Subview toggle state: 'evaluation' (default) | 'zalo' (Báo cáo Zalo/SMS 100% Inline View)
@@ -241,6 +248,7 @@ export default function EvaluationTab({
 
   // Handle single rating update & update emulation stars cumulative in parallel!
   const handleSetRating = (studentId: string, rating: number) => {
+    setHasUnsavedChanges(true);
     // Get old rating to see the offset/difference for emulation stars
     const oldRating = currentDaysEvaluations[studentId]?.rating || 0;
     const diff = rating - oldRating;
@@ -272,6 +280,7 @@ export default function EvaluationTab({
   };
 
   const handleSetComment = (studentId: string, comment: string) => {
+    setHasUnsavedChanges(true);
     setEvaluationData(prev => {
       const dayData = { ...(prev[selectedDate] || {}) };
       const classData = { ...(dayData[selectedClass] || {}) };
@@ -283,6 +292,7 @@ export default function EvaluationTab({
   };
 
   const handleToggleTag = (studentId: string, tag: string) => {
+    setHasUnsavedChanges(true);
     setEvaluationData(prev => {
       const dayData = { ...(prev[selectedDate] || {}) };
       const classData = { ...(dayData[selectedClass] || {}) };
@@ -302,6 +312,7 @@ export default function EvaluationTab({
   };
 
   const handleAwardStars = (studentId: string, delta: number, label: string) => {
+    setHasUnsavedChanges(true);
     // 1. Award / adjust the cumulative stars in EmulationState!
     setEmulationDataState((prev: any) => {
       const studentEmulation = prev[studentId] || { cumulativeStars: 0, exchangedStickers: 0, totalDeducted: 0, badges: [] };
@@ -515,8 +526,37 @@ export default function EvaluationTab({
     return msg;
   }, [classStudents, currentDaysEvaluations, selectedClass, selectedDate, seatingChart, computers, gvcnName]);
 
-  const handleSave = () => {
-    showToast(`Đã lưu thành công ý kiến đánh giá học kỳ ngày ${selectedDate.split('-').reverse().join('/')} cho lớp ${selectedClass}!`);
+  // 🛡️ LƯU SỔ ĐÁNH GIÁ CHỦ ĐỘNG: Lưu trực tiếp vào LocalStorage và Supabase Cloud với Deep Merge
+  const handleSave = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+    try {
+      const targetWs = workspaceId || (typeof localStorage !== 'undefined' && localStorage.getItem('deskos_active_workspace')) || 'ws_u-1';
+      
+      const success = await saveDayPartitionedEvaluation(
+        evaluationData,
+        selectedDate,
+        targetWs,
+        (merged) => {
+          setEvaluationData(merged);
+        }
+      );
+
+      // Lưu đồng thời số sao thi đua tích lũy (EmulationState)
+      if (emulationDataState) {
+        const emulationKey = `${targetWs}_school_emulation_state`;
+        safeSetLocalStorage(emulationKey, emulationDataState);
+        saveSupabaseState(emulationKey, emulationDataState);
+      }
+
+      setHasUnsavedChanges(false);
+      showToast(`Đã lưu trữ thành công sổ đánh giá & chấm sao ngày ${selectedDate.split('-').reverse().join('/')} của lớp ${selectedClass}!`, 'success');
+    } catch (err) {
+      console.error('Lỗi khi lưu sổ đánh giá:', err);
+      showToast('Có lỗi xảy ra khi lưu sổ đánh giá!', 'error');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -561,10 +601,34 @@ export default function EvaluationTab({
             </button>
 
             <button
+              type="button"
               onClick={handleSave}
-              className="bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs py-2 px-4 rounded-xl border border-amber-500 transition shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 w-full sm:w-auto active:scale-95"
+              disabled={isSaving}
+              className={`font-extrabold text-xs py-2 px-4 rounded-xl border transition shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 w-full sm:w-auto active:scale-95 ${
+                isSaving
+                  ? 'bg-amber-400 text-amber-950 border-amber-300 opacity-85 cursor-wait'
+                  : hasUnsavedChanges
+                  ? 'bg-rose-600 hover:bg-rose-700 text-white border-rose-500 ring-2 ring-rose-400/60 animate-pulse'
+                  : 'bg-amber-600 hover:bg-amber-700 text-white border-amber-500'
+              }`}
+              title={hasUnsavedChanges ? "Có thay đổi chưa lưu! Bấm để lưu sổ đánh giá" : "Lưu sổ đánh giá"}
             >
-              💾 Khóa Sổ & Lưu
+              {isSaving ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                  <span>Đang lưu...</span>
+                </>
+              ) : hasUnsavedChanges ? (
+                <>
+                  <Save className="w-4 h-4 text-white" />
+                  <span>Lưu Đánh Giá *</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 text-amber-100" />
+                  <span>Lưu Đánh Giá</span>
+                </>
+              )}
             </button>
           </div>
         </div>

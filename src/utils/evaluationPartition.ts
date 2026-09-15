@@ -1,4 +1,4 @@
-import { EvaluationData } from '../types';
+import { EvaluationData, EmulationDataState } from '../types';
 import { safeSetLocalStorage } from './safeStorage';
 import { saveSupabaseState, supabase } from '../supabaseClient';
 
@@ -46,6 +46,45 @@ export function deepMergeEvaluation(
 }
 
 /**
+ * 🔄 HỢP NHẤT SÂU DỮ LIỆU SAO THI ĐUA TÍCH LŨY (EMULATION STATE)
+ * Bảo toàn 100% số sao, huy hiệu, sticker học sinh đã nhận được khi chấm ngoại tuyến!
+ */
+export function deepMergeEmulationState(
+  target: EmulationDataState,
+  source: EmulationDataState
+): EmulationDataState {
+  if (!source || typeof source !== 'object') return target ? { ...target } : {};
+  if (!target || typeof target !== 'object') return { ...source };
+
+  const result: EmulationDataState = { ...target };
+
+  for (const studentId of Object.keys(source)) {
+    if (!result[studentId]) {
+      result[studentId] = { ...source[studentId] };
+    } else {
+      const targetItem = result[studentId];
+      const sourceItem = source[studentId];
+
+      const maxStars = Math.max(targetItem.cumulativeStars || 0, sourceItem.cumulativeStars || 0);
+      const maxStickers = Math.max(targetItem.exchangedStickers || 0, sourceItem.exchangedStickers || 0);
+      const maxDeducted = Math.max(targetItem.totalDeducted || 0, sourceItem.totalDeducted || 0);
+      const mergedBadges = Array.from(new Set([...(targetItem.badges || []), ...(sourceItem.badges || [])]));
+
+      result[studentId] = {
+        ...targetItem,
+        ...sourceItem,
+        cumulativeStars: maxStars,
+        exchangedStickers: maxStickers,
+        totalDeducted: maxDeducted,
+        badges: mergedBadges
+      };
+    }
+  }
+
+  return result;
+}
+
+/**
  * Lưu dữ liệu chấm sao phân mảnh nhẹ theo từng ngày và không gian làm việc
  * 🛡️ DEEP MERGE CLOUD & LOCAL: Hợp nhất đa chiều với dữ liệu hiện có trên Cloud & LocalStorage
  * trước khi lưu, đảm bảo lịch sử nhận xét của tất cả các lớp và các ngày cũ không bao giờ bị mất!
@@ -77,20 +116,27 @@ export async function saveDayPartitionedEvaluation(
     console.warn('Lỗi đọc local evaluation khi lưu:', e);
   }
 
-  // 2. Đọc dữ liệu mới nhất từ Supabase Cloud để phòng ngừa xung đột thiết bị
+  // 2. Đọc dữ liệu mới nhất từ Supabase Cloud để phòng ngừa xung đột thiết bị (kèm timeout 1.5s bảo vệ chống treo khi Offline)
   let cloudData: EvaluationData = {};
-  try {
-    const { data, error } = await supabase
-      .from('school_states')
-      .select('value')
-      .eq('key', mainKey)
-      .maybeSingle();
+  if (typeof navigator === 'undefined' || navigator.onLine) {
+    try {
+      const fetchPromise = supabase
+        .from('school_states')
+        .select('value')
+        .eq('key', mainKey)
+        .maybeSingle();
 
-    if (!error && data && data.value && typeof data.value === 'object') {
-      cloudData = data.value;
+      const timeoutPromise = new Promise<{ data: null; error: string }>(resolve =>
+        setTimeout(() => resolve({ data: null, error: 'timeout' }), 1500)
+      );
+
+      const res: any = await Promise.race([fetchPromise, timeoutPromise]);
+      if (res?.data?.value && typeof res.data.value === 'object') {
+        cloudData = res.data.value;
+      }
+    } catch (e) {
+      console.warn('Lỗi đọc cloud evaluation khi lưu:', e);
     }
-  } catch (e) {
-    console.warn('Lỗi đọc cloud evaluation khi lưu:', e);
   }
 
   // 3. THỰC HIỆN DEEP MERGE ĐA TẦNG:

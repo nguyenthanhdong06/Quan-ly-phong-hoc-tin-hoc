@@ -2,6 +2,8 @@ import { Member, SeatingChart, EmulationDataState } from '../types';
 import { safeSetLocalStorage, safeGetLocalStorage } from '../utils/safeStorage';
 import { saveSupabaseState, supabase } from '../supabaseClient';
 import { defaultSeating, defaultEmulation } from '../data/mockData';
+import { deepMergeEmulationState } from '../utils/evaluationPartition';
+import { loadWorkspaceGardenData as loadPartitionedGarden } from '../utils/gardenPartition';
 
 /**
  * 🏢 WORKSPACE SERVICE - HỆ THỐNG KHÔNG GIAN LÀM VIỆC ĐỘC LẬP THEO TỪNG USER
@@ -139,33 +141,39 @@ export function loadWorkspaceSeatingChart(
 
 /**
  * Tải dữ liệu thi đua & đổi quà riêng cho Workspace
+ * 🛡️ DEEP MERGE: Hợp nhất Cloud và LocalStorage để không làm mất sao thi đua tích lũy khi offline!
  */
 export function loadWorkspaceEmulationState(
   workspaceId: string,
   dbStates?: Record<string, any>
 ): EmulationDataState {
-  return loadWorkspaceState<EmulationDataState>(
-    'school_emulation_state',
-    workspaceId,
-    dbStates,
-    defaultEmulation
-  );
+  const scopedKey = getScopedKey('school_emulation_state', workspaceId);
+  const cloudData = dbStates?.[scopedKey] || null;
+  const localData = safeGetLocalStorage<EmulationDataState | null>(scopedKey, null);
+
+  let merged: EmulationDataState = { ...defaultEmulation };
+  if (cloudData && typeof cloudData === 'object') {
+    merged = deepMergeEmulationState(merged, cloudData);
+  }
+  if (localData && typeof localData === 'object') {
+    merged = deepMergeEmulationState(merged, localData);
+  }
+
+  // Tự động lưu bản hợp nhất vào LocalStorage
+  safeSetLocalStorage(scopedKey, merged);
+  return merged;
 }
 
 /**
  * Tải dữ liệu Vườn Tri Thức riêng cho Workspace
+ * 🛡️ DEEP MERGE: Sử dụng loadPartitionedGarden bảo toàn cấp độ cây và số lần tưới khi offline!
  */
 export function loadWorkspaceGardenData(
   workspaceId: string,
   dbStates?: Record<string, any>,
   fallbackValue: Record<string, any> = {}
 ): Record<string, any> {
-  return loadWorkspaceState<Record<string, any>>(
-    'school_garden_data',
-    workspaceId,
-    dbStates,
-    safeGetLocalStorage('deskos_garden_data_v2', fallbackValue)
-  );
+  return loadPartitionedGarden(workspaceId, dbStates, fallbackValue);
 }
 
 /**

@@ -23,7 +23,8 @@ import {
   Edit3,
   Pencil,
   ExternalLink,
-  UploadCloud
+  UploadCloud,
+  Save
 } from 'lucide-react';
 import { Student, ClassItem, GardenStudentData, GardenReward, WaterLog, CustomSeedSet, Member } from '../types';
 import { triggerStarsConfetti } from '../utils/confetti';
@@ -35,6 +36,7 @@ import {
 import { supabase, saveSupabaseState } from '../supabaseClient';
 import { safeSetLocalStorage, safeGetLocalStorage } from '../utils/safeStorage';
 import { matchStudentSearch } from '../utils/nameFormatter';
+import { saveWorkspaceGardenData } from '../utils/gardenPartition';
 
 export interface KnowledgeGardenTabProps {
   students: Student[];
@@ -168,6 +170,11 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
 
   const rewards = propRewards || localRewards;
   const setRewards = propSetRewards || setLocalRewards;
+
+  // 🛡️ Trạng thái lưu trữ Offline-First & Auto-Sync
+  const [isSaving, setIsSaving] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const gardenDebounceRef = useRef<any>(null);
 
   // Filters & Inputs
   const [classSearch, setClassSearch] = useState('');
@@ -371,14 +378,50 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     }, 950);
   };
 
-  // 2. EFFECT: PERSIST DATA & INITIALIZE CLASS STUDENTS
+  // 2. EFFECT: PERSIST DATA & INITIALIZE CLASS STUDENTS (OFFLINE-FIRST & AUTO-SYNC DEEP MERGE)
   useEffect(() => {
     if (Object.keys(gardenData).length === 0) return;
     try {
+      // 🛡️ Lưu tức thì 0ms vào LocalStorage để bảo vệ 100% dữ liệu khi mất mạng
       safeSetLocalStorage(gardenStorageKey, gardenData);
-      saveSupabaseState(`${currentWsId}_school_garden_data`, gardenData);
+      safeSetLocalStorage('deskos_garden_data_v2', gardenData);
     } catch (e) {}
+
+    // 🌐 Tự động đồng bộ ngầm (Debounce 1.5s) với Supabase Cloud bằng Deep Merge
+    if (gardenDebounceRef.current) clearTimeout(gardenDebounceRef.current);
+    gardenDebounceRef.current = setTimeout(async () => {
+      try {
+        await saveWorkspaceGardenData(gardenData, currentWsId);
+        setHasUnsavedChanges(false);
+      } catch (e) {
+        console.warn('Lỗi lưu ngầm Vườn tri thức:', e);
+      }
+    }, 1500);
+
+    return () => {
+      if (gardenDebounceRef.current) clearTimeout(gardenDebounceRef.current);
+    };
   }, [gardenData, gardenStorageKey, currentWsId]);
+
+  // 🛡️ HÀM LƯU VƯỜN CÂY CHỦ ĐỘNG (KHI THẦY/CÔ BẤM NÚT 'LƯU VƯỜN')
+  const handleSaveGarden = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+    if (gardenDebounceRef.current) clearTimeout(gardenDebounceRef.current);
+    try {
+      const targetWs = currentWsId || 'ws_u-1';
+      await saveWorkspaceGardenData(gardenData, targetWs, (merged) => {
+        setGardenData(merged);
+      });
+      setHasUnsavedChanges(false);
+      showToast('Đã lưu trữ vườn tri thức an toàn lên hệ thống!', 'success');
+    } catch (err) {
+      console.error('Lỗi khi lưu vườn tri thức:', err);
+      showToast('Có lỗi xảy ra khi lưu vườn tri thức!', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   useEffect(() => {
     if (rewards.length === 0) return;
@@ -456,6 +499,7 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
   };
 
   const addWaterToStudent = (studentId: string, amount: number, reason: string) => {
+    setHasUnsavedChanges(true);
     const prevData = getStudentGarden(studentId);
     const oldLevel = getStageInfo(prevData.water).currentStage.level;
 
@@ -521,6 +565,7 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     const currentG = getStudentGarden(sId);
 
     if (!currentG.badges.includes(badgeText)) {
+      setHasUnsavedChanges(true);
       setGardenData(prev => ({
         ...prev,
         [sId]: {
@@ -550,6 +595,7 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
         return;
       }
 
+      setHasUnsavedChanges(true);
       setGardenData(prev => ({
         ...prev,
         [activeStudent.id]: {
@@ -576,6 +622,7 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
         return;
       }
 
+      setHasUnsavedChanges(true);
       setGardenData(prev => ({
         ...prev,
         [activeStudent.id]: {
@@ -849,6 +896,7 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
       };
     });
 
+    setHasUnsavedChanges(true);
     setGardenData(updated);
     playVictoryFanfareSound();
     triggerStarsConfetti();
@@ -856,6 +904,7 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
   };
 
   const handleStudentSeedChange = (studentId: string, newSeedName: string) => {
+    setHasUnsavedChanges(true);
     const currentG = getStudentGarden(studentId);
     setGardenData(prev => ({
       ...prev,
@@ -1588,49 +1637,83 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
             </span>
           </div>
 
-          {/* Navigation Tab Buttons */}
-          <nav className="flex items-center gap-1 bg-[#e4d3ba] p-1 rounded-xl border border-[#cbb89d] overflow-x-auto max-w-full">
+          {/* Navigation Tab Buttons & Save Garden Button */}
+          <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-start md:justify-end">
+            <nav className="flex items-center gap-1 bg-[#e4d3ba] p-1 rounded-xl border border-[#cbb89d] overflow-x-auto max-w-full">
+              <button
+                onClick={() => setActiveTab('class')}
+                className={`px-3.5 py-1.5 rounded-lg font-black text-xs transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                  activeTab === 'class'
+                    ? 'bg-emerald-700 text-white shadow-xs'
+                    : 'text-[#3d2b17] hover:bg-[#d5c3aa]'
+                }`}
+              >
+                <span>🌎</span> Vườn Cả Lớp
+              </button>
+              <button
+                onClick={() => setActiveTab('student')}
+                className={`px-3.5 py-1.5 rounded-lg font-black text-xs transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                  activeTab === 'student'
+                    ? 'bg-emerald-700 text-white shadow-xs'
+                    : 'text-[#3d2b17] hover:bg-[#d5c3aa]'
+                }`}
+              >
+                <span>🏡</span> Vườn Của Em
+              </button>
+              <button
+                onClick={() => setActiveTab('reward')}
+                className={`px-3.5 py-1.5 rounded-lg font-black text-xs transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                  activeTab === 'reward'
+                    ? 'bg-emerald-700 text-white shadow-xs'
+                    : 'text-[#3d2b17] hover:bg-[#d5c3aa]'
+                }`}
+              >
+                <span>🎁</span> Đổi Thưởng
+              </button>
+              <button
+                onClick={() => setActiveTab('teacher')}
+                className={`px-3.5 py-1.5 rounded-lg font-black text-xs transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                  activeTab === 'teacher'
+                    ? 'bg-emerald-700 text-white shadow-xs'
+                    : 'text-[#3d2b17] hover:bg-[#d5c3aa]'
+                }`}
+              >
+                <span>👩‍🏫</span> Giáo Viên
+              </button>
+            </nav>
+
+            {/* Nút Lưu Vườn Cây Chủ Động */}
             <button
-              onClick={() => setActiveTab('class')}
-              className={`px-3.5 py-1.5 rounded-lg font-black text-xs transition-all flex items-center gap-1.5 whitespace-nowrap ${
-                activeTab === 'class'
-                  ? 'bg-emerald-700 text-white shadow-xs'
-                  : 'text-[#3d2b17] hover:bg-[#d5c3aa]'
+              type="button"
+              onClick={handleSaveGarden}
+              disabled={isSaving}
+              className={`font-black text-xs py-2 px-3.5 rounded-xl border transition shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 ${
+                isSaving
+                  ? 'bg-amber-400 text-amber-950 border-amber-300 opacity-85 cursor-wait'
+                  : hasUnsavedChanges
+                  ? 'bg-rose-600 hover:bg-rose-700 text-white border-rose-500 ring-2 ring-rose-400/60 animate-pulse'
+                  : 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-500'
               }`}
+              title={hasUnsavedChanges ? "Có thay đổi chưa lưu! Bấm để lưu dữ liệu Vườn tri thức" : "Lưu dữ liệu Vườn tri thức"}
             >
-              <span>🌎</span> Vườn Cả Lớp
+              {isSaving ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-white" />
+                  <span>Đang lưu...</span>
+                </>
+              ) : hasUnsavedChanges ? (
+                <>
+                  <Save className="w-3.5 h-3.5 text-white" />
+                  <span>Lưu Vườn *</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-3.5 h-3.5 text-emerald-100" />
+                  <span>Lưu Vườn</span>
+                </>
+              )}
             </button>
-            <button
-              onClick={() => setActiveTab('student')}
-              className={`px-3.5 py-1.5 rounded-lg font-black text-xs transition-all flex items-center gap-1.5 whitespace-nowrap ${
-                activeTab === 'student'
-                  ? 'bg-emerald-700 text-white shadow-xs'
-                  : 'text-[#3d2b17] hover:bg-[#d5c3aa]'
-              }`}
-            >
-              <span>🏡</span> Vườn Của Em
-            </button>
-            <button
-              onClick={() => setActiveTab('reward')}
-              className={`px-3.5 py-1.5 rounded-lg font-black text-xs transition-all flex items-center gap-1.5 whitespace-nowrap ${
-                activeTab === 'reward'
-                  ? 'bg-emerald-700 text-white shadow-xs'
-                  : 'text-[#3d2b17] hover:bg-[#d5c3aa]'
-              }`}
-            >
-              <span>🎁</span> Đổi Thưởng
-            </button>
-            <button
-              onClick={() => setActiveTab('teacher')}
-              className={`px-3.5 py-1.5 rounded-lg font-black text-xs transition-all flex items-center gap-1.5 whitespace-nowrap ${
-                activeTab === 'teacher'
-                  ? 'bg-emerald-700 text-white shadow-xs'
-                  : 'text-[#3d2b17] hover:bg-[#d5c3aa]'
-              }`}
-            >
-              <span>👩‍🏫</span> Giáo Viên
-            </button>
-          </nav>
+          </div>
         </div>
       </div>
 

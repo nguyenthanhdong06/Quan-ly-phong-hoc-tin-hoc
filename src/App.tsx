@@ -41,6 +41,10 @@ import {
   loadDayPartitionedEvaluation, 
   applyPartitionedEvaluationUpdate 
 } from './utils/evaluationPartition';
+import { 
+  saveWorkspaceGardenData, 
+  deepMergeGardenData 
+} from './utils/gardenPartition';
 import { InteractiveGamesTab } from './components/InteractiveGamesTab';
 import { PersonalQuestionsTab } from './components/PersonalQuestionsTab';
 import ComputerReportTab from './components/ComputerReportTab';
@@ -773,13 +777,11 @@ export default function App() {
             window.dispatchEvent(new CustomEvent('custom_avatars_updated', { detail: dbStates['custom_avatars_list'] }));
           }
 
-          // 🌳 Đồng bộ dữ liệu Vườn Tri Thức từ Cloud
-          const scopedGardenKey = `${activeWorkspaceId}_school_garden_data`;
-          if (dbStates[scopedGardenKey]) {
-            setGardenData(dbStates[scopedGardenKey]);
-            safeSetLocalStorage(`${activeWorkspaceId}_garden_data_v2`, dbStates[scopedGardenKey]);
-            safeSetLocalStorage('deskos_garden_data_v2', dbStates[scopedGardenKey]);
-          }
+          // 🌳 Đồng bộ dữ liệu Vườn Tri Thức từ Cloud với Deep Merge bảo vệ dữ liệu ngoại tuyến
+          const loadedGarden = loadWorkspaceGardenData(activeWorkspaceId, dbStates);
+          setGardenData(loadedGarden);
+          safeSetLocalStorage(`${activeWorkspaceId}_garden_data_v2`, loadedGarden);
+          safeSetLocalStorage('deskos_garden_data_v2', loadedGarden);
           if (dbStates['school_garden_rewards'] && Array.isArray(dbStates['school_garden_rewards'])) {
             setGardenRewards(dbStates['school_garden_rewards']);
             safeSetLocalStorage('deskos_garden_rewards_v2', dbStates['school_garden_rewards']);
@@ -1309,7 +1311,7 @@ export default function App() {
         saveSupabaseState('school_members', members),
         saveSupabaseState('school_timetable_data', timetableData),
         saveSupabaseState('custom_avatars_list', loadCustomAvatars()),
-        saveSupabaseState(`${activeWorkspaceId}_school_garden_data`, gardenData),
+        saveWorkspaceGardenData(gardenData, activeWorkspaceId),
         saveSupabaseState('school_garden_rewards', gardenRewards),
         saveSupabaseState('school_custom_seed_sets', customSeedSets),
         saveSupabaseState(`${activeWorkspaceId}_school_computer_reports`, safeParse(`${activeWorkspaceId}_school_computer_reports`, safeParse('school_computer_reports', []))),
@@ -1815,6 +1817,7 @@ export default function App() {
                 emulationDataState={emulationDataState}
                 attendanceData={attendanceData}
                 classes={classes}
+                workspaceId={activeWorkspaceId}
               />
             )}
 
