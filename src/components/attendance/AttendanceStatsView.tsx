@@ -15,7 +15,7 @@ import { AttendanceStudentTable } from './AttendanceStudentTable';
 import { AttendanceMonthlyTable } from './AttendanceMonthlyTable';
 import { AttendanceAlerts } from './AttendanceAlerts';
 import { AttendanceStudentModal } from './AttendanceStudentModal';
-import { ArrowLeft, BarChart3, RefreshCw, FileSpreadsheet } from 'lucide-react';
+import { ArrowLeft, BarChart3, RefreshCw } from 'lucide-react';
 
 interface AttendanceStatsViewProps {
   selectedClass: string;
@@ -138,18 +138,6 @@ export const AttendanceStatsView: React.FC<AttendanceStatsViewProps> = ({
               Không gian làm việc giáo viên: Đang xem {filter.classId === 'all' ? 'Tất cả các lớp' : `Lớp ${filter.classId}`}.
             </p>
           </div>
-        </div>
-
-        <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end">
-          <button
-            type="button"
-            onClick={handleExportExcel}
-            className="bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-xs py-2 px-3.5 rounded-xl border border-emerald-600 transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95"
-            title="Xuất bảng số liệu ra Microsoft Excel (.xlsx)"
-          >
-            <FileSpreadsheet className="w-4 h-4 text-emerald-100" />
-            <span>Xuất Báo Cáo Excel</span>
-          </button>
         </div>
       </div>
 
