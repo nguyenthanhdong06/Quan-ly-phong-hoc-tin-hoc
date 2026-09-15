@@ -45,6 +45,11 @@ import {
   saveWorkspaceGardenData, 
   deepMergeGardenData 
 } from './utils/gardenPartition';
+import { 
+  saveWorkspaceSeatingData, 
+  loadWorkspaceSeatingData,
+  deepMergeSeatingChart 
+} from './utils/labPartition';
 import { InteractiveGamesTab } from './components/InteractiveGamesTab';
 import { PersonalQuestionsTab } from './components/PersonalQuestionsTab';
 import ComputerReportTab from './components/ComputerReportTab';
@@ -1303,7 +1308,7 @@ export default function App() {
         saveSupabaseState('school_lab_bookings', labBookings),
         saveSupabaseState('school_lab_incidents', labIncidents),
         saveSupabaseState('school_lab_maintenance_logs', labMaintenanceLogs),
-        saveWorkspaceState('school_seating_chart', activeWorkspaceId, seatingChart),
+        saveWorkspaceSeatingData(seatingChart, undefined, activeWorkspaceId),
         saveDayPartitionedAttendance(attendanceData, undefined, activeWorkspaceId),
         saveDayPartitionedEvaluation(evaluationData, undefined, activeWorkspaceId),
         saveWorkspaceState('school_emulation_state', activeWorkspaceId, emulationDataState),
@@ -1859,6 +1864,7 @@ export default function App() {
 
             {activeTab === 'lab-room' && hasAdminOrTeacherAccess && (
               <LabRoomTab
+                workspaceId={activeWorkspaceId}
                 selectedClass={selectedClass}
                 computers={computers}
                 setComputers={setComputers}

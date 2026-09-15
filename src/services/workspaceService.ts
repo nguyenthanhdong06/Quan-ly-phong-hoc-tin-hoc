@@ -4,6 +4,7 @@ import { saveSupabaseState, supabase } from '../supabaseClient';
 import { defaultSeating, defaultEmulation } from '../data/mockData';
 import { deepMergeEmulationState } from '../utils/evaluationPartition';
 import { loadWorkspaceGardenData as loadPartitionedGarden } from '../utils/gardenPartition';
+import { loadWorkspaceSeatingData, saveWorkspaceSeatingData } from '../utils/labPartition';
 
 /**
  * 🏢 WORKSPACE SERVICE - HỆ THỐNG KHÔNG GIAN LÀM VIỆC ĐỘC LẬP THEO TỪNG USER
@@ -126,18 +127,27 @@ export async function saveWorkspaceState(
 
 /**
  * Tải sơ đồ chỗ ngồi riêng cho Workspace
+ * 🛡️ DEEP MERGE: Hợp nhất Cloud và LocalStorage để không làm mất sơ đồ lớp đã xếp khi offline!
  */
 export function loadWorkspaceSeatingChart(
   workspaceId: string,
   dbStates?: Record<string, any>
 ): SeatingChart {
-  return loadWorkspaceState<SeatingChart>(
-    'school_seating_chart',
-    workspaceId,
-    dbStates,
-    defaultSeating
-  );
+  return loadWorkspaceSeatingData(workspaceId, dbStates, defaultSeating);
 }
+
+/**
+ * Lưu sơ đồ chỗ ngồi riêng cho Workspace có Deep Merge an toàn
+ */
+export async function saveWorkspaceSeatingChart(
+  seatingChart: SeatingChart,
+  workspaceId: string,
+  targetClass?: string,
+  onMerged?: (merged: SeatingChart) => void
+): Promise<boolean> {
+  return await saveWorkspaceSeatingData(seatingChart, targetClass, workspaceId, onMerged);
+}
+
 
 /**
  * Tải dữ liệu thi đua & đổi quà riêng cho Workspace

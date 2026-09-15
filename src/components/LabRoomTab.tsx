@@ -7,7 +7,7 @@ import {
   RotateCcw, Users, Plus, LayoutGrid, CheckCircle2, UserCheck, ShieldCheck, Image as ImageIcon,
   Sliders, Move, ArrowRightLeft, Upload, Link, CheckCheck, RefreshCw, Zap, Eye, EyeOff, 
   PanelLeftClose, PanelLeftOpen, Printer, UserX, AlertCircle, MousePointerClick, Star, Award, Crown,
-  ListFilter, UserPlus, Layers, Settings, FileSpreadsheet, Armchair, Trash2, User, FileText
+  ListFilter, UserPlus, Layers, Settings, FileSpreadsheet, Armchair, Trash2, User, FileText, Save
 } from 'lucide-react';
 import { StudentAvatar3D, formatStudentNameFirstAndMiddle } from './StudentAvatar3D';
 import { formatComputerName, matchStudentSearch } from '../utils/nameFormatter';
@@ -18,6 +18,7 @@ import { playButtonClickSound, playVictoryFanfareSound } from '../utils/audioEff
 import { safeSetLocalStorage } from '../utils/safeStorage';
 import { saveSupabaseState } from '../supabaseClient';
 import { loadDayPartitionedAttendance } from '../utils/attendancePartition';
+import { saveWorkspaceSeatingData } from '../utils/labPartition';
 
 // Helper to generate default lab matrix layout (Rows x Cols) with labels Máy 01, Máy 02...
 export const generateDefaultLabLayout = (rows: number = 5, cols: number = 8) => {
@@ -121,6 +122,7 @@ interface LabRoomTabProps {
   onSelectClass?: (className: string) => void;
   attendanceData?: AttendanceData;
   selectedDate?: string;
+  workspaceId?: string;
 }
 
 export default function LabRoomTab({
@@ -137,7 +139,8 @@ export default function LabRoomTab({
   classes = [],
   onSelectClass,
   attendanceData,
-  selectedDate = new Date().toISOString().split('T')[0]
+  selectedDate = new Date().toISOString().split('T')[0],
+  workspaceId
 }: LabRoomTabProps) {
 
   // Selected Lab State (default to Lab 01 P.201)
@@ -582,8 +585,17 @@ export default function LabRoomTab({
   // 🟢 Auto-Save Indicator State ('synced' | 'saving')
   const [syncStatus, setSyncStatus] = useState<'synced' | 'saving'>('synced');
   const [lastSyncedTime, setLastSyncedTime] = useState<string>('Vừa xong');
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
 
-  // --- ⚡ INSTANT 60FPS ZERO-LAG SEATING MUTATION SAVE HANDLER ---
+  // Effective Workspace ID
+  const effectiveWs = useMemo(() => {
+    return workspaceId && workspaceId !== 'ws_default'
+      ? workspaceId
+      : (typeof localStorage !== 'undefined' && localStorage.getItem('deskos_active_workspace')) || 'ws_u-1';
+  }, [workspaceId]);
+
+  // --- ⚡ INSTANT 60FPS ZERO-LAG SEATING MUTATION SAVE HANDLER WITH OFFLINE-FIRST DEEP MERGE ---
   const saveSeatingState = useCallback((newClassSeating: { [pcId: string]: string }) => {
     const updatedChart: SeatingChart = {
       ...seatingChartRef.current,
@@ -593,30 +605,73 @@ export default function LabRoomTab({
     // 1. INSTANT REACT STATE UPDATE & AUTO-SAVE INDICATOR 'saving'
     setSeatingChart(updatedChart);
     setSyncStatus('saving');
+    setHasUnsavedChanges(true);
 
     // 2. INSTANT LOCAL STORAGE WRITE (~0.1ms)
     try {
+      const prefix = `${effectiveWs}_`;
+      localStorage.setItem(`${prefix}school_seating_chart`, JSON.stringify(updatedChart));
       localStorage.setItem('school_seating_chart', JSON.stringify(updatedChart));
+      localStorage.setItem(`${prefix}school_seating_${selectedClass}`, JSON.stringify(newClassSeating));
     } catch (e) {}
 
-    // 3. DEBOUNCED BACKGROUND SUPABASE SYNC (800ms - Never blocks UI frames)
+    // 3. DEBOUNCED BACKGROUND SUPABASE SYNC (1200ms - Never blocks UI frames)
     if (supabaseDebounceTimerRef.current) {
       clearTimeout(supabaseDebounceTimerRef.current);
     }
-    supabaseDebounceTimerRef.current = setTimeout(() => {
+    supabaseDebounceTimerRef.current = setTimeout(async () => {
       try {
-        saveSupabaseState('school_seating_chart', updatedChart);
+        await saveWorkspaceSeatingData(
+          updatedChart,
+          selectedClass,
+          effectiveWs,
+          (merged) => {
+            setSeatingChart(merged);
+          }
+        );
       } catch (e) {}
 
       // 4. UPDATE AUTO-SAVE INDICATOR TO 'synced' (Đã đồng bộ lên đám mây)
       setSyncStatus('synced');
+      setHasUnsavedChanges(false);
       const nowTime = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       setLastSyncedTime(nowTime);
-    }, 800);
-  }, [selectedClass, setSeatingChart]);
+    }, 1200);
+  }, [selectedClass, setSeatingChart, effectiveWs]);
+
+  // 🛡️ NÚT LƯU SƠ ĐỒ CHỦ ĐỘNG (ĐỒNG BỘ 100% VỚI NÚT LƯU SỔ CỦA ĐIỂM DANH)
+  const handleManualSave = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+    try {
+      const success = await saveWorkspaceSeatingData(
+        seatingChartRef.current,
+        selectedClass,
+        effectiveWs,
+        (merged) => {
+          setSeatingChart(merged);
+        }
+      );
+
+      if (success) {
+        setHasUnsavedChanges(false);
+        setSyncStatus('synced');
+        const nowTime = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        setLastSyncedTime(nowTime);
+        showToast(`Đã lưu thành công sơ đồ chỗ ngồi lớp ${selectedClass.toUpperCase()}!`, 'success');
+      } else {
+        showToast('Không thể kết nối máy chủ đám mây, dữ liệu đã được lưu tạm an toàn trong máy!', 'warning');
+      }
+    } catch (err) {
+      console.error('Lỗi khi lưu sơ đồ phòng lab:', err);
+      showToast('Có lỗi xảy ra khi lưu sơ đồ chỗ ngồi!', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const renderAutoSaveIndicator = () => (
-    <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black transition-all shadow-2xs border select-none ${
+    <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition-all shadow-2xs border select-none ${
       syncStatus === 'saving'
         ? 'bg-amber-100/90 text-amber-900 border-amber-300 animate-pulse'
         : 'bg-emerald-100/90 text-emerald-900 border-emerald-300'
@@ -624,7 +679,7 @@ export default function LabRoomTab({
       {syncStatus === 'saving' ? (
         <>
           <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping shrink-0" />
-          <span>🔄 Đang lưu phiên làm việc...</span>
+          <span>🔄 Đang lưu ngầm...</span>
         </>
       ) : (
         <>
@@ -632,10 +687,43 @@ export default function LabRoomTab({
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
           </span>
-          <span>🟢 Đã đồng bộ lên đám mây ({lastSyncedTime})</span>
+          <span>🟢 Đã lưu ({lastSyncedTime})</span>
         </>
       )}
     </div>
+  );
+
+  const renderSaveButton = (extraClass: string = '') => (
+    <button
+      type="button"
+      onClick={handleManualSave}
+      disabled={isSaving}
+      className={`font-black text-xs py-2 px-3.5 sm:px-4 rounded-xl border transition shadow-md cursor-pointer flex items-center gap-1.5 active:scale-95 ${
+        isSaving
+          ? 'bg-amber-400 text-amber-950 border-amber-300 opacity-85 cursor-wait'
+          : hasUnsavedChanges
+          ? 'bg-rose-600 hover:bg-rose-700 text-white border-rose-500 ring-2 ring-rose-400/60 animate-pulse'
+          : 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-500'
+      } ${extraClass}`}
+      title={hasUnsavedChanges ? "Có thay đổi chỗ ngồi chưa lưu! Bấm để lưu sơ đồ" : "Lưu sơ đồ phòng máy"}
+    >
+      {isSaving ? (
+        <>
+          <RefreshCw className="w-4 h-4 animate-spin text-white" />
+          <span>Đang lưu...</span>
+        </>
+      ) : hasUnsavedChanges ? (
+        <>
+          <Save className="w-4 h-4 text-white" />
+          <span>Lưu Sơ Đồ *</span>
+        </>
+      ) : (
+        <>
+          <Save className="w-4 h-4 text-emerald-100" />
+          <span>Lưu Sơ Đồ</span>
+        </>
+      )}
+    </button>
   );
 
   // Assign student to computer
@@ -1098,7 +1186,7 @@ export default function LabRoomTab({
             </div>
 
             {/* Quick Actions in Header */}
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={handleSeatClassMonitorsHead}
                 className="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer border border-amber-700"
@@ -1119,6 +1207,8 @@ export default function LabRoomTab({
               >
                 <RotateCcw className="w-3.5 h-3.5" /> Xóa Chỗ Ngồi
               </button>
+
+              {renderSaveButton()}
             </div>
           </div>
         </div>
@@ -1900,15 +1990,22 @@ export default function LabRoomTab({
           </button>
         </div>
 
-        {/* Xóa chỗ ngồi */}
-        <button
-          onClick={handleClearAllClassSeating}
-          className="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer border border-rose-700"
-          title="Xóa toàn bộ chỗ ngồi đã xếp của lớp hiện tại"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-          <span>Xóa chỗ ngồi</span>
-        </button>
+        {/* Right Action Group: Chỉ báo lưu & Nút Lưu Sơ Đồ & Xóa chỗ ngồi */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {renderAutoSaveIndicator()}
+
+          {renderSaveButton()}
+
+          {/* Xóa chỗ ngồi */}
+          <button
+            onClick={handleClearAllClassSeating}
+            className="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-black text-xs shadow-xs transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+            title="Xóa toàn bộ chỗ ngồi đã xếp của lớp hiện tại"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Xóa chỗ ngồi</span>
+          </button>
+        </div>
 
       </div>
 
