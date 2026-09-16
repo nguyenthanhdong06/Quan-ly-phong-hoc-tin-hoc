@@ -2155,10 +2155,10 @@ export default function LabRoomTab({
             {/* 🛡️ NÚT XÓA CHỖ NGỒI Ở VỊ TRÍ MỚI AN TOÀN (CÓ HỘP THOẠI XÁC NHẬN CHỐNG BẤM NHẦM) */}
             <button
               onClick={handleClearAllClassSeating}
-              className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 hover:border-rose-300 font-black text-xs shadow-2xs transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer ml-2"
+              className="px-3 py-1.5 rounded-xl bg-rose-700 hover:bg-rose-800 text-white font-black text-xs shadow-xs transition-all active:scale-95 flex items-center gap-1.5 border border-rose-900 cursor-pointer ml-2"
               title="Xóa toàn bộ chỗ ngồi đã xếp của lớp hiện tại (Yêu cầu xác nhận trước khi xóa)"
             >
-              <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+              <Trash2 className="w-3.5 h-3.5 text-white shrink-0" />
               <span>Xóa chỗ ngồi</span>
             </button>
           </div>
