@@ -522,6 +522,21 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     }
   };
 
+  // 📜 Helper lọc CHỈ những log thực sự là ĐỔI THƯỞNG hoặc THU HOẠCH QUẢ CHÍN (Loại bỏ triệt để các log trừ nước do nề nếp kỷ luật)
+  const isRewardRedemptionLog = (log: WaterLog): boolean => {
+    if (!log || !log.reason) return false;
+    const r = log.reason.trim();
+    return (
+      r.startsWith('🎁') ||
+      r.startsWith('🍎') ||
+      r.includes('Đổi phần thưởng') ||
+      r.includes('Đổi quà') ||
+      r.includes('Thu hoạch mùa gặt') ||
+      r.includes('Thu hoạch mùa quả') ||
+      r.toLowerCase().includes('đổi thưởng')
+    );
+  };
+
   // 🛡️ RENDER STATUS BADGE CHO TAB ĐỔI THƯỞNG (CHUẨN MỰC 100% ĐIỂM DANH)
   const renderRewardSaveStatus = () => (
     <div className="flex items-center gap-1.5 text-[11px] font-black text-slate-700 bg-white/85 border border-[#cbb89d] px-3 py-1.5 rounded-xl shadow-2xs shrink-0 whitespace-nowrap">
@@ -2529,9 +2544,6 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
 
               {/* Hàng nút hành động cùng 1 dòng, bảo toàn mép nút */}
               <div className="flex items-center gap-2.5 flex-nowrap shrink-0 overflow-x-auto py-1">
-                {/* Trạng thái lưu trữ trực quan chuẩn Điểm danh */}
-                {renderRewardSaveStatus()}
-
                 {/* Nút Quản Lý Kho Quà */}
                 <button
                   onClick={() => setIsRewardManagerOpen(true)}
@@ -2751,15 +2763,12 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                 <span>📜</span> LỊCH SỬ ĐỔI THƯỞNG CỦA {activeStudent ? activeStudent.name.toUpperCase() : 'EM'}
               </h4>
               <span className="text-[11px] font-extrabold text-amber-900 bg-amber-100 px-2 py-0.5 rounded-lg border border-amber-300">
-                {(activeGarden?.logs || []).filter(l => (l.amount !== undefined && l.amount < 0) || (l.reason && (l.reason.includes('Đổi') || l.reason.includes('Thu hoạch')))).length} lần đổi
+                {(activeGarden?.logs || []).filter(isRewardRedemptionLog).length} lần đổi
               </span>
             </div>
 
             {(() => {
-              const redemptionLogs = (activeGarden?.logs || []).filter(l => 
-                (l.amount !== undefined && l.amount < 0) || 
-                (l.reason && (l.reason.includes('Đổi') || l.reason.includes('Thu hoạch')))
-              );
+              const redemptionLogs = (activeGarden?.logs || []).filter(isRewardRedemptionLog);
 
               if (redemptionLogs.length === 0) {
                 return (
@@ -2772,7 +2781,7 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
               return (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
                   {redemptionLogs.map((log) => {
-                    const isHarvestLog = log.reason?.includes('Thu hoạch');
+                    const isHarvestLog = log.reason?.includes('Thu hoạch') || log.reason?.startsWith('🍎');
                     return (
                       <div key={log.id} className="bg-white p-3 rounded-xl border border-[#d6c4a8] shadow-2xs flex items-center justify-between gap-2">
                         <div className="min-w-0">
@@ -2783,10 +2792,10 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                             {log.date}
                           </div>
                         </div>
-                        <div className={`px-2 py-1 rounded-lg text-xs font-black shrink-0 ${
-                          isHarvestLog ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-rose-50 text-rose-700 border border-rose-200'
+                        <div className={`px-2.5 py-1 rounded-lg text-xs font-black shrink-0 ${
+                          isHarvestLog ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                         }`}>
-                          {isHarvestLog ? '🍎 Mùa Quả' : `${log.amount} 💧`}
+                          {isHarvestLog ? '🍎 Mùa Quả' : `${Math.abs(log.amount)} 💧`}
                         </div>
                       </div>
                     );
