@@ -41,7 +41,8 @@ import {
   loadWorkspaceGardenData, 
   saveWorkspaceRewardsData, 
   loadWorkspaceRewardsData, 
-  deepMergeRewards 
+  deepMergeRewards,
+  isSampleReward
 } from '../utils/gardenPartition';
 
 export interface KnowledgeGardenTabProps {
@@ -58,6 +59,7 @@ export interface KnowledgeGardenTabProps {
   setGardenData?: React.Dispatch<React.SetStateAction<{ [studentId: string]: GardenStudentData }>>;
   rewards?: GardenReward[];
   setRewards?: React.Dispatch<React.SetStateAction<GardenReward[]>>;
+  activeTab?: string;
 }
 
 import { extractGoogleDriveFileId, convertGoogleDriveUrl, getGoogleDriveFallbackUrls } from '../utils/googleDriveImageHelper';
@@ -81,13 +83,8 @@ export const DEFAULT_SEED_NAME = '🌸 Cây Hoa Đào';
 // Mẫu Bộ Hạt Giống Mặc Định
 export const DEFAULT_CUSTOM_SEED_SETS: CustomSeedSet[] = [];
 
-// Danh Sách Quà Mặc Định
-export const DEFAULT_REWARDS: GardenReward[] = [
-  { id: 'rew-1', icon: '✏️', title: 'Bút chì màu dễ thương', cost: 100, type: 'WATER' },
-  { id: 'rew-2', icon: '📓', title: 'Vở bài tập lò xo xinh xắn', cost: 200, type: 'WATER' },
-  { id: 'rew-3', icon: '🎨', title: 'Bộ màu vẽ 24 màu sặc sỡ', cost: 350, type: 'HARVEST' },
-  { id: 'rew-4', icon: '🧩', title: 'Đồ chơi lắp ráp trí tuệ', cost: 350, type: 'HARVEST' }
-];
+// Danh Sách Quà Mặc Định: Đã loại bỏ tất cả phần thưởng mẫu theo yêu cầu
+export const DEFAULT_REWARDS: GardenReward[] = [];
 
 /**
  * Image compression utility to compress local file uploads down to ~40KB JPEG DataURL
@@ -186,6 +183,17 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     return new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
   });
   const rewardsDebounceRef = useRef<any>(null);
+
+  // 🛡️ Tự động làm sạch triệt để mọi phần thưởng mẫu cũ khỏi state và localStorage
+  useEffect(() => {
+    if (Array.isArray(rewards) && rewards.some(r => isSampleReward(r))) {
+      const cleaned = rewards.filter(r => !isSampleReward(r));
+      setRewards(cleaned);
+      safeSetLocalStorage(rewardsStorageKey, cleaned);
+      safeSetLocalStorage('deskos_garden_rewards_v2', cleaned);
+      safeSetLocalStorage('school_garden_rewards', cleaned);
+    }
+  }, [rewards, rewardsStorageKey, setRewards]);
 
   // Filters & Inputs
   const [classSearch, setClassSearch] = useState('');
@@ -1698,15 +1706,6 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                   </>
                 )}
               </button>
-
-              <button
-                onClick={handleResetDefaultRewards}
-                className="px-3 py-2 rounded-xl bg-white hover:bg-amber-50 text-amber-900 border border-amber-300 font-black text-xs transition-all flex items-center gap-1.5 shadow-2xs active:scale-95 cursor-pointer whitespace-nowrap shrink-0"
-                title="Khôi phục danh sách phần thưởng mặc định ban đầu"
-              >
-                <RefreshCw className="w-3.5 h-3.5 text-amber-700" />
-                <span>Khôi Phục Mẫu</span>
-              </button>
             </div>
           </div>
         </div>
@@ -1790,16 +1789,20 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
           })}
         </div>
 
-        {/* Empty state */}
+        {/* Empty state khi chưa có phần thưởng nào */}
         {rewards.length === 0 && (
-          <div className="text-center py-16 bg-white rounded-3xl border border-[#cbb89d] space-y-4">
-            <div className="text-5xl">🎁</div>
-            <p className="text-slate-500 font-bold text-sm">Kho phần thưởng đang trống.</p>
+          <div className="text-center py-16 bg-white rounded-3xl border-2 border-dashed border-[#cbb89d] space-y-4 p-8">
+            <div className="text-5xl select-none">🎁</div>
+            <h4 className="text-slate-800 font-black text-base">Kho phần thưởng hiện đang trống</h4>
+            <p className="text-slate-500 text-xs max-w-md mx-auto leading-relaxed">
+              Tất cả phần thưởng mẫu đã được loại bỏ. Thầy Cô hãy bấm nút bên dưới để tạo các món quà mới cho học sinh nhé!
+            </p>
             <button
-              onClick={handleResetDefaultRewards}
-              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs shadow-xs cursor-pointer"
+              onClick={handleOpenCreateReward}
+              className="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs shadow-xs cursor-pointer inline-flex items-center gap-1.5 active:scale-95 transition"
             >
-              Khôi Phục Danh Sách Mẫu
+              <Plus className="w-4 h-4" />
+              <span>Thêm Phần Thưởng Mới</span>
             </button>
           </div>
         )}
@@ -2485,68 +2488,78 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
           </div>
 
           {/* 3. LƯỚI PHẦN THƯỞNG ĐỔI QUÀ (REWARDS GRID) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {rewards.map(item => {
-              const isHarvest = item.type === 'HARVEST';
-              const currentWater = activeGarden?.water || 0;
-              const { currentStage } = getStageInfo(currentWater);
-              const canRedeemHarvest = currentStage.level >= 7;
-              const canRedeemWater = currentWater >= item.cost;
-              const canRedeem = isHarvest ? canRedeemHarvest : canRedeemWater;
+          {rewards.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-3xl border-2 border-dashed border-amber-200 space-y-3 p-6">
+              <div className="text-4xl select-none">🎁</div>
+              <h4 className="text-slate-800 font-black text-sm">Chưa có phần thưởng nào trong kho quà</h4>
+              <p className="text-slate-500 text-xs max-w-md mx-auto">
+                Tất cả phần thưởng mẫu đã được dọn sạch. Thầy Cô vui lòng bấm nút <b>"Quản Lý Kho Quà"</b> ở góc trên để thêm các phần thưởng mới cho học sinh nhé!
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {rewards.map(item => {
+                const isHarvest = item.type === 'HARVEST';
+                const currentWater = activeGarden?.water || 0;
+                const { currentStage } = getStageInfo(currentWater);
+                const canRedeemHarvest = currentStage.level >= 7;
+                const canRedeemWater = currentWater >= item.cost;
+                const canRedeem = isHarvest ? canRedeemHarvest : canRedeemWater;
 
-              return (
-                <div 
-                  key={item.id} 
-                  className={`bg-white rounded-3xl p-5 border-2 shadow-xs flex flex-col justify-between text-center space-y-4 transition-all ${
-                    canRedeem 
-                      ? 'border-amber-300 hover:border-amber-500 hover:shadow-md' 
-                      : 'border-slate-200 opacity-90'
-                  }`}
-                >
-                  <div className="space-y-2">
-                    <div className="text-5xl sm:text-6xl my-2 select-none hover:scale-110 transition-transform">{item.icon}</div>
-                    <h4 className="font-black text-slate-900 text-sm leading-snug">{item.title}</h4>
-                    <div className={`text-xs font-black inline-block px-3 py-1 rounded-full ${
-                      isHarvest ? 'bg-amber-50 text-amber-800 border border-amber-200' : 'bg-sky-50 text-sky-800 border border-sky-200'
-                    }`}>
-                      {isHarvest ? '🍎 Yêu cầu Kết Trái (Cấp 7)' : `${item.cost} 💧 Giọt Nước`}
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => handleRedeemReward(item)}
-                    className={`w-full py-2.5 rounded-2xl font-black text-xs transition-all shadow-xs active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 ${
-                      isHarvest
-                        ? canRedeemHarvest
-                          ? 'bg-amber-400 hover:bg-amber-500 text-amber-950 ring-2 ring-amber-300 shadow-amber-400/30'
-                          : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
-                        : canRedeemWater
-                        ? 'bg-sky-500 hover:bg-sky-600 text-white shadow-sky-500/25'
-                        : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+                return (
+                  <div 
+                    key={item.id} 
+                    className={`bg-white rounded-3xl p-5 border-2 shadow-xs flex flex-col justify-between text-center space-y-4 transition-all ${
+                      canRedeem 
+                        ? 'border-amber-300 hover:border-amber-500 hover:shadow-md' 
+                        : 'border-slate-200 opacity-90'
                     }`}
                   >
-                    {isHarvest ? (
-                      canRedeemHarvest ? (
-                        <>
-                          <span>🍎</span> Thu Hoạch & Đổi Quà
-                        </>
+                    <div className="space-y-2">
+                      <div className="text-5xl sm:text-6xl my-2 select-none hover:scale-110 transition-transform">{item.icon}</div>
+                      <h4 className="font-black text-slate-900 text-sm leading-snug">{item.title}</h4>
+                      <div className={`text-xs font-black inline-block px-3 py-1 rounded-full ${
+                        isHarvest ? 'bg-amber-50 text-amber-800 border border-amber-200' : 'bg-sky-50 text-sky-800 border border-sky-200'
+                      }`}>
+                        {isHarvest ? '🍎 Yêu cầu Kết Trái (Cấp 7)' : `${item.cost} 💧 Giọt Nước`}
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => handleRedeemReward(item)}
+                      className={`w-full py-2.5 rounded-2xl font-black text-xs transition-all shadow-xs active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 ${
+                        isHarvest
+                          ? canRedeemHarvest
+                            ? 'bg-amber-400 hover:bg-amber-500 text-amber-950 ring-2 ring-amber-300 shadow-amber-400/30'
+                            : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+                          : canRedeemWater
+                          ? 'bg-sky-500 hover:bg-sky-600 text-white shadow-sky-500/25'
+                          : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+                      }`}
+                    >
+                      {isHarvest ? (
+                        canRedeemHarvest ? (
+                          <>
+                            <span>🍎</span> Thu Hoạch & Đổi Quà
+                          </>
+                        ) : (
+                          <span>Chưa Kết Trái (Cần Cấp 7)</span>
+                        )
                       ) : (
-                        <span>Chưa Kết Trái (Cần Cấp 7)</span>
-                      )
-                    ) : (
-                      canRedeemWater ? (
-                        <>
-                          <span>🎁</span> Đổi Quà Ngay
-                        </>
-                      ) : (
-                        <span>Còn thiếu {item.cost - currentWater} 💧</span>
-                      )
-                    )}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
+                        canRedeemWater ? (
+                          <>
+                            <span>🎁</span> Đổi Quà Ngay
+                          </>
+                        ) : (
+                          <span>Còn thiếu {item.cost - currentWater} 💧</span>
+                        )
+                      )}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* 4. LỊCH SỬ ĐỔI THƯỞNG CỦA HỌC SINH (REDEMPTION HISTORY) */}
           <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] p-5 shadow-xs space-y-3">

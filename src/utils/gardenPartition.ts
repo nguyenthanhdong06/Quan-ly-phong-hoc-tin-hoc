@@ -12,18 +12,31 @@ import { saveSupabaseState, supabase } from '../supabaseClient';
  * - Xử lý thông minh việc đổi thưởng (trừ giọt nước) không bị Math.max đè mất dữ liệu
  */
 
-// Danh sách phần thưởng mặc định ban đầu
-export const DEFAULT_REWARDS: GardenReward[] = [
-  { id: 'rew-1', icon: '✏️', title: 'Bút chì màu dễ thương', cost: 100, type: 'WATER' },
-  { id: 'rew-2', icon: '📓', title: 'Vở bài tập lò xo xinh xắn', cost: 200, type: 'WATER' },
-  { id: 'rew-3', icon: '🎨', title: 'Bộ màu vẽ 24 màu sặc sỡ', cost: 350, type: 'HARVEST' },
-  { id: 'rew-4', icon: '🧩', title: 'Đồ chơi lắp ráp trí tuệ', cost: 350, type: 'HARVEST' }
-];
+// Danh sách phần thưởng mẫu mặc định ban đầu: Đã loại bỏ tất cả theo yêu cầu
+export const DEFAULT_REWARDS: GardenReward[] = [];
+
+/**
+ * 🛡️ HÀM NHẬN DIỆN PHẦN THƯỞNG MẪU (SAMPLE REWARDS)
+ * Tự động loại bỏ triệt để các phần thưởng mẫu cũ khỏi hệ thống
+ */
+export const isSampleReward = (item: GardenReward): boolean => {
+  if (!item) return false;
+  const sampleIds = ['rew-1', 'rew-2', 'rew-3', 'rew-4'];
+  if (item.id && sampleIds.includes(item.id)) return true;
+  const sampleTitles = [
+    'bút chì màu dễ thương',
+    'vở bài tập lò xo xinh xắn',
+    'bộ màu vẽ 24 màu sặc sỡ',
+    'đồ chơi lắp ráp trí tuệ'
+  ];
+  if (item.title && sampleTitles.includes(item.title.trim().toLowerCase())) return true;
+  return false;
+};
 
 /**
  * 🔄 HỢP NHẤT SÂU DANH MỤC PHẦN THƯỞNG (DEEP MERGE REWARDS)
  * Hợp nhất danh sách phần thưởng theo ID, bảo toàn các phần thưởng mới được tạo ngoại tuyến
- * ở cả client và server, không bao giờ làm mất phần thưởng thầy cô đã thêm ở chế độ offline.
+ * ở cả client và server, tự động loại bỏ mọi phần thưởng mẫu cũ.
  */
 export function deepMergeRewards(
   target: GardenReward[],
@@ -33,13 +46,13 @@ export function deepMergeRewards(
 
   if (Array.isArray(target)) {
     target.forEach(item => {
-      if (item && item.id) map.set(item.id, { ...item });
+      if (item && item.id && !isSampleReward(item)) map.set(item.id, { ...item });
     });
   }
 
   if (Array.isArray(source)) {
     source.forEach(item => {
-      if (item && item.id) {
+      if (item && item.id && !isSampleReward(item)) {
         const existing = map.get(item.id);
         if (!existing) {
           map.set(item.id, { ...item });
@@ -58,8 +71,8 @@ export function deepMergeRewards(
     });
   }
 
-  const merged = Array.from(map.values());
-  return merged.length > 0 ? merged : DEFAULT_REWARDS;
+  const merged = Array.from(map.values()).filter(item => !isSampleReward(item));
+  return merged;
 }
 
 /**
@@ -73,7 +86,7 @@ export async function saveWorkspaceRewardsData(
   workspaceId: string = 'ws_default',
   onMerged?: (merged: GardenReward[]) => void
 ): Promise<boolean> {
-  if (!rewards || rewards.length === 0) return true;
+  if (!Array.isArray(rewards)) return true;
 
   const effectiveWs = workspaceId && workspaceId !== 'ws_default' ? workspaceId : 'ws_u-1';
   const prefix = `${effectiveWs}_`;
@@ -82,14 +95,17 @@ export async function saveWorkspaceRewardsData(
   const legacyStorageKey = 'deskos_garden_rewards_v2';
   const legacyCloudKey = 'school_garden_rewards';
 
-  // 1. Đọc dữ liệu hiện có từ LocalStorage
+  // Lọc sạch toàn bộ phần thưởng mẫu khỏi dữ liệu cần lưu
+  const cleanedRewards = rewards.filter(item => !isSampleReward(item));
+
+  // 1. Đọc dữ liệu hiện có từ LocalStorage (đã lọc bỏ mẫu)
   let localData: GardenReward[] = [];
   try {
     const rawLocal = localStorage.getItem(storageKey) || localStorage.getItem(legacyStorageKey) || localStorage.getItem(legacyCloudKey);
     if (rawLocal) {
       const parsed = JSON.parse(rawLocal);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        localData = parsed;
+        localData = parsed.filter(item => !isSampleReward(item));
       }
     }
   } catch (e) {
@@ -112,7 +128,7 @@ export async function saveWorkspaceRewardsData(
 
       const res: any = await Promise.race([fetchPromise, timeoutPromise]);
       if (res?.data?.value && Array.isArray(res.data.value)) {
-        cloudData = res.data.value;
+        cloudData = res.data.value.filter((item: GardenReward) => !isSampleReward(item));
       } else {
         // Fallback đọc key legacy nếu key phân vùng chưa có
         const legacyRes: any = await supabase
@@ -121,7 +137,7 @@ export async function saveWorkspaceRewardsData(
           .eq('key', legacyCloudKey)
           .maybeSingle();
         if (legacyRes?.data?.value && Array.isArray(legacyRes.data.value)) {
-          cloudData = legacyRes.data.value;
+          cloudData = legacyRes.data.value.filter((item: GardenReward) => !isSampleReward(item));
         }
       }
     } catch (e) {
@@ -131,7 +147,8 @@ export async function saveWorkspaceRewardsData(
 
   // 3. THỰC HIỆN DEEP MERGE ĐA TẦNG (Cloud cũ + Local cũ + Thao tác mới nhất)
   let mergedData = deepMergeRewards(cloudData, localData);
-  mergedData = deepMergeRewards(mergedData, rewards);
+  mergedData = deepMergeRewards(mergedData, cleanedRewards);
+  mergedData = mergedData.filter(item => !isSampleReward(item));
 
   // 4. Lưu ngay lập tức vào LocalStorage (Bảo đảm dữ liệu sống sót 100% khi rớt mạng)
   safeSetLocalStorage(storageKey, mergedData);
@@ -158,6 +175,7 @@ export async function saveWorkspaceRewardsData(
 /**
  * 📥 TẢI VÀ HỢP NHẤT TOÀN BỘ DỮ LIỆU PHẦN THƯỞNG CHO WORKSPACE
  * Bảo toàn 100% dữ liệu đã làm việc offline mà không bao giờ bị Cloud cũ đè mất!
+ * Tự động loại bỏ sạch toàn bộ phần thưởng mẫu.
  */
 export function loadWorkspaceRewardsData(
   workspaceId: string = 'ws_default',
@@ -171,16 +189,18 @@ export function loadWorkspaceRewardsData(
   const legacyStorageKey = 'deskos_garden_rewards_v2';
   const legacyCloudKey = 'school_garden_rewards';
 
-  let merged: GardenReward[] = Array.isArray(fallbackValue) && fallbackValue.length > 0 ? [...fallbackValue] : [...DEFAULT_REWARDS];
+  let merged: GardenReward[] = Array.isArray(fallbackValue)
+    ? fallbackValue.filter(item => !isSampleReward(item))
+    : [];
 
   // 1. Tải bản sao từ Cloud dbStates nếu có
   const scopedCloud = dbStates?.[cloudKey];
   if (scopedCloud && Array.isArray(scopedCloud) && scopedCloud.length > 0) {
-    merged = deepMergeRewards(merged, scopedCloud);
+    merged = deepMergeRewards(merged, scopedCloud.filter(item => !isSampleReward(item)));
   } else {
     const legacyCloud = dbStates?.[legacyCloudKey];
     if (legacyCloud && Array.isArray(legacyCloud) && legacyCloud.length > 0) {
-      merged = deepMergeRewards(merged, legacyCloud);
+      merged = deepMergeRewards(merged, legacyCloud.filter(item => !isSampleReward(item)));
     }
   }
 
@@ -190,7 +210,7 @@ export function loadWorkspaceRewardsData(
     if (rawLocal) {
       const parsedLocal = JSON.parse(rawLocal);
       if (Array.isArray(parsedLocal) && parsedLocal.length > 0) {
-        merged = deepMergeRewards(merged, parsedLocal);
+        merged = deepMergeRewards(merged, parsedLocal.filter(item => !isSampleReward(item)));
       }
     }
   } catch (e) {
@@ -203,12 +223,21 @@ export function loadWorkspaceRewardsData(
     if (rawLegacy) {
       const parsedLegacy = JSON.parse(rawLegacy);
       if (Array.isArray(parsedLegacy) && parsedLegacy.length > 0) {
-        merged = deepMergeRewards(merged, parsedLegacy);
+        merged = deepMergeRewards(merged, parsedLegacy.filter(item => !isSampleReward(item)));
       }
     }
   } catch (e) {}
 
-  return merged;
+  const finalRewards = merged.filter(item => !isSampleReward(item));
+
+  // Tự động dọn dẹp phần thưởng mẫu khỏi LocalStorage để các lần sau hoàn toàn sạch
+  try {
+    safeSetLocalStorage(storageKey, finalRewards);
+    safeSetLocalStorage(legacyStorageKey, finalRewards);
+    safeSetLocalStorage(legacyCloudKey, finalRewards);
+  } catch (e) {}
+
+  return finalRewards;
 }
 
 /**
