@@ -394,6 +394,13 @@ button[class*="bg-red"]:not(.btn-raw):not(.btn-plain) {
   box-shadow: 0 2px 0 #b91c1c, inset 0 1px 1px rgba(255, 255, 255, 0.4) !important;
   color: #ffffff !important;
 }
+button[class*="bg-rose"]:not(.btn-raw):not(.btn-plain) svg,
+button[class*="bg-red"]:not(.btn-raw):not(.btn-plain) svg,
+button[class*="bg-rose"]:not(.btn-raw):not(.btn-plain):hover svg,
+button[class*="bg-red"]:not(.btn-raw):not(.btn-plain):hover svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
 button[class*="bg-rose"]:not(.btn-raw):not(.btn-plain):hover,
 button[class*="bg-red"]:not(.btn-raw):not(.btn-plain):hover {
   box-shadow: 0 3.5px 0 #b91c1c, inset 0 1px 1px rgba(255, 255, 255, 0.55), 0 4px 10px rgba(239, 68, 68, 0.25) !important;

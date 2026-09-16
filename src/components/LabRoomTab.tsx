@@ -1217,10 +1217,10 @@ export default function LabRoomTab({
               {/* Nút Xóa Chỗ Ngồi (Có xác nhận an toàn) */}
               <button
                 onClick={handleClearAllClassSeating}
-                className="px-3 py-2 rounded-xl bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 hover:border-rose-300 font-bold text-xs shadow-2xs transition-all active:scale-95 flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
+                className="px-3 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white border border-rose-700 font-bold text-xs shadow-xs active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
                 title="Xóa toàn bộ chỗ ngồi đã xếp của lớp này (có xác nhận an toàn)"
               >
-                <RotateCcw className="w-3.5 h-3.5 text-rose-500" />
+                <RotateCcw className="w-3.5 h-3.5 text-white shrink-0" />
                 <span>Xóa chỗ ngồi</span>
               </button>
             </div>

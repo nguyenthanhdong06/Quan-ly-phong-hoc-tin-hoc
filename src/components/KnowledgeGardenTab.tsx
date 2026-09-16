@@ -1501,7 +1501,7 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                     onClick={() => handleDeleteSeedSet(set.id)}
                     className="px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-black text-xs shadow-2xs transition-all active:scale-95 flex items-center gap-1 cursor-pointer"
                   >
-                    <Trash2 className="w-3.5 h-3.5" /> Xóa
+                    <Trash2 className="w-3.5 h-3.5 text-white shrink-0" /> Xóa
                   </button>
                 </div>
               </div>
@@ -1848,10 +1848,10 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
               {rewards.length > 0 && (
                 <button
                   onClick={handleClearAllRewards}
-                  className="px-3 py-2 rounded-xl bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 hover:border-rose-300 font-bold text-xs transition-all flex items-center gap-1.5 shadow-2xs active:scale-95 cursor-pointer whitespace-nowrap shrink-0"
+                  className="px-3 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white border border-rose-700 font-bold text-xs shadow-xs active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
                   title="Xóa toàn bộ các phần quà cũ để làm sạch kho quà"
                 >
-                  <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                  <Trash2 className="w-3.5 h-3.5 text-white shrink-0" />
                   <span>Xóa Tất Cả</span>
                 </button>
               )}
@@ -1902,7 +1902,7 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                       className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 transition-colors cursor-pointer"
                       title="Xóa phần thưởng này"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-3.5 h-3.5 text-white shrink-0" />
                     </button>
                   </div>
                 </div>
@@ -1947,7 +1947,7 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                     onClick={() => handleDeleteReward(item.id, item.title)}
                     className="py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-black text-xs transition-all flex items-center justify-center gap-1 cursor-pointer"
                   >
-                    <Trash2 className="w-3.5 h-3.5" /> Xóa
+                    <Trash2 className="w-3.5 h-3.5 text-white shrink-0" /> Xóa
                   </button>
                 </div>
               </div>

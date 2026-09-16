@@ -1453,7 +1453,7 @@ export default function AdminTab({
                 onClick={() => setIsDeleteConfirmOpen(true)}
                 className="bg-gradient-to-b from-[#ff3535] via-[#dc2626] to-[#991b1b] hover:from-[#ff4d4d] hover:to-[#b91c1c] text-white font-black text-xs px-5 py-2.5 rounded-full border border-[#991b1b] shadow-md transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
               >
-                <Trash2 className="w-3.5 h-3.5 text-rose-100" />
+                <Trash2 className="w-3.5 h-3.5 text-white shrink-0" />
                 <span>Xóa toàn bộ học sinh ({students.length} em)</span>
               </button>
             </div>
