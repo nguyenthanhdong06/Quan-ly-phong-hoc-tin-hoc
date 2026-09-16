@@ -1634,36 +1634,45 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
   if (isRewardManagerOpen) {
     return (
       <div className="space-y-6 text-slate-800 pb-10">
-        {/* Header Bar with Back Button */}
-        <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs">
-          <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="flex items-center gap-3">
+        {/* Header Bar with Back Button - Cấu trúc tiêu đề gọn đồng bộ 100% với tab Xếp Chỗ Ngồi */}
+        <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] shadow-xs">
+          <div className="bg-[#dfccb0] border-b border-[#cbb89d] rounded-2xl px-5 sm:px-6 py-3.5 flex flex-wrap lg:flex-nowrap justify-between items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0">
               <button
                 onClick={() => {
                   setIsRewardManagerOpen(false);
                   setEditingReward(null);
                 }}
-                className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-[#cbb89d] font-black text-xs transition-all flex items-center gap-1.5 shadow-2xs active:scale-95 cursor-pointer"
+                className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-800 border border-[#cbb89d] font-black text-xs transition-all flex items-center gap-1.5 shadow-2xs active:scale-95 cursor-pointer shrink-0"
+                title="Quay về bảng quản lý Khu Vườn Tri Thức"
               >
-                <ArrowLeft className="w-4 h-4 text-slate-700" /> Quay Về Bảng Quản Lý
+                <ArrowLeft className="w-3.5 h-3.5 text-slate-700" />
+                <span>Quay Lại</span>
               </button>
-              <div>
-                <h3 className="font-black text-sm sm:text-base text-[#3d2b17] flex items-center gap-2">
-                  <span>🎁</span> KHO THU HOẠCH & ĐỔI PHẦN THƯỞNG
+
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-base shrink-0">🎁</span>
+                <h3 className="font-black text-xs sm:text-sm text-slate-900 whitespace-nowrap">
+                  KHO THU HOẠCH & ĐỔI PHẦN THƯỞNG
                 </h3>
-                <p className="text-[11px] font-bold text-[#5c4327]">
-                  Quản lý danh sách phần thưởng: Thêm, sửa, xóa phần thưởng (Tự động đồng bộ với mục Đổi Thưởng của học sinh).
-                </p>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              {renderRewardSaveStatus()}
+            {/* Hàng nút thao tác cùng 1 dòng, bảo toàn mép nút - Đã ẩn thông báo đã lưu màu xanh */}
+            <div className="flex items-center gap-2.5 flex-nowrap shrink-0 overflow-x-auto py-1">
+              <button
+                onClick={handleOpenCreateReward}
+                className="px-3 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs shadow-sm transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer border border-amber-700 whitespace-nowrap shrink-0"
+                title="Thêm phần thưởng mới"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Thêm Phần Thưởng Mới</span>
+              </button>
 
               <button
                 onClick={handleSaveRewards}
                 disabled={isRewardsSaving}
-                className={`px-3.5 py-2 rounded-xl font-black text-xs transition-all shadow-xs flex items-center gap-1.5 active:scale-95 cursor-pointer whitespace-nowrap ${
+                className={`px-3.5 py-2 rounded-xl font-black text-xs transition-all shadow-xs flex items-center gap-1.5 active:scale-95 cursor-pointer whitespace-nowrap shrink-0 ${
                   isRewardsSaving
                     ? 'bg-amber-400 text-amber-950 border border-amber-300 opacity-85 cursor-wait'
                     : hasUnsavedRewardChanges
@@ -1691,18 +1700,12 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
               </button>
 
               <button
-                onClick={handleOpenCreateReward}
-                className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
-              >
-                <Plus className="w-4 h-4" /> Thêm Phần Thưởng Mới
-              </button>
-
-              <button
                 onClick={handleResetDefaultRewards}
-                className="px-3.5 py-2 rounded-xl bg-white hover:bg-amber-50 text-amber-900 border border-amber-300 font-black text-xs transition-all flex items-center gap-1.5 shadow-2xs active:scale-95 cursor-pointer"
+                className="px-3 py-2 rounded-xl bg-white hover:bg-amber-50 text-amber-900 border border-amber-300 font-black text-xs transition-all flex items-center gap-1.5 shadow-2xs active:scale-95 cursor-pointer whitespace-nowrap shrink-0"
                 title="Khôi phục danh sách phần thưởng mặc định ban đầu"
               >
-                <RefreshCw className="w-3.5 h-3.5" /> Khôi Phục Mẫu
+                <RefreshCw className="w-3.5 h-3.5 text-amber-700" />
+                <span>Khôi Phục Mẫu</span>
               </button>
             </div>
           </div>
