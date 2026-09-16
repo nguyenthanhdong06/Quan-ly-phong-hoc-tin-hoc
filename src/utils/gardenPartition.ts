@@ -64,7 +64,8 @@ export function deepMergeRewards(
             title: item.title?.trim() || existing.title,
             cost: typeof item.cost === 'number' ? item.cost : existing.cost,
             icon: item.icon || existing.icon,
-            type: item.type || existing.type
+            type: item.type || existing.type,
+            imageUrl: item.imageUrl !== undefined ? item.imageUrl : existing.imageUrl
           });
         }
       }

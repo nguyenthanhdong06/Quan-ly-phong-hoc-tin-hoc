@@ -24,7 +24,9 @@ import {
   Pencil,
   ExternalLink,
   UploadCloud,
-  Save
+  Save,
+  Camera,
+  Image as ImageIcon
 } from 'lucide-react';
 import { Student, ClassItem, GardenStudentData, GardenReward, WaterLog, CustomSeedSet, Member } from '../types';
 import { triggerStarsConfetti } from '../utils/confetti';
@@ -347,6 +349,9 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
   const [rewardFormTitle, setRewardFormTitle] = useState<string>('');
   const [rewardFormCost, setRewardFormCost] = useState<number>(100);
   const [rewardFormType, setRewardFormType] = useState<'WATER' | 'HARVEST'>('WATER');
+  const [rewardFormImageUrl, setRewardFormImageUrl] = useState<string>('');
+  const [isUploadingRewardImage, setIsUploadingRewardImage] = useState<boolean>(false);
+  const rewardImageInputRef = useRef<HTMLInputElement>(null);
   const [highlightedRewardId, setHighlightedRewardId] = useState<string | null>(null);
   const rewardTitleInputRef = useRef<HTMLInputElement>(null);
 
@@ -780,6 +785,7 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     setRewardFormTitle('');
     setRewardFormCost(100);
     setRewardFormType('WATER');
+    setRewardFormImageUrl('');
     setIsRewardFormModalOpen(true);
   };
 
@@ -789,7 +795,36 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     setRewardFormTitle(item.title);
     setRewardFormCost(item.cost || 100);
     setRewardFormType(item.type || 'WATER');
+    setRewardFormImageUrl(item.imageUrl || '');
     setIsRewardFormModalOpen(true);
+  };
+
+  // Tải và nén ảnh phần thưởng từ thiết bị
+  const handleUploadRewardImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      showToast('Vui lòng chọn file hình ảnh hợp lệ (PNG, JPG, WEBP)!', 'warning');
+      return;
+    }
+    try {
+      setIsUploadingRewardImage(true);
+      let compressed = '';
+      try {
+        compressed = await compressImageToWebP(file, 500, 0.75);
+      } catch {
+        compressed = await compressImageFile(file, 500, 0.75);
+      }
+      setRewardFormImageUrl(compressed);
+      showToast('Đã tải và tối ưu hóa ảnh phần thưởng thành công!', 'success');
+    } catch (err) {
+      showToast('Không thể xử lý file ảnh này!', 'error');
+    } finally {
+      setIsUploadingRewardImage(false);
+      if (rewardImageInputRef.current) {
+        rewardImageInputRef.current.value = '';
+      }
+    }
   };
 
   const handleSaveReward = () => {
@@ -798,13 +833,16 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
       return;
     }
 
+    const finalImageUrl = rewardFormImageUrl.trim() ? rewardFormImageUrl.trim() : undefined;
+
     if (editingReward) {
       const updated: GardenReward = {
         ...editingReward,
         icon: rewardFormIcon.trim() || '🎁',
         title: rewardFormTitle.trim(),
         cost: Number(rewardFormCost) || 0,
-        type: rewardFormType
+        type: rewardFormType,
+        imageUrl: finalImageUrl
       };
 
       const nextRewards = rewards.map(r => r.id === editingReward.id ? updated : r);
@@ -836,7 +874,8 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
         icon: rewardFormIcon.trim() || '🎁',
         title: rewardFormTitle.trim(),
         cost: Number(rewardFormCost) || 100,
-        type: rewardFormType
+        type: rewardFormType,
+        imageUrl: finalImageUrl
       };
 
       const nextRewards = [...rewards, newItem];
@@ -1563,8 +1602,106 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
               </div>
             </div>
 
+            {/* Tùy chọn gắn ảnh chụp phần thưởng thực tế */}
+            <div className="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <label className="block text-[10px] font-black text-[#6e5334] uppercase flex items-center gap-1.5">
+                  <Camera className="w-3.5 h-3.5 text-amber-800" />
+                  <span>Ảnh chụp quà thật (Tùy chọn - Rất kích thích học sinh):</span>
+                </label>
+                {rewardFormImageUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setRewardFormImageUrl('')}
+                    className="text-[10px] font-bold text-rose-600 hover:text-rose-800 underline cursor-pointer"
+                  >
+                    Bỏ ảnh (Dùng Emoji)
+                  </button>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="file"
+                    ref={rewardImageInputRef}
+                    onChange={handleUploadRewardImage}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => rewardImageInputRef.current?.click()}
+                    disabled={isUploadingRewardImage}
+                    className="px-3 py-2 rounded-xl bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-xs flex items-center gap-1.5 shadow-2xs cursor-pointer active:scale-95 transition shrink-0"
+                    title="Chọn file ảnh từ máy tính hoặc điện thoại"
+                  >
+                    {isUploadingRewardImage ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>Đang nén ảnh...</span>
+                      </>
+                    ) : (
+                      <>
+                        <UploadCloud className="w-3.5 h-3.5 text-amber-700" />
+                        <span>Tải ảnh từ máy</span>
+                      </>
+                    )}
+                  </button>
+
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      value={rewardFormImageUrl.startsWith('data:') ? 'Ảnh đã tải từ máy (Đã nén siêu nhẹ)' : rewardFormImageUrl}
+                      onChange={(e) => setRewardFormImageUrl(e.target.value)}
+                      placeholder="Hoặc dán link ảnh Web / Google Drive..."
+                      disabled={rewardFormImageUrl.startsWith('data:')}
+                      className="w-full px-3 py-2 rounded-xl border border-[#d6c4a8] bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 text-xs text-slate-800 pr-8"
+                    />
+                    {rewardFormImageUrl && !rewardFormImageUrl.startsWith('data:') && (
+                      <button
+                        type="button"
+                        onClick={() => setRewardFormImageUrl('')}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                        title="Xóa link ảnh"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Khung xem trước (Live Preview) */}
+                {rewardFormImageUrl && (
+                  <div className="flex items-center gap-3 p-2.5 rounded-xl bg-white border border-amber-200 shadow-2xs">
+                    <div className="w-16 h-16 rounded-xl overflow-hidden border-2 border-amber-300 bg-amber-50 shrink-0 flex items-center justify-center shadow-xs">
+                      <img
+                        src={convertGoogleDriveUrl(rewardFormImageUrl, 200)}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.currentTarget as HTMLImageElement;
+                          target.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                    <div className="text-[11px] text-slate-600 leading-tight">
+                      <span className="font-black text-emerald-800 flex items-center gap-1">
+                        <Check className="w-3.5 h-3.5 text-emerald-600" /> Đã gắn ảnh chụp thực tế thành công
+                      </span>
+                      <p className="text-[10px] text-slate-500 mt-1">
+                        Ảnh này sẽ hiển thị rực rỡ trên thẻ quà thay cho icon Emoji để tạo động lực lớn nhất cho học sinh đổi thưởng.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div>
-              <label className="block text-[10px] font-black text-[#6e5334] uppercase mb-1">Biểu tượng Emoji:</label>
+              <label className="block text-[10px] font-black text-[#6e5334] uppercase mb-1">
+                Biểu tượng Emoji (Dùng khi không có ảnh hoặc làm icon dự phòng):
+              </label>
               <input
                 type="text"
                 value={rewardFormIcon}
@@ -1758,9 +1895,26 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                   </div>
                 </div>
 
-                {/* Emoji & Title */}
+                {/* Emoji / Image & Title */}
                 <div className="space-y-2 my-2">
-                  <div className="text-6xl select-none hover:scale-110 transition-transform">{item.icon}</div>
+                  {item.imageUrl ? (
+                    <div className="w-24 h-24 mx-auto rounded-2xl overflow-hidden border-2 border-amber-300/80 shadow-md bg-amber-50/50 flex items-center justify-center relative group-hover:scale-105 transition-transform duration-300">
+                      <img
+                        src={convertGoogleDriveUrl(item.imageUrl, 300)}
+                        alt={item.title}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.currentTarget as HTMLImageElement;
+                          target.style.display = 'none';
+                          if (target.parentElement) {
+                            target.parentElement.innerHTML = `<span class="text-5xl select-none">${item.icon || '🎁'}</span>`;
+                          }
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="text-6xl select-none hover:scale-110 transition-transform">{item.icon}</div>
+                  )}
                   <h4 className="font-black text-slate-900 text-sm leading-snug">{item.title}</h4>
                   <div className={`text-xs font-black inline-block px-3 py-1 rounded-full ${
                     isHarvest ? 'bg-amber-50 text-amber-800 border border-amber-200' : 'bg-sky-50 text-sky-800 border border-sky-200'
@@ -2516,7 +2670,24 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                     }`}
                   >
                     <div className="space-y-2">
-                      <div className="text-5xl sm:text-6xl my-2 select-none hover:scale-110 transition-transform">{item.icon}</div>
+                      {item.imageUrl ? (
+                        <div className="w-24 h-24 sm:w-28 sm:h-28 mx-auto my-2 rounded-2xl overflow-hidden border-2 border-amber-300/80 shadow-md bg-amber-50/50 flex items-center justify-center relative hover:scale-105 transition-transform duration-300">
+                          <img
+                            src={convertGoogleDriveUrl(item.imageUrl, 400)}
+                            alt={item.title}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              const target = e.currentTarget as HTMLImageElement;
+                              target.style.display = 'none';
+                              if (target.parentElement) {
+                                target.parentElement.innerHTML = `<span class="text-5xl select-none">${item.icon || '🎁'}</span>`;
+                              }
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div className="text-5xl sm:text-6xl my-2 select-none hover:scale-110 transition-transform">{item.icon}</div>
+                      )}
                       <h4 className="font-black text-slate-900 text-sm leading-snug">{item.title}</h4>
                       <div className={`text-xs font-black inline-block px-3 py-1 rounded-full ${
                         isHarvest ? 'bg-amber-50 text-amber-800 border border-amber-200' : 'bg-sky-50 text-sky-800 border border-sky-200'

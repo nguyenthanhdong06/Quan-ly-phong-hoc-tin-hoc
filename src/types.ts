@@ -220,6 +220,7 @@ export interface GardenReward {
   title: string;
   cost: number;
   type: 'WATER' | 'HARVEST';
+  imageUrl?: string; // 📸 Link ảnh chụp quà thật hoặc DataURL ảnh nén
 }
 
 export interface GardenStudentData {
