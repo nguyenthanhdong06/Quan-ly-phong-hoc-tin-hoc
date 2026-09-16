@@ -809,12 +809,18 @@ export default function LabRoomTab({
     showToast('Đã xóa học sinh khỏi vị trí máy!', 'info');
   }, [selectedClass, getAssignedStudentIds, saveSeatingState, showToast]);
 
-  // Clear all seating for selected class
+  // Clear all seating for selected class (Kèm hộp thoại xác nhận an toàn chống bấm nhầm)
   const handleClearAllClassSeating = () => {
     if (assignedStudentIdsList.length === 0) {
       showToast('Lớp hiện tại chưa có chỗ ngồi nào được xếp!', 'info');
       return;
     }
+
+    const confirmed = window.confirm(
+      `⚠️ CẢNH BÁO AN TOÀN:\nThầy/Cô có chắc chắn muốn xóa toàn bộ chỗ ngồi đã xếp của lớp ${selectedClass.toUpperCase()} không?\n\n(Toàn bộ học sinh sẽ được đưa về danh sách chờ)`
+    );
+    if (!confirmed) return;
+
     saveSeatingState({});
     playButtonClickSound();
     showToast(`Đã xóa toàn bộ chỗ ngồi của lớp ${selectedClass}!`, 'info');
@@ -1989,23 +1995,8 @@ export default function LabRoomTab({
             <span>Xếp Tự Động</span>
           </button>
 
-          {/* 🌟 2 NÚT NẰM CÙNG DÒNG THEO YÊU CẦU CỦA THẦY: Lưu Sơ Đồ & Xóa chỗ ngồi */}
+          {/* 🌟 NÚT LƯU SƠ ĐỒ AN TOÀN */}
           {renderSaveButton()}
-
-          {/* Xóa chỗ ngồi */}
-          <button
-            onClick={handleClearAllClassSeating}
-            className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white border border-rose-700 font-black text-xs shadow-sm transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
-            title="Xóa toàn bộ chỗ ngồi đã xếp của lớp hiện tại"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-            <span>Xóa chỗ ngồi</span>
-          </button>
-        </div>
-
-        {/* Chỉ báo lưu ngầm ở cuối hàng */}
-        <div className="shrink-0">
-          {renderAutoSaveIndicator()}
         </div>
 
       </div>
@@ -2151,6 +2142,16 @@ export default function LabRoomTab({
               title="Mở xem trước và in sơ đồ chỗ ngồi A4"
             >
               <Printer className="w-3.5 h-3.5" /> In Sơ Đồ
+            </button>
+
+            {/* 🛡️ NÚT XÓA CHỖ NGỒI Ở VỊ TRÍ MỚI AN TOÀN (CÓ HỘP THOẠI XÁC NHẬN CHỐNG BẤM NHẦM) */}
+            <button
+              onClick={handleClearAllClassSeating}
+              className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 hover:border-rose-300 font-black text-xs shadow-2xs transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer ml-2"
+              title="Xóa toàn bộ chỗ ngồi đã xếp của lớp hiện tại (Yêu cầu xác nhận trước khi xóa)"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+              <span>Xóa chỗ ngồi</span>
             </button>
           </div>
 
