@@ -2589,39 +2589,34 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
           </div>
 
           {/* 2. THẺ CHỌN & HIỂN THỊ HỌC SINH ĐỔI QUÀ (ACTIVE STUDENT PROFILE CARD) */}
-          <div className="bg-gradient-to-r from-amber-50/90 via-[#fffbf0] to-orange-50/90 border border-[#cbb89d] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div className="flex items-center gap-3.5 min-w-0">
-              <div className="w-12 h-12 rounded-2xl bg-amber-200 border-2 border-amber-400 flex items-center justify-center text-2xl shadow-inner shrink-0">
+          <div className="bg-gradient-to-r from-amber-50/90 via-[#fffbf0] to-orange-50/90 border border-[#cbb89d] rounded-2xl px-3.5 py-2 sm:px-4 sm:py-2.5 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-amber-200 border border-amber-400 flex items-center justify-center text-lg shadow-inner shrink-0">
                 {activeStudent ? (activeStudent.gender === 'Nữ' ? '👧' : '👦') : '🌱'}
               </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h4 className="font-black text-slate-900 text-sm sm:text-base">
-                    {activeStudent ? activeStudent.name : 'Chưa chọn học sinh'}
-                  </h4>
-                  {activeStudent?.code && (
-                    <span className="text-[10px] font-black bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md border border-amber-300">
-                      MSHS: {activeStudent.code}
-                    </span>
-                  )}
-                  <span className="text-[10px] font-black bg-emerald-100 text-emerald-900 px-2 py-0.5 rounded-md border border-emerald-300">
-                    Lớp {selectedClass}
+              <div className="flex items-center gap-2 flex-wrap min-w-0">
+                <h4 className="font-black text-slate-900 text-xs sm:text-sm whitespace-nowrap">
+                  {activeStudent ? activeStudent.name : 'Chưa chọn học sinh'}
+                </h4>
+                {activeStudent?.code && (
+                  <span className="text-[10px] font-black bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md border border-amber-300 shrink-0">
+                    MSHS: {activeStudent.code}
                   </span>
-                </div>
-                <p className="text-xs font-bold text-slate-500 mt-0.5">
-                  Dùng giọt nước chăm chỉ hoặc thu hoạch quả chín để nhận quà tặng xứng đáng!
-                </p>
+                )}
+                <span className="text-[10px] font-black bg-emerald-100 text-emerald-900 px-2 py-0.5 rounded-md border border-emerald-300 shrink-0">
+                  Lớp {selectedClass}
+                </span>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto shrink-0 justify-between md:justify-end">
+            <div className="flex flex-wrap items-center gap-2 w-full md:w-auto shrink-0 justify-start md:justify-end">
               {/* Dropdown chọn học sinh */}
               <div className="flex items-center gap-1.5">
                 <span className="text-[11px] font-black text-slate-600 whitespace-nowrap">Đổi cho:</span>
                 <select
                   value={activeStudentId}
                   onChange={(e) => setActiveStudentId(e.target.value)}
-                  className="bg-white border border-[#cbb89d] text-slate-900 font-extrabold text-xs rounded-xl px-3 py-2 shadow-2xs focus:ring-2 focus:ring-amber-500 outline-none cursor-pointer max-w-[190px]"
+                  className="bg-white border border-[#cbb89d] text-slate-900 font-extrabold text-xs rounded-xl px-2.5 py-1.5 shadow-2xs focus:ring-2 focus:ring-amber-500 outline-none cursor-pointer max-w-[200px]"
                 >
                   {classStudents.map(s => (
                     <option key={s.id} value={s.id}>
@@ -2632,14 +2627,10 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
               </div>
 
               {/* Số giọt nước hiện có */}
-              <div className="flex items-center gap-2 bg-white px-3.5 py-1.5 rounded-xl border border-sky-300 shadow-2xs">
-                <span className="text-lg">💧</span>
-                <div className="text-left">
-                  <div className="text-[9.5px] font-extrabold text-sky-700 uppercase leading-none">Giọt Nước</div>
-                  <div className="text-sm font-black text-sky-950 leading-tight">
-                    {activeGarden?.water || 0}
-                  </div>
-                </div>
+              <div className="flex items-center gap-1.5 bg-white px-2.5 py-1.5 rounded-xl border border-sky-300 shadow-2xs text-xs font-black text-sky-950 shrink-0">
+                <span className="text-sm">💧</span>
+                <span className="text-sky-700 text-[10px] font-bold uppercase">Giọt Nước:</span>
+                <span>{activeGarden?.water || 0}</span>
               </div>
 
               {/* Cấp độ cây */}
@@ -2647,18 +2638,12 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                 const { currentStage } = getStageInfo(activeGarden.water);
                 const isHarvestReady = currentStage.level >= 7;
                 return (
-                  <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border shadow-2xs ${
-                    isHarvestReady ? 'bg-amber-100 border-amber-400 text-amber-950 font-black animate-pulse' : 'bg-white border-[#cbb89d] text-slate-800 font-bold'
+                  <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border shadow-2xs text-xs font-black shrink-0 ${
+                    isHarvestReady ? 'bg-amber-100 border-amber-400 text-amber-950 animate-pulse' : 'bg-white border-[#cbb89d] text-slate-800'
                   }`}>
-                    <span className="text-base">{isHarvestReady ? '🍎' : '🌱'}</span>
-                    <div className="text-left">
-                      <div className="text-[9.5px] font-extrabold uppercase leading-none">
-                        {isHarvestReady ? 'Đã Kết Trái' : `Cấp ${currentStage.level}`}
-                      </div>
-                      <div className="text-xs font-black leading-tight">
-                        {isHarvestReady ? 'Sẵn sàng mùa quả' : currentStage.name}
-                      </div>
-                    </div>
+                    <span className="text-sm">{isHarvestReady ? '🍎' : '🌱'}</span>
+                    <span className="text-[10px] font-bold uppercase text-slate-500">{isHarvestReady ? 'Trạng Thái:' : `Cấp ${currentStage.level}:`}</span>
+                    <span>{isHarvestReady ? 'Mùa Quả Chín' : currentStage.name}</span>
                   </div>
                 );
               })()}
