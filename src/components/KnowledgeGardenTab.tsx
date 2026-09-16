@@ -36,7 +36,13 @@ import {
 import { supabase, saveSupabaseState } from '../supabaseClient';
 import { safeSetLocalStorage, safeGetLocalStorage } from '../utils/safeStorage';
 import { matchStudentSearch } from '../utils/nameFormatter';
-import { saveWorkspaceGardenData } from '../utils/gardenPartition';
+import { 
+  saveWorkspaceGardenData, 
+  loadWorkspaceGardenData, 
+  saveWorkspaceRewardsData, 
+  loadWorkspaceRewardsData, 
+  deepMergeRewards 
+} from '../utils/gardenPartition';
 
 export interface KnowledgeGardenTabProps {
   students: Student[];
@@ -159,22 +165,27 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
   const gardenData = propGardenData || localGardenData;
   const setGardenData = propSetGardenData || setLocalGardenData;
 
+  const rewardsStorageKey = `${currentWsId}_garden_rewards_v2`;
+
   const [localRewards, setLocalRewards] = useState<GardenReward[]>(() => {
-    try {
-      const saved = localStorage.getItem('deskos_garden_rewards_v2');
-      return saved ? JSON.parse(saved) : DEFAULT_REWARDS;
-    } catch (e) {
-      return DEFAULT_REWARDS;
-    }
+    return loadWorkspaceRewardsData(currentWsId, undefined, propRewards || DEFAULT_REWARDS);
   });
 
   const rewards = propRewards || localRewards;
   const setRewards = propSetRewards || setLocalRewards;
 
-  // 🛡️ Trạng thái lưu trữ Offline-First & Auto-Sync
+  // 🛡️ Trạng thái lưu trữ Offline-First & Auto-Sync cho Vườn Cây
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const gardenDebounceRef = useRef<any>(null);
+
+  // 🛡️ Trạng thái lưu trữ Offline-First & Auto-Sync cho Kho Đổi Thưởng
+  const [isRewardsSaving, setIsRewardsSaving] = useState(false);
+  const [hasUnsavedRewardChanges, setHasUnsavedRewardChanges] = useState(false);
+  const [lastRewardsSyncedTime, setLastRewardsSyncedTime] = useState<string>(() => {
+    return new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  });
+  const rewardsDebounceRef = useRef<any>(null);
 
   // Filters & Inputs
   const [classSearch, setClassSearch] = useState('');
@@ -423,14 +434,105 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     }
   };
 
+  // 🛡️ EFFECT: PERSIST REWARDS (OFFLINE-FIRST & AUTO-SYNC DEEP MERGE)
   useEffect(() => {
     if (rewards.length === 0) return;
     try {
+      safeSetLocalStorage(rewardsStorageKey, rewards);
       safeSetLocalStorage('deskos_garden_rewards_v2', rewards);
       safeSetLocalStorage('school_garden_rewards', rewards);
-      saveSupabaseState('school_garden_rewards', rewards);
     } catch (e) {}
-  }, [rewards]);
+
+    // 🌐 Tự động đồng bộ ngầm (Debounce 1.5s) với Supabase Cloud bằng Deep Merge
+    if (rewardsDebounceRef.current) clearTimeout(rewardsDebounceRef.current);
+    rewardsDebounceRef.current = setTimeout(async () => {
+      try {
+        await saveWorkspaceRewardsData(rewards, currentWsId);
+        setHasUnsavedRewardChanges(false);
+        setLastRewardsSyncedTime(new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }));
+      } catch (e) {
+        console.warn('Lỗi lưu ngầm danh mục phần thưởng:', e);
+      }
+    }, 1500);
+
+    return () => {
+      if (rewardsDebounceRef.current) clearTimeout(rewardsDebounceRef.current);
+    };
+  }, [rewards, rewardsStorageKey, currentWsId]);
+
+  // 🛡️ HÀM LƯU DANH MỤC PHẦN THƯỞNG CHỦ ĐỘNG
+  const handleSaveRewards = async () => {
+    if (isRewardsSaving) return;
+    setIsRewardsSaving(true);
+    if (rewardsDebounceRef.current) clearTimeout(rewardsDebounceRef.current);
+    try {
+      const targetWs = currentWsId || 'ws_u-1';
+      await saveWorkspaceRewardsData(rewards, targetWs, (merged) => {
+        setRewards(merged);
+      });
+      setHasUnsavedRewardChanges(false);
+      const timeStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+      setLastRewardsSyncedTime(timeStr);
+      showToast('Đã lưu trữ kho phần thưởng đổi quà an toàn lên hệ thống!', 'success');
+    } catch (err) {
+      console.error('Lỗi khi lưu kho phần thưởng:', err);
+      showToast('Có lỗi xảy ra khi lưu phần thưởng!', 'error');
+    } finally {
+      setIsRewardsSaving(false);
+    }
+  };
+
+  // 🛡️ HÀM LƯU ĐỒNG THỜI ĐỔI THƯỞNG & DỮ LIỆU VƯỜN CÂY CHO TAB ĐỔI THƯỞNG
+  const handleSaveRewardsAndGarden = async () => {
+    if (isSaving || isRewardsSaving) return;
+    setIsSaving(true);
+    setIsRewardsSaving(true);
+    if (gardenDebounceRef.current) clearTimeout(gardenDebounceRef.current);
+    if (rewardsDebounceRef.current) clearTimeout(rewardsDebounceRef.current);
+    try {
+      const targetWs = currentWsId || 'ws_u-1';
+      await Promise.all([
+        saveWorkspaceGardenData(gardenData, targetWs, (merged) => setGardenData(merged)),
+        saveWorkspaceRewardsData(rewards, targetWs, (merged) => setRewards(merged))
+      ]);
+      setHasUnsavedChanges(false);
+      setHasUnsavedRewardChanges(false);
+      const timeStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+      setLastRewardsSyncedTime(timeStr);
+      showToast('Đã lưu trữ an toàn toàn bộ dữ liệu Đổi Thưởng và Giọt Nước học sinh!', 'success');
+    } catch (err) {
+      console.error('Lỗi khi lưu đổi thưởng:', err);
+      showToast('Có lỗi xảy ra khi lưu đổi thưởng!', 'error');
+    } finally {
+      setIsSaving(false);
+      setIsRewardsSaving(false);
+    }
+  };
+
+  // 🛡️ RENDER STATUS BADGE CHO TAB ĐỔI THƯỞNG (CHUẨN MỰC 100% ĐIỂM DANH)
+  const renderRewardSaveStatus = () => (
+    <div className="flex items-center gap-1.5 text-[11px] font-black text-slate-700 bg-white/85 border border-[#cbb89d] px-3 py-1.5 rounded-xl shadow-2xs shrink-0 whitespace-nowrap">
+      {(isSaving || isRewardsSaving) ? (
+        <>
+          <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping shrink-0" />
+          <span className="text-amber-900">🔄 Đang lưu ngầm...</span>
+        </>
+      ) : (hasUnsavedChanges || hasUnsavedRewardChanges) ? (
+        <>
+          <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse shrink-0" />
+          <span className="text-rose-700">⚠️ Có thay đổi chưa lưu</span>
+        </>
+      ) : (
+        <>
+          <span className="relative flex h-2 w-2 shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </span>
+          <span className="text-emerald-900">🟢 Đã lưu ({lastRewardsSyncedTime})</span>
+        </>
+      )}
+    </div>
+  );
 
   // Sync active student with current class
   const classStudents = students.filter(s => 
@@ -583,7 +685,7 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     setCustomBadgeInput('');
   };
 
-  // Redeem Reward in Shop
+  // Redeem Reward in Shop (Offline-First 0ms & Auto-Sync)
   const handleRedeemReward = (reward: GardenReward) => {
     if (!activeStudent || !activeGarden) return;
 
@@ -595,23 +697,32 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
         return;
       }
 
+      const now = Date.now();
+      const newLog: WaterLog = {
+        id: `log-${now}`,
+        date: new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }),
+        amount: 0,
+        reason: `🍎 Thu hoạch mùa gặt: ${reward.title}`
+      };
+
+      const updatedGarden: GardenStudentData = {
+        ...activeGarden,
+        water: 0,
+        logs: [newLog, ...activeGarden.logs]
+      };
+
+      const updatedAll = {
+        ...gardenData,
+        [activeStudent.id]: updatedGarden
+      };
+
+      // 🛡️ Lưu tức thì 0ms vào LocalStorage bảo vệ dữ liệu khi mất mạng
+      safeSetLocalStorage(gardenStorageKey, updatedAll);
+      safeSetLocalStorage('deskos_garden_data_v2', updatedAll);
+
       setHasUnsavedChanges(true);
-      setGardenData(prev => ({
-        ...prev,
-        [activeStudent.id]: {
-          ...activeGarden,
-          water: 0,
-          logs: [
-            {
-              id: `log-${Date.now()}`,
-              date: new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }),
-              amount: 0,
-              reason: `🍎 Thu hoạch mùa gặt: ${reward.title}`
-            },
-            ...activeGarden.logs
-          ]
-        }
-      }));
+      setGardenData(updatedAll);
+
       playVictoryFanfareSound();
       triggerStarsConfetti();
       showToast(`🎉 CHÚC MỪNG! Em đã thu hoạch mùa quả chín và nhận được quà "${reward.title}"! Cây đã được ươm lại hạt giống mới.`, 'success');
@@ -622,23 +733,32 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
         return;
       }
 
+      const now = Date.now();
+      const newLog: WaterLog = {
+        id: `log-${now}`,
+        date: new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }),
+        amount: -reward.cost,
+        reason: `🎁 Đổi phần thưởng: ${reward.title}`
+      };
+
+      const updatedGarden: GardenStudentData = {
+        ...activeGarden,
+        water: activeGarden.water - reward.cost,
+        logs: [newLog, ...activeGarden.logs]
+      };
+
+      const updatedAll = {
+        ...gardenData,
+        [activeStudent.id]: updatedGarden
+      };
+
+      // 🛡️ Lưu tức thì 0ms vào LocalStorage bảo vệ dữ liệu khi mất mạng
+      safeSetLocalStorage(gardenStorageKey, updatedAll);
+      safeSetLocalStorage('deskos_garden_data_v2', updatedAll);
+
       setHasUnsavedChanges(true);
-      setGardenData(prev => ({
-        ...prev,
-        [activeStudent.id]: {
-          ...activeGarden,
-          water: activeGarden.water - reward.cost,
-          logs: [
-            {
-              id: `log-${Date.now()}`,
-              date: new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }),
-              amount: -reward.cost,
-              reason: `🎁 Đổi phần thưởng: ${reward.title}`
-            },
-            ...activeGarden.logs
-          ]
-        }
-      }));
+      setGardenData(updatedAll);
+
       playVictoryFanfareSound();
       triggerStarsConfetti();
       showToast(`🎁 Tuyệt vời! Em đã dùng ${reward.cost} 💧 đổi thành công món quà "${reward.title}"!`, 'success');
@@ -678,7 +798,14 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
         cost: Number(rewardFormCost) || 0,
         type: rewardFormType
       };
-      setRewards(prev => prev.map(r => r.id === editingReward.id ? updated : r));
+
+      const nextRewards = rewards.map(r => r.id === editingReward.id ? updated : r);
+      safeSetLocalStorage(rewardsStorageKey, nextRewards);
+      safeSetLocalStorage('deskos_garden_rewards_v2', nextRewards);
+      safeSetLocalStorage('school_garden_rewards', nextRewards);
+
+      setHasUnsavedRewardChanges(true);
+      setRewards(nextRewards);
       setIsRewardFormModalOpen(false);
       setEditingReward(null);
 
@@ -703,7 +830,14 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
         cost: Number(rewardFormCost) || 100,
         type: rewardFormType
       };
-      setRewards(prev => [...prev, newItem]);
+
+      const nextRewards = [...rewards, newItem];
+      safeSetLocalStorage(rewardsStorageKey, nextRewards);
+      safeSetLocalStorage('deskos_garden_rewards_v2', nextRewards);
+      safeSetLocalStorage('school_garden_rewards', nextRewards);
+
+      setHasUnsavedRewardChanges(true);
+      setRewards(nextRewards);
       setIsRewardFormModalOpen(false);
       setRewardFormTitle('');
 
@@ -730,13 +864,24 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
 
   const handleDeleteReward = (id: string, title: string) => {
     if (window.confirm(`Bạn có chắc chắn muốn xóa phần thưởng "${title}" khỏi kho đổi quà không?`)) {
-      setRewards(prev => prev.filter(r => r.id !== id));
+      const nextRewards = rewards.filter(r => r.id !== id);
+      safeSetLocalStorage(rewardsStorageKey, nextRewards);
+      safeSetLocalStorage('deskos_garden_rewards_v2', nextRewards);
+      safeSetLocalStorage('school_garden_rewards', nextRewards);
+
+      setHasUnsavedRewardChanges(true);
+      setRewards(nextRewards);
       showToast(`Đã xóa phần thưởng "${title}" thành công!`, 'success');
     }
   };
 
   const handleResetDefaultRewards = () => {
     if (window.confirm('Bạn có chắc muốn khôi phục danh sách phần thưởng về mẫu ban đầu?')) {
+      safeSetLocalStorage(rewardsStorageKey, DEFAULT_REWARDS);
+      safeSetLocalStorage('deskos_garden_rewards_v2', DEFAULT_REWARDS);
+      safeSetLocalStorage('school_garden_rewards', DEFAULT_REWARDS);
+
+      setHasUnsavedRewardChanges(true);
       setRewards(DEFAULT_REWARDS);
       showToast('Đã khôi phục kho phần thưởng mẫu thành công!', 'success');
     }
@@ -757,7 +902,13 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
       type: newRewardType
     };
 
-    setRewards(prev => [...prev, item]);
+    const nextRewards = [...rewards, item];
+    safeSetLocalStorage(rewardsStorageKey, nextRewards);
+    safeSetLocalStorage('deskos_garden_rewards_v2', nextRewards);
+    safeSetLocalStorage('school_garden_rewards', nextRewards);
+
+    setHasUnsavedRewardChanges(true);
+    setRewards(nextRewards);
     setIsAddRewardModalOpen(false);
     setNewRewardTitle('');
     showToast(`Đã thêm món quà mới "${item.title}" vào Cửa Hàng!`, 'success');
@@ -1507,6 +1658,38 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
+              {renderRewardSaveStatus()}
+
+              <button
+                onClick={handleSaveRewards}
+                disabled={isRewardsSaving}
+                className={`px-3.5 py-2 rounded-xl font-black text-xs transition-all shadow-xs flex items-center gap-1.5 active:scale-95 cursor-pointer whitespace-nowrap ${
+                  isRewardsSaving
+                    ? 'bg-amber-400 text-amber-950 border border-amber-300 opacity-85 cursor-wait'
+                    : hasUnsavedRewardChanges
+                    ? 'bg-rose-600 hover:bg-rose-700 text-white border border-rose-500 ring-2 ring-rose-400/60 animate-pulse'
+                    : 'bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-500'
+                }`}
+                title={hasUnsavedRewardChanges ? "Có thay đổi phần thưởng chưa lưu! Bấm để lưu an toàn" : "Lưu kho phần thưởng"}
+              >
+                {isRewardsSaving ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin text-white" />
+                    <span>Đang lưu...</span>
+                  </>
+                ) : hasUnsavedRewardChanges ? (
+                  <>
+                    <Save className="w-3.5 h-3.5 text-white" />
+                    <span>Lưu Kho Quà *</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-3.5 h-3.5 text-emerald-100" />
+                    <span>Lưu Kho Quà</span>
+                  </>
+                )}
+              </button>
+
               <button
                 onClick={handleOpenCreateReward}
                 className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
@@ -2149,27 +2332,179 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
 
       {/* ================= 🎁 TAB 3: KHO THU HOẠCH & ĐỔI THƯỞNG (REWARDS) ================= */}
       {activeTab === 'reward' && (
-        <div className="space-y-6">
+        <div className="space-y-5 text-slate-800 pb-10">
           
-          {/* Header Banner */}
-          <div className="bg-gradient-to-r from-amber-100 via-amber-50 to-orange-100 rounded-3xl p-6 text-center border border-amber-200 shadow-xs space-y-2">
-            <h3 className="text-xl sm:text-2xl font-black text-amber-950">🎁 KHO THU HOẠCH & ĐỔI PHẦN THƯỞNG</h3>
-            <p className="text-xs font-bold text-amber-800 max-w-2xl mx-auto">
-              Dùng giọt nước chăm chỉ của em hoặc thu hoạch trái chín (Cấp 7 - Kết Trái) để đổi phần thưởng xứng đáng!
-            </p>
+          {/* 1. TOP CONTROL BAR (Chuẩn mực 100% Điểm danh: Trạng thái lưu trực quan + Nút Lưu chủ động) */}
+          <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] shadow-xs">
+            <div className="bg-[#dfccb0] border-b border-[#cbb89d] rounded-2xl px-5 sm:px-6 py-3.5 flex flex-wrap lg:flex-nowrap justify-between items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <button
+                  onClick={() => setActiveTab('class')}
+                  className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-800 border border-[#cbb89d] font-black text-xs transition-all flex items-center gap-1.5 shadow-2xs active:scale-95 cursor-pointer shrink-0"
+                  title="Quay về màn hình vườn cả lớp"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5 text-slate-700" />
+                  <span>Quay Lại Vườn</span>
+                </button>
+
+                <div className="flex items-center gap-2 min-w-0">
+                  <Gift className="w-4 h-4 text-amber-800 shrink-0" />
+                  <h3 className="font-black text-xs sm:text-sm text-slate-900 whitespace-nowrap">
+                    ĐỔI THƯỞNG VƯỜN TRI THỨC: <span className="bg-amber-100 text-amber-900 px-2.5 py-1 rounded-lg border border-amber-300 font-extrabold">{selectedClass.toUpperCase()}</span>
+                  </h3>
+                </div>
+              </div>
+
+              {/* Hàng nút hành động cùng 1 dòng, bảo toàn mép nút */}
+              <div className="flex items-center gap-2.5 flex-nowrap shrink-0 overflow-x-auto py-1">
+                {/* Trạng thái lưu trữ trực quan chuẩn Điểm danh */}
+                {renderRewardSaveStatus()}
+
+                {/* Nút Quản Lý Kho Quà */}
+                <button
+                  onClick={() => setIsRewardManagerOpen(true)}
+                  className="px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs shadow-sm transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer border border-amber-700 whitespace-nowrap shrink-0"
+                  title="Quản lý danh mục phần thưởng (Thêm, sửa, xóa phần thưởng)"
+                >
+                  <span>🎁</span>
+                  <span>Quản Lý Kho Quà</span>
+                </button>
+
+                {/* Nút Lưu Đổi Thưởng Chủ Động (Hiệu ứng pulse khi có thay đổi chưa lưu) */}
+                <button
+                  onClick={handleSaveRewardsAndGarden}
+                  disabled={isSaving || isRewardsSaving}
+                  className={`px-3.5 py-2 rounded-xl font-black text-xs transition-all shadow-sm active:scale-95 flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
+                    (isSaving || isRewardsSaving)
+                      ? 'bg-amber-400 text-amber-950 border border-amber-300 opacity-85 cursor-wait'
+                      : (hasUnsavedChanges || hasUnsavedRewardChanges)
+                      ? 'bg-rose-600 hover:bg-rose-700 text-white border border-rose-500 ring-2 ring-rose-400/60 animate-pulse'
+                      : 'bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-500'
+                  }`}
+                  title={(hasUnsavedChanges || hasUnsavedRewardChanges) ? "Có thay đổi đổi thưởng chưa lưu! Bấm để lưu an toàn" : "Lưu dữ liệu đổi thưởng"}
+                >
+                  {(isSaving || isRewardsSaving) ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-white" />
+                      <span>Đang lưu...</span>
+                    </>
+                  ) : (hasUnsavedChanges || hasUnsavedRewardChanges) ? (
+                    <>
+                      <Save className="w-3.5 h-3.5 text-white" />
+                      <span>Lưu Đổi Thưởng *</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-3.5 h-3.5 text-emerald-100" />
+                      <span>Lưu Đổi Thưởng</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
 
-          {/* Reward Items Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* 2. THẺ CHỌN & HIỂN THỊ HỌC SINH ĐỔI QUÀ (ACTIVE STUDENT PROFILE CARD) */}
+          <div className="bg-gradient-to-r from-amber-50/90 via-[#fffbf0] to-orange-50/90 border border-[#cbb89d] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5 min-w-0">
+              <div className="w-12 h-12 rounded-2xl bg-amber-200 border-2 border-amber-400 flex items-center justify-center text-2xl shadow-inner shrink-0">
+                {activeStudent ? (activeStudent.gender === 'Nữ' ? '👧' : '👦') : '🌱'}
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h4 className="font-black text-slate-900 text-sm sm:text-base">
+                    {activeStudent ? activeStudent.name : 'Chưa chọn học sinh'}
+                  </h4>
+                  {activeStudent?.code && (
+                    <span className="text-[10px] font-black bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md border border-amber-300">
+                      MSHS: {activeStudent.code}
+                    </span>
+                  )}
+                  <span className="text-[10px] font-black bg-emerald-100 text-emerald-900 px-2 py-0.5 rounded-md border border-emerald-300">
+                    Lớp {selectedClass}
+                  </span>
+                </div>
+                <p className="text-xs font-bold text-slate-500 mt-0.5">
+                  Dùng giọt nước chăm chỉ hoặc thu hoạch quả chín để nhận quà tặng xứng đáng!
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto shrink-0 justify-between md:justify-end">
+              {/* Dropdown chọn học sinh */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] font-black text-slate-600 whitespace-nowrap">Đổi cho:</span>
+                <select
+                  value={activeStudentId}
+                  onChange={(e) => setActiveStudentId(e.target.value)}
+                  className="bg-white border border-[#cbb89d] text-slate-900 font-extrabold text-xs rounded-xl px-3 py-2 shadow-2xs focus:ring-2 focus:ring-amber-500 outline-none cursor-pointer max-w-[190px]"
+                >
+                  {classStudents.map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.code ? `[${s.code}] ` : ''}{s.name} ({s.gender === 'Nữ' ? '👧' : '👦'})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Số giọt nước hiện có */}
+              <div className="flex items-center gap-2 bg-white px-3.5 py-1.5 rounded-xl border border-sky-300 shadow-2xs">
+                <span className="text-lg">💧</span>
+                <div className="text-left">
+                  <div className="text-[9.5px] font-extrabold text-sky-700 uppercase leading-none">Giọt Nước</div>
+                  <div className="text-sm font-black text-sky-950 leading-tight">
+                    {activeGarden?.water || 0}
+                  </div>
+                </div>
+              </div>
+
+              {/* Cấp độ cây */}
+              {activeGarden && (() => {
+                const { currentStage } = getStageInfo(activeGarden.water);
+                const isHarvestReady = currentStage.level >= 7;
+                return (
+                  <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border shadow-2xs ${
+                    isHarvestReady ? 'bg-amber-100 border-amber-400 text-amber-950 font-black animate-pulse' : 'bg-white border-[#cbb89d] text-slate-800 font-bold'
+                  }`}>
+                    <span className="text-base">{isHarvestReady ? '🍎' : '🌱'}</span>
+                    <div className="text-left">
+                      <div className="text-[9.5px] font-extrabold uppercase leading-none">
+                        {isHarvestReady ? 'Đã Kết Trái' : `Cấp ${currentStage.level}`}
+                      </div>
+                      <div className="text-xs font-black leading-tight">
+                        {isHarvestReady ? 'Sẵn sàng mùa quả' : currentStage.name}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+
+          {/* 3. LƯỚI PHẦN THƯỞNG ĐỔI QUÀ (REWARDS GRID) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {rewards.map(item => {
               const isHarvest = item.type === 'HARVEST';
+              const currentWater = activeGarden?.water || 0;
+              const { currentStage } = getStageInfo(currentWater);
+              const canRedeemHarvest = currentStage.level >= 7;
+              const canRedeemWater = currentWater >= item.cost;
+              const canRedeem = isHarvest ? canRedeemHarvest : canRedeemWater;
+
               return (
-                <div key={item.id} className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs flex flex-col justify-between text-center space-y-4 hover:shadow-md transition-shadow">
+                <div 
+                  key={item.id} 
+                  className={`bg-white rounded-3xl p-5 border-2 shadow-xs flex flex-col justify-between text-center space-y-4 transition-all ${
+                    canRedeem 
+                      ? 'border-amber-300 hover:border-amber-500 hover:shadow-md' 
+                      : 'border-slate-200 opacity-90'
+                  }`}
+                >
                   <div className="space-y-2">
-                    <div className="text-6xl my-2">{item.icon}</div>
+                    <div className="text-5xl sm:text-6xl my-2 select-none hover:scale-110 transition-transform">{item.icon}</div>
                     <h4 className="font-black text-slate-900 text-sm leading-snug">{item.title}</h4>
                     <div className={`text-xs font-black inline-block px-3 py-1 rounded-full ${
-                      isHarvest ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-sky-50 text-sky-700 border border-sky-200'
+                      isHarvest ? 'bg-amber-50 text-amber-800 border border-amber-200' : 'bg-sky-50 text-sky-800 border border-sky-200'
                     }`}>
                       {isHarvest ? '🍎 Yêu cầu Kết Trái (Cấp 7)' : `${item.cost} 💧 Giọt Nước`}
                     </div>
@@ -2177,17 +2512,89 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
 
                   <button
                     onClick={() => handleRedeemReward(item)}
-                    className={`w-full py-2.5 rounded-2xl font-black text-xs transition-all shadow-xs active:scale-95 ${
-                      isHarvest 
-                        ? 'bg-amber-400 hover:bg-amber-500 text-amber-950' 
-                        : 'bg-sky-500 hover:bg-sky-600 text-white'
+                    className={`w-full py-2.5 rounded-2xl font-black text-xs transition-all shadow-xs active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 ${
+                      isHarvest
+                        ? canRedeemHarvest
+                          ? 'bg-amber-400 hover:bg-amber-500 text-amber-950 ring-2 ring-amber-300 shadow-amber-400/30'
+                          : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+                        : canRedeemWater
+                        ? 'bg-sky-500 hover:bg-sky-600 text-white shadow-sky-500/25'
+                        : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
                     }`}
                   >
-                    {isHarvest ? '🍎 Thu Hoạch & Đổi Quà' : '🎁 Đổi Quà Ngay'}
+                    {isHarvest ? (
+                      canRedeemHarvest ? (
+                        <>
+                          <span>🍎</span> Thu Hoạch & Đổi Quà
+                        </>
+                      ) : (
+                        <span>Chưa Kết Trái (Cần Cấp 7)</span>
+                      )
+                    ) : (
+                      canRedeemWater ? (
+                        <>
+                          <span>🎁</span> Đổi Quà Ngay
+                        </>
+                      ) : (
+                        <span>Còn thiếu {item.cost - currentWater} 💧</span>
+                      )
+                    )}
                   </button>
                 </div>
               );
             })}
+          </div>
+
+          {/* 4. LỊCH SỬ ĐỔI THƯỞNG CỦA HỌC SINH (REDEMPTION HISTORY) */}
+          <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] p-5 shadow-xs space-y-3">
+            <div className="flex items-center justify-between border-b border-[#cbb89d] pb-2.5">
+              <h4 className="font-black text-xs sm:text-sm text-[#3d2b17] flex items-center gap-2">
+                <span>📜</span> LỊCH SỬ ĐỔI THƯỞNG CỦA {activeStudent ? activeStudent.name.toUpperCase() : 'EM'}
+              </h4>
+              <span className="text-[11px] font-extrabold text-amber-900 bg-amber-100 px-2 py-0.5 rounded-lg border border-amber-300">
+                {(activeGarden?.logs || []).filter(l => (l.amount !== undefined && l.amount < 0) || (l.reason && (l.reason.includes('Đổi') || l.reason.includes('Thu hoạch')))).length} lần đổi
+              </span>
+            </div>
+
+            {(() => {
+              const redemptionLogs = (activeGarden?.logs || []).filter(l => 
+                (l.amount !== undefined && l.amount < 0) || 
+                (l.reason && (l.reason.includes('Đổi') || l.reason.includes('Thu hoạch')))
+              );
+
+              if (redemptionLogs.length === 0) {
+                return (
+                  <div className="py-6 text-center text-xs font-bold text-slate-400 italic">
+                    Học sinh chưa đổi phần thưởng nào. Hãy tích cực tưới nước chăm sóc cây để đổi quà nhé!
+                  </div>
+                );
+              }
+
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
+                  {redemptionLogs.map((log) => {
+                    const isHarvestLog = log.reason?.includes('Thu hoạch');
+                    return (
+                      <div key={log.id} className="bg-white p-3 rounded-xl border border-[#d6c4a8] shadow-2xs flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="text-xs font-black text-slate-800 truncate" title={log.reason}>
+                            {log.reason}
+                          </div>
+                          <div className="text-[10px] font-bold text-slate-400 mt-0.5">
+                            {log.date}
+                          </div>
+                        </div>
+                        <div className={`px-2 py-1 rounded-lg text-xs font-black shrink-0 ${
+                          isHarvestLog ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-rose-50 text-rose-700 border border-rose-200'
+                        }`}>
+                          {isHarvestLog ? '🍎 Mùa Quả' : `${log.amount} 💧`}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
 
         </div>
