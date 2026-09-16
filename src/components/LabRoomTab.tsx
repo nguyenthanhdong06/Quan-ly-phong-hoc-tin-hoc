@@ -1170,51 +1170,59 @@ export default function LabRoomTab({
   if (isSeatingViewOpen) {
     return (
       <div className="space-y-5 text-slate-800 pb-12">
-        {/* Top Control Bar for Seating View */}
+        {/* Top Control Bar for Seating View (Làm gọn tinh tế, cùng 1 hàng duy nhất) */}
         <div className="border border-[#cbb89d] rounded-2xl bg-[#fffbf0] overflow-hidden shadow-xs">
-          <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-4 py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="flex items-center gap-3">
+          <div className="bg-[#dfccb0] border-b border-[#cbb89d] px-3.5 py-2.5 flex flex-wrap lg:flex-nowrap justify-between items-center gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
               <button
                 onClick={() => setIsSeatingViewOpen(false)}
-                className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-[#cbb89d] font-black text-xs transition-all flex items-center gap-1.5 shadow-2xs active:scale-95 cursor-pointer"
+                className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-800 border border-[#cbb89d] font-black text-xs transition-all flex items-center gap-1.5 shadow-2xs active:scale-95 cursor-pointer shrink-0"
+                title="Quay về màn hình sơ đồ phòng máy chính"
               >
-                <ArrowLeft className="w-4 h-4 text-slate-700" /> Quay Về Sơ Đồ Chính
+                <ArrowLeft className="w-3.5 h-3.5 text-slate-700" />
+                <span>Quay Lại</span>
               </button>
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="font-black text-sm text-slate-900 flex items-center gap-2">
-                    <Armchair className="w-4 h-4 text-amber-800" />
-                    CHỨC NĂNG KÉO THẢ XẾP CHỖ NGỒI HỌC SINH (LỚP {selectedClass.toUpperCase()})
-                  </h3>
-                </div>
-                <p className="text-[11px] font-bold text-slate-600">Kéo thả học sinh từ bảng danh sách chờ hoặc tráo đổi ghế giữa các máy tính</p>
+
+              <div className="flex items-center gap-2 min-w-0">
+                <Armchair className="w-4 h-4 text-amber-800 shrink-0" />
+                <h3 className="font-black text-xs sm:text-sm text-slate-900 whitespace-nowrap">
+                  XẾP CHỖ NGỒI LỚP: <span className="bg-amber-100 text-amber-900 px-2 py-0.5 rounded-lg border border-amber-300 font-extrabold">{selectedClass.toUpperCase()}</span>
+                </h3>
               </div>
             </div>
 
-            {/* Quick Actions in Header */}
-            <div className="flex flex-wrap items-center gap-2">
+            {/* Quick Actions in Header (Tất cả nút cùng nằm trên 1 hàng ngang) */}
+            <div className="flex items-center gap-2 flex-nowrap shrink-0 overflow-x-auto">
               <button
                 onClick={handleSeatClassMonitorsHead}
-                className="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer border border-amber-700"
+                className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs shadow-sm transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer border border-amber-700 whitespace-nowrap shrink-0"
+                title="Ưu tiên xếp L. Trưởng và Lớp phó vào các vị trí máy đầu bàn"
               >
-                <Star className="w-3.5 h-3.5" /> Xếp Cán Bộ Lớp
+                <Star className="w-3.5 h-3.5" />
+                <span>Cán Bộ Lớp</span>
               </button>
 
               <button
                 onClick={handleAutoSeatClass}
-                className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-sm transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
+                title="Tự động xếp chỗ cho toàn bộ học sinh có mặt"
               >
-                <Sparkles className="w-3.5 h-3.5" /> Xếp Tự Động
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Xếp Tự Động</span>
               </button>
 
+              {/* Nút Lưu Sơ Đồ */}
+              {renderSaveButton()}
+
+              {/* Nút Xóa Chỗ Ngồi (Có xác nhận an toàn) */}
               <button
                 onClick={handleClearAllClassSeating}
-                className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-black text-xs transition-all active:scale-95 flex items-center gap-1 cursor-pointer"
+                className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 hover:border-rose-300 font-bold text-xs shadow-2xs transition-all active:scale-95 flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
+                title="Xóa toàn bộ chỗ ngồi đã xếp của lớp này (có xác nhận an toàn)"
               >
-                <RotateCcw className="w-3.5 h-3.5" /> Xóa Chỗ Ngồi
+                <RotateCcw className="w-3.5 h-3.5 text-rose-500" />
+                <span>Xóa chỗ ngồi</span>
               </button>
-
-              {renderSaveButton()}
             </div>
           </div>
         </div>
