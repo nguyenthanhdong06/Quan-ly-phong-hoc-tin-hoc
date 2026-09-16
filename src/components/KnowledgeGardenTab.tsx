@@ -922,15 +922,16 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     }
   };
 
-  const handleResetDefaultRewards = () => {
-    if (window.confirm('Bạn có chắc muốn khôi phục danh sách phần thưởng về mẫu ban đầu?')) {
-      safeSetLocalStorage(rewardsStorageKey, DEFAULT_REWARDS);
-      safeSetLocalStorage('deskos_garden_rewards_v2', DEFAULT_REWARDS);
-      safeSetLocalStorage('school_garden_rewards', DEFAULT_REWARDS);
-
-      setHasUnsavedRewardChanges(true);
-      setRewards(DEFAULT_REWARDS);
-      showToast('Đã khôi phục kho phần thưởng mẫu thành công!', 'success');
+  const handleClearAllRewards = async () => {
+    if (window.confirm('Thầy/Cô có chắc chắn muốn xóa toàn bộ các phần quà cũ để làm sạch kho quà không? Thao tác này sẽ dọn sạch toàn bộ phần quà cũ cả trên máy và trên Cloud.')) {
+      const targetWs = currentWsId || 'ws_u-1';
+      setRewards([]);
+      setHasUnsavedRewardChanges(false);
+      safeSetLocalStorage(rewardsStorageKey, []);
+      safeSetLocalStorage('deskos_garden_rewards_v2', []);
+      safeSetLocalStorage('school_garden_rewards', []);
+      await saveWorkspaceRewardsData([], targetWs);
+      showToast('Đã dọn sạch toàn bộ phần quà cũ thành công! Bây giờ Thầy Cô có thể tạo các phần quà mới.', 'success');
     }
   };
 
@@ -1843,6 +1844,17 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                   </>
                 )}
               </button>
+
+              {rewards.length > 0 && (
+                <button
+                  onClick={handleClearAllRewards}
+                  className="px-3 py-2 rounded-xl bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 hover:border-rose-300 font-bold text-xs transition-all flex items-center gap-1.5 shadow-2xs active:scale-95 cursor-pointer whitespace-nowrap shrink-0"
+                  title="Xóa toàn bộ các phần quà cũ để làm sạch kho quà"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                  <span>Xóa Tất Cả</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

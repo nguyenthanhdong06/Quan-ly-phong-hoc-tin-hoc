@@ -99,74 +99,22 @@ export async function saveWorkspaceRewardsData(
   // Lọc sạch toàn bộ phần thưởng mẫu khỏi dữ liệu cần lưu
   const cleanedRewards = rewards.filter(item => !isSampleReward(item));
 
-  // 1. Đọc dữ liệu hiện có từ LocalStorage (đã lọc bỏ mẫu)
-  let localData: GardenReward[] = [];
-  try {
-    const rawLocal = localStorage.getItem(storageKey) || localStorage.getItem(legacyStorageKey) || localStorage.getItem(legacyCloudKey);
-    if (rawLocal) {
-      const parsed = JSON.parse(rawLocal);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        localData = parsed.filter(item => !isSampleReward(item));
-      }
-    }
-  } catch (e) {
-    console.warn('Lỗi đọc local rewards data khi lưu:', e);
-  }
+  // 1. Lưu ngay lập tức 0ms vào LocalStorage (Bảo đảm dữ liệu sống sót 100% khi rớt mạng)
+  safeSetLocalStorage(storageKey, cleanedRewards);
+  safeSetLocalStorage(legacyStorageKey, cleanedRewards);
+  safeSetLocalStorage(legacyCloudKey, cleanedRewards);
 
-  // 2. Đọc dữ liệu mới nhất từ Supabase Cloud với Timeout 1.5s bảo vệ chống treo khi Offline
-  let cloudData: GardenReward[] = [];
-  if (typeof navigator === 'undefined' || navigator.onLine) {
-    try {
-      const fetchPromise = supabase
-        .from('school_states')
-        .select('value')
-        .eq('key', cloudKey)
-        .maybeSingle();
-
-      const timeoutPromise = new Promise<{ data: null; error: string }>(resolve => 
-        setTimeout(() => resolve({ data: null, error: 'timeout' }), 1500)
-      );
-
-      const res: any = await Promise.race([fetchPromise, timeoutPromise]);
-      if (res?.data?.value && Array.isArray(res.data.value)) {
-        cloudData = res.data.value.filter((item: GardenReward) => !isSampleReward(item));
-      } else {
-        // Fallback đọc key legacy nếu key phân vùng chưa có
-        const legacyRes: any = await supabase
-          .from('school_states')
-          .select('value')
-          .eq('key', legacyCloudKey)
-          .maybeSingle();
-        if (legacyRes?.data?.value && Array.isArray(legacyRes.data.value)) {
-          cloudData = legacyRes.data.value.filter((item: GardenReward) => !isSampleReward(item));
-        }
-      }
-    } catch (e) {
-      console.warn('Lỗi đọc cloud rewards data khi lưu:', e);
-    }
-  }
-
-  // 3. THỰC HIỆN DEEP MERGE ĐA TẦNG (Cloud cũ + Local cũ + Thao tác mới nhất)
-  let mergedData = deepMergeRewards(cloudData, localData);
-  mergedData = deepMergeRewards(mergedData, cleanedRewards);
-  mergedData = mergedData.filter(item => !isSampleReward(item));
-
-  // 4. Lưu ngay lập tức vào LocalStorage (Bảo đảm dữ liệu sống sót 100% khi rớt mạng)
-  safeSetLocalStorage(storageKey, mergedData);
-  safeSetLocalStorage(legacyStorageKey, mergedData);
-  safeSetLocalStorage(legacyCloudKey, mergedData);
-
-  // 5. Cập nhật React State tức thì qua Callback
+  // 2. Cập nhật React State tức thì qua Callback (chính xác những gì Thầy vừa lưu, không bao giờ bị quà cũ nhảy ra)
   if (onMerged) {
     try {
-      onMerged(mergedData);
+      onMerged(cleanedRewards);
     } catch (e) {}
   }
 
-  // 6. Lưu lên Supabase Cloud (cả key phân vùng và key tương thích)
+  // 3. Ghi đè đồng bộ lên Supabase Cloud (cả key phân vùng và key tương thích)
   try {
-    const success = await saveSupabaseState(cloudKey, mergedData);
-    await saveSupabaseState(legacyCloudKey, mergedData);
+    const success = await saveSupabaseState(cloudKey, cleanedRewards);
+    await saveSupabaseState(legacyCloudKey, cleanedRewards);
     return success;
   } catch {
     return true; // Đã lưu an toàn ở LocalStorage khi offline
@@ -190,55 +138,49 @@ export function loadWorkspaceRewardsData(
   const legacyStorageKey = 'deskos_garden_rewards_v2';
   const legacyCloudKey = 'school_garden_rewards';
 
-  let merged: GardenReward[] = Array.isArray(fallbackValue)
-    ? fallbackValue.filter(item => !isSampleReward(item))
-    : [];
-
-  // 1. Tải bản sao từ Cloud dbStates nếu có
-  const scopedCloud = dbStates?.[cloudKey];
-  if (scopedCloud && Array.isArray(scopedCloud) && scopedCloud.length > 0) {
-    merged = deepMergeRewards(merged, scopedCloud.filter(item => !isSampleReward(item)));
-  } else {
-    const legacyCloud = dbStates?.[legacyCloudKey];
-    if (legacyCloud && Array.isArray(legacyCloud) && legacyCloud.length > 0) {
-      merged = deepMergeRewards(merged, legacyCloud.filter(item => !isSampleReward(item)));
-    }
-  }
-
-  // 2. Tải bản sao từ LocalStorage (chứa các chỉnh sửa mới nhất cả khi offline)
+  // 1. Ưu tiên đọc từ LocalStorage của Workspace hiện tại (nơi lưu các thao tác mới nhất của Thầy Cô)
   try {
     const rawLocal = localStorage.getItem(storageKey);
-    if (rawLocal) {
+    if (rawLocal !== null) {
       const parsedLocal = JSON.parse(rawLocal);
-      if (Array.isArray(parsedLocal) && parsedLocal.length > 0) {
-        merged = deepMergeRewards(merged, parsedLocal.filter(item => !isSampleReward(item)));
+      if (Array.isArray(parsedLocal)) {
+        const cleaned = parsedLocal.filter(item => !isSampleReward(item));
+        return cleaned;
       }
     }
   } catch (e) {
     console.warn('Cannot parse local workspace rewards data:', e);
   }
 
-  // 3. Kiểm tra fallback legacy 'deskos_garden_rewards_v2' và 'school_garden_rewards' nếu cần
+  // 2. Nếu LocalStorage chưa có, tải từ Supabase Cloud (scopedCloud -> legacyCloud)
+  const scopedCloud = dbStates?.[cloudKey];
+  if (scopedCloud && Array.isArray(scopedCloud) && scopedCloud.length > 0) {
+    const cleaned = scopedCloud.filter(item => !isSampleReward(item));
+    safeSetLocalStorage(storageKey, cleaned);
+    return cleaned;
+  }
+
+  const legacyCloud = dbStates?.[legacyCloudKey];
+  if (legacyCloud && Array.isArray(legacyCloud) && legacyCloud.length > 0) {
+    const cleaned = legacyCloud.filter(item => !isSampleReward(item));
+    safeSetLocalStorage(storageKey, cleaned);
+    return cleaned;
+  }
+
+  // 3. Fallback đọc legacy localStorage nếu có
   try {
     const rawLegacy = localStorage.getItem(legacyStorageKey) || localStorage.getItem(legacyCloudKey);
-    if (rawLegacy) {
+    if (rawLegacy !== null) {
       const parsedLegacy = JSON.parse(rawLegacy);
-      if (Array.isArray(parsedLegacy) && parsedLegacy.length > 0) {
-        merged = deepMergeRewards(merged, parsedLegacy.filter(item => !isSampleReward(item)));
+      if (Array.isArray(parsedLegacy)) {
+        const cleaned = parsedLegacy.filter(item => !isSampleReward(item));
+        safeSetLocalStorage(storageKey, cleaned);
+        return cleaned;
       }
     }
   } catch (e) {}
 
-  const finalRewards = merged.filter(item => !isSampleReward(item));
-
-  // Tự động dọn dẹp phần thưởng mẫu khỏi LocalStorage để các lần sau hoàn toàn sạch
-  try {
-    safeSetLocalStorage(storageKey, finalRewards);
-    safeSetLocalStorage(legacyStorageKey, finalRewards);
-    safeSetLocalStorage(legacyCloudKey, finalRewards);
-  } catch (e) {}
-
-  return finalRewards;
+  return Array.isArray(fallbackValue) ? fallbackValue.filter(item => !isSampleReward(item)) : [];
 }
 
 /**
