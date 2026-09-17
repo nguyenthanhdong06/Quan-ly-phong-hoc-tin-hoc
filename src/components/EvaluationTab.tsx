@@ -97,6 +97,98 @@ const getStudentBadge = (stars: number) => {
   return null;
 };
 
+// 🌟 Component ô nhận xét độc lập với Local State & Debounce chống xung đột bộ gõ tiếng Việt (Unikey/EVKey)
+interface TeacherCommentInputProps {
+  studentId: string;
+  initialComment: string;
+  onSaveComment: (studentId: string, comment: string) => void;
+}
+
+const TeacherCommentInput: React.FC<TeacherCommentInputProps> = ({
+  studentId,
+  initialComment,
+  onSaveComment
+}) => {
+  const [comment, setComment] = React.useState<string>(initialComment || '');
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const latestCommentRef = React.useRef<string>(initialComment || '');
+  const debounceTimerRef = React.useRef<any>(null);
+
+  latestCommentRef.current = comment;
+
+  // Cập nhật khi mở modal hoặc chọn học sinh khác
+  React.useEffect(() => {
+    setComment(initialComment || '');
+    latestCommentRef.current = initialComment || '';
+  }, [studentId]);
+
+  // Tự động focus mượt mà khi modal mở và đưa con trỏ về cuối chữ
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+        const len = inputRef.current.value.length;
+        inputRef.current.setSelectionRange(len, len);
+      }
+    }, 80);
+    return () => clearTimeout(timer);
+  }, [studentId]);
+
+  // Lưu lại giá trị khi unmount (đóng modal)
+  React.useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      onSaveComment(studentId, latestCommentRef.current);
+    };
+  }, [studentId, onSaveComment]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setComment(val); // Cập nhật local state ngay tức thì -> 0ms lag, Unikey/EVKey gõ tiếng Việt hoàn hảo không bị nhảy chữ
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      onSaveComment(studentId, val);
+    }, 350);
+  };
+
+  const handleBlur = () => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    onSaveComment(studentId, latestCommentRef.current);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      onSaveComment(studentId, latestCommentRef.current);
+      inputRef.current?.blur();
+    }
+  };
+
+  return (
+    <input
+      ref={inputRef}
+      type="text"
+      value={comment}
+      onChange={handleChange}
+      onBlur={handleBlur}
+      onKeyDown={handleKeyDown}
+      placeholder="Ghi nhận xét chi tiết (VD: Làm bài tốt, phát biểu)..."
+      className="w-full text-xs px-3.5 py-2.5 border border-[#d6c4a8] rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white font-extrabold text-[#42301c] transition-colors"
+      autoComplete="off"
+      spellCheck={false}
+    />
+  );
+};
+
 interface EvaluationStudentCardItemProps {
   student: Student;
   classStudents: Student[];
@@ -153,7 +245,6 @@ export default function EvaluationTab({
   const [selectedStudent, setSelectedStudent] = React.useState<Student | null>(null);
   const [isSaving, setIsSaving] = React.useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = React.useState(false);
-  const commentInputRef = React.useRef<HTMLInputElement>(null);
 
   // Subview toggle state: 'evaluation' (default) | 'zalo' (Báo cáo Zalo/SMS 100% Inline View)
   const [subView, setSubView] = React.useState<'evaluation' | 'zalo'>('evaluation');
@@ -203,15 +294,9 @@ export default function EvaluationTab({
     setSelectedStudent(student);
   }, []);
 
-  // Auto focus into comment input when student modal opens & handle Escape key
+  // Handle Escape key to close modal
   React.useEffect(() => {
     if (selectedStudent) {
-      const timer = setTimeout(() => {
-        if (commentInputRef.current) {
-          commentInputRef.current.focus();
-        }
-      }, 60);
-
       const handleKeyDown = (e: KeyboardEvent) => {
         if (e.key === 'Escape') {
           setSelectedStudent(null);
@@ -220,11 +305,10 @@ export default function EvaluationTab({
       window.addEventListener('keydown', handleKeyDown);
 
       return () => {
-        clearTimeout(timer);
         window.removeEventListener('keydown', handleKeyDown);
       };
     }
-  }, [selectedStudent?.id]);
+  }, [selectedStudent]);
 
   // Reset search term & update Zalo report text if open when class changes
   React.useEffect(() => {
@@ -279,17 +363,18 @@ export default function EvaluationTab({
     }
   };
 
-  const handleSetComment = (studentId: string, comment: string) => {
-    setHasUnsavedChanges(true);
+  const handleSetComment = React.useCallback((studentId: string, comment: string) => {
     setEvaluationData(prev => {
       const dayData = { ...(prev[selectedDate] || {}) };
       const classData = { ...(dayData[selectedClass] || {}) };
       const currentEval = classData[studentId] || { rating: 0, comment: '', tags: [] };
+      if (currentEval.comment === comment) return prev;
+      setHasUnsavedChanges(true);
       classData[studentId] = { ...currentEval, comment };
       dayData[selectedClass] = classData;
       return { ...prev, [selectedDate]: dayData };
     });
-  };
+  }, [selectedDate, selectedClass]);
 
   const handleToggleTag = (studentId: string, tag: string) => {
     setHasUnsavedChanges(true);
@@ -876,13 +961,10 @@ export default function EvaluationTab({
                     <span className="text-[11px] font-black text-[#5c4326] uppercase tracking-wider block">
                       Ý kiến / Nhận xét của giáo viên:
                     </span>
-                    <input
-                      ref={commentInputRef}
-                      type="text"
-                      value={evalObj.comment}
-                      onChange={(e) => handleSetComment(s.id, e.target.value)}
-                      placeholder="Ghi nhận xét chi tiết (VD: Làm bài tốt, phát biểu)..."
-                      className="w-full text-xs px-3.5 py-2.5 border border-[#d6c4a8] rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white font-extrabold text-[#42301c]"
+                    <TeacherCommentInput
+                      studentId={s.id}
+                      initialComment={evalObj.comment || ''}
+                      onSaveComment={handleSetComment}
                     />
                   </div>
                 </div>
