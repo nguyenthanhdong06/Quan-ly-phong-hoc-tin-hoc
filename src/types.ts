@@ -43,6 +43,7 @@ export interface DocumentItem {
   status?: 'pending' | 'approved' | 'rejected';
   rejectionReason?: string;
   removedFromMyDocs?: boolean;
+  workspaceId?: string;
 }
 
 export interface Member {
@@ -134,6 +135,12 @@ export interface Question {
   category: string;
   authorId: string;
   subjectId?: string;
+}
+
+export interface Subject {
+  id: string;
+  name: string;
+  gradeId: number;
 }
 
 export interface AppTheme {

@@ -35,6 +35,7 @@ interface DeskOSTaskbarProps {
   onToggleStartMenu: () => void;
   isStartMenuOpen: boolean;
   activeWallpaper?: WallpaperOption;
+  workspaceName?: string;
 }
 
 const APP_ICONS: Record<string, { label: string; icon: React.ElementType }> = {
@@ -67,6 +68,7 @@ export const DeskOSTaskbar: React.FC<DeskOSTaskbarProps> = ({
   onToggleStartMenu,
   isStartMenuOpen,
   activeWallpaper,
+  workspaceName,
 }) => {
   const [timeStr, setTimeStr] = useState('');
   const [dateStr, setDateStr] = useState('');
@@ -168,6 +170,21 @@ export const DeskOSTaskbar: React.FC<DeskOSTaskbarProps> = ({
 
       {/* Right Taskbar Section: Audio Mute Toggle, Wallpaper Picker & Clock/Date */}
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        {/* Active Workspace Indicator Badge */}
+        {workspaceName && (
+          <div
+            className={`h-9 px-3 rounded-full border shadow-xs backdrop-blur-md hidden xl:flex items-center gap-1.5 font-bold text-[11px] select-none transition-all ${
+              activeWallpaper?.isDark
+                ? 'bg-amber-500/15 text-amber-200 border-amber-400/30'
+                : 'bg-amber-100/70 text-amber-900 border-amber-300/60'
+            }`}
+            title={`Không gian làm việc đang hoạt động: ${workspaceName}`}
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+            <span className="whitespace-nowrap font-sans font-extrabold">{workspaceName}</span>
+          </div>
+        )}
+
         {/* Audio Mute / Unmute Toggle Button */}
         <button
           onClick={handleToggleMute}

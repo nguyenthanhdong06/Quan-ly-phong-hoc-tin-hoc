@@ -1,21 +1,24 @@
 import React, { useState, useRef } from 'react';
 import { DocumentItem } from '../types';
 import { matchVietnameseSearch } from '../utils/nameFormatter';
-import { UploadCloud, FileText, Trash2, Download, BookOpen, Layers, CheckCircle2, Search, X, AlertCircle, ShieldCheck, Pencil, ExternalLink } from 'lucide-react';
+import { UploadCloud, FileText, Trash2, Download, BookOpen, Layers, CheckCircle2, Search, X, AlertCircle, ShieldCheck, Pencil, ExternalLink, Sparkles } from 'lucide-react';
 
 interface ResourcesTabProps {
   documents: DocumentItem[];
   setDocuments: React.Dispatch<React.SetStateAction<DocumentItem[]>>;
   currentUser: any;
   showToast: (message: string, type?: 'success' | 'error') => void;
+  workspaceId?: string;
 }
 
 export default function ResourcesTab({
   documents,
   setDocuments,
   currentUser,
-  showToast
+  showToast,
+  workspaceId
 }: ResourcesTabProps) {
+  const effectiveWsId = workspaceId || (currentUser ? `ws_${(currentUser.id || currentUser.username || 'default').replace(/[^a-zA-Z0-9_-]/g, '_')}` : 'ws_default');
   
   const isAdmin = currentUser?.role?.toLowerCase().includes('admin');
   
@@ -142,7 +145,8 @@ export default function ResourcesTab({
       date: new Date().toISOString().split('T')[0],
       size: fileSize,
       description: newDesc.trim() || 'Bài giảng mẫu hỗ trợ giáo án lớp học.',
-      status: isAdmin ? 'approved' : 'pending'
+      status: isAdmin ? 'approved' : 'pending',
+      workspaceId: effectiveWsId
     };
 
     setDocuments(prev => [item, ...prev]);
@@ -244,9 +248,15 @@ export default function ResourcesTab({
             <h2 className="text-sm sm:text-base font-black text-[#3d2b17] uppercase tracking-wider flex items-center gap-2">
               <span>📚</span> KHO TÀI NGUYÊN & HỌC LIỆU GIẢNG DẠY
             </h2>
-            <p className="text-[11px] font-bold text-[#5c4327] mt-1">
-              Cung cấp phiếu học tập, Kế hoạch giáo dục (KHGD), bài giảng điện tử PPT phục vụ môn Tin học.
-            </p>
+            <div className="flex flex-wrap items-center gap-2 mt-1.5">
+              <span className="text-[11px] font-bold text-[#5c4327]">
+                Cung cấp phiếu học tập, Kế hoạch giáo dục (KHGD), bài giảng điện tử PPT phục vụ môn Tin học.
+              </span>
+              <span className="text-[10px] font-extrabold text-amber-900 bg-amber-100/90 border border-amber-300/80 px-2 py-0.5 rounded-full inline-flex items-center gap-1 shadow-3xs">
+                <Sparkles className="w-3 h-3 text-amber-600 animate-pulse" />
+                Không gian: {currentUser?.name || 'Giáo viên'} ({effectiveWsId})
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -543,7 +553,7 @@ export default function ResourcesTab({
                 <div>
                   <h4 className="font-extrabold text-[#113f43] flex items-center gap-1.5 text-xs uppercase tracking-wider font-sans">
                     <FileText className="w-4 h-4 text-amber-500 shrink-0" />
-                    Học liệu của tôi đóng góp ({documents.filter(d => d.author === currentUser.name && !d.removedFromMyDocs).length} tệp)
+                    Học liệu của tôi đóng góp ({documents.filter(d => !d.removedFromMyDocs && ((d.workspaceId && d.workspaceId === effectiveWsId) || d.author === currentUser.name)).length} tệp)
                   </h4>
                   <p className="text-[10px] text-slate-450 mt-0.5 font-sans">Theo dõi trạng thái kiểm duyệt các học liệu bạn upload lên thư viện hệ thống.</p>
                 </div>
@@ -553,10 +563,15 @@ export default function ResourcesTab({
               </div>
 
               {(() => {
-                const myDocs = documents.filter(d => d.author === currentUser.name && !d.removedFromMyDocs);
+                const isMyDoc = (d: DocumentItem) => {
+                  if (d.removedFromMyDocs) return false;
+                  if (d.workspaceId && d.workspaceId === effectiveWsId) return true;
+                  return d.author === currentUser.name;
+                };
+                const myDocs = documents.filter(isMyDoc);
                 if (myDocs.length === 0) {
                   return (
-                    <p className="text-xs text-slate-450 italic py-2">Bạn chưa đăng tải đóng góp tệp tài liệu nào.</p>
+                    <p className="text-xs text-slate-450 italic py-2">Bạn chưa đăng tải đóng góp tệp tài liệu nào trong không gian này.</p>
                   );
                 }
 

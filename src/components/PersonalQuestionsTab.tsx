@@ -3,6 +3,13 @@ import { safeSetLocalStorage } from '../utils/safeStorage';
 import { Question, Member } from '../types';
 import { matchVietnameseSearch } from '../utils/nameFormatter';
 import { 
+  loadWorkspaceQuestions, 
+  saveWorkspaceQuestions, 
+  loadWorkspaceSubjects, 
+  saveWorkspaceSubjects, 
+  getWorkspaceId 
+} from '../services/workspaceService';
+import { 
   Plus, 
   Search, 
   Trash2, 
@@ -36,6 +43,7 @@ interface PersonalQuestionsTabProps {
   currentUser: Member | null;
   showToast: (message: string, type?: 'success' | 'error') => void;
   selectedGrade?: number;
+  workspaceId?: string;
 }
 
 const DEFAULT_SUBJECTS: Subject[] = [
@@ -458,45 +466,25 @@ const DEFAULT_QUESTIONS: Question[] = [
   }
 ];
 
-export function PersonalQuestionsTab({ currentUser, showToast, selectedGrade = 3 }: PersonalQuestionsTabProps) {
+export function PersonalQuestionsTab({ currentUser, showToast, selectedGrade = 3, workspaceId }: PersonalQuestionsTabProps) {
+  const effectiveWsId = workspaceId || getWorkspaceId(currentUser);
   const userId = currentUser ? (currentUser.username || currentUser.id || 'default') : 'default';
-  const questionsStorageKey = `school_questions_${userId}`;
-  const subjectsStorageKey = `school_subjects_${userId}`;
 
   const [innerTab, setInnerTab] = useState<'manage' | 'bulk-import'>('manage');
   const [viewMode, setViewMode] = useState<'table' | 'card'>('card');
 
-  // Subjects state
+  // Subjects state with Workspace isolation
   const [subjects, setSubjects] = useState<Subject[]>(() => {
-    const local = localStorage.getItem(subjectsStorageKey);
-    if (local) {
-      try {
-        return JSON.parse(local);
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return DEFAULT_SUBJECTS;
+    return loadWorkspaceSubjects(effectiveWsId, userId, undefined, DEFAULT_SUBJECTS);
   });
 
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>(() => {
     return subjects.length > 0 ? subjects[0].id : 'subj-3';
   });
 
-  // Questions state
+  // Questions state with Workspace isolation
   const [questions, setQuestions] = useState<Question[]>(() => {
-    const local = localStorage.getItem(questionsStorageKey);
-    let loaded: Question[] = [];
-    if (local) {
-      try {
-        loaded = JSON.parse(local);
-      } catch (e) {
-        console.error(e);
-        loaded = DEFAULT_QUESTIONS;
-      }
-    } else {
-      loaded = DEFAULT_QUESTIONS;
-    }
+    const loaded = loadWorkspaceQuestions(effectiveWsId, userId, undefined, DEFAULT_QUESTIONS);
 
     // Auto backward compatibility: map subjectId based on grade if missing
     let modified = false;
@@ -512,19 +500,19 @@ export function PersonalQuestionsTab({ currentUser, showToast, selectedGrade = 3
     });
 
     if (modified && loaded.length > 0) {
-      safeSetLocalStorage(questionsStorageKey, mapped);
+      saveWorkspaceQuestions(mapped, effectiveWsId);
     }
     return mapped;
   });
 
-  // Local storage writers
+  // Workspace persistent storage writers
   useEffect(() => {
-    safeSetLocalStorage(questionsStorageKey, questions);
-  }, [questions, questionsStorageKey]);
+    saveWorkspaceQuestions(questions, effectiveWsId);
+  }, [questions, effectiveWsId]);
 
   useEffect(() => {
-    safeSetLocalStorage(subjectsStorageKey, subjects);
-  }, [subjects, subjectsStorageKey]);
+    saveWorkspaceSubjects(subjects, effectiveWsId);
+  }, [subjects, effectiveWsId]);
 
   // Selected Subject computation
   const selectedSubject = useMemo(() => {
@@ -1147,9 +1135,14 @@ Giải thích: Phím Backspace xóa ký tự trước (bên trái) con trỏ, c�
           <div className="flex items-center gap-2">
             <span className="bg-teal-100 text-teal-800 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">Tài nguyên số</span>
             <span className="text-slate-400 font-semibold">•</span>
-            <span className="text-xs text-indigo-600 font-bold flex items-center gap-1.5 bg-indigo-50 px-2.5 py-0.5 rounded-lg">
+            <span className="text-xs text-indigo-600 font-bold flex items-center gap-1.5 bg-indigo-50 px-2.5 py-0.5 rounded-lg border border-indigo-100">
               <BookOpen className="w-3.5 h-3.5" />
-              Sở hữu: Thầy {currentUser?.name || 'Giáo viên'}
+              Sở hữu: Thầy/Cô {currentUser?.name || 'Giáo viên'}
+            </span>
+            <span className="text-slate-400 font-semibold">•</span>
+            <span className="text-xs text-amber-700 font-bold flex items-center gap-1.5 bg-amber-50 px-2.5 py-0.5 rounded-lg border border-amber-200 shadow-3xs">
+              <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
+              Không gian cá nhân ({effectiveWsId})
             </span>
           </div>
           <h2 className="text-xl font-black text-slate-800 uppercase tracking-wide flex items-center gap-2">

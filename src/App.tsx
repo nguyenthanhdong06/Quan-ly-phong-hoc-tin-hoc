@@ -79,6 +79,7 @@ import { DeskOSMacWindow } from './components/layout/DeskOSMacWindow';
 // Workspace Service for Multi-User Isolation
 import { 
   getWorkspaceId, 
+  getWorkspaceOwnerName,
   loadWorkspaceSeatingChart, 
   loadWorkspaceEmulationState, 
   loadWorkspaceGardenData,
@@ -803,6 +804,20 @@ export default function App() {
             window.dispatchEvent(new CustomEvent('custom_seed_sets_updated', { detail: dbStates['school_custom_seed_sets'] }));
           }
 
+          // 📚 Đồng bộ Ngân hàng câu hỏi & Môn học theo Workspace
+          const wsQuestionsKey = `${activeWorkspaceId}_school_questions`;
+          if (Array.isArray(dbStates[wsQuestionsKey])) {
+            safeSetLocalStorage(wsQuestionsKey, dbStates[wsQuestionsKey]);
+          }
+          const wsSubjectsKey = `${activeWorkspaceId}_school_subjects`;
+          if (Array.isArray(dbStates[wsSubjectsKey])) {
+            safeSetLocalStorage(wsSubjectsKey, dbStates[wsSubjectsKey]);
+          }
+          const wsLeaderboardKey = `${activeWorkspaceId}_tug_leaderboard`;
+          if (Array.isArray(dbStates[wsLeaderboardKey])) {
+            safeSetLocalStorage(wsLeaderboardKey, dbStates[wsLeaderboardKey]);
+          }
+
           showToast('Đã đồng bộ hóa toàn bộ cơ sở dữ liệu từ Supabase Cloud!', 'success');
         } else {
           // If Supabase is empty, let the user know and let them push datasets themselves
@@ -1284,6 +1299,20 @@ export default function App() {
         // 📅 Đồng bộ tiêu đề thời khóa biểu từng giáo viên từ Supabase
         syncTimetableTitlesFromSupabase(dbStates, activeWorkspaceId);
         
+        // 📚 Đồng bộ Ngân hàng câu hỏi & Môn học theo Workspace
+        const wsQuestionsKey = `${effectivePullWs}_school_questions`;
+        if (Array.isArray(dbStates[wsQuestionsKey])) {
+          safeSetLocalStorage(wsQuestionsKey, dbStates[wsQuestionsKey]);
+        }
+        const wsSubjectsKey = `${effectivePullWs}_school_subjects`;
+        if (Array.isArray(dbStates[wsSubjectsKey])) {
+          safeSetLocalStorage(wsSubjectsKey, dbStates[wsSubjectsKey]);
+        }
+        const wsLeaderboardKey = `${effectivePullWs}_tug_leaderboard`;
+        if (Array.isArray(dbStates[wsLeaderboardKey])) {
+          safeSetLocalStorage(wsLeaderboardKey, dbStates[wsLeaderboardKey]);
+        }
+        
         showToast('Tải dữ liệu thành công! Đã ghi nhận đè bộ nhớ cục bộ.', 'success');
       } else {
         showToast('Chưa ghi nhận bản sao lưu nào trên đám mây. Vui lòng chọn Đẩy dữ liệu!', 'error');
@@ -1327,7 +1356,10 @@ export default function App() {
         saveSupabaseState('school_computer_reports', safeParse('school_computer_reports', [])),
         saveSupabaseState('school_timetable_titles', safeParse('school_timetable_titles', {})),
         saveSupabaseState(`${activeWorkspaceId}_school_timetable_title`, safeParse(`${activeWorkspaceId}_school_timetable_title`, {})),
-        saveSupabaseState(`${activeWorkspaceId}_school_timetable_data`, timetableData[currentUser?.username || ''] || (currentUser?.id && timetableData[currentUser.id]) || safeParse(`${activeWorkspaceId}_school_timetable_data`, {}))
+        saveSupabaseState(`${activeWorkspaceId}_school_timetable_data`, timetableData[currentUser?.username || ''] || (currentUser?.id && timetableData[currentUser.id]) || safeParse(`${activeWorkspaceId}_school_timetable_data`, {})),
+        saveSupabaseState(`${activeWorkspaceId}_school_questions`, safeParse(`${activeWorkspaceId}_school_questions`, safeParse(`school_questions_${currentUser?.username || currentUser?.id || 'default'}`, []))),
+        saveSupabaseState(`${activeWorkspaceId}_school_subjects`, safeParse(`${activeWorkspaceId}_school_subjects`, safeParse(`school_subjects_${currentUser?.username || currentUser?.id || 'default'}`, []))),
+        saveSupabaseState(`${activeWorkspaceId}_tug_leaderboard`, safeParse(`${activeWorkspaceId}_tug_leaderboard`, safeParse('tug_leaderboard', [])))
       ]);
       
       const allSuccess = results.every(r => r === true);
@@ -1929,6 +1961,7 @@ export default function App() {
                 setDocuments={setDocuments}
                 currentUser={currentUser}
                 showToast={showToast}
+                workspaceId={activeWorkspaceId}
               />
             )}
 
@@ -1972,6 +2005,7 @@ export default function App() {
                 currentUser={currentUser}
                 showToast={showToast}
                 selectedGrade={selectedGrade}
+                workspaceId={activeWorkspaceId}
               />
             )}
 
@@ -1980,6 +2014,7 @@ export default function App() {
                 currentUser={currentUser}
                 showToast={showToast}
                 selectedGrade={selectedGrade}
+                workspaceId={activeWorkspaceId}
               />
             )}
           </DeskOSMacWindow>
@@ -2000,6 +2035,7 @@ export default function App() {
         onToggleStartMenu={() => setIsStartMenuOpen(!isStartMenuOpen)}
         isStartMenuOpen={isStartMenuOpen}
         activeWallpaper={activeWallpaper}
+        workspaceName={getWorkspaceOwnerName(activeWorkspaceId, members)}
       />
 
       {/* DeskOS Start Menu Popover */}

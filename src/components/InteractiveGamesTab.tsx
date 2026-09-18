@@ -2,6 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { safeSetLocalStorage } from '../utils/safeStorage';
 import { Question, Member, Student, ClassItem } from '../types';
 import { matchVietnameseSearch } from '../utils/nameFormatter';
+import { 
+  loadWorkspaceQuestions, 
+  saveWorkspaceQuestions, 
+  loadWorkspaceSubjects, 
+  loadWorkspaceGameLeaderboard, 
+  saveWorkspaceGameLeaderboard, 
+  getWorkspaceId 
+} from '../services/workspaceService';
 import { triggerConfetti, triggerStarsConfetti, triggerVictoryConfetti, triggerFireworksConfetti } from '../utils/confetti';
 import { 
   Gamepad2, 
@@ -47,6 +55,7 @@ interface InteractiveGamesTabProps {
   currentUser: Member | null;
   showToast: (message: string, type?: 'success' | 'error') => void;
   selectedGrade?: number;
+  workspaceId?: string;
 }
 
 // Custom synthesizer audio helper
@@ -631,7 +640,8 @@ const BANK_QUESTIONS: Question[] = [
   }
 ];
 
-export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 }: InteractiveGamesTabProps) {
+export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3, workspaceId }: InteractiveGamesTabProps) {
+  const effectiveWsId = workspaceId || getWorkspaceId(currentUser);
   // Navigation: null = lobby, otherwise specific game ID
   const [activeSubGame, setActiveSubGame] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -649,21 +659,13 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [triviaQuestions, setTriviaQuestions] = useState<Question[]>([]);
   
-  // Load questions from localStorage
+  // Load questions from Workspace
   useEffect(() => {
     const userId = currentUser ? (currentUser.username || currentUser.id || 'default') : 'default';
-    const storageKey = `school_questions_${userId}`;
-    const local = localStorage.getItem(storageKey);
-    if (local) {
-      try {
-        const loaded = JSON.parse(local);
-        if (loaded && loaded.length > 0) {
-          setTriviaQuestions(loaded);
-          return;
-        }
-      } catch (e) {
-        console.error(e);
-      }
+    const loaded = loadWorkspaceQuestions(effectiveWsId, userId);
+    if (loaded && loaded.length > 0) {
+      setTriviaQuestions(loaded);
+      return;
     }
     // Fallback default trivia questions
     setTriviaQuestions([
@@ -754,22 +756,9 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
     }
 
     const userId = currentUser ? (currentUser.username || currentUser.id || 'default') : 'default';
-    const subjectsStorageKey = `school_subjects_${userId}`;
-    const localSubjects = localStorage.getItem(subjectsStorageKey);
-    if (localSubjects) {
-      try {
-        setAllSubjects(JSON.parse(localSubjects));
-      } catch (e) {
-        console.error(e);
-      }
-    } else {
-      setAllSubjects([
-        { id: 'subj-3', name: 'Tin học', gradeId: 3 },
-        { id: 'subj-4', name: 'Tin học', gradeId: 4 },
-        { id: 'subj-5', name: 'Tin học', gradeId: 5 }
-      ]);
-    }
-  }, [currentUser]);
+    const loadedSubjects = loadWorkspaceSubjects(effectiveWsId, userId);
+    setAllSubjects(loadedSubjects);
+  }, [currentUser, effectiveWsId]);
 
   // Play sound trigger
   const triggerSound = (type: 'win' | 'lose' | 'click' | 'tick' | 'ding') => {
@@ -782,43 +771,25 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
   const handleStartGame = (gameId: string, subjectId: string, classId: string) => {
     let customFilteredQuestions: Question[] = [];
 
-    // 1. Fetch questions based on subjectId
+    // 1. Fetch questions based on subjectId from Workspace
+    const userId = currentUser ? (currentUser.username || currentUser.id || 'default') : 'default';
+    const allWorkspaceQuestions = loadWorkspaceQuestions(effectiveWsId, userId);
+
     if (subjectId === 'default') {
-      const userId = currentUser ? (currentUser.username || currentUser.id || 'default') : 'default';
-      const storageKey = `school_questions_${userId}`;
-      const local = localStorage.getItem(storageKey);
-      if (local) {
-        try {
-          const loaded = JSON.parse(local);
-          if (loaded && loaded.length > 0) {
-            setTriviaQuestions(loaded);
-            customFilteredQuestions = loaded;
-          }
-        } catch (e) {
-          console.error(e);
-        }
+      if (allWorkspaceQuestions.length > 0) {
+        setTriviaQuestions(allWorkspaceQuestions);
+        customFilteredQuestions = allWorkspaceQuestions;
       }
     } else {
-      const userId = currentUser ? (currentUser.username || currentUser.id || 'default') : 'default';
-      const storageKey = `school_questions_${userId}`;
-      const local = localStorage.getItem(storageKey);
-      if (local) {
-        try {
-          const loaded: Question[] = JSON.parse(local);
-          const filtered = loaded.filter(q => q.subjectId === subjectId);
-          if (filtered.length > 0) {
-            setTriviaQuestions(filtered);
-            customFilteredQuestions = filtered;
-            showToast(`📥 Đã nạp thành công ${filtered.length} câu hỏi tự chọn làm học liệu!`, "success");
-          } else {
-            showToast("⚠️ Môn học được chọn không có câu hỏi nào! Sử dụng dữ liệu mặc định.", "error");
-            // Use all loaded questions
-            setTriviaQuestions(loaded);
-            customFilteredQuestions = loaded;
-          }
-        } catch (e) {
-          console.error(e);
-        }
+      const filtered = allWorkspaceQuestions.filter(q => q.subjectId === subjectId);
+      if (filtered.length > 0) {
+        setTriviaQuestions(filtered);
+        customFilteredQuestions = filtered;
+        showToast(`📥 Đã nạp thành công ${filtered.length} câu hỏi tự chọn làm học liệu!`, "success");
+      } else {
+        showToast("⚠️ Môn học được chọn không có câu hỏi nào! Sử dụng toàn bộ ngân hàng câu hỏi.", "error");
+        setTriviaQuestions(allWorkspaceQuestions);
+        customFilteredQuestions = allWorkspaceQuestions;
       }
     }
 
@@ -974,12 +945,7 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
   const [tugAnswered, setTugAnswered] = useState(false);
   const [tugWinner, setTugWinner] = useState<'red' | 'blue' | null>(null);
   const [tugLeaderboard, setTugLeaderboard] = useState<any[]>(() => {
-    try {
-      const stored = localStorage.getItem('tug_leaderboard');
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
+    return loadWorkspaceGameLeaderboard(effectiveWsId, 'tug_leaderboard');
   });
 
   // Dynamic countdown timer for active tug of war gameplay
@@ -1060,7 +1026,7 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
 
     const updated = [newRecord, ...tugLeaderboard].slice(0, 20);
     setTugLeaderboard(updated);
-    safeSetLocalStorage('tug_leaderboard', updated);
+    saveWorkspaceGameLeaderboard(effectiveWsId, 'tug_leaderboard', updated);
   };
 
   const handleTugAnswer = (optIdx: number) => {
@@ -1182,15 +1148,7 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
   // Lấy toàn bộ câu hỏi đã gộp (tự tạo + mẫu có sẵn)
   const getMergedBankQuestions = () => {
     const userId = currentUser ? (currentUser.username || currentUser.id || 'default') : 'default';
-    const localQs = localStorage.getItem(`school_questions_${userId}`);
-    let userQuestions: Question[] = [];
-    if (localQs) {
-      try {
-        userQuestions = JSON.parse(localQs);
-      } catch (e) {
-        console.error(e);
-      }
-    }
+    const userQuestions: Question[] = loadWorkspaceQuestions(effectiveWsId, userId);
 
     const allMerged = [...userQuestions, ...BANK_QUESTIONS];
     const uniqueMap = new Map<string, Question>();
@@ -1285,9 +1243,8 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
 
     setTriviaQuestions(selectedQs);
     
-    // Lưu vào localStorage
-    const userId = currentUser ? (currentUser.username || currentUser.id || 'default') : 'default';
-    safeSetLocalStorage(`school_questions_${userId}`, selectedQs);
+    // Lưu vào Workspace
+    saveWorkspaceQuestions(selectedQs, effectiveWsId);
     
     setShowBankPopup(false);
     showToast(`📚 Đã nạp thành công ${selectedQs.length} câu hỏi từ Ngân hàng!`, "success");
@@ -1354,8 +1311,7 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
     ];
 
     setTriviaQuestions(sampleQuestions);
-    const userId = currentUser ? (currentUser.username || currentUser.id || 'default') : 'default';
-    safeSetLocalStorage(`school_questions_${userId}`, sampleQuestions);
+    saveWorkspaceQuestions(sampleQuestions, effectiveWsId);
     showToast("📚 Đã tải 5 câu hỏi mẫu chất lượng cao vào Ngân hàng!", "success");
     triggerSound('ding');
   };
@@ -1433,8 +1389,7 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
     }
 
     setTriviaQuestions(updatedList);
-    const userId = currentUser ? (currentUser.username || currentUser.id || 'default') : 'default';
-    safeSetLocalStorage(`school_questions_${userId}`, updatedList);
+    saveWorkspaceQuestions(updatedList, effectiveWsId);
     setShowQuestionForm(false);
     triggerSound('ding');
   };
@@ -1442,15 +1397,13 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
   const handleDeleteTugQuestion = (qId: string) => {
     const updated = triviaQuestions.filter(q => q.id !== qId);
     setTriviaQuestions(updated);
-    const userId = currentUser ? (currentUser.username || currentUser.id || 'default') : 'default';
-    safeSetLocalStorage(`school_questions_${userId}`, updated);
+    saveWorkspaceQuestions(updated, effectiveWsId);
     showToast("🗑️ Đã xóa câu hỏi khỏi ngân hàng!", "success");
     triggerSound('lose');
   };
 
   const handleSaveQuestionsToLocal = () => {
-    const userId = currentUser ? (currentUser.username || currentUser.id || 'default') : 'default';
-    safeSetLocalStorage(`school_questions_${userId}`, triviaQuestions);
+    saveWorkspaceQuestions(triviaQuestions, effectiveWsId);
     showToast("💾 Đã lưu toàn bộ Ngân hàng Câu hỏi!", "success");
     triggerSound('ding');
   };
@@ -1484,8 +1437,7 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
 
         const newList = [...triviaQuestions, ...formatted];
         setTriviaQuestions(newList);
-        const userId = currentUser ? (currentUser.username || currentUser.id || 'default') : 'default';
-        safeSetLocalStorage(`school_questions_${userId}`, newList);
+        saveWorkspaceQuestions(newList, effectiveWsId);
         showToast(`📂 Đã nhập thành công ${formatted.length} câu hỏi từ tệp JSON!`, "success");
         triggerSound('ding');
       } catch (err) {
@@ -2974,7 +2926,7 @@ export function InteractiveGamesTab({ currentUser, showToast, selectedGrade = 3 
                     onClick={() => {
                       if (window.confirm("Bạn có chắc chắn muốn xóa toàn bộ lịch sử thi đấu?")) {
                         setTugLeaderboard([]);
-                        localStorage.removeItem('tug_leaderboard');
+                        saveWorkspaceGameLeaderboard(effectiveWsId, 'tug_leaderboard', []);
                         showToast("Đã xóa toàn bộ lịch sử!", "success");
                       }
                     }}

@@ -1,4 +1,4 @@
-import { Member, SeatingChart, EmulationDataState } from '../types';
+import { Member, SeatingChart, EmulationDataState, Question, Subject } from '../types';
 import { safeSetLocalStorage, safeGetLocalStorage } from '../utils/safeStorage';
 import { saveSupabaseState, supabase } from '../supabaseClient';
 import { defaultSeating, defaultEmulation } from '../data/mockData';
@@ -239,6 +239,168 @@ export async function saveWorkspaceTimetableData(
   schedule: Record<string, any>
 ): Promise<boolean> {
   return await saveWorkspaceState('school_timetable_data', workspaceId, schedule);
+}
+
+export const DEFAULT_WORKSPACE_SUBJECTS: Subject[] = [
+  { id: 'subj-1', name: 'Tin học', gradeId: 1 },
+  { id: 'subj-2', name: 'Tin học', gradeId: 2 },
+  { id: 'subj-3', name: 'Tin học', gradeId: 3 },
+  { id: 'subj-4', name: 'Tin học', gradeId: 4 },
+  { id: 'subj-5', name: 'Tin học', gradeId: 5 }
+];
+
+/**
+ * 📚 Tải ngân hàng câu hỏi riêng theo Workspace của Giáo viên
+ * Hỗ trợ Fallback tự động từ key cũ school_questions_${userIdentifier}
+ */
+export function loadWorkspaceQuestions(
+  workspaceId: string,
+  userIdentifier?: string,
+  dbStates?: Record<string, any>,
+  fallbackDefault: Question[] = []
+): Question[] {
+  const scopedKey = getScopedKey('school_questions', workspaceId);
+
+  // 1. Kiểm tra từ Cloud dbStates theo scopedKey
+  if (dbStates && Array.isArray(dbStates[scopedKey]) && dbStates[scopedKey].length > 0) {
+    safeSetLocalStorage(scopedKey, dbStates[scopedKey]);
+    return dbStates[scopedKey];
+  }
+
+  // 2. Kiểm tra từ LocalStorage theo scopedKey
+  const localScoped = safeGetLocalStorage<Question[] | null>(scopedKey, null);
+  if (Array.isArray(localScoped) && localScoped.length > 0) {
+    return localScoped;
+  }
+
+  // 3. Fallback: Di chuyển dữ liệu cũ từ school_questions_${userIdentifier}
+  if (userIdentifier) {
+    const legacyKey = `school_questions_${userIdentifier}`;
+    const legacyCloud = dbStates?.[legacyKey];
+    if (Array.isArray(legacyCloud) && legacyCloud.length > 0) {
+      safeSetLocalStorage(scopedKey, legacyCloud);
+      return legacyCloud;
+    }
+    const legacyLocal = safeGetLocalStorage<Question[] | null>(legacyKey, null);
+    if (Array.isArray(legacyLocal) && legacyLocal.length > 0) {
+      safeSetLocalStorage(scopedKey, legacyLocal);
+      return legacyLocal;
+    }
+  }
+
+  // 4. Nếu chưa có gì, fallback default
+  if (fallbackDefault && fallbackDefault.length > 0) {
+    safeSetLocalStorage(scopedKey, fallbackDefault);
+    return fallbackDefault;
+  }
+
+  return [];
+}
+
+/**
+ * 💾 Lưu ngân hàng câu hỏi phân lập theo Workspace
+ */
+export async function saveWorkspaceQuestions(
+  questions: Question[],
+  workspaceId: string
+): Promise<boolean> {
+  return await saveWorkspaceState('school_questions', workspaceId, questions);
+}
+
+/**
+ * 📖 Tải danh mục môn học riêng theo Workspace của Giáo viên
+ */
+export function loadWorkspaceSubjects(
+  workspaceId: string,
+  userIdentifier?: string,
+  dbStates?: Record<string, any>,
+  fallbackDefault: Subject[] = DEFAULT_WORKSPACE_SUBJECTS
+): Subject[] {
+  const scopedKey = getScopedKey('school_subjects', workspaceId);
+
+  // 1. Cloud dbStates
+  if (dbStates && Array.isArray(dbStates[scopedKey]) && dbStates[scopedKey].length > 0) {
+    safeSetLocalStorage(scopedKey, dbStates[scopedKey]);
+    return dbStates[scopedKey];
+  }
+
+  // 2. LocalStorage
+  const localScoped = safeGetLocalStorage<Subject[] | null>(scopedKey, null);
+  if (Array.isArray(localScoped) && localScoped.length > 0) {
+    return localScoped;
+  }
+
+  // 3. Fallback legacy
+  if (userIdentifier) {
+    const legacyKey = `school_subjects_${userIdentifier}`;
+    const legacyCloud = dbStates?.[legacyKey];
+    if (Array.isArray(legacyCloud) && legacyCloud.length > 0) {
+      safeSetLocalStorage(scopedKey, legacyCloud);
+      return legacyCloud;
+    }
+    const legacyLocal = safeGetLocalStorage<Subject[] | null>(legacyKey, null);
+    if (Array.isArray(legacyLocal) && legacyLocal.length > 0) {
+      safeSetLocalStorage(scopedKey, legacyLocal);
+      return legacyLocal;
+    }
+  }
+
+  // 4. Default subjects
+  safeSetLocalStorage(scopedKey, fallbackDefault);
+  return fallbackDefault;
+}
+
+/**
+ * 💾 Lưu danh mục môn học phân lập theo Workspace
+ */
+export async function saveWorkspaceSubjects(
+  subjects: Subject[],
+  workspaceId: string
+): Promise<boolean> {
+  return await saveWorkspaceState('school_subjects', workspaceId, subjects);
+}
+
+/**
+ * 🎮 Tải bảng xếp hạng trò chơi (Kéo co, Đấu trường...) riêng theo Workspace
+ */
+export function loadWorkspaceGameLeaderboard(
+  workspaceId: string,
+  gameKey: string = 'tug_leaderboard',
+  dbStates?: Record<string, any>
+): any[] {
+  const scopedKey = getScopedKey(gameKey, workspaceId);
+
+  // 1. Cloud
+  if (dbStates && Array.isArray(dbStates[scopedKey])) {
+    safeSetLocalStorage(scopedKey, dbStates[scopedKey]);
+    return dbStates[scopedKey];
+  }
+
+  // 2. LocalStorage scoped
+  const localScoped = safeGetLocalStorage<any[] | null>(scopedKey, null);
+  if (Array.isArray(localScoped)) {
+    return localScoped;
+  }
+
+  // 3. Fallback legacy un-scoped
+  const legacy = safeGetLocalStorage<any[] | null>(gameKey, null);
+  if (Array.isArray(legacy) && legacy.length > 0) {
+    safeSetLocalStorage(scopedKey, legacy);
+    return legacy;
+  }
+
+  return [];
+}
+
+/**
+ * 💾 Lưu bảng xếp hạng trò chơi riêng theo Workspace
+ */
+export async function saveWorkspaceGameLeaderboard(
+  workspaceId: string,
+  gameKey: string = 'tug_leaderboard',
+  leaderboard: any[]
+): Promise<boolean> {
+  return await saveWorkspaceState(gameKey, workspaceId, leaderboard);
 }
 
 
