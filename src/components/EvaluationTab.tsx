@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { Student, EvaluationData, SeatingChart, Computer, EmulationDataState, AttendanceData, ClassItem } from '../types';
+import { Student, EvaluationData, SeatingChart, Computer, EmulationDataState, AttendanceData, ClassItem, GardenStudentData, WaterLog } from '../types';
 import { Star, Calendar, Search, X, Award, MessageSquare, Tag, ArrowLeft, Save, RefreshCw } from 'lucide-react';
 import { triggerStarsConfetti } from '../utils/confetti';
 import { playStarRewardSound, playWarningDeductSound } from '../utils/audioEffects';
@@ -10,6 +10,7 @@ import { VietnameseDatePicker } from './common/VietnameseDatePicker';
 import { getStudentAvatar } from '../utils/studentAvatar';
 import { matchStudentSearch } from '../utils/nameFormatter';
 import { saveDayPartitionedEvaluation } from '../utils/evaluationPartition';
+import { saveWorkspaceGardenData } from '../utils/gardenPartition';
 import { safeSetLocalStorage } from '../utils/safeStorage';
 import { saveSupabaseState } from '../supabaseClient';
 
@@ -29,6 +30,8 @@ interface EvaluationTabProps {
   attendanceData: AttendanceData;
   classes?: ClassItem[];
   workspaceId?: string;
+  gardenData?: { [studentId: string]: GardenStudentData };
+  setGardenData?: React.Dispatch<React.SetStateAction<{ [studentId: string]: GardenStudentData }>>;
 }
 
 // Simple Avatar Component to render clean, flat circle avatars with student-specific background colors with gorgeous hover effects
@@ -238,7 +241,9 @@ export default function EvaluationTab({
   emulationDataState,
   attendanceData,
   classes = [],
-  workspaceId
+  workspaceId,
+  gardenData,
+  setGardenData
 }: EvaluationTabProps) {
   
   const [searchTerm, setSearchTerm] = React.useState('');
@@ -428,6 +433,39 @@ export default function EvaluationTab({
       return { ...prev, [selectedDate]: dayData };
     });
 
+    // 3. Tự động đồng bộ giọt nước vào Vườn tri thức trong cùng Workspace của giáo viên!
+    if (setGardenData) {
+      setGardenData(prevGarden => {
+        const studentGarden = prevGarden?.[studentId] || {
+          studentId,
+          seed: '🌸 Cây Hoa Đào',
+          water: 0,
+          badges: [],
+          logs: []
+        };
+        const newWater = Math.max(0, studentGarden.water + delta);
+        const newLog: WaterLog = {
+          id: `log-${Date.now()}`,
+          date: new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }),
+          amount: delta,
+          reason: `${delta > 0 ? '⭐ Khen thưởng' : '⚠️ Nhắc nhở'}: ${label}`
+        };
+        const updatedStudent = {
+          ...studentGarden,
+          water: newWater,
+          logs: [newLog, ...studentGarden.logs]
+        };
+        const updatedAll = {
+          ...prevGarden,
+          [studentId]: updatedStudent
+        };
+        if (workspaceId) {
+          saveWorkspaceGardenData(updatedAll, workspaceId);
+        }
+        return updatedAll;
+      });
+    }
+
     if (delta > 0) {
       triggerStarsConfetti();
       playStarRewardSound();
@@ -435,7 +473,7 @@ export default function EvaluationTab({
       playWarningDeductSound();
     }
 
-    showToast(`Đã ${delta > 0 ? 'khen thưởng (+)' : 'nhắc nhở (-)'}${Math.abs(delta)} ⭐: ${label}`);
+    showToast(`Đã ${delta > 0 ? 'khen thưởng (+)' : 'nhắc nhở (-)'}${Math.abs(delta)} ⭐ ${delta > 0 ? '(thưởng kèm +' : '(trừ kèm '}${delta} 💧 Vườn tri thức): ${label}`);
   };
 
   const isReminderOrViolationTag = (tag: string) => {

@@ -44,7 +44,9 @@ import {
   saveWorkspaceRewardsData, 
   loadWorkspaceRewardsData, 
   deepMergeRewards,
-  isSampleReward
+  isSampleReward,
+  loadWorkspaceSeedSets,
+  saveWorkspaceSeedSets
 } from '../utils/gardenPartition';
 
 export interface KnowledgeGardenTabProps {
@@ -154,7 +156,7 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
   // Local fallback states if not passed from root
   const [localGardenData, setLocalGardenData] = useState<{ [studentId: string]: GardenStudentData }>(() => {
     try {
-      const saved = localStorage.getItem(gardenStorageKey) || localStorage.getItem('deskos_garden_data_v2');
+      const saved = localStorage.getItem(gardenStorageKey);
       return saved ? JSON.parse(saved) : {};
     } catch (e) {
       return {};
@@ -186,30 +188,24 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
   });
   const rewardsDebounceRef = useRef<any>(null);
 
-  // 🛡️ Tự động làm sạch triệt để mọi phần thưởng mẫu cũ khỏi state và localStorage
+  // 🛡️ Tự động làm sạch triệt để mọi phần thưởng mẫu cũ khỏi state và localStorage của Workspace
   useEffect(() => {
     if (Array.isArray(rewards) && rewards.some(r => isSampleReward(r))) {
       const cleaned = rewards.filter(r => !isSampleReward(r));
       setRewards(cleaned);
       safeSetLocalStorage(rewardsStorageKey, cleaned);
-      safeSetLocalStorage('deskos_garden_rewards_v2', cleaned);
-      safeSetLocalStorage('school_garden_rewards', cleaned);
+      saveWorkspaceRewardsData(cleaned, currentWsId);
     }
-  }, [rewards, rewardsStorageKey, setRewards]);
+  }, [rewards, rewardsStorageKey, setRewards, currentWsId]);
 
   // Filters & Inputs
   const [classSearch, setClassSearch] = useState('');
   const [classStageFilter, setClassStageFilter] = useState<string>('ALL');
   const [teacherSearch, setTeacherSearch] = useState('');
 
-  // Custom Seed Sets Collection (7 Levels)
+  // Custom Seed Sets Collection (7 Levels) - Cô lập theo Workspace Giáo viên
   const [localCustomSeedSets, setLocalCustomSeedSets] = useState<CustomSeedSet[]>(() => {
-    try {
-      const saved = localStorage.getItem('deskos_custom_seed_sets_v1') || localStorage.getItem('school_custom_seed_sets');
-      return saved ? JSON.parse(saved) : DEFAULT_CUSTOM_SEED_SETS;
-    } catch (e) {
-      return DEFAULT_CUSTOM_SEED_SETS;
-    }
+    return loadWorkspaceSeedSets(currentWsId, undefined, DEFAULT_CUSTOM_SEED_SETS);
   });
 
   const customSeedSets = propCustomSeedSets || localCustomSeedSets;
@@ -226,15 +222,13 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
 
   const lastLocalSaveTimeRef = React.useRef<number>(0);
 
-  // Persist Custom Seed Sets
+  // Persist Custom Seed Sets theo đúng Workspace
   useEffect(() => {
     if (customSeedSets.length === 0) return;
     try {
-      safeSetLocalStorage('deskos_custom_seed_sets_v1', customSeedSets);
-      safeSetLocalStorage('school_custom_seed_sets', customSeedSets);
-      saveSupabaseState('school_custom_seed_sets', customSeedSets);
+      saveWorkspaceSeedSets(customSeedSets, currentWsId);
     } catch (e) {}
-  }, [customSeedSets]);
+  }, [customSeedSets, currentWsId]);
 
   // Sync Cloud Updates for Seed Sets
   useEffect(() => {
@@ -406,9 +400,8 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
   useEffect(() => {
     if (Object.keys(gardenData).length === 0) return;
     try {
-      // 🛡️ Lưu tức thì 0ms vào LocalStorage để bảo vệ 100% dữ liệu khi mất mạng
+      // 🛡️ Lưu tức thì 0ms vào LocalStorage của Workspace để bảo vệ 100% dữ liệu khi mất mạng
       safeSetLocalStorage(gardenStorageKey, gardenData);
-      safeSetLocalStorage('deskos_garden_data_v2', gardenData);
     } catch (e) {}
 
     // 🌐 Tự động đồng bộ ngầm (Debounce 1.5s) với Supabase Cloud bằng Deep Merge
@@ -433,7 +426,7 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     setIsSaving(true);
     if (gardenDebounceRef.current) clearTimeout(gardenDebounceRef.current);
     try {
-      const targetWs = currentWsId || 'ws_u-1';
+      const targetWs = currentWsId || 'ws_default';
       await saveWorkspaceGardenData(gardenData, targetWs, (merged) => {
         setGardenData(merged);
       });
@@ -452,8 +445,6 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     if (rewards.length === 0) return;
     try {
       safeSetLocalStorage(rewardsStorageKey, rewards);
-      safeSetLocalStorage('deskos_garden_rewards_v2', rewards);
-      safeSetLocalStorage('school_garden_rewards', rewards);
     } catch (e) {}
 
     // 🌐 Tự động đồng bộ ngầm (Debounce 1.5s) với Supabase Cloud bằng Deep Merge
@@ -746,7 +737,6 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
 
       // 🛡️ Lưu tức thì 0ms vào LocalStorage bảo vệ dữ liệu khi mất mạng
       safeSetLocalStorage(gardenStorageKey, updatedAll);
-      safeSetLocalStorage('deskos_garden_data_v2', updatedAll);
 
       setHasUnsavedChanges(true);
       setGardenData(updatedAll);
@@ -782,7 +772,6 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
 
       // 🛡️ Lưu tức thì 0ms vào LocalStorage bảo vệ dữ liệu khi mất mạng
       safeSetLocalStorage(gardenStorageKey, updatedAll);
-      safeSetLocalStorage('deskos_garden_data_v2', updatedAll);
 
       setHasUnsavedChanges(true);
       setGardenData(updatedAll);
@@ -862,8 +851,7 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
 
       const nextRewards = rewards.map(r => r.id === editingReward.id ? updated : r);
       safeSetLocalStorage(rewardsStorageKey, nextRewards);
-      safeSetLocalStorage('deskos_garden_rewards_v2', nextRewards);
-      safeSetLocalStorage('school_garden_rewards', nextRewards);
+      saveWorkspaceRewardsData(nextRewards, currentWsId);
 
       setHasUnsavedRewardChanges(true);
       setRewards(nextRewards);
@@ -895,8 +883,7 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
 
       const nextRewards = [...rewards, newItem];
       safeSetLocalStorage(rewardsStorageKey, nextRewards);
-      safeSetLocalStorage('deskos_garden_rewards_v2', nextRewards);
-      safeSetLocalStorage('school_garden_rewards', nextRewards);
+      saveWorkspaceRewardsData(nextRewards, currentWsId);
 
       setHasUnsavedRewardChanges(true);
       setRewards(nextRewards);
@@ -928,8 +915,7 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     if (window.confirm(`Bạn có chắc chắn muốn xóa phần thưởng "${title}" khỏi kho đổi quà không?`)) {
       const nextRewards = rewards.filter(r => r.id !== id);
       safeSetLocalStorage(rewardsStorageKey, nextRewards);
-      safeSetLocalStorage('deskos_garden_rewards_v2', nextRewards);
-      safeSetLocalStorage('school_garden_rewards', nextRewards);
+      saveWorkspaceRewardsData(nextRewards, currentWsId);
 
       setHasUnsavedRewardChanges(true);
       setRewards(nextRewards);
@@ -938,13 +924,11 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
   };
 
   const handleClearAllRewards = async () => {
-    if (window.confirm('Thầy/Cô có chắc chắn muốn xóa toàn bộ các phần quà cũ để làm sạch kho quà không? Thao tác này sẽ dọn sạch toàn bộ phần quà cũ cả trên máy và trên Cloud.')) {
-      const targetWs = currentWsId || 'ws_u-1';
+    if (window.confirm('Thầy/Cô có chắc chắn muốn xóa toàn bộ các phần quà cũ để làm sạch kho quà không? Thao tác này sẽ dọn sạch toàn bộ phần quà cũ cả trên máy và trên Cloud của Workspace.')) {
+      const targetWs = currentWsId || 'ws_default';
       setRewards([]);
       setHasUnsavedRewardChanges(false);
       safeSetLocalStorage(rewardsStorageKey, []);
-      safeSetLocalStorage('deskos_garden_rewards_v2', []);
-      safeSetLocalStorage('school_garden_rewards', []);
       await saveWorkspaceRewardsData([], targetWs);
       showToast('Đã dọn sạch toàn bộ phần quà cũ thành công! Bây giờ Thầy Cô có thể tạo các phần quà mới.', 'success');
     }
@@ -967,8 +951,7 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
 
     const nextRewards = [...rewards, item];
     safeSetLocalStorage(rewardsStorageKey, nextRewards);
-    safeSetLocalStorage('deskos_garden_rewards_v2', nextRewards);
-    safeSetLocalStorage('school_garden_rewards', nextRewards);
+    saveWorkspaceRewardsData(nextRewards, currentWsId);
 
     setHasUnsavedRewardChanges(true);
     setRewards(nextRewards);
@@ -1028,11 +1011,9 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     // 1. Update React state immediately
     setCustomSeedSets(nextSets);
 
-    // 2. Persist to localStorage & Supabase synchronously
+    // 2. Persist to localStorage & Supabase theo Workspace của Giáo viên
     try {
-      safeSetLocalStorage('deskos_custom_seed_sets_v1', nextSets);
-      safeSetLocalStorage('school_custom_seed_sets', nextSets);
-      saveSupabaseState('school_custom_seed_sets', nextSets);
+      saveWorkspaceSeedSets(nextSets, currentWsId);
     } catch (e) {
       console.warn('Persistence save error:', e);
     }
@@ -1071,9 +1052,7 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     const nextSets = customSeedSets.filter(s => s.id !== id);
     setCustomSeedSets(nextSets);
     try {
-      safeSetLocalStorage('deskos_custom_seed_sets_v1', nextSets);
-      safeSetLocalStorage('school_custom_seed_sets', nextSets);
-      saveSupabaseState('school_custom_seed_sets', nextSets);
+      saveWorkspaceSeedSets(nextSets, currentWsId);
     } catch (e) {}
 
     setGardenData(prev => {
@@ -2958,98 +2937,231 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
 
       {/* ================= 🛠️ MODALS ================= */}
 
-      {/* 1. WATER MODAL */}
-      {waterModalStudent && createPortal(
-        <div 
-          className="absolute inset-0 bg-slate-900/65 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setWaterModalStudent(null);
-            }
-          }}
-        >
+      {/* 1. WATER MODAL (NÂNG CẤP THEO MÔ HÌNH ĐÁNH GIÁ TẶNG SAO CHUYÊN NGHIỆP) */}
+      {waterModalStudent && createPortal((() => {
+        const modalGarden = getStudentGarden(waterModalStudent.id);
+        const modalStage = getStageInfo(modalGarden.water).currentStage;
+        const currentWater = modalGarden.water;
+
+        const praiseCriteria = [
+          { label: 'Phát biểu', value: 5, icon: '🙋' },
+          { label: 'Thực hành xuất sắc', value: 10, icon: '💻' },
+          { label: 'Giúp đỡ bạn', value: 3, icon: '🤝' },
+          { label: 'Làm bài tập tốt', value: 3, icon: '🌟' },
+          { label: 'Vệ sinh máy tốt', value: 2, icon: '🧹' },
+          { label: 'Ý tưởng sáng tạo', value: 5, icon: '💡' }
+        ];
+
+        const reminderCriteria = [
+          { label: 'Nói chuyện riêng', value: -2, icon: '🤫' },
+          { label: 'Quên sách, vở', value: -5, icon: '📚' },
+          { label: 'Đi học muộn', value: -3, icon: '⏰' },
+          { label: 'Mở game / web khác', value: -5, icon: '🎮' },
+          { label: 'Chưa tắt máy đúng cách', value: -2, icon: '🔌' },
+          { label: 'Vệ sinh chưa tốt', value: -1, icon: '🗑️' }
+        ];
+
+        const handleQuickAction = (value: number, label: string) => {
+          addWaterToStudent(waterModalStudent.id, value, label);
+          setWaterModalStudent(null);
+        };
+
+        return (
           <div 
-            className="bg-[#faf5ec] w-full max-w-md rounded-3xl shadow-2xl border-2 border-[#d6c4a8] flex flex-col relative overflow-hidden animate-in zoom-in-95 duration-200 my-auto text-left"
-            onClick={(e) => e.stopPropagation()}
-            tabIndex={-1}
+            className="absolute inset-0 bg-slate-900/65 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setWaterModalStudent(null);
+              }
+            }}
           >
-            {/* Header */}
-            <div className="bg-gradient-to-r from-[#dfccb0] via-[#e8d9c2] to-[#dfccb0] px-5 py-3.5 border-b border-[#c8b598] flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">💧</span>
-                <div>
-                  <h3 className="font-black text-sm text-[#42301c]">Tặng Giọt Nước Khen Thưởng</h3>
-                  <p className="text-[11px] font-bold text-sky-700">Học sinh: {waterModalStudent.name} ({waterModalStudent.code})</p>
+            <div 
+              className="bg-[#faf5ec] w-full max-w-lg rounded-3xl shadow-2xl border-2 border-[#d6c4a8] flex flex-col relative overflow-hidden animate-in zoom-in-95 duration-200 my-auto text-left"
+              onClick={(e) => e.stopPropagation()}
+              tabIndex={-1}
+            >
+              {/* Header */}
+              <div className="bg-gradient-to-r from-[#dfccb0] via-[#e8d9c2] to-[#dfccb0] px-5 py-3.5 border-b border-[#c8b598] flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl animate-bounce">💧</span>
+                  <div>
+                    <h3 className="font-black text-sm text-[#42301c]">Đánh Giá & Tặng Nước Cây Tri Thức</h3>
+                    <p className="text-[11px] font-bold text-sky-800">
+                      Học sinh: <span className="font-black text-slate-900">{waterModalStudent.name}</span> ({waterModalStudent.code})
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <button 
-                onClick={() => setWaterModalStudent(null)}
-                className="text-[#6e5334] hover:text-[#382613] bg-white/60 hover:bg-white p-1.5 rounded-full transition-all cursor-pointer shadow-xs focus:outline-none"
-                title="Đóng cửa sổ (Esc)"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="p-5 space-y-4">
-              {/* Presets */}
-              <div className="grid grid-cols-3 gap-2 text-xs font-black">
-                {[1, 2, 3, 5, 10, 20].map(amt => (
-                  <button
-                    key={amt}
-                    type="button"
-                    onClick={() => setSelectedWaterAmount(amt)}
-                    className={`p-3 rounded-2xl border-2 transition-all cursor-pointer ${
-                      selectedWaterAmount === amt ? 'bg-sky-50 text-sky-700 border-sky-500 shadow-xs' : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
-                    }`}
-                  >
-                    +{amt} 💧
-                  </button>
-                ))}
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-black text-[#6e5334] uppercase mb-1">Lý do khen thưởng:</label>
-                <input
-                  ref={waterReasonInputRef}
-                  type="text"
-                  value={waterReason}
-                  onChange={(e) => setWaterReason(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      addWaterToStudent(waterModalStudent.id, selectedWaterAmount, waterReason || 'Giáo viên khen thưởng');
-                      setWaterModalStudent(null);
-                      showToast(`Đã tặng +${selectedWaterAmount} 💧 cho ${waterModalStudent.name}!`, 'success');
-                    }
-                  }}
-                  placeholder="Ví dụ: Giúp đỡ bạn, Hăng hái phát biểu..."
-                  className="w-full px-4 py-2.5 rounded-xl border border-[#d6c4a8] bg-white text-xs font-bold focus:outline-none focus:ring-2 focus:ring-sky-500"
-                />
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
+                <button 
                   onClick={() => setWaterModalStudent(null)}
-                  className="w-1/2 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 font-black text-slate-700 text-xs transition-all cursor-pointer"
+                  className="text-[#6e5334] hover:text-[#382613] bg-white/60 hover:bg-white p-1.5 rounded-full transition-all cursor-pointer shadow-xs focus:outline-none"
+                  title="Đóng cửa sổ (Esc)"
                 >
-                  Hủy (Esc)
+                  <X className="w-4 h-4" />
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    addWaterToStudent(waterModalStudent.id, selectedWaterAmount, waterReason || 'Giáo viên khen thưởng');
-                    setWaterModalStudent(null);
-                    showToast(`Đã tặng +${selectedWaterAmount} 💧 cho ${waterModalStudent.name}!`, 'success');
-                  }}
-                  className="w-1/2 py-2.5 rounded-2xl bg-sky-500 hover:bg-sky-600 font-black text-white text-xs shadow-md shadow-sky-500/20 active:scale-95 transition-all cursor-pointer"
-                >
-                  Lưu & Tặng Nước
-                </button>
+              </div>
+
+              <div className="p-5 space-y-4 max-h-[82vh] overflow-y-auto custom-scrollbar">
+                {/* Thông tin cây & giọt nước hiện tại */}
+                <div className="bg-white/90 p-3 rounded-2xl border border-[#d6c4a8] shadow-xs flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">🌱</span>
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Cây Tri Thức</span>
+                      <span className="text-xs font-black text-emerald-800">{modalGarden.seed || DEFAULT_SEED_NAME}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200 text-center">
+                      <span className="text-[9px] uppercase font-black text-emerald-600 block">Cấp Độ</span>
+                      <span className="text-xs font-black text-emerald-800">Cấp {modalStage.level}</span>
+                    </div>
+                    <div className="bg-sky-50 px-3 py-1 rounded-xl border border-sky-200 text-center">
+                      <span className="text-[9px] uppercase font-black text-sky-600 block">Điểm Nước</span>
+                      <span className="text-xs font-black text-sky-800 flex items-center gap-1">
+                        💧 {currentWater} giọt
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 1. KHEN THƯỜNG (TẶNG NƯỚC NHANH 1-CLICK) */}
+                <div className="space-y-2">
+                  <h4 className="text-xs font-black text-emerald-800 uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="text-emerald-600">➕</span> KHEN THƯỜNG HỌC TẬP (TẶNG NƯỚC)
+                  </h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {praiseCriteria.map((item) => (
+                      <button
+                        key={item.label}
+                        type="button"
+                        onClick={() => handleQuickAction(item.value, item.label)}
+                        className="p-2.5 rounded-2xl bg-gradient-to-b from-emerald-50 to-white hover:from-emerald-100 hover:to-emerald-50 border border-emerald-300 hover:border-emerald-500 shadow-xs hover:shadow-md transition-all text-left flex flex-col justify-between group active:scale-95 cursor-pointer"
+                        title={`Thưởng ngay +${item.value} 💧 cho ${item.label}`}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-base">{item.icon}</span>
+                          <span className="font-extrabold text-[11px] text-emerald-950 group-hover:text-emerald-700 leading-tight">
+                            {item.label}
+                          </span>
+                        </div>
+                        <span className="mt-1.5 self-end text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-600 text-white shadow-2xs">
+                          +{item.value} 💧
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 2. NHẮC NHỞ (TRỪ NƯỚC NHANH 1-CLICK) */}
+                <div className="space-y-2">
+                  <h4 className="text-xs font-black text-rose-800 uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="text-rose-600">➖</span> NHẮC NHỞ NỀ NẾP (TRỪ NƯỚC)
+                  </h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {reminderCriteria.map((item) => (
+                      <button
+                        key={item.label}
+                        type="button"
+                        onClick={() => handleQuickAction(item.value, item.label)}
+                        className="p-2.5 rounded-2xl bg-gradient-to-b from-rose-50 to-white hover:from-rose-100 hover:to-rose-50 border border-rose-300 hover:border-rose-500 shadow-xs hover:shadow-md transition-all text-left flex flex-col justify-between group active:scale-95 cursor-pointer"
+                        title={`Trừ ${Math.abs(item.value)} 💧 (${item.label})`}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-base">{item.icon}</span>
+                          <span className="font-extrabold text-[11px] text-rose-950 group-hover:text-rose-700 leading-tight">
+                            {item.label}
+                          </span>
+                        </div>
+                        <span className="mt-1.5 self-end text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-600 text-white shadow-2xs">
+                          {item.value} 💧
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 3. TÙY CHỈNH SỐ NƯỚC & LÝ DO RIÊNG */}
+                <div className="pt-2 border-t border-[#dfccb0] space-y-3">
+                  <span className="text-[11px] font-black text-[#6e5334] uppercase tracking-wider block">
+                    Hoặc tùy chỉnh số lượng & lý do riêng:
+                  </span>
+                  
+                  {/* Presets số lượng */}
+                  <div className="flex flex-wrap gap-1.5">
+                    {[1, 2, 3, 5, 10, 20].map(amt => (
+                      <button
+                        key={amt}
+                        type="button"
+                        onClick={() => setSelectedWaterAmount(amt)}
+                        className={`px-3 py-1.5 rounded-xl border font-black text-xs transition-all cursor-pointer ${
+                          selectedWaterAmount === amt 
+                            ? 'bg-sky-500 text-white border-sky-600 shadow-xs' 
+                            : 'bg-white text-slate-700 border-slate-200 hover:border-sky-300'
+                        }`}
+                      >
+                        +{amt} 💧
+                      </button>
+                    ))}
+                    {[-1, -2, -3, -5].map(amt => (
+                      <button
+                        key={amt}
+                        type="button"
+                        onClick={() => setSelectedWaterAmount(amt)}
+                        className={`px-2.5 py-1.5 rounded-xl border font-black text-xs transition-all cursor-pointer ${
+                          selectedWaterAmount === amt 
+                            ? 'bg-rose-500 text-white border-rose-600 shadow-xs' 
+                            : 'bg-white text-rose-700 border-rose-200 hover:border-rose-400'
+                        }`}
+                      >
+                        {amt} 💧
+                      </button>
+                    ))}
+                  </div>
+
+                  <div>
+                    <input
+                      ref={waterReasonInputRef}
+                      type="text"
+                      value={waterReason}
+                      onChange={(e) => setWaterReason(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          addWaterToStudent(waterModalStudent.id, selectedWaterAmount, waterReason || 'Giáo viên khen thưởng');
+                          setWaterModalStudent(null);
+                        }
+                      }}
+                      placeholder="Ghi lý do chi tiết (VD: Giúp đỡ bạn thực hành, Hăng hái phát biểu...)"
+                      className="w-full px-4 py-2.5 rounded-xl border border-[#d6c4a8] bg-white text-xs font-bold focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    />
+                  </div>
+
+                  <div className="flex gap-3 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setWaterModalStudent(null)}
+                      className="w-1/3 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 font-black text-slate-700 text-xs transition-all cursor-pointer"
+                    >
+                      Hủy (Esc)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        addWaterToStudent(waterModalStudent.id, selectedWaterAmount, waterReason || (selectedWaterAmount > 0 ? 'Giáo viên khen thưởng' : 'Giáo viên nhắc nhở'));
+                        setWaterModalStudent(null);
+                      }}
+                      className={`w-2/3 py-2.5 rounded-2xl font-black text-white text-xs shadow-md active:scale-95 transition-all cursor-pointer ${
+                        selectedWaterAmount >= 0 ? 'bg-sky-500 hover:bg-sky-600 shadow-sky-500/20' : 'bg-rose-500 hover:bg-rose-600 shadow-rose-500/20'
+                      }`}
+                    >
+                      {selectedWaterAmount >= 0 ? `Lưu & Tặng (+${selectedWaterAmount} 💧)` : `Lưu & Trừ (${selectedWaterAmount} 💧)`}
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>,
+        );
+      })(),
         (typeof document !== 'undefined' && (document.getElementById('deskos-window-body') || document.getElementById('deskos-active-window'))) || document.body
       )}
 

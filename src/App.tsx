@@ -43,7 +43,12 @@ import {
 } from './utils/evaluationPartition';
 import { 
   saveWorkspaceGardenData, 
-  deepMergeGardenData 
+  deepMergeGardenData,
+  loadWorkspaceRewardsData, 
+  saveWorkspaceRewardsData, 
+  deepMergeRewards,
+  loadWorkspaceSeedSets,
+  saveWorkspaceSeedSets
 } from './utils/gardenPartition';
 import { 
   saveWorkspaceSeatingData, 
@@ -54,7 +59,6 @@ import { InteractiveGamesTab } from './components/InteractiveGamesTab';
 import { PersonalQuestionsTab } from './components/PersonalQuestionsTab';
 import ComputerReportTab from './components/ComputerReportTab';
 import { KnowledgeGardenTab, DEFAULT_REWARDS, DEFAULT_CUSTOM_SEED_SETS } from './components/KnowledgeGardenTab';
-import { loadWorkspaceRewardsData, saveWorkspaceRewardsData, deepMergeRewards } from './utils/gardenPartition';
 import { CustomSeedSet, GardenReward, GardenStudentData } from './types';
 import CuteMiniRobot from './components/CuteMiniRobot';
 import { SciFi3DPopupFrame } from './components/SciFi3DPopupFrame';
@@ -208,8 +212,8 @@ export default function App() {
   const [emulationDataState, setEmulationDataState] = useState<EmulationDataState>(() => loadWorkspaceEmulationState(activeWorkspaceId));
   const [gardenData, setGardenData] = useState<{ [studentId: string]: GardenStudentData }>(() => loadWorkspaceGardenData(activeWorkspaceId));
 
-  // Global Master States (Shared)
-  const [customSeedSets, setCustomSeedSets] = useState<CustomSeedSet[]>(() => safeParse('deskos_custom_seed_sets_v1', safeParse('school_custom_seed_sets', DEFAULT_CUSTOM_SEED_SETS)));
+  // User-Scoped Workspace Garden & Seed Sets States
+  const [customSeedSets, setCustomSeedSets] = useState<CustomSeedSet[]>(() => loadWorkspaceSeedSets(activeWorkspaceId, undefined, DEFAULT_CUSTOM_SEED_SETS));
   const [gardenRewards, setGardenRewards] = useState<GardenReward[]>(() => loadWorkspaceRewardsData(activeWorkspaceId, undefined, DEFAULT_REWARDS));
 
   const [documents, setDocuments] = useState<DocumentItem[]>(() => safeParse('school_documents', defaultDocuments));
@@ -664,6 +668,7 @@ export default function App() {
     const newEmulation = loadWorkspaceEmulationState(targetWsId, latestDbStatesRef.current);
     const newGardenData = loadWorkspaceGardenData(targetWsId, latestDbStatesRef.current);
     const newGardenRewards = loadWorkspaceRewardsData(targetWsId, latestDbStatesRef.current, DEFAULT_REWARDS);
+    const newSeedSets = loadWorkspaceSeedSets(targetWsId, latestDbStatesRef.current, DEFAULT_CUSTOM_SEED_SETS);
     const wsTimetable = loadWorkspaceTimetableData(targetWsId, userIdentifier, latestDbStatesRef.current);
 
     // 4. Batch update states đồng loạt vào React
@@ -674,6 +679,7 @@ export default function App() {
     setEmulationDataState(newEmulation);
     setGardenData(newGardenData);
     setGardenRewards(newGardenRewards);
+    setCustomSeedSets(newSeedSets);
 
     if (wsTimetable && Object.keys(wsTimetable).length > 0 && userIdentifier) {
       setTimetableData(prev => {
@@ -789,19 +795,17 @@ export default function App() {
           const loadedGarden = loadWorkspaceGardenData(activeWorkspaceId, dbStates);
           setGardenData(loadedGarden);
           safeSetLocalStorage(`${activeWorkspaceId}_garden_data_v2`, loadedGarden);
-          safeSetLocalStorage('deskos_garden_data_v2', loadedGarden);
+
           // 🎁 Đồng bộ danh mục Đổi Thưởng với Deep Merge bảo vệ các quà tạo ngoại tuyến
           const loadedRewards = loadWorkspaceRewardsData(activeWorkspaceId, dbStates, gardenRewards);
           setGardenRewards(loadedRewards);
           safeSetLocalStorage(`${activeWorkspaceId}_garden_rewards_v2`, loadedRewards);
-          safeSetLocalStorage('deskos_garden_rewards_v2', loadedRewards);
-          safeSetLocalStorage('school_garden_rewards', loadedRewards);
-          if (dbStates['school_custom_seed_sets'] && Array.isArray(dbStates['school_custom_seed_sets']) && dbStates['school_custom_seed_sets'].length > 0) {
-            setCustomSeedSets(dbStates['school_custom_seed_sets']);
-            safeSetLocalStorage('deskos_custom_seed_sets_v1', dbStates['school_custom_seed_sets']);
-            safeSetLocalStorage('school_custom_seed_sets', dbStates['school_custom_seed_sets']);
-            window.dispatchEvent(new CustomEvent('custom_seed_sets_updated', { detail: dbStates['school_custom_seed_sets'] }));
-          }
+
+          // 🌱 Đồng bộ Kho Hạt Giống 7 cấp độ theo Workspace
+          const loadedSeedSets = loadWorkspaceSeedSets(activeWorkspaceId, dbStates, DEFAULT_CUSTOM_SEED_SETS);
+          setCustomSeedSets(loadedSeedSets);
+          safeSetLocalStorage(`${activeWorkspaceId}_custom_seed_sets_v1`, loadedSeedSets);
+          window.dispatchEvent(new CustomEvent('custom_seed_sets_updated', { detail: loadedSeedSets }));
 
           // 📚 Đồng bộ Ngân hàng câu hỏi & Môn học theo Workspace
           const wsQuestionsKey = `${activeWorkspaceId}_school_questions`;
@@ -1350,7 +1354,7 @@ export default function App() {
         saveSupabaseState('custom_avatars_list', loadCustomAvatars()),
         saveWorkspaceGardenData(gardenData, activeWorkspaceId),
         saveWorkspaceRewardsData(gardenRewards, activeWorkspaceId),
-        saveSupabaseState('school_custom_seed_sets', customSeedSets),
+        saveWorkspaceSeedSets(customSeedSets, activeWorkspaceId),
         saveSupabaseState(`${activeWorkspaceId}_school_computer_reports`, safeParse(`${activeWorkspaceId}_school_computer_reports`, safeParse('school_computer_reports', []))),
         saveSupabaseState('school_computer_reports', safeParse('school_computer_reports', [])),
         saveSupabaseState('school_timetable_titles', safeParse('school_timetable_titles', {})),
@@ -1858,6 +1862,8 @@ export default function App() {
                 attendanceData={attendanceData}
                 classes={classes}
                 workspaceId={activeWorkspaceId}
+                gardenData={gardenData}
+                setGardenData={setGardenData}
               />
             )}
 

@@ -1,19 +1,22 @@
-import { GardenStudentData, GardenReward, WaterLog } from '../types';
+import { GardenStudentData, GardenReward, WaterLog, CustomSeedSet } from '../types';
 import { safeSetLocalStorage } from './safeStorage';
 import { saveSupabaseState, supabase } from '../supabaseClient';
 
 /**
- * 📦 QUẢN LÝ DỮ LIỆU VƯỜN TRI THỨC & ĐỔI THƯỞNG (OFFLINE-FIRST & DEEP MERGE ĐA TẦNG)
- * Chuẩn mực hóa 100% theo phân hệ Điểm danh:
- * - Phân vùng lưu trữ theo Workspace (Workspace Partitioning)
+ * 📦 QUẢN LÝ DỮ LIỆU VƯỜN TRI THỨC, ĐỔI THƯỞNG & KHO HẠT GIỐNG (OFFLINE-FIRST & WORKSPACE ISOLATION)
+ * Chuẩn mực hóa 100% theo phân hệ Workspace của Đánh giá tặng sao:
+ * - Phân vùng lưu trữ tuyệt đối theo Workspace (Workspace Partitioning) cho từng Giáo viên
  * - Ghi tức thì 0ms vào LocalStorage (Bảo toàn 100% dữ liệu khi ngoại tuyến)
- * - Hợp nhất đa chiều 3 tầng: Cloud cũ -> Local cũ -> Thao tác mới nhất
+ * - Mỗi giáo viên tự quản lý: Cây & Giọt nước học sinh, Kho quà tặng, Kho hạt giống 7 cấp độ
  * - Timeout 1.5s bảo vệ chống treo/đơ giao diện khi rớt mạng
  * - Xử lý thông minh việc đổi thưởng (trừ giọt nước) không bị Math.max đè mất dữ liệu
  */
 
-// Danh sách phần thưởng mẫu mặc định ban đầu: Đã loại bỏ tất cả theo yêu cầu
+// Danh sách phần thưởng mẫu mặc định ban đầu: Rỗng để giáo viên tự tạo
 export const DEFAULT_REWARDS: GardenReward[] = [];
+
+// Mẫu Bộ Hạt Giống Mặc Định
+export const DEFAULT_CUSTOM_SEED_SETS: CustomSeedSet[] = [];
 
 /**
  * 🛡️ HÀM NHẬN DIỆN PHẦN THƯỞNG MẪU (SAMPLE REWARDS)
@@ -77,10 +80,9 @@ export function deepMergeRewards(
 }
 
 /**
- * 💾 LƯU DANH MỤC PHẦN THƯỞNG ĐỔI QUÀ (OFFLINE-FIRST & DEEP MERGE)
- * - Ghi ngay 0ms vào LocalStorage (chống mất dữ liệu khi rớt mạng).
- * - Timeout 1.5s bảo vệ khi đọc Cloud để không đơ ứng dụng khi ngoại tuyến.
- * - Hợp nhất đa chiều 3 tầng: Cloud cũ -> Local cũ -> Thao tác mới nhất.
+ * 💾 LƯU DANH MỤC PHẦN THƯỞNG ĐỔI QUÀ (OFFLINE-FIRST & WORKSPACE SCOPED)
+ * - Ghi ngay 0ms vào LocalStorage của đúng Workspace giáo viên.
+ * - Cô lập 100%, không ghi đè vào key toàn cục của giáo viên khác.
  */
 export async function saveWorkspaceRewardsData(
   rewards: GardenReward[],
@@ -89,32 +91,27 @@ export async function saveWorkspaceRewardsData(
 ): Promise<boolean> {
   if (!Array.isArray(rewards)) return true;
 
-  const effectiveWs = workspaceId && workspaceId !== 'ws_default' ? workspaceId : 'ws_u-1';
+  const effectiveWs = workspaceId ? workspaceId : 'ws_default';
   const prefix = `${effectiveWs}_`;
   const storageKey = `${prefix}garden_rewards_v2`;
   const cloudKey = `${prefix}school_garden_rewards`;
-  const legacyStorageKey = 'deskos_garden_rewards_v2';
-  const legacyCloudKey = 'school_garden_rewards';
 
   // Lọc sạch toàn bộ phần thưởng mẫu khỏi dữ liệu cần lưu
   const cleanedRewards = rewards.filter(item => !isSampleReward(item));
 
-  // 1. Lưu ngay lập tức 0ms vào LocalStorage (Bảo đảm dữ liệu sống sót 100% khi rớt mạng)
+  // 1. Lưu ngay lập tức 0ms vào LocalStorage của Workspace này
   safeSetLocalStorage(storageKey, cleanedRewards);
-  safeSetLocalStorage(legacyStorageKey, cleanedRewards);
-  safeSetLocalStorage(legacyCloudKey, cleanedRewards);
 
-  // 2. Cập nhật React State tức thì qua Callback (chính xác những gì Thầy vừa lưu, không bao giờ bị quà cũ nhảy ra)
+  // 2. Cập nhật React State tức thì qua Callback
   if (onMerged) {
     try {
       onMerged(cleanedRewards);
     } catch (e) {}
   }
 
-  // 3. Ghi đè đồng bộ lên Supabase Cloud (cả key phân vùng và key tương thích)
+  // 3. Ghi đè đồng bộ lên Supabase Cloud theo key phân vùng của Workspace
   try {
     const success = await saveSupabaseState(cloudKey, cleanedRewards);
-    await saveSupabaseState(legacyCloudKey, cleanedRewards);
     return success;
   } catch {
     return true; // Đã lưu an toàn ở LocalStorage khi offline
@@ -122,23 +119,20 @@ export async function saveWorkspaceRewardsData(
 }
 
 /**
- * 📥 TẢI VÀ HỢP NHẤT TOÀN BỘ DỮ LIỆU PHẦN THƯỞNG CHO WORKSPACE
- * Bảo toàn 100% dữ liệu đã làm việc offline mà không bao giờ bị Cloud cũ đè mất!
- * Tự động loại bỏ sạch toàn bộ phần thưởng mẫu.
+ * 📥 TẢI VÀ HỢP NHẤT DỮ LIỆU PHẦN THƯỞNG CHO WORKSPACE
+ * Cô lập 100% theo Workspace, không bị hòa trộn kho quà của giáo viên khác!
  */
 export function loadWorkspaceRewardsData(
   workspaceId: string = 'ws_default',
   dbStates?: Record<string, any>,
   fallbackValue: GardenReward[] = DEFAULT_REWARDS
 ): GardenReward[] {
-  const effectiveWs = workspaceId && workspaceId !== 'ws_default' ? workspaceId : 'ws_u-1';
+  const effectiveWs = workspaceId ? workspaceId : 'ws_default';
   const prefix = `${effectiveWs}_`;
   const storageKey = `${prefix}garden_rewards_v2`;
   const cloudKey = `${prefix}school_garden_rewards`;
-  const legacyStorageKey = 'deskos_garden_rewards_v2';
-  const legacyCloudKey = 'school_garden_rewards';
 
-  // 1. Ưu tiên đọc từ LocalStorage của Workspace hiện tại (nơi lưu các thao tác mới nhất của Thầy Cô)
+  // 1. Ưu tiên đọc từ LocalStorage của Workspace hiện tại
   try {
     const rawLocal = localStorage.getItem(storageKey);
     if (rawLocal !== null) {
@@ -152,33 +146,13 @@ export function loadWorkspaceRewardsData(
     console.warn('Cannot parse local workspace rewards data:', e);
   }
 
-  // 2. Nếu LocalStorage chưa có, tải từ Supabase Cloud (scopedCloud -> legacyCloud)
+  // 2. Tải từ Supabase Cloud của đúng Workspace này
   const scopedCloud = dbStates?.[cloudKey];
-  if (scopedCloud && Array.isArray(scopedCloud) && scopedCloud.length > 0) {
+  if (scopedCloud && Array.isArray(scopedCloud)) {
     const cleaned = scopedCloud.filter(item => !isSampleReward(item));
     safeSetLocalStorage(storageKey, cleaned);
     return cleaned;
   }
-
-  const legacyCloud = dbStates?.[legacyCloudKey];
-  if (legacyCloud && Array.isArray(legacyCloud) && legacyCloud.length > 0) {
-    const cleaned = legacyCloud.filter(item => !isSampleReward(item));
-    safeSetLocalStorage(storageKey, cleaned);
-    return cleaned;
-  }
-
-  // 3. Fallback đọc legacy localStorage nếu có
-  try {
-    const rawLegacy = localStorage.getItem(legacyStorageKey) || localStorage.getItem(legacyCloudKey);
-    if (rawLegacy !== null) {
-      const parsedLegacy = JSON.parse(rawLegacy);
-      if (Array.isArray(parsedLegacy)) {
-        const cleaned = parsedLegacy.filter(item => !isSampleReward(item));
-        safeSetLocalStorage(storageKey, cleaned);
-        return cleaned;
-      }
-    }
-  } catch (e) {}
 
   return Array.isArray(fallbackValue) ? fallbackValue.filter(item => !isSampleReward(item)) : [];
 }
@@ -282,7 +256,8 @@ export function deepMergeGardenData(
 }
 
 /**
- * 💾 Lưu dữ liệu Vườn Tri Thức với cơ chế Offline-First & Deep Merge
+ * 💾 Lưu dữ liệu Vườn Tri Thức với cơ chế Offline-First & Phân Vùng Workspace
+ * Cô lập 100% theo Workspace: Điểm nước và tiến trình cây của giáo viên nào chỉ thuộc giáo viên đó.
  */
 export async function saveWorkspaceGardenData(
   gardenData: Record<string, GardenStudentData>,
@@ -291,16 +266,15 @@ export async function saveWorkspaceGardenData(
 ): Promise<boolean> {
   if (!gardenData || Object.keys(gardenData).length === 0) return true;
 
-  const effectiveWs = workspaceId && workspaceId !== 'ws_default' ? workspaceId : 'ws_u-1';
+  const effectiveWs = workspaceId ? workspaceId : 'ws_default';
   const prefix = `${effectiveWs}_`;
   const storageKey = `${prefix}garden_data_v2`;
   const cloudKey = `${prefix}school_garden_data`;
-  const legacyKey = 'deskos_garden_data_v2';
 
-  // 1. Đọc dữ liệu hiện có từ LocalStorage
+  // 1. Đọc dữ liệu hiện có từ LocalStorage của đúng Workspace
   let localData: Record<string, GardenStudentData> = {};
   try {
-    const rawLocal = localStorage.getItem(storageKey) || localStorage.getItem(legacyKey);
+    const rawLocal = localStorage.getItem(storageKey);
     if (rawLocal) {
       const parsed = JSON.parse(rawLocal);
       if (parsed && typeof parsed === 'object') {
@@ -311,7 +285,7 @@ export async function saveWorkspaceGardenData(
     console.warn('Lỗi đọc local garden data khi lưu:', e);
   }
 
-  // 2. Đọc dữ liệu mới nhất từ Supabase Cloud với Timeout 1.5s bảo vệ chống treo khi Offline
+  // 2. Đọc dữ liệu mới nhất từ Supabase Cloud của Workspace với Timeout 1.5s bảo vệ chống treo khi Offline
   let cloudData: Record<string, GardenStudentData> = {};
   if (typeof navigator === 'undefined' || navigator.onLine) {
     try {
@@ -334,13 +308,12 @@ export async function saveWorkspaceGardenData(
     }
   }
 
-  // 3. THỰC HIỆN DEEP MERGE ĐA TẦNG (Cloud cũ + Local cũ + Thao tác mới nhất)
+  // 3. THỰC HIỆN DEEP MERGE ĐA TẦNG (Cloud cũ + Local cũ + Thao tác mới nhất của Workspace)
   let mergedData = deepMergeGardenData(cloudData, localData);
   mergedData = deepMergeGardenData(mergedData, gardenData);
 
-  // 4. Lưu ngay lập tức vào LocalStorage (Bảo đảm dữ liệu sống sót 100% khi rớt mạng)
+  // 4. Lưu ngay lập tức vào LocalStorage của Workspace (Bảo đảm dữ liệu sống sót 100% khi rớt mạng)
   safeSetLocalStorage(storageKey, mergedData);
-  safeSetLocalStorage(legacyKey, mergedData);
 
   // 5. Cập nhật React State tức thì qua Callback
   if (onMerged) {
@@ -349,7 +322,7 @@ export async function saveWorkspaceGardenData(
     } catch (e) {}
   }
 
-  // 6. Lưu lên Supabase Cloud
+  // 6. Lưu lên Supabase Cloud của Workspace
   try {
     return await saveSupabaseState(cloudKey, mergedData);
   } catch {
@@ -359,28 +332,27 @@ export async function saveWorkspaceGardenData(
 
 /**
  * 📥 Tải và hợp nhất toàn bộ dữ liệu Vườn Tri Thức cho Workspace
- * Bảo toàn 100% dữ liệu đã làm việc offline mà không bao giờ bị Cloud cũ đè mất!
+ * Đảm bảo 100% cách ly: Giáo viên mới vào bắt đầu từ vườn riêng của mình, không bị lấy dữ liệu từ giáo viên khác!
  */
 export function loadWorkspaceGardenData(
   workspaceId: string = 'ws_default',
   dbStates?: Record<string, any>,
   fallbackValue: Record<string, GardenStudentData> = {}
 ): Record<string, GardenStudentData> {
-  const effectiveWs = workspaceId && workspaceId !== 'ws_default' ? workspaceId : 'ws_u-1';
+  const effectiveWs = workspaceId ? workspaceId : 'ws_default';
   const prefix = `${effectiveWs}_`;
   const storageKey = `${prefix}garden_data_v2`;
   const cloudKey = `${prefix}school_garden_data`;
-  const legacyKey = 'deskos_garden_data_v2';
 
   let merged: Record<string, GardenStudentData> = { ...fallbackValue };
 
-  // 1. Tải bản sao từ Cloud dbStates nếu có
+  // 1. Tải bản sao từ Cloud dbStates của đúng Workspace
   const scopedCloud = dbStates?.[cloudKey];
   if (scopedCloud && typeof scopedCloud === 'object') {
     merged = deepMergeGardenData(merged, scopedCloud);
   }
 
-  // 2. Tải bản sao từ LocalStorage (chứa các chỉnh sửa mới nhất cả khi offline)
+  // 2. Tải bản sao từ LocalStorage của đúng Workspace (chứa các chỉnh sửa mới nhất cả khi offline)
   try {
     const rawLocal = localStorage.getItem(storageKey);
     if (rawLocal) {
@@ -393,17 +365,70 @@ export function loadWorkspaceGardenData(
     console.warn('Cannot parse local garden data:', e);
   }
 
-  // 3. Kiểm tra fallback legacy 'deskos_garden_data_v2' nếu cần
-  try {
-    const rawLegacy = localStorage.getItem(legacyKey);
-    if (rawLegacy) {
-      const parsedLegacy = JSON.parse(rawLegacy);
-      if (parsedLegacy && typeof parsedLegacy === 'object') {
-        merged = deepMergeGardenData(merged, parsedLegacy);
-      }
-    }
-  } catch (e) {}
-
   return merged;
 }
+
+/**
+ * 💾 LƯU KHO HẠT GIỐNG TÙY CHỈNH THEO WORKSPACE (OFFLINE-FIRST & WORKSPACE SCOPED)
+ * Mỗi giáo viên tự tạo và quản lý các bộ hạt giống 7 cấp độ riêng của mình
+ */
+export async function saveWorkspaceSeedSets(
+  seedSets: CustomSeedSet[],
+  workspaceId: string = 'ws_default'
+): Promise<boolean> {
+  if (!Array.isArray(seedSets)) return true;
+
+  const effectiveWs = workspaceId ? workspaceId : 'ws_default';
+  const prefix = `${effectiveWs}_`;
+  const storageKey = `${prefix}custom_seed_sets_v1`;
+  const cloudKey = `${prefix}school_custom_seed_sets`;
+
+  // 1. Lưu ngay vào LocalStorage của Workspace
+  safeSetLocalStorage(storageKey, seedSets);
+
+  // 2. Lưu lên Supabase Cloud của Workspace
+  try {
+    return await saveSupabaseState(cloudKey, seedSets);
+  } catch {
+    return true; // Lưu an toàn ở local khi offline
+  }
+}
+
+/**
+ * 📥 TẢI KHO HẠT GIỐNG TÙY CHỈNH THEO WORKSPACE
+ * Tự động tải kho hạt giống của đúng Workspace giáo viên đó
+ */
+export function loadWorkspaceSeedSets(
+  workspaceId: string = 'ws_default',
+  dbStates?: Record<string, any>,
+  fallbackValue: CustomSeedSet[] = DEFAULT_CUSTOM_SEED_SETS
+): CustomSeedSet[] {
+  const effectiveWs = workspaceId ? workspaceId : 'ws_default';
+  const prefix = `${effectiveWs}_`;
+  const storageKey = `${prefix}custom_seed_sets_v1`;
+  const cloudKey = `${prefix}school_custom_seed_sets`;
+
+  // 1. Ưu tiên đọc từ LocalStorage của Workspace
+  try {
+    const rawLocal = localStorage.getItem(storageKey);
+    if (rawLocal !== null) {
+      const parsedLocal = JSON.parse(rawLocal);
+      if (Array.isArray(parsedLocal)) {
+        return parsedLocal;
+      }
+    }
+  } catch (e) {
+    console.warn('Cannot parse local seed sets:', e);
+  }
+
+  // 2. Đọc từ Cloud dbStates của đúng Workspace
+  const scopedCloud = dbStates?.[cloudKey];
+  if (scopedCloud && Array.isArray(scopedCloud)) {
+    safeSetLocalStorage(storageKey, scopedCloud);
+    return scopedCloud;
+  }
+
+  return Array.isArray(fallbackValue) ? fallbackValue : [];
+}
+
 
