@@ -79,7 +79,6 @@ import { DeskOSMacWindow } from './components/layout/DeskOSMacWindow';
 // Workspace Service for Multi-User Isolation
 import { 
   getWorkspaceId, 
-  getWorkspaceOwnerName,
   loadWorkspaceSeatingChart, 
   loadWorkspaceEmulationState, 
   loadWorkspaceGardenData,
@@ -2035,7 +2034,6 @@ export default function App() {
         onToggleStartMenu={() => setIsStartMenuOpen(!isStartMenuOpen)}
         isStartMenuOpen={isStartMenuOpen}
         activeWallpaper={activeWallpaper}
-        workspaceName={getWorkspaceOwnerName(activeWorkspaceId, members)}
       />
 
       {/* DeskOS Start Menu Popover */}
