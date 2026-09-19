@@ -51,11 +51,12 @@ const NoteInput = ({ studentId, initialValue, onSave }: NoteInputProps) => {
   );
 };
 
-// 🔤 Hàm tự động viết hoa chữ cái đầu tiên của Họ và Tên (VD: nguyên văn a -> Nguyễn Văn A)
+// 🔤 Hàm tự động viết hoa chữ cái đầu tiên của Họ và Tên (VD: nguyễn văn a -> Nguyễn Văn A)
 const capitalizeName = (str: string): string => {
   if (!str) return '';
   return str
-    .split(' ')
+    .trim()
+    .split(/\s+/)
     .filter(Boolean)
     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ');
@@ -642,7 +643,8 @@ export default function StudentsTab({
                     <input
                       type="text"
                       value={newName}
-                      onChange={(e) => setNewName(capitalizeName(e.target.value))}
+                      onChange={(e) => setNewName(e.target.value)}
+                      onBlur={() => setNewName(prev => capitalizeName(prev))}
                       placeholder="Ví dụ: nguyễn văn a -> Nguyễn Văn A"
                       className="w-full border border-slate-200 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder-slate-300 font-semibold"
                       required
@@ -982,6 +984,7 @@ export default function StudentsTab({
                               type="text"
                               value={editName}
                               onChange={(e) => setEditName(e.target.value)}
+                              onBlur={() => setEditName(prev => capitalizeName(prev))}
                               className="w-full border border-amber-300 rounded-lg px-2 py-1.5 text-xs font-extrabold text-slate-800 bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
                             />
                           ) : (() => {
