@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Member, Computer, Student, ClassItem } from '../types';
+import { Member, Computer, Student, ClassItem, Grade } from '../types';
 import { UserCheck, Trash2, ShieldAlert, Heart, HardDrive, Cpu, Cloud, Check, Wifi, AlertTriangle, RefreshCw, Database, FileCode, CheckCircle2, X, Calendar, Plus, Clock, User, Sparkles, Settings, FileText, Printer, Save, Key, Lock, Eye, EyeOff, RotateCcw, Mail, Send, ArrowRight, ArrowLeft } from 'lucide-react';
 import { safeSetLocalStorage } from '../utils/safeStorage';
 import { saveSupabaseState, supabase, SQL_INITIALIZATION_QUERY } from '../supabaseClient';
@@ -26,6 +26,8 @@ interface AdminTabProps {
   timetableData: any;
   setTimetableData: React.Dispatch<React.SetStateAction<any>>;
   classes: ClassItem[];
+  setClasses?: React.Dispatch<React.SetStateAction<ClassItem[]>>;
+  grades?: Grade[];
 }
 
 export default function AdminTab({
@@ -43,7 +45,9 @@ export default function AdminTab({
   setStudents,
   timetableData,
   setTimetableData,
-  classes
+  classes,
+  setClasses,
+  grades
 }: AdminTabProps) {
 
   const [activeSubTab, setActiveSubTab] = useState<'giang_day' | 'phan_quyen' | 'email_sms' | 'he_thong' | 'database'>('giang_day');
@@ -161,6 +165,42 @@ export default function AdminTab({
   const [newPhone, setNewPhone] = useState('');
   const [copiedSql, setCopiedSql] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+
+  // States for homeroom grade & class when role is 'Giáo viên Chủ nhiệm'
+  const [newHomeroomGrade, setNewHomeroomGrade] = useState<number>(() => {
+    return (grades && grades.length > 0 ? grades[0].id : 3);
+  });
+  const [newHomeroomClass, setNewHomeroomClass] = useState<string>('');
+
+  const availableGrades = useMemo(() => {
+    if (grades && grades.length > 0) return grades;
+    const uniqueGradeIds = Array.from(new Set(classes.map(c => c.gradeId))).filter(Boolean).sort((a, b) => a - b);
+    if (uniqueGradeIds.length > 0) {
+      return uniqueGradeIds.map(g => ({ id: g, name: `Khối ${g}` }));
+    }
+    return [
+      { id: 3, name: 'Khối 3' },
+      { id: 4, name: 'Khối 4' },
+      { id: 5, name: 'Khối 5' },
+    ];
+  }, [grades, classes]);
+
+  const availableClassesForGrade = useMemo(() => {
+    return classes.filter(c => Number(c.gradeId) === Number(newHomeroomGrade));
+  }, [classes, newHomeroomGrade]);
+
+  const handleClassChange = (selectedClassId: string) => {
+    setNewHomeroomClass(selectedClassId);
+    const foundClass = classes.find(c => c.id === selectedClassId);
+    if (foundClass) {
+      if (!newName.trim() && foundClass.teacher) {
+        setNewName(foundClass.teacher);
+      }
+      if (!newPhone.trim() && foundClass.teacherPhone) {
+        setNewPhone(foundClass.teacherPhone);
+      }
+    }
+  };
 
   // Change Password Modal States
   const [changePasswordUser, setChangePasswordUser] = useState<Member | null>(null);
@@ -452,6 +492,7 @@ export default function AdminTab({
       assignedRole = 'Giáo viên bộ môn';
     }
 
+    const isHomeroomTeacher = assignedRole === 'Giáo viên Chủ nhiệm';
     const item: Member = {
       id: `u-${Date.now()}`,
       name: newName.trim(),
@@ -459,7 +500,9 @@ export default function AdminTab({
       email: newEmail.trim(),
       phone: newPhone.trim() || 'Chưa cung cấp',
       username: usernameClean,
-      password: 'phongmay@123'
+      password: 'phongmay@123',
+      homeroomGradeId: isHomeroomTeacher ? Number(newHomeroomGrade) : undefined,
+      homeroomClassId: isHomeroomTeacher ? (newHomeroomClass || undefined) : undefined
     };
 
     const updatedMembers = [...members, item];
@@ -467,11 +510,26 @@ export default function AdminTab({
     safeSetLocalStorage('school_members', updatedMembers);
     await saveSupabaseState('school_members', updatedMembers);
 
+    // Đồng bộ tên giáo viên chủ nhiệm vào danh mục Lớp tương ứng
+    if (isHomeroomTeacher && newHomeroomClass && setClasses) {
+      setClasses(prevClasses => {
+        const updated = prevClasses.map(c => 
+          c.id === newHomeroomClass 
+            ? { ...c, teacher: item.name, teacherPhone: item.phone && item.phone !== 'Chưa cung cấp' ? item.phone : c.teacherPhone }
+            : c
+        );
+        safeSetLocalStorage('school_classes', updated);
+        saveSupabaseState('school_classes', updated);
+        return updated;
+      });
+    }
+
     // Reset Form
     setNewName('');
     setNewRole('Giáo viên bộ môn');
     setNewEmail('');
     setNewPhone('');
+    setNewHomeroomClass('');
 
     // Đóng chế độ tạo inline view & focus tới tài khoản mới tạo
     setHighlightedMemberId(item.id);
@@ -1098,7 +1156,16 @@ export default function AdminTab({
                     </label>
                     <select
                       value={newRole}
-                      onChange={(e) => setNewRole(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setNewRole(val);
+                        if (val === 'Giáo viên Chủ nhiệm') {
+                          const firstClass = classes.find(c => Number(c.gradeId) === Number(newHomeroomGrade)) || classes[0];
+                          if (firstClass) {
+                            handleClassChange(firstClass.id);
+                          }
+                        }
+                      }}
                       className="w-full bg-slate-50/50 border border-slate-300 rounded-xl p-3 text-xs font-extrabold text-slate-800 focus:bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none cursor-pointer"
                     >
                       <option value="Giáo viên bộ môn">Giáo viên bộ môn (Chấm điểm + Điểm danh + Quản lý Lớp)</option>
@@ -1109,6 +1176,68 @@ export default function AdminTab({
                       📌 *Lưu ý: Quyền "Quản trị hệ thống (Admin)" là cấp cao nhất độc quyền, không được cấp cho tài khoản tạo mới.
                     </p>
                   </div>
+
+                  {/* 2 Ô Chọn Khối & Lớp - Chỉ hiện ra khi chọn 'Giáo viên Chủ nhiệm' */}
+                  {newRole === 'Giáo viên Chủ nhiệm' && (
+                    <div className="md:col-span-2 bg-amber-50/90 border-2 border-amber-300 rounded-2xl p-4 space-y-3 shadow-xs animate-in fade-in duration-200">
+                      <div className="flex items-center gap-2 text-amber-950 font-extrabold text-xs border-b border-amber-200/80 pb-2">
+                        <UserCheck className="w-4 h-4 text-amber-700" />
+                        <span>Chỉ định Khối & Lớp Chủ Nhiệm</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        {/* 1. Ô chọn Khối */}
+                        <div>
+                          <label className="block font-black uppercase text-amber-900 text-[11px] mb-1.5">
+                            Chọn Khối *
+                          </label>
+                          <select
+                            value={newHomeroomGrade}
+                            onChange={(e) => {
+                              const g = Number(e.target.value);
+                              setNewHomeroomGrade(g);
+                              const firstClass = classes.find(c => Number(c.gradeId) === g);
+                              if (firstClass) {
+                                handleClassChange(firstClass.id);
+                              } else {
+                                setNewHomeroomClass('');
+                              }
+                            }}
+                            className="w-full bg-white border border-amber-300 rounded-xl p-3 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-amber-500 focus:outline-none cursor-pointer shadow-2xs"
+                          >
+                            {availableGrades.map(g => (
+                              <option key={g.id} value={g.id}>
+                                {g.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* 2. Ô chọn Lớp */}
+                        <div>
+                          <label className="block font-black uppercase text-amber-900 text-[11px] mb-1.5">
+                            Chọn Lớp Chủ Nhiệm *
+                          </label>
+                          <select
+                            value={newHomeroomClass}
+                            onChange={(e) => handleClassChange(e.target.value)}
+                            className="w-full bg-white border border-amber-300 rounded-xl p-3 text-xs font-extrabold text-slate-800 focus:ring-2 focus:ring-amber-500 focus:outline-none cursor-pointer shadow-2xs"
+                          >
+                            <option value="" disabled>-- Chọn lớp chủ nhiệm --</option>
+                            {availableClassesForGrade.map(c => (
+                              <option key={c.id} value={c.id}>
+                                Lớp {c.name} {c.teacher ? `(GVCN cũ: ${c.teacher})` : ''}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      {newHomeroomClass && (
+                        <p className="text-[11px] text-amber-900 font-medium bg-amber-100/60 p-2 rounded-lg border border-amber-200">
+                          📌 Giáo viên sẽ được cấp quyền và phụ trách chủ nhiệm chính thức cho <strong>Lớp {newHomeroomClass}</strong>.
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {/* Email Trường học / Gmail */}
                   <div>
@@ -1246,8 +1375,13 @@ export default function AdminTab({
                                 Quản trị hệ thống (Admin)
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 border border-slate-200 font-extrabold text-[11px] px-3 py-0.5 rounded-full shadow-2xs whitespace-nowrap">
-                                {member.role}
+                              <span className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-700 border border-slate-200 font-extrabold text-[11px] px-3 py-0.5 rounded-full shadow-2xs whitespace-nowrap">
+                                <span>{member.role}</span>
+                                {member.role.includes('Chủ nhiệm') && member.homeroomClassId && (
+                                  <span className="bg-amber-200/90 text-amber-950 font-black px-2 py-0.5 rounded-md text-[10px] border border-amber-300">
+                                    Lớp {member.homeroomClassId}
+                                  </span>
+                                )}
                               </span>
                             )}
                           </td>

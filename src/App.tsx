@@ -2002,6 +2002,8 @@ export default function App() {
                 timetableData={timetableData}
                 setTimetableData={setTimetableData}
                 classes={classes}
+                setClasses={setClasses}
+                grades={grades}
               />
             )}
 

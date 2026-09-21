@@ -55,6 +55,8 @@ export interface Member {
   username: string;
   password?: string;
   activeSessionId?: string;
+  homeroomGradeId?: number;
+  homeroomClassId?: string;
 }
 
 // Trạng thái điểm danh: Có mặt | Vắng có phép | Vắng không phép | Đi trễ
