@@ -856,20 +856,47 @@ export default function App() {
     syncFromSupabase();
   }, [syncFromSupabase]);
 
-  // --- 🔄 SMART ON-DEMAND SYNC: CHECK UPDATE ON WINDOW FOCUS (COOLDOWN: 5 PHÚT) ---
-  const lastWindowFocusSyncRef = React.useRef<number>(Date.now());
+  // --- 🔄 SMART FOCUS LISTENER: TỰ ĐỘNG NẠP LẠI DỮ LIỆU MỚI NHẤT NGAY KHI QUAY LẠI TAB ---
+  const hasLeftTabRef = React.useRef<boolean>(false);
+  const lastFocusSyncTimeRef = React.useRef<number>(0);
+
   useEffect(() => {
-    const handleWindowFocus = () => {
+    // 1. Khi người dùng chuyển sang tab khác hoặc chuyển sang cửa sổ khác làm việc
+    const handleLeave = () => {
+      hasLeftTabRef.current = true;
+    };
+
+    // 2. Khi người dùng quay trở lại tab phòng học (kể cả quay lại liền)
+    const handleReturn = () => {
+      // Chỉ đồng bộ nếu trước đó đã thực sự rời khỏi tab
+      if (!hasLeftTabRef.current) return;
+
       const now = Date.now();
-      // Giới hạn cách nhau ít nhất 5 phút (300,000 ms) để tránh lãng phí truy vấn mạng
-      if (now - lastWindowFocusSyncRef.current > 300000 && !isSyncing) {
-        lastWindowFocusSyncRef.current = now;
-        syncFromSupabase(undefined, undefined, true); // Chế độ chạy êm (silent sync)
+      // Khoảng đệm chống dội (debounce) 1.5 giây ngăn kích hoạt kép khi cả visibilitychange và focus cùng nổ ra
+      if (now - lastFocusSyncTimeRef.current > 1500 && !isSyncing) {
+        lastFocusSyncTimeRef.current = now;
+        hasLeftTabRef.current = false;
+        // Thực hiện nạp lại dữ liệu mới nhất từ Supabase ngay lập tức (ở chế độ êm ái silent sync)
+        syncFromSupabase(undefined, undefined, true);
       }
     };
-    window.addEventListener('focus', handleWindowFocus);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        handleLeave();
+      } else if (document.visibilityState === 'visible') {
+        handleReturn();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('blur', handleLeave);
+    window.addEventListener('focus', handleReturn);
+
     return () => {
-      window.removeEventListener('focus', handleWindowFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleLeave);
+      window.removeEventListener('focus', handleReturn);
     };
   }, [isSyncing, syncFromSupabase]);
 
