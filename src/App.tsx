@@ -65,7 +65,7 @@ import { SciFi3DPopupFrame } from './components/SciFi3DPopupFrame';
 import { CalendarCheck, ShieldAlert } from 'lucide-react';
 
 // Supabase services
-import { supabase, loadAllSupabaseStates, saveSupabaseState, setSupabaseOnline, isRecentLocalSave } from './supabaseClient';
+import { supabase, loadAllSupabaseStates, saveSupabaseState, setSupabaseOnline, isRecentLocalSave, setSyncSuppressed } from './supabaseClient';
 import { safeSetLocalStorage } from './utils/safeStorage';
 import { verifyPassword, sanitizeInput, decryptVaultData } from './utils/security';
 import { createSessionId, setLocalSession, getLocalSession, clearLocalSession } from './features/auth/multiDeviceSession';
@@ -690,205 +690,188 @@ export default function App() {
     }
   };
 
-  // --- INITIAL EFFECT: FETCH FROM SUPABASE ---
-  useEffect(() => {
-    async function syncFromSupabase() {
-      setIsSyncing(true);
-      setSupabaseError(null);
-      try {
-        const dbStates = await loadAllSupabaseStates();
-        if (dbStates && Object.keys(dbStates).length > 0) {
-          latestDbStatesRef.current = dbStates;
+  // --- 🛡️ INITIAL SYNC TRACKER & LOOP BLOCKER ---
+  const initialSyncDoneRef = React.useRef<boolean>(false);
 
-          if (Array.isArray(dbStates['school_grades'])) setGrades(dbStates['school_grades'].length > 0 ? dbStates['school_grades'] : defaultGrades);
-          if (Array.isArray(dbStates['school_classes'])) {
-            setClasses(sortClasses(dbStates['school_classes']));
-            safeSetLocalStorage('school_classes', dbStates['school_classes']);
-          }
-          if (Array.isArray(dbStates['school_students'])) setStudents(dbStates['school_students']);
-          if (Array.isArray(dbStates['school_computers']) && dbStates['school_computers'].length > 0) {
-            setComputers(dbStates['school_computers']);
-          } else {
-            const defaultComps = generateDefaultComputers();
-            setComputers(defaultComps);
-            saveSupabaseState('school_computers', defaultComps);
-          }
-          
-          // 🏢 User-Scoped Workspace States (Luôn lấy Workspace thực tế hiệu lực cao nhất)
-          let effectiveWsId = currentWsRef.current || activeWorkspaceId;
-          if (!effectiveWsId || effectiveWsId === 'ws_default') {
-            const savedUser = safeParse('school_current_user', null, false);
-            if (savedUser) {
-              effectiveWsId = getWorkspaceId(savedUser);
-            }
-          }
-          setSeatingChart(loadWorkspaceSeatingChart(effectiveWsId, dbStates));
-          setAttendanceData(loadDayPartitionedAttendance(dbStates, {}, effectiveWsId));
-          setEvaluationData(loadDayPartitionedEvaluation(dbStates, {}, effectiveWsId));
-          setEmulationDataState(loadWorkspaceEmulationState(effectiveWsId, dbStates));
+  // --- 🔄 SYNCHRONIZE FROM SUPABASE (REUSABLE ON MOUNT, LOGIN, & ON-DEMAND) ---
+  const syncFromSupabase = React.useCallback(async (overrideWsId?: string, overrideUser?: Member | null, silent = false) => {
+    setIsSyncing(true);
+    setSupabaseError(null);
+    setSyncSuppressed(true); // Tạm dừng ghi ngược lên Supabase để chống bão dữ liệu
+    try {
+      const dbStates = await loadAllSupabaseStates();
+      if (dbStates && Object.keys(dbStates).length > 0) {
+        latestDbStatesRef.current = dbStates;
 
-          if (Array.isArray(dbStates['school_documents'])) setDocuments(dbStates['school_documents']);
-          if (Array.isArray(dbStates['school_members']) && dbStates['school_members'].length > 0) {
-            setMembers(dbStates['school_members']);
-            safeSetLocalStorage('school_members', dbStates['school_members']);
-          } else {
-            setMembers(defaultMembers);
-            safeSetLocalStorage('school_members', defaultMembers);
-          }
-          // 📅 Đồng bộ Thời khóa biểu toàn trường & TKB riêng từng Workspace giáo viên
-          let mergedTimetable: TimetableData = (dbStates['school_timetable_data'] && typeof dbStates['school_timetable_data'] === 'object')
-            ? { ...dbStates['school_timetable_data'] }
-            : safeParse('school_timetable_data', defaultTimetable);
-
-          const membersList: Member[] = Array.isArray(dbStates['school_members']) ? dbStates['school_members'] : members;
-          Object.keys(dbStates).forEach(key => {
-            if (key.startsWith('ws_') && key.endsWith('_school_timetable_data') && typeof dbStates[key] === 'object') {
-              const wsId = key.replace('_school_timetable_data', '');
-              const cleanId = wsId.replace('ws_', '');
-              const member = membersList.find(m => m.id === cleanId || m.username === cleanId);
-              const schedule = dbStates[key];
-              if (schedule && typeof schedule === 'object') {
-                if (member?.username) mergedTimetable[member.username] = schedule;
-                if (member?.id) mergedTimetable[member.id] = schedule;
-                if (!member) mergedTimetable[cleanId] = schedule;
-                safeSetLocalStorage(key, schedule);
-              }
-            }
-          });
-
-          setTimetableData(mergedTimetable);
-          safeSetLocalStorage('school_timetable_data', mergedTimetable);
-          if (Array.isArray(dbStates['school_lab_bookings'])) setLabBookings(dbStates['school_lab_bookings']);
-          if (Array.isArray(dbStates['school_lab_incidents'])) setLabIncidents(dbStates['school_lab_incidents']);
-          if (Array.isArray(dbStates['school_lab_maintenance_logs'])) setLabMaintenanceLogs(dbStates['school_lab_maintenance_logs']);
-          if (Array.isArray(dbStates['school_labs'])) setLabs(dbStates['school_labs']);
-          const scopedReportKey = `${activeWorkspaceId}_school_computer_reports`;
-          if (Array.isArray(dbStates[scopedReportKey])) {
-            safeSetLocalStorage(scopedReportKey, dbStates[scopedReportKey]);
-          }
-          if (Array.isArray(dbStates['school_computer_reports'])) {
-            safeSetLocalStorage('school_computer_reports', dbStates['school_computer_reports']);
-          }
-
-          // 📅 Đồng bộ tiêu đề thời khóa biểu từng giáo viên từ Supabase
-          syncTimetableTitlesFromSupabase(dbStates, activeWorkspaceId);
-
-          // Tự động giải mã Cloud Vault EmailJS cho thiết bị mới
-          if (dbStates['school_otp_config']) {
-            const otpVault = decryptVaultData(dbStates['school_otp_config']);
-            if (otpVault) {
-              if (otpVault.provider) safeSetLocalStorage('school_otp_provider', otpVault.provider);
-              if (otpVault.apiKey) safeSetLocalStorage('school_email_api_key', otpVault.apiKey);
-              if (otpVault.serviceId) safeSetLocalStorage('school_email_service_id', otpVault.serviceId);
-              if (otpVault.templateId) safeSetLocalStorage('school_email_template_id', otpVault.templateId);
-              if (otpVault.senderEmail) safeSetLocalStorage('school_sender_email', otpVault.senderEmail);
-              if (otpVault.smsApiKey) safeSetLocalStorage('school_sms_api_key', otpVault.smsApiKey);
-            }
-          }
-
-          if (dbStates['custom_avatars_list'] && Array.isArray(dbStates['custom_avatars_list'])) {
-            safeSetLocalStorage('custom_avatars_list', dbStates['custom_avatars_list']);
-            window.dispatchEvent(new CustomEvent('custom_avatars_updated', { detail: dbStates['custom_avatars_list'] }));
-          }
-
-          // 🌳 Đồng bộ dữ liệu Vườn Tri Thức từ Cloud với Deep Merge bảo vệ dữ liệu ngoại tuyến
-          const loadedGarden = loadWorkspaceGardenData(effectiveWsId, dbStates);
-          setGardenData(loadedGarden);
-          safeSetLocalStorage(`${effectiveWsId}_garden_data_v2`, loadedGarden);
-
-          // 🎁 Đồng bộ danh mục Đổi Thưởng với Deep Merge bảo vệ các quà tạo ngoại tuyến
-          const loadedRewards = loadWorkspaceRewardsData(effectiveWsId, dbStates, gardenRewards);
-          setGardenRewards(loadedRewards);
-          safeSetLocalStorage(`${effectiveWsId}_garden_rewards_v2`, loadedRewards);
-
-          // 🌱 Đồng bộ Kho Hạt Giống 7 cấp độ theo Workspace
-          const loadedSeedSets = loadWorkspaceSeedSets(effectiveWsId, dbStates, DEFAULT_CUSTOM_SEED_SETS);
-          setCustomSeedSets(loadedSeedSets);
-          safeSetLocalStorage(`${effectiveWsId}_custom_seed_sets_v1`, loadedSeedSets);
-          window.dispatchEvent(new CustomEvent('custom_seed_sets_updated', { detail: loadedSeedSets }));
-
-          // 📚 Đồng bộ Ngân hàng câu hỏi & Môn học theo Workspace
-          const wsQuestionsKey = `${effectiveWsId}_school_questions`;
-          if (Array.isArray(dbStates[wsQuestionsKey])) {
-            safeSetLocalStorage(wsQuestionsKey, dbStates[wsQuestionsKey]);
-          }
-          const wsSubjectsKey = `${effectiveWsId}_school_subjects`;
-          if (Array.isArray(dbStates[wsSubjectsKey])) {
-            safeSetLocalStorage(wsSubjectsKey, dbStates[wsSubjectsKey]);
-          }
-          const wsLeaderboardKey = `${effectiveWsId}_tug_leaderboard`;
-          if (Array.isArray(dbStates[wsLeaderboardKey])) {
-            safeSetLocalStorage(wsLeaderboardKey, dbStates[wsLeaderboardKey]);
-          }
-
-          if (effectiveWsId !== activeWorkspaceId) {
-            setActiveWorkspaceId(effectiveWsId);
-          }
-
-          showToast('Đã đồng bộ hóa toàn bộ cơ sở dữ liệu từ Supabase Cloud!', 'success');
+        if (Array.isArray(dbStates['school_grades'])) setGrades(dbStates['school_grades'].length > 0 ? dbStates['school_grades'] : defaultGrades);
+        if (Array.isArray(dbStates['school_classes'])) {
+          setClasses(sortClasses(dbStates['school_classes']));
+          safeSetLocalStorage('school_classes', dbStates['school_classes']);
+        }
+        if (Array.isArray(dbStates['school_students'])) setStudents(dbStates['school_students']);
+        if (Array.isArray(dbStates['school_computers']) && dbStates['school_computers'].length > 0) {
+          setComputers(dbStates['school_computers']);
         } else {
-          // If Supabase is empty, let the user know and let them push datasets themselves
-          console.log('Supabase is empty, waiting for manual database seeding or user creations...');
-          setSupabaseError('Cơ sở dữ liệu rỗng (Bấm Đẩy dữ liệu mẫu)');
+          const defaultComps = generateDefaultComputers();
+          setComputers(defaultComps);
+        }
+        
+        // 🏢 User-Scoped Workspace States (Luôn lấy Workspace thực tế hiệu lực cao nhất)
+        const userToCheck = overrideUser !== undefined ? overrideUser : (currentUser || safeParse('school_current_user', null, false));
+        let effectiveWsId = overrideWsId || (userToCheck ? getWorkspaceId(userToCheck) : (currentWsRef.current || activeWorkspaceId));
+        if (!effectiveWsId || effectiveWsId === 'ws_default') {
+          effectiveWsId = 'ws_default';
+        }
+
+        setSeatingChart(loadWorkspaceSeatingChart(effectiveWsId, dbStates));
+        setAttendanceData(loadDayPartitionedAttendance(dbStates, {}, effectiveWsId));
+        setEvaluationData(loadDayPartitionedEvaluation(dbStates, {}, effectiveWsId));
+        setEmulationDataState(loadWorkspaceEmulationState(effectiveWsId, dbStates));
+
+        if (Array.isArray(dbStates['school_documents'])) setDocuments(dbStates['school_documents']);
+        if (Array.isArray(dbStates['school_members']) && dbStates['school_members'].length > 0) {
+          setMembers(dbStates['school_members']);
+          safeSetLocalStorage('school_members', dbStates['school_members']);
+        } else {
+          setMembers(defaultMembers);
+          safeSetLocalStorage('school_members', defaultMembers);
+        }
+
+        // 📅 Đồng bộ Thời khóa biểu toàn trường & TKB riêng từng Workspace giáo viên
+        let mergedTimetable: TimetableData = (dbStates['school_timetable_data'] && typeof dbStates['school_timetable_data'] === 'object')
+          ? { ...dbStates['school_timetable_data'] }
+          : safeParse('school_timetable_data', defaultTimetable);
+
+        const membersList: Member[] = Array.isArray(dbStates['school_members']) ? dbStates['school_members'] : members;
+        Object.keys(dbStates).forEach(key => {
+          if (key.startsWith('ws_') && key.endsWith('_school_timetable_data') && typeof dbStates[key] === 'object') {
+            const wsId = key.replace('_school_timetable_data', '');
+            const cleanId = wsId.replace('ws_', '');
+            const member = membersList.find(m => m.id === cleanId || m.username === cleanId);
+            const schedule = dbStates[key];
+            if (schedule && typeof schedule === 'object') {
+              if (member?.username) mergedTimetable[member.username] = schedule;
+              if (member?.id) mergedTimetable[member.id] = schedule;
+              if (!member) mergedTimetable[cleanId] = schedule;
+              safeSetLocalStorage(key, schedule);
+            }
+          }
+        });
+
+        setTimetableData(mergedTimetable);
+        safeSetLocalStorage('school_timetable_data', mergedTimetable);
+        if (Array.isArray(dbStates['school_lab_bookings'])) setLabBookings(dbStates['school_lab_bookings']);
+        if (Array.isArray(dbStates['school_lab_incidents'])) setLabIncidents(dbStates['school_lab_incidents']);
+        if (Array.isArray(dbStates['school_lab_maintenance_logs'])) setLabMaintenanceLogs(dbStates['school_lab_maintenance_logs']);
+        if (Array.isArray(dbStates['school_labs'])) setLabs(dbStates['school_labs']);
+        const scopedReportKey = `${effectiveWsId}_school_computer_reports`;
+        if (Array.isArray(dbStates[scopedReportKey])) {
+          safeSetLocalStorage(scopedReportKey, dbStates[scopedReportKey]);
+        }
+        if (Array.isArray(dbStates['school_computer_reports'])) {
+          safeSetLocalStorage('school_computer_reports', dbStates['school_computer_reports']);
+        }
+
+        // 📅 Đồng bộ tiêu đề thời khóa biểu từng giáo viên từ Supabase
+        syncTimetableTitlesFromSupabase(dbStates, effectiveWsId);
+
+        // Tự động giải mã Cloud Vault EmailJS cho thiết bị mới
+        if (dbStates['school_otp_config']) {
+          const otpVault = decryptVaultData(dbStates['school_otp_config']);
+          if (otpVault) {
+            if (otpVault.provider) safeSetLocalStorage('school_otp_provider', otpVault.provider);
+            if (otpVault.apiKey) safeSetLocalStorage('school_email_api_key', otpVault.apiKey);
+            if (otpVault.serviceId) safeSetLocalStorage('school_email_service_id', otpVault.serviceId);
+            if (otpVault.templateId) safeSetLocalStorage('school_email_template_id', otpVault.templateId);
+            if (otpVault.senderEmail) safeSetLocalStorage('school_sender_email', otpVault.senderEmail);
+            if (otpVault.smsApiKey) safeSetLocalStorage('school_sms_api_key', otpVault.smsApiKey);
+          }
+        }
+
+        if (dbStates['custom_avatars_list'] && Array.isArray(dbStates['custom_avatars_list'])) {
+          safeSetLocalStorage('custom_avatars_list', dbStates['custom_avatars_list']);
+          window.dispatchEvent(new CustomEvent('custom_avatars_updated', { detail: dbStates['custom_avatars_list'] }));
+        }
+
+        // 🌳 Đồng bộ dữ liệu Vườn Tri Thức từ Cloud với Deep Merge bảo vệ dữ liệu ngoại tuyến
+        const loadedGarden = loadWorkspaceGardenData(effectiveWsId, dbStates);
+        setGardenData(loadedGarden);
+        safeSetLocalStorage(`${effectiveWsId}_garden_data_v2`, loadedGarden);
+
+        // 🎁 Đồng bộ danh mục Đổi Thưởng với Deep Merge bảo vệ các quà tạo ngoại tuyến
+        const loadedRewards = loadWorkspaceRewardsData(effectiveWsId, dbStates, gardenRewards);
+        setGardenRewards(loadedRewards);
+        safeSetLocalStorage(`${effectiveWsId}_garden_rewards_v2`, loadedRewards);
+
+        // 🌱 Đồng bộ Kho Hạt Giống 7 cấp độ theo Workspace
+        const loadedSeedSets = loadWorkspaceSeedSets(effectiveWsId, dbStates, DEFAULT_CUSTOM_SEED_SETS);
+        setCustomSeedSets(loadedSeedSets);
+        safeSetLocalStorage(`${effectiveWsId}_custom_seed_sets_v1`, loadedSeedSets);
+        window.dispatchEvent(new CustomEvent('custom_seed_sets_updated', { detail: loadedSeedSets }));
+
+        // 📚 Đồng bộ Ngân hàng câu hỏi & Môn học theo Workspace
+        const wsQuestionsKey = `${effectiveWsId}_school_questions`;
+        if (Array.isArray(dbStates[wsQuestionsKey])) {
+          safeSetLocalStorage(wsQuestionsKey, dbStates[wsQuestionsKey]);
+        }
+        const wsSubjectsKey = `${effectiveWsId}_school_subjects`;
+        if (Array.isArray(dbStates[wsSubjectsKey])) {
+          safeSetLocalStorage(wsSubjectsKey, dbStates[wsSubjectsKey]);
+        }
+        const wsLeaderboardKey = `${effectiveWsId}_tug_leaderboard`;
+        if (Array.isArray(dbStates[wsLeaderboardKey])) {
+          safeSetLocalStorage(wsLeaderboardKey, dbStates[wsLeaderboardKey]);
+        }
+
+        if (effectiveWsId !== activeWorkspaceId) {
+          setActiveWorkspaceId(effectiveWsId);
+        }
+
+        if (!silent) {
+          showToast('Đã đồng bộ hóa dữ liệu từ Supabase Cloud về máy!', 'success');
+        }
+      } else {
+        console.log('Supabase is empty, waiting for manual database seeding or user creations...');
+        setSupabaseError('Cơ sở dữ liệu rỗng (Bấm Đẩy dữ liệu mẫu)');
+        if (!silent) {
           showToast('Truy cập Supabase thành công nhưng chưa có dữ liệu trong bảng!', 'error');
         }
-      } catch (err: any) {
-        console.warn('Initial Supabase fetch failed:', err);
-        setSupabaseError(err?.message || 'Lỗi kết nối');
-      } finally {
-        setIsSyncing(false);
-        setIsLoaded(true);
       }
+    } catch (err: any) {
+      console.warn('Supabase fetch failed:', err);
+      setSupabaseError(err?.message || 'Lỗi kết nối');
+    } finally {
+      setIsSyncing(false);
+      setIsLoaded(true);
+      // Chờ các state React ổn định rồi mới mở khóa lưu ngược
+      setTimeout(() => {
+        setSyncSuppressed(false);
+        initialSyncDoneRef.current = true;
+      }, 1000);
     }
-    syncFromSupabase();
-  }, []);
+  }, [activeWorkspaceId, currentUser, gardenRewards, members]);
 
-  // --- 📡 REALTIME SYNC: SUPABASE TO REACT STATE (MULTI-DEVICE LIVE TIMETABLE SYNC) ---
+  // --- INITIAL MOUNT: FETCH FROM SUPABASE ---
   useEffect(() => {
-    const channel = supabase
-      .channel('realtime_app_timetable_sync')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'school_states'
-        },
-        (payload) => {
-          const row = payload.new as any;
-          if (!row || !row.key) return;
+    syncFromSupabase();
+  }, [syncFromSupabase]);
 
-          if (row.key === 'school_timetable_data' && row.value && typeof row.value === 'object') {
-            safeSetLocalStorage('school_timetable_data', row.value);
-            setTimetableData(prev => ({ ...prev, ...row.value }));
-          } else if (row.key.startsWith('ws_') && row.key.endsWith('_school_timetable_data') && row.value) {
-            const wsId = row.key.replace('_school_timetable_data', '');
-            const cleanId = wsId.replace('ws_', '');
-            safeSetLocalStorage(row.key, row.value);
-            setTimetableData(prev => {
-              const next = { ...prev, [cleanId]: row.value };
-              safeSetLocalStorage('school_timetable_data', next);
-              return next;
-            });
-          }
-
-          // 📡 Realtime đồng bộ điểm danh & đánh giá đa thiết bị theo Workspace hiện tại
-          const targetWs = currentWsRef.current || activeWorkspaceId;
-          if (targetWs && targetWs !== 'ws_default') {
-            if (row.key.includes('school_attendance') && row.key.startsWith(targetWs)) {
-              setAttendanceData(prev => applyPartitionedAttendanceUpdate(prev, row.key, row.value, targetWs));
-            } else if (row.key.includes('school_evaluation') && row.key.startsWith(targetWs)) {
-              setEvaluationData(prev => applyPartitionedEvaluationUpdate(prev, row.key, row.value, targetWs));
-            }
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
+  // --- 🔄 SMART ON-DEMAND SYNC: CHECK UPDATE ON WINDOW FOCUS (COOLDOWN: 5 PHÚT) ---
+  const lastWindowFocusSyncRef = React.useRef<number>(Date.now());
+  useEffect(() => {
+    const handleWindowFocus = () => {
+      const now = Date.now();
+      // Giới hạn cách nhau ít nhất 5 phút (300,000 ms) để tránh lãng phí truy vấn mạng
+      if (now - lastWindowFocusSyncRef.current > 300000 && !isSyncing) {
+        lastWindowFocusSyncRef.current = now;
+        syncFromSupabase(undefined, undefined, true); // Chế độ chạy êm (silent sync)
+      }
     };
-  }, []);
+    window.addEventListener('focus', handleWindowFocus);
+    return () => {
+      window.removeEventListener('focus', handleWindowFocus);
+    };
+  }, [isSyncing, syncFromSupabase]);
 
   // --- 🧠 AUTOMATIC 30-MINUTE RAM & CACHE OPTIMIZER ---
   useEffect(() => {
@@ -949,43 +932,43 @@ export default function App() {
     }
   }, [toast.show]);
 
-  // --- EFFECT: SYNC STATES WITH LOCAL STORAGE & SUPABASE CORES ---
+  // --- EFFECT: SYNC STATES WITH LOCAL STORAGE & SUPABASE CORES (ON-DEMAND KHI NGƯỜI DÙNG THAO TÁC) ---
   useEffect(() => {
     safeSetLocalStorage('school_grades', grades);
-    if (isLoaded) {
+    if (initialSyncDoneRef.current) {
       saveSupabaseState('school_grades', grades);
     }
-  }, [grades, isLoaded]);
+  }, [grades]);
 
   useEffect(() => {
     safeSetLocalStorage('school_classes', classes);
-    if (isLoaded) {
+    if (initialSyncDoneRef.current) {
       saveSupabaseState('school_classes', classes);
     }
-  }, [classes, isLoaded]);
+  }, [classes]);
 
   useEffect(() => {
     safeSetLocalStorage('school_students', students);
-    if (isLoaded) {
+    if (initialSyncDoneRef.current) {
       saveSupabaseState('school_students', students);
     }
-  }, [students, isLoaded]);
+  }, [students]);
 
   useEffect(() => {
     safeSetLocalStorage('school_computers', computers);
-    if (isLoaded) {
+    if (initialSyncDoneRef.current) {
       saveSupabaseState('school_computers', computers);
     }
-  }, [computers, isLoaded]);
+  }, [computers]);
 
-  // --- DEBOUNCED SUPABASE SYNC REFS FOR HIGH-FREQUENCY STATES ---
+  // --- DEBOUNCED SUPABASE SYNC REFS CHO CÁC THAO TÁC TẦN SUẤT CAO (GOM 1.5 GIÂY TIẾT KIỆM BĂNG THÔNG) ---
   const seatingDebounceRef = React.useRef<NodeJS.Timeout | null>(null);
   const attendanceDebounceRef = React.useRef<NodeJS.Timeout | null>(null);
   const evaluationDebounceRef = React.useRef<NodeJS.Timeout | null>(null);
   const emulationDebounceRef = React.useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (!isLoaded) return;
+    if (!initialSyncDoneRef.current) return;
     const wsId = currentWsRef.current;
     if (!wsId || wsId === 'ws_default') return;
     const scopedKey = `${wsId}_school_seating_chart`;
@@ -993,24 +976,24 @@ export default function App() {
     if (seatingDebounceRef.current) clearTimeout(seatingDebounceRef.current);
     seatingDebounceRef.current = setTimeout(() => {
       saveSupabaseState(scopedKey, seatingChart);
-    }, 800);
-  }, [seatingChart, isLoaded]);
+    }, 1500);
+  }, [seatingChart]);
 
   // 🛡️ ĐIỂM DANH: Đã loại bỏ hoàn toàn cơ chế auto-save ngầm.
   // Dữ liệu điểm danh CHỈ ĐƯỢC LƯU khi Thầy/Cô chủ động bấm nút 'Lưu Sổ' trong sổ điểm danh.
 
   useEffect(() => {
-    if (!isLoaded) return;
+    if (!initialSyncDoneRef.current) return;
     const wsId = currentWsRef.current;
     if (!wsId || wsId === 'ws_default') return;
     if (evaluationDebounceRef.current) clearTimeout(evaluationDebounceRef.current);
     evaluationDebounceRef.current = setTimeout(() => {
       saveDayPartitionedEvaluation(evaluationData, selectedDate, wsId);
-    }, 800);
-  }, [evaluationData, selectedDate, isLoaded]);
+    }, 1500);
+  }, [evaluationData, selectedDate]);
 
   useEffect(() => {
-    if (!isLoaded) return;
+    if (!initialSyncDoneRef.current) return;
     const wsId = currentWsRef.current;
     if (!wsId || wsId === 'ws_default') return;
     const scopedKey = `${wsId}_school_emulation_state`;
@@ -1018,26 +1001,26 @@ export default function App() {
     if (emulationDebounceRef.current) clearTimeout(emulationDebounceRef.current);
     emulationDebounceRef.current = setTimeout(() => {
       saveSupabaseState(scopedKey, emulationDataState);
-    }, 800);
-  }, [emulationDataState, isLoaded]);
+    }, 1500);
+  }, [emulationDataState]);
 
   useEffect(() => {
     safeSetLocalStorage('school_documents', documents);
-    if (isLoaded) {
+    if (initialSyncDoneRef.current) {
       saveSupabaseState('school_documents', documents);
     }
-  }, [documents, isLoaded]);
+  }, [documents]);
 
   useEffect(() => {
     safeSetLocalStorage('school_members', members);
-    if (isLoaded) {
+    if (initialSyncDoneRef.current) {
       saveSupabaseState('school_members', members);
     }
-  }, [members, isLoaded]);
+  }, [members]);
 
   useEffect(() => {
     safeSetLocalStorage('school_timetable_data', timetableData);
-    if (isLoaded) {
+    if (initialSyncDoneRef.current) {
       saveSupabaseState('school_timetable_data', timetableData);
       if (currentUser) {
         const userSchedule = timetableData[currentUser.username] || (currentUser.id && timetableData[currentUser.id]);
@@ -1048,7 +1031,7 @@ export default function App() {
         }
       }
     }
-  }, [timetableData, isLoaded, currentUser]);
+  }, [timetableData, currentUser]);
 
 
   useEffect(() => {
@@ -1169,6 +1152,9 @@ export default function App() {
 
         setIsLoginModalOpen(false);
         showToast(`Đăng nhập thành công! Chào thầy cô: ${foundUser.name}`);
+
+        // 🚀 ĐỒNG BỘ DỮ LIỆU THIỆT TỪ SUPABASE VỀ LOCALSTORAGE KHI ĐĂNG NHẬP
+        syncFromSupabase(targetWsId, updatedUser, false);
         return;
       }
     }
@@ -1250,87 +1236,8 @@ export default function App() {
 
   // --- MANUAL CLOUD SYNCHRONIZATION ACTION SERVICES ---
   const forceFetchFromSupabase = async () => {
-    setIsSyncing(true);
-    setSupabaseError(null);
-    setSupabaseOnline(true); // Reset connection state on manual action
-    try {
-      showToast('Đang tải dữ liệu đám mây Supabase...', 'success');
-      const dbStates = await loadAllSupabaseStates();
-      if (dbStates && Object.keys(dbStates).length > 0) {
-        if (dbStates['school_grades']) setGrades(dbStates['school_grades']);
-        if (dbStates['school_classes']) {
-          setClasses(sortClasses(dbStates['school_classes']));
-          safeSetLocalStorage('school_classes', dbStates['school_classes']);
-        }
-        if (dbStates['school_students']) setStudents(dbStates['school_students']);
-        if (dbStates['school_computers']) setComputers(dbStates['school_computers']);
-        
-        // 🏢 User-Scoped Workspace States (Luôn ưu tiên Workspace thực tế hiệu lực)
-        const effectivePullWs = currentWsRef.current || activeWorkspaceId;
-        setSeatingChart(loadWorkspaceSeatingChart(effectivePullWs, dbStates));
-        setAttendanceData(loadDayPartitionedAttendance(dbStates, defaultAttendance, effectivePullWs));
-        setEvaluationData(loadDayPartitionedEvaluation(dbStates, defaultEvaluation, effectivePullWs));
-        setEmulationDataState(loadWorkspaceEmulationState(effectivePullWs, dbStates));
-
-        if (dbStates['school_documents']) setDocuments(dbStates['school_documents']);
-        if (dbStates['school_members']) setMembers(dbStates['school_members']);
-        
-        // 📅 Đồng bộ Thời khóa biểu toàn trường & TKB riêng từng Workspace giáo viên
-        let mergedTimetable: TimetableData = (dbStates['school_timetable_data'] && typeof dbStates['school_timetable_data'] === 'object')
-          ? { ...dbStates['school_timetable_data'] }
-          : safeParse('school_timetable_data', defaultTimetable);
-
-        const currentMembersList: Member[] = Array.isArray(dbStates['school_members']) ? dbStates['school_members'] : members;
-        Object.keys(dbStates).forEach(key => {
-          if (key.startsWith('ws_') && key.endsWith('_school_timetable_data') && typeof dbStates[key] === 'object') {
-            const wsId = key.replace('_school_timetable_data', '');
-            const cleanId = wsId.replace('ws_', '');
-            const member = currentMembersList.find(m => m.id === cleanId || m.username === cleanId);
-            const schedule = dbStates[key];
-            if (schedule && typeof schedule === 'object') {
-              if (member?.username) mergedTimetable[member.username] = schedule;
-              if (member?.id) mergedTimetable[member.id] = schedule;
-              if (!member) mergedTimetable[cleanId] = schedule;
-              safeSetLocalStorage(key, schedule);
-            }
-          }
-        });
-        setTimetableData(mergedTimetable);
-        safeSetLocalStorage('school_timetable_data', mergedTimetable);
-
-        if (dbStates['custom_avatars_list'] && Array.isArray(dbStates['custom_avatars_list'])) {
-          safeSetLocalStorage('custom_avatars_list', dbStates['custom_avatars_list']);
-          window.dispatchEvent(new CustomEvent('custom_avatars_updated', { detail: dbStates['custom_avatars_list'] }));
-        }
-
-        // 📅 Đồng bộ tiêu đề thời khóa biểu từng giáo viên từ Supabase
-        syncTimetableTitlesFromSupabase(dbStates, activeWorkspaceId);
-        
-        // 📚 Đồng bộ Ngân hàng câu hỏi & Môn học theo Workspace
-        const wsQuestionsKey = `${effectivePullWs}_school_questions`;
-        if (Array.isArray(dbStates[wsQuestionsKey])) {
-          safeSetLocalStorage(wsQuestionsKey, dbStates[wsQuestionsKey]);
-        }
-        const wsSubjectsKey = `${effectivePullWs}_school_subjects`;
-        if (Array.isArray(dbStates[wsSubjectsKey])) {
-          safeSetLocalStorage(wsSubjectsKey, dbStates[wsSubjectsKey]);
-        }
-        const wsLeaderboardKey = `${effectivePullWs}_tug_leaderboard`;
-        if (Array.isArray(dbStates[wsLeaderboardKey])) {
-          safeSetLocalStorage(wsLeaderboardKey, dbStates[wsLeaderboardKey]);
-        }
-        
-        showToast('Tải dữ liệu thành công! Đã ghi nhận đè bộ nhớ cục bộ.', 'success');
-      } else {
-        showToast('Chưa ghi nhận bản sao lưu nào trên đám mây. Vui lòng chọn Đẩy dữ liệu!', 'error');
-        setSupabaseError('Chưa có dữ liệu dự phòng');
-      }
-    } catch (err: any) {
-      showToast('Lỗi tải dữ liệu: ' + (err?.message || err), 'error');
-      setSupabaseError(err?.message || 'Lỗi tải');
-    } finally {
-      setIsSyncing(false);
-    }
+    const effectivePullWs = currentWsRef.current || activeWorkspaceId;
+    await syncFromSupabase(effectivePullWs, currentUser, false);
   };
 
   const forcePushToSupabase = async () => {

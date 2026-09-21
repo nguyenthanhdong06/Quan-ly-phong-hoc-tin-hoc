@@ -29,6 +29,17 @@ export interface SupabaseState {
   updated_at: string;
 }
 
+// Safety flag to completely block accidental save-loops during initial fetch/sync
+let isSyncSuppressed = false;
+
+export const setSyncSuppressed = (suppressed: boolean) => {
+  isSyncSuppressed = suppressed;
+};
+
+export const getSyncSuppressed = (): boolean => {
+  return isSyncSuppressed;
+};
+
 export const SQL_INITIALIZATION_QUERY = `-- CHẠY LỆNH NÀY TRONG SQL EDITOR CỦA SUPABASE:
 -- 1. Tạo bảng lưu trữ trạng thái toàn bộ phần mềm phòng học Tin học
 CREATE TABLE IF NOT EXISTS school_states (
@@ -46,8 +57,9 @@ CREATE POLICY "Cho phép truy cập công khai Insert" ON school_states FOR INSE
 CREATE POLICY "Cho phép truy cập công khai Update" ON school_states FOR UPDATE USING (true);
 CREATE POLICY "Cho phép truy cập công khai Delete" ON school_states FOR DELETE USING (true);
 
--- 4. Kích hoạt tính năng Realtime đồng bộ hai chiều tức thì giữa Localhost và Vercel
-ALTER PUBLICATION supabase_realtime ADD TABLE school_states;
+-- 4. TỐI ƯU HÓA BĂNG THÔNG: Gỡ bỏ bảng school_states khỏi kênh Realtime để tiết kiệm 100% quota Realtime
+-- (Dữ liệu vẫn đồng bộ 2 chiều hoàn hảo qua REST API theo nhu cầu khi đăng nhập và khi người dùng thao tác)
+ALTER PUBLICATION supabase_realtime DROP TABLE school_states;
 `;
 
 /**
@@ -101,9 +113,16 @@ export function isRecentLocalSave(key: string, thresholdMs = 3000): boolean {
  * Save state key-value to Supabase with auto-reconnect
  */
 export async function saveSupabaseState(key: string, value: any): Promise<boolean> {
-  // Mark local save timestamp to suppress self WebSocket echoes
-  markKeySavedLocally(key);
+  // Always write to local storage first for offline/instant UI
   safeSetLocalStorage(key, value);
+
+  // If sync is suppressed (e.g. during initial cloud fetch & hydrate), skip sending to Supabase
+  if (isSyncSuppressed) {
+    return true;
+  }
+
+  // Mark local save timestamp to suppress echoes
+  markKeySavedLocally(key);
 
   // Always attempt saving to Supabase database
   try {

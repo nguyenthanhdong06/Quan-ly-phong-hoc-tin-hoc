@@ -92,42 +92,7 @@ export default function TimetableTab({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isTitleModalOpen]);
 
-  // Realtime Supabase listener for timetable title and timetable data changes across devices
-  useEffect(() => {
-    const channel = supabase
-      .channel('realtime_timetable_titles_and_data_tab')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'school_states'
-        },
-        (payload) => {
-          const row = payload.new as any;
-          if (!row || !row.key) return;
 
-          // 1. Title updates
-          if (row.key === 'school_timetable_titles' || row.key.includes('school_timetable_title')) {
-            syncTimetableTitlesFromSupabase({ [row.key]: row.value });
-          }
-
-          // 2. Timetable Data updates across devices
-          if (row.key === 'school_timetable_data') {
-            safeSetLocalStorage('school_timetable_data', row.value);
-            window.dispatchEvent(new CustomEvent('school_timetable_data_updated', { detail: row.value }));
-          } else if (row.key.startsWith('ws_') && row.key.endsWith('_school_timetable_data')) {
-            safeSetLocalStorage(row.key, row.value);
-            window.dispatchEvent(new CustomEvent('school_timetable_data_updated', { detail: { [row.key]: row.value } }));
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
 
   const handleOpenEditTitleModal = () => {
     setEditTitle(timetableTitle);

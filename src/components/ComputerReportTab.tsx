@@ -240,30 +240,6 @@ export default function ComputerReportTab({ currentUser, workspaceId }: Computer
     }
 
     fetchCloudReports();
-
-    // 3. Lắng nghe thay đổi thời gian thực Realtime từ Supabase cho khóa của giáo viên
-    const channel = supabase
-      .channel(`realtime_reports_${currentWsId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'school_states',
-          filter: `key=eq.${scopedKey}`
-        },
-        (payload: any) => {
-          if (payload.new && Array.isArray(payload.new.value)) {
-            setSavedReports(payload.new.value);
-            safeSetLocalStorage(scopedKey, payload.new.value);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, [scopedKey, currentWsId, isAdmin]);
 
   // Update general reporter when currentUser changes
