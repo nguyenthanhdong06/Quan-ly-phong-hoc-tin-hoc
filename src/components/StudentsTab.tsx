@@ -642,7 +642,8 @@ export default function StudentsTab({
                     <input
                       type="text"
                       value={newName}
-                      onChange={(e) => setNewName(capitalizeName(e.target.value))}
+                      onChange={(e) => setNewName(e.target.value)}
+                      onBlur={() => setNewName(prev => capitalizeName(prev.trim()))}
                       placeholder="Ví dụ: nguyễn văn a -> Nguyễn Văn A"
                       className="w-full border border-slate-200 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder-slate-300 font-semibold"
                       required
@@ -982,6 +983,7 @@ export default function StudentsTab({
                               type="text"
                               value={editName}
                               onChange={(e) => setEditName(e.target.value)}
+                              onBlur={() => setEditName(prev => capitalizeName(prev.trim()))}
                               className="w-full border border-amber-300 rounded-lg px-2 py-1.5 text-xs font-extrabold text-slate-800 bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
                             />
                           ) : (() => {
