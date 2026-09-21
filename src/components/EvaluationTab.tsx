@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { Student, EvaluationData, SeatingChart, Computer, EmulationDataState, AttendanceData, ClassItem, GardenStudentData, WaterLog } from '../types';
+import { Student, EvaluationData, SeatingChart, Computer, EmulationDataState, AttendanceData, ClassItem, GardenStudentData, WaterLog, Member } from '../types';
 import { Star, Calendar, Search, X, Award, MessageSquare, Tag, ArrowLeft, Save, RefreshCw } from 'lucide-react';
 import { triggerStarsConfetti } from '../utils/confetti';
 import { playStarRewardSound, playWarningDeductSound } from '../utils/audioEffects';
@@ -11,7 +11,7 @@ import { getStudentAvatar } from '../utils/studentAvatar';
 import { matchStudentSearch } from '../utils/nameFormatter';
 import { saveDayPartitionedEvaluation } from '../utils/evaluationPartition';
 import { saveWorkspaceGardenData } from '../utils/gardenPartition';
-import { safeSetLocalStorage } from '../utils/safeStorage';
+import { safeSetLocalStorage, safeGetLocalStorage } from '../utils/safeStorage';
 import { saveSupabaseState } from '../supabaseClient';
 
 interface EvaluationTabProps {
@@ -32,6 +32,7 @@ interface EvaluationTabProps {
   workspaceId?: string;
   gardenData?: { [studentId: string]: GardenStudentData };
   setGardenData?: React.Dispatch<React.SetStateAction<{ [studentId: string]: GardenStudentData }>>;
+  currentUser?: any;
 }
 
 // Simple Avatar Component to render clean, flat circle avatars with student-specific background colors with gorgeous hover effects
@@ -243,9 +244,18 @@ export default function EvaluationTab({
   classes = [],
   workspaceId,
   gardenData,
-  setGardenData
+  setGardenData,
+  currentUser
 }: EvaluationTabProps) {
   
+  const activeUser = currentUser || safeGetLocalStorage<Member | null>('school_current_user', null);
+  const isHomeroomTeacher = Boolean(
+    activeUser?.role && (
+      activeUser.role.trim().toLowerCase().includes('chủ nhiệm') ||
+      activeUser.role.trim().toLowerCase().includes('chu nhiem')
+    )
+  );
+
   const [searchTerm, setSearchTerm] = React.useState('');
   const [selectedStudent, setSelectedStudent] = React.useState<Student | null>(null);
   const [isSaving, setIsSaving] = React.useState(false);
@@ -529,6 +539,122 @@ export default function EvaluationTab({
       return Boolean(praiseTags.length > 0 || evalObj.rating >= 4);
     });
 
+    // 🌸 TRƯỜNG HỢP 1: TÀI KHOẢN GIÁO VIÊN CHỦ NHIỆM (GỬI THÔNG BÁO CHO PHỤ HUYNH)
+    if (isHomeroomTeacher) {
+      const teacherSignName = activeUser?.name?.trim() || gvcnName;
+
+      // 📱 1.1. Mẫu Nhắn Tin Ngắn gọn cho GVCN gửi Phụ Huynh
+      if (template === 'sms') {
+        let sms = `[LỚP ${selectedClass} - ${formattedDate}] GVCN thông báo tình hình học tập:\n`;
+        if (praisedStudents.length > 0) {
+          const pNames = praisedStudents.slice(0, 5).map(s => s.name).join(', ');
+          sms += `- Khen ngợi ${praisedStudents.length} em tiêu biểu: ${pNames}${praisedStudents.length > 5 ? '...' : ''}.\n`;
+        }
+        if (violatingStudents.length > 0) {
+          const vItems = violatingStudents.slice(0, 5).map(s => {
+            const evalObj = currentDaysEvaluations[s.id] || { rating: 0, comment: '', tags: [] };
+            const comment = (evalObj.comment || '').trim();
+            const tags: string[] = Array.isArray(evalObj.tags) ? evalObj.tags : [];
+            const reminderTags = tags.filter(isReminderOrViolationTag);
+            const reason = comment || reminderTags.map(t => t.replace(/🔴|\(.*\)/g, '').trim()).filter(Boolean).join(', ');
+            return `${s.name}${reason ? ` (${reason})` : ''}`;
+          }).join('; ');
+          sms += `- Nhờ PH phối hợp nhắc nhở ${violatingStudents.length} em: ${vItems}${violatingStudents.length > 5 ? '...' : ''}.\n`;
+        } else {
+          sms += `- Hôm nay cả lớp chăm ngoan, học tập tốt, không có em nào vi phạm.\n`;
+        }
+        sms += `Trân trọng cảm ơn Quý Phụ huynh! (GVCN: ${teacherSignName})`;
+        return sms.trim();
+      }
+
+      // 📑 1.2. Mẫu Đánh Giá Chi Tiết Đầy Đủ gửi Phụ Huynh
+      if (template === 'full') {
+        let msg = `📋 BẢNG TỔNG HỢP HỌC TẬP & RÈN LUYỆN CHI TIẾT - LỚP ${selectedClass}\n`;
+        msg += `📅 Ngày: ${formattedDate}\n`;
+        msg += `👨‍🏫 Giáo viên chủ nhiệm: ${teacherSignName}\n`;
+        msg += `------------------------------------\n`;
+        msg += `Kính gửi: Quý Phụ huynh Lớp ${selectedClass},\n`;
+        msg += `Dưới đây là bảng tổng hợp chi tiết tình hình học tập và nền nếp của các con trong ngày hôm nay:\n\n`;
+        msg += `📊 Sĩ số lớp: ${total} học sinh (Nữ: ${femaleTotal})\n`;
+        msg += `🌟 Số học sinh tích cực, tiêu biểu: ${praisedStudents.length} em\n`;
+        msg += `⚠️ Số học sinh cần phối hợp đôn đốc: ${violatingStudents.length} em\n`;
+        msg += `------------------------------------\n`;
+
+        if (praisedStudents.length > 0) {
+          msg += `\n🌟 DANH SÁCH CÁC CON ĐƯỢC KHEN THƯỞNG / TÍCH CỰC:\n`;
+          praisedStudents.forEach((s, idx) => {
+            const evalObj = currentDaysEvaluations[s.id] || { rating: 0, comment: '', tags: [] };
+            const tags: string[] = Array.isArray(evalObj.tags) ? evalObj.tags : [];
+            const praiseTags = tags.filter(isPraiseTag);
+            const comment = (evalObj.comment || '').trim();
+            msg += `${idx + 1}. ${s.name} (MSHS: ${s.code})\n`;
+            if (praiseTags.length > 0) msg += `   - Thành tích: ${praiseTags.join(', ')}\n`;
+            if (comment) msg += `   - Nhận xét GV: ${comment}\n`;
+          });
+        }
+
+        if (violatingStudents.length === 0) {
+          msg += `\n🎉 Cả lớp hôm nay thực hiện nền nếp rất tốt, không có bạn nào vi phạm!\n`;
+        } else {
+          msg += `\n⚠️ DANH SÁCH CÁC CON CẦN GIA ĐÌNH PHỐI HỢP NHẮC NHỞ:\n`;
+          violatingStudents.forEach((s, idx) => {
+            const evalObj = currentDaysEvaluations[s.id] || { rating: 0, comment: '', tags: [] };
+            const comment = (evalObj.comment || '').trim();
+            const tags: string[] = Array.isArray(evalObj.tags) ? evalObj.tags : [];
+            const reminderTags = tags.filter(isReminderOrViolationTag);
+            msg += `${idx + 1}. ${s.name} (MSHS: ${s.code})\n`;
+            if (reminderTags.length > 0) msg += `   - Vấn đề cần lưu ý: ${reminderTags.join(', ')}\n`;
+            if (comment) msg += `   - Lời dặn của GV: ${comment}\n`;
+          });
+          msg += `\n👉 Kính mong Quý Phụ huynh cùng nhắc nhở để các con tiến bộ hơn trong các buổi học tới!\n`;
+        }
+
+        msg += `\n------------------------------------\n`;
+        msg += `Trân trọng cảm ơn sự đồng hành và quan tâm của Quý Phụ huynh!\n`;
+        msg += `GVCN Lớp ${selectedClass}: ${teacherSignName}`;
+        return msg;
+      }
+
+      // 💬 1.3. Mẫu Zalo Gửi Phụ Huynh (Mặc định: Trang trọng, Sư phạm, Dễ hiểu)
+      let msg = `🌸 THÔNG BÁO TÌNH HÌNH HỌC TẬP - LỚP ${selectedClass} 🌸\n`;
+      msg += `📅 Ngày: ${formattedDate}\n`;
+      msg += `------------------------------------\n`;
+      msg += `Kính gửi: Quý Phụ huynh Lớp ${selectedClass},\n`;
+      msg += `Giáo viên chủ nhiệm xin thông tin nhanh tình hình học tập và nền nếp của lớp trong ngày hôm nay như sau:\n\n`;
+      msg += `📊 Sĩ số lớp: ${total} học sinh\n`;
+
+      if (praisedStudents.length > 0) {
+        msg += `\n🌟 CÁC CON TIÊU BIỂU / ĐƯỢC KHEN THƯỞNG (${praisedStudents.length} em):\n`;
+        praisedStudents.forEach((s, idx) => {
+          const evalObj = currentDaysEvaluations[s.id] || { rating: 0, comment: '', tags: [] };
+          const tags: string[] = Array.isArray(evalObj.tags) ? evalObj.tags : [];
+          const praiseTags = tags.filter(isPraiseTag);
+          const tagText = praiseTags.length > 0 ? ` (${praiseTags.join(', ')})` : ' (Học tập tích cực, chăm ngoan ⭐)';
+          msg += `${idx + 1}. ${s.name}${tagText}\n`;
+        });
+      }
+
+      if (violatingStudents.length === 0) {
+        msg += `\n🎉 TÌNH HÌNH CHUNG: Hôm nay cả lớp chăm ngoan, học tập tích cực và thực hiện rất tốt nội quy, không có học sinh nào bị nhắc nhở.\n`;
+      } else {
+        msg += `\n⚠️ CÁC CON CẦN GIA ĐÌNH PHỐI HỢP ĐÔN ĐỐC, NHẮC NHỞ (${violatingStudents.length} em):\n`;
+        violatingStudents.forEach((s, idx) => {
+          const evalObj = currentDaysEvaluations[s.id] || { rating: 0, comment: '', tags: [] };
+          const comment = (evalObj.comment || '').trim();
+          const tags: string[] = Array.isArray(evalObj.tags) ? evalObj.tags : [];
+          const reminderTags = tags.filter(isReminderOrViolationTag);
+          const detail = comment || reminderTags.join(', ') || 'Cần chú ý tập trung học tập';
+          msg += `${idx + 1}. ${s.name}: ${detail}\n`;
+        });
+        msg += `\n👉 Kính nhờ Quý Phụ huynh nhắc nhở nhẹ nhàng để các con hoàn thiện bản thân và học tập tốt hơn ạ.\n`;
+      }
+
+      msg += `\nTrân trọng cảm ơn sự phối hợp chặt chẽ từ Quý Phụ huynh!\n`;
+      msg += `Giáo viên chủ nhiệm: ${teacherSignName}`;
+      return msg;
+    }
+
+    // 👨‍🏫 TRƯỜNG HỢP 2: TÀI KHOẢN KHÁC (GIÁO VIÊN BỘ MÔN / ADMIN) BÁO CÁO CHO GVCN (GIỮ NGUYÊN 100%)
     if (template === 'sms') {
       if (violatingStudents.length === 0) {
         return `[TIN HOC ${selectedClass} ${formattedDate}] Si so ${total} HS. Gio hoc tot, khong co HS vi pham.`;
@@ -647,7 +773,7 @@ export default function EvaluationTab({
 
     msg += `\nEm trân trọng cảm ơn Thầy/Cô!`;
     return msg;
-  }, [classStudents, currentDaysEvaluations, selectedClass, selectedDate, seatingChart, computers, gvcnName]);
+  }, [isHomeroomTeacher, activeUser, classStudents, currentDaysEvaluations, selectedClass, selectedDate, seatingChart, computers, gvcnName]);
 
   // 🛡️ LƯU SỔ ĐÁNH GIÁ CHỦ ĐỘNG: Lưu trực tiếp vào LocalStorage và Supabase Cloud với Deep Merge
   const handleSave = async () => {
@@ -718,7 +844,7 @@ export default function EvaluationTab({
                   ? 'bg-sky-700 hover:bg-sky-800 text-white border-sky-600 ring-2 ring-sky-300'
                   : 'bg-sky-600 hover:bg-sky-700 text-white border-sky-500'
               }`}
-              title="Tạo tin nhắn Zalo/SMS gửi tình hình học sinh vi phạm tới Giáo viên chủ nhiệm"
+              title={isHomeroomTeacher ? "Tạo tin nhắn Zalo/SMS thông báo tình hình học tập gửi Quý Phụ huynh" : "Tạo tin nhắn Zalo/SMS gửi tình hình học sinh vi phạm tới Giáo viên chủ nhiệm"}
             >
               <span>💬</span> Báo Cáo Zalo
             </button>
@@ -1039,7 +1165,8 @@ export default function EvaluationTab({
             </button>
 
             <h3 className="text-sm sm:text-base font-black text-slate-800 flex items-center gap-1.5">
-              <span>💬</span> BÁO CÁO ZALO/SMS CHO GVCN LỚP <span className="text-sky-700 font-mono bg-sky-50 px-2.5 py-0.5 rounded-lg border border-sky-200">{selectedClass}</span>
+              <span>💬</span> {isHomeroomTeacher ? 'THÔNG BÁO TÌNH HÌNH HỌC TẬP GỬI PHỤ HUYNH LỚP' : 'BÁO CÁO ZALO/SMS CHO GVCN LỚP'}{' '}
+              <span className="text-sky-700 font-mono bg-sky-50 px-2.5 py-0.5 rounded-lg border border-sky-200">{selectedClass}</span>
             </h3>
 
             <span className="text-xs font-bold text-slate-500">
@@ -1062,7 +1189,7 @@ export default function EvaluationTab({
                   reportTemplate === 'zalo' ? 'bg-sky-600 text-white shadow-xs' : 'text-slate-700 hover:bg-white/60'
                 }`}
               >
-                💬 Mẫu Zalo Chuẩn
+                {isHomeroomTeacher ? '💬 Mẫu Zalo Gửi Phụ Huynh' : '💬 Mẫu Zalo Chuẩn'}
               </button>
               <button
                 type="button"
@@ -1074,7 +1201,7 @@ export default function EvaluationTab({
                   reportTemplate === 'sms' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-700 hover:bg-white/60'
                 }`}
               >
-                📱 Mẫu SMS Ngắn
+                {isHomeroomTeacher ? '📱 Mẫu Nhắn Tin Ngắn' : '📱 Mẫu SMS Ngắn'}
               </button>
               <button
                 type="button"
@@ -1086,7 +1213,7 @@ export default function EvaluationTab({
                   reportTemplate === 'full' ? 'bg-amber-600 text-white shadow-xs' : 'text-slate-700 hover:bg-white/60'
                 }`}
               >
-                📑 Mẫu Chi Tiết Đầy Đủ
+                {isHomeroomTeacher ? '📑 Mẫu Đánh Giá Chi Tiết' : '📑 Mẫu Chi Tiết Đầy Đủ'}
               </button>
             </div>
 
@@ -1096,7 +1223,23 @@ export default function EvaluationTab({
               {/* Device Auto-Detect Switcher Strip */}
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sky-200/80 pb-2.5">
                 <span className="text-xs font-black text-sky-950 flex items-center gap-1.5">
-                  ⚙️ KÍCH HOẠT KẾT NỐI ZALO LỚP <span className="text-sky-700 bg-white px-2 py-0.5 rounded-lg border border-sky-300">{selectedClass}</span>:
+                  {isHomeroomTeacher ? (
+                    <>
+                      <span>⚙️</span> KẾT NỐI GỬI ZALO CHO PHỤ HUYNH LỚP{' '}
+                      <span className="text-sky-700 bg-white px-2 py-0.5 rounded-lg border border-sky-300 font-mono">
+                        {selectedClass}
+                      </span>
+                      :
+                    </>
+                  ) : (
+                    <>
+                      <span>⚙️</span> KÍCH HOẠT KẾT NỐI ZALO LỚP{' '}
+                      <span className="text-sky-700 bg-white px-2 py-0.5 rounded-lg border border-sky-300 font-mono">
+                        {selectedClass}
+                      </span>
+                      :
+                    </>
+                  )}
                 </span>
 
                 <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-sky-300 shadow-3xs">
@@ -1122,33 +1265,59 @@ export default function EvaluationTab({
                 </div>
               </div>
 
-              {/* GVCN Name & Phone Display Grid (Read-Only linked from Class Management) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white p-3.5 rounded-2xl border border-sky-200 shadow-2xs text-left">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-black text-sky-950 whitespace-nowrap flex items-center gap-1">
-                    👤 GVCN Lớp {selectedClass}:
-                  </span>
-                  <span className="text-xs font-black text-slate-800 bg-sky-50/90 px-3 py-1 rounded-xl border border-sky-200">
-                    {gvcnName}
-                  </span>
-                </div>
+              {/* GVCN Info Grid */}
+              {isHomeroomTeacher ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white p-3.5 rounded-2xl border border-sky-200 shadow-2xs text-left">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black text-sky-950 whitespace-nowrap flex items-center gap-1">
+                      👤 Giáo viên chủ nhiệm:
+                    </span>
+                    <span className="text-xs font-black text-slate-800 bg-sky-50/90 px-3 py-1 rounded-xl border border-sky-200">
+                      {activeUser?.name || gvcnName}
+                    </span>
+                  </div>
 
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-black text-sky-950 whitespace-nowrap flex items-center gap-1">
-                    📱 SĐT Zalo:
-                  </span>
-                  <span className={`text-xs font-extrabold px-3 py-1 rounded-xl border ${
-                    gvcnPhone 
-                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200 font-mono font-black' 
-                      : 'bg-rose-50 text-rose-700 border-rose-200 font-normal italic'
-                  }`}>
-                    {gvcnPhone || 'Chưa cập nhật bên Quản Lý Lớp'}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black text-sky-950 whitespace-nowrap flex items-center gap-1">
+                      🏫 Lớp phụ trách:
+                    </span>
+                    <span className="text-xs font-black text-sky-800 bg-sky-50/90 px-3 py-1 rounded-xl border border-sky-200 font-mono">
+                      Lớp {selectedClass}
+                    </span>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white p-3.5 rounded-2xl border border-sky-200 shadow-2xs text-left">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black text-sky-950 whitespace-nowrap flex items-center gap-1">
+                      👤 GVCN Lớp {selectedClass}:
+                    </span>
+                    <span className="text-xs font-black text-slate-800 bg-sky-50/90 px-3 py-1 rounded-xl border border-sky-200">
+                      {gvcnName}
+                    </span>
+                  </div>
 
-              {/* Linked Info Status Helper */}
-              {(() => {
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black text-sky-950 whitespace-nowrap flex items-center gap-1">
+                      📱 SĐT Zalo:
+                    </span>
+                    <span className={`text-xs font-extrabold px-3 py-1 rounded-xl border ${
+                      gvcnPhone 
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200 font-mono font-black' 
+                        : 'bg-rose-50 text-rose-700 border-rose-200 font-normal italic'
+                    }`}>
+                      {gvcnPhone || 'Chưa cập nhật bên Quản Lý Lớp'}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Status Helper Banner */}
+              {isHomeroomTeacher ? (
+                <p className="text-[11px] text-emerald-700 font-extrabold flex items-center gap-1.5 bg-emerald-50 px-3 py-2 rounded-xl border border-emerald-200">
+                  <span>✅</span> Sẵn sàng gửi tin nhắn thông báo đến <strong>Nhóm Zalo Phụ Huynh Lớp {selectedClass}</strong> hoặc gửi riêng cho từng Phụ huynh.
+                </p>
+              ) : (() => {
                 const clean = gvcnPhone.trim().replace(/\D/g, '');
                 if (!gvcnPhone) {
                   return (
@@ -1174,12 +1343,14 @@ export default function EvaluationTab({
 
             {/* Live Preview Textarea */}
             <div className="space-y-1.5 text-left">
-              <label className="block text-xs font-black text-slate-700">Xem trước & Chỉnh sửa nội dung tin nhắn gửi GVCN:</label>
+              <label className="block text-xs font-black text-slate-700">
+                {isHomeroomTeacher ? 'Xem trước & Chỉnh sửa nội dung tin nhắn gửi Phụ huynh:' : 'Xem trước & Chỉnh sửa nội dung tin nhắn gửi GVCN:'}
+              </label>
               <textarea
                 rows={10}
                 value={customMessageText}
                 onChange={(e) => setCustomMessageText(e.target.value)}
-                placeholder="Nội dung báo cáo gửi Giáo viên chủ nhiệm..."
+                placeholder={isHomeroomTeacher ? "Nội dung thông báo tình hình học tập gửi Quý Phụ huynh..." : "Nội dung báo cáo gửi Giáo viên chủ nhiệm..."}
                 className="w-full p-4 text-xs font-mono font-bold rounded-2xl border border-[#cbb89d] bg-white focus:outline-none focus:border-sky-600 shadow-inner leading-relaxed text-slate-800"
               />
             </div>
@@ -1200,7 +1371,12 @@ export default function EvaluationTab({
                   type="button"
                   onClick={() => {
                     navigator.clipboard.writeText(customMessageText);
-                    showToast('Đã sao chép tin nhắn thành công! Thầy/Cô có thể dán (Ctrl+V) vào Zalo ngay.', 'success');
+                    showToast(
+                      isHomeroomTeacher
+                        ? 'Đã sao chép nội dung gửi Phụ huynh! Thầy/Cô có thể dán (Ctrl+V) vào nhóm Zalo Phụ huynh lớp ngay.'
+                        : 'Đã sao chép tin nhắn thành công! Thầy/Cô có thể dán (Ctrl+V) vào Zalo ngay.',
+                      'success'
+                    );
                   }}
                   className="px-4.5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95"
                 >
@@ -1210,6 +1386,28 @@ export default function EvaluationTab({
                 <button
                   type="button"
                   onClick={() => {
+                    if (isHomeroomTeacher) {
+                      navigator.clipboard.writeText(customMessageText);
+                      if (zaloTargetMode === 'pc') {
+                        const zaloNativeAppUri = 'zalo://';
+                        const nativeLink = document.createElement('a');
+                        nativeLink.href = zaloNativeAppUri;
+                        document.body.appendChild(nativeLink);
+                        nativeLink.click();
+                        document.body.removeChild(nativeLink);
+
+                        setTimeout(() => {
+                          window.location.href = zaloNativeAppUri;
+                        }, 150);
+
+                        showToast('Đã sao chép nội dung gửi Phụ huynh & Kích hoạt Zalo PC! Thầy/Cô dán (Ctrl+V) vào nhóm Phụ huynh Lớp nhé.', 'success');
+                      } else {
+                        window.open('https://chat.zalo.me/', '_blank');
+                        showToast('Đã sao chép nội dung gửi Phụ huynh & Mở Zalo Web! Thầy/Cô dán (Ctrl+V) vào nhóm Phụ huynh Lớp nhé.', 'success');
+                      }
+                      return;
+                    }
+
                     const cleanPhone = gvcnPhone.trim().replace(/\D/g, '');
                     if (gvcnPhone.trim() && cleanPhone.length !== 10) {
                       showToast(`⚠️ SĐT Zalo GVCN chưa đúng 10 chữ số (Hiện tại đang có ${cleanPhone.length} số). Vui lòng gõ đủ 10 số!`, 'error');
@@ -1246,24 +1444,38 @@ export default function EvaluationTab({
                     }
                   }}
                   className="px-4.5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-black text-xs transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95 border border-sky-500"
-                  title={zaloTargetMode === 'pc' ? 'Kích hoạt ứng dụng Zalo PC trên máy tính' : 'Mở ứng dụng Zalo Mobile trên điện thoại'}
+                  title={
+                    isHomeroomTeacher
+                      ? (zaloTargetMode === 'pc' ? 'Mở Zalo PC để dán tin nhắn vào nhóm phụ huynh lớp' : 'Mở Zalo Web/Mobile để gửi phụ huynh')
+                      : (zaloTargetMode === 'pc' ? 'Kích hoạt ứng dụng Zalo PC trên máy tính' : 'Mở ứng dụng Zalo Mobile trên điện thoại')
+                  }
                 >
-                  <span>💬</span> {zaloTargetMode === 'pc' ? 'Mở Zalo PC App' : 'Mở App Zalo Mobile'}
+                  <span>💬</span>{' '}
+                  {isHomeroomTeacher
+                    ? (zaloTargetMode === 'pc' ? 'Mở Zalo Gửi Phụ Huynh' : 'Mở App Zalo Gửi PH')
+                    : (zaloTargetMode === 'pc' ? 'Mở Zalo PC App' : 'Mở App Zalo Mobile')}
                 </button>
 
                 <a
                   href={
-                    gvcnPhone.trim().replace(/\D/g, '') 
-                      ? `sms:${gvcnPhone.trim().replace(/\D/g, '')}?body=${encodeURIComponent(customMessageText)}` 
-                      : `sms:?body=${encodeURIComponent(customMessageText)}`
+                    isHomeroomTeacher
+                      ? `sms:?body=${encodeURIComponent(customMessageText)}`
+                      : (gvcnPhone.trim().replace(/\D/g, '') 
+                          ? `sms:${gvcnPhone.trim().replace(/\D/g, '')}?body=${encodeURIComponent(customMessageText)}` 
+                          : `sms:?body=${encodeURIComponent(customMessageText)}`)
                   }
                   onClick={() => {
                     navigator.clipboard.writeText(customMessageText);
-                    showToast('Đã sao chép & Kích hoạt ứng dụng Tin nhắn SMS!', 'success');
+                    showToast(
+                      isHomeroomTeacher
+                        ? 'Đã sao chép & Kích hoạt ứng dụng Soạn Tin nhắn SMS gửi Phụ huynh!'
+                        : 'Đã sao chép & Kích hoạt ứng dụng Tin nhắn SMS!',
+                      'success'
+                    );
                   }}
                   className="px-4.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95 no-underline"
                 >
-                  <span>📱</span> Gửi SMS
+                  <span>📱</span> {isHomeroomTeacher ? 'Soạn SMS Gửi PH' : 'Gửi SMS'}
                 </a>
               </div>
             </div>

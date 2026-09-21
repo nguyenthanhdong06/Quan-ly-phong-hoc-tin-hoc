@@ -1868,6 +1868,7 @@ export default function App() {
                 workspaceId={activeWorkspaceId}
                 gardenData={gardenData}
                 setGardenData={setGardenData}
+                currentUser={currentUser}
               />
             )}
 
