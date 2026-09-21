@@ -266,6 +266,11 @@ export default function EvaluationTab({
   const [reportTemplate, setReportTemplate] = React.useState<'zalo' | 'sms' | 'full'>('zalo');
   const [customMessageText, setCustomMessageText] = React.useState<string>('');
 
+  // 🛡️ Tùy chọn chỉ gửi danh sách khen thưởng lên nhóm chung (bảo vệ quyền riêng tư của các em bị nhắc nhở)
+  const [onlyPraiseInGroup, setOnlyPraiseInGroup] = React.useState<boolean>(() => {
+    return safeGetLocalStorage<boolean>('zalo_only_praise_in_group', false);
+  });
+
   // 💻 / 📱 Device Auto-Detection for Zalo PC vs Zalo Mobile
   const isMobileInitial = typeof window !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   const [zaloTargetMode, setZaloTargetMode] = React.useState<'pc' | 'mobile'>(isMobileInitial ? 'mobile' : 'pc');
@@ -517,7 +522,8 @@ export default function EvaluationTab({
   };
 
   // 💬 Auto Generator for Zalo / SMS Homeroom Teacher Evaluation Report Text
-  const generateReportText = React.useCallback((template: 'zalo' | 'sms' | 'full') => {
+  const generateReportText = React.useCallback((template: 'zalo' | 'sms' | 'full', hideReminders?: boolean) => {
+    const isOnlyPraise = hideReminders !== undefined ? hideReminders : onlyPraiseInGroup;
     const total = classStudents.length;
     const femaleTotal = classStudents.filter(s => s.gender === 'Nữ').length;
     const formattedDate = selectedDate.split('-').reverse().join('/');
@@ -549,17 +555,24 @@ export default function EvaluationTab({
         if (praisedStudents.length > 0) {
           const pNames = praisedStudents.slice(0, 5).map(s => s.name).join(', ');
           sms += `- Khen ngợi ${praisedStudents.length} em tiêu biểu: ${pNames}${praisedStudents.length > 5 ? '...' : ''}.\n`;
+        } else {
+          sms += `- Hôm nay cả lớp hoàn thành tốt các nhiệm vụ học tập.\n`;
         }
+
         if (violatingStudents.length > 0) {
-          const vItems = violatingStudents.slice(0, 5).map(s => {
-            const evalObj = currentDaysEvaluations[s.id] || { rating: 0, comment: '', tags: [] };
-            const comment = (evalObj.comment || '').trim();
-            const tags: string[] = Array.isArray(evalObj.tags) ? evalObj.tags : [];
-            const reminderTags = tags.filter(isReminderOrViolationTag);
-            const reason = comment || reminderTags.map(t => t.replace(/🔴|\(.*\)/g, '').trim()).filter(Boolean).join(', ');
-            return `${s.name}${reason ? ` (${reason})` : ''}`;
-          }).join('; ');
-          sms += `- Nhờ PH phối hợp nhắc nhở ${violatingStudents.length} em: ${vItems}${violatingStudents.length > 5 ? '...' : ''}.\n`;
+          if (isOnlyPraise) {
+            sms += `- Các bạn cần lưu ý thêm về nền nếp, GVCN xin phép trao đổi riêng với từng phụ huynh để cùng đôn đốc con.\n`;
+          } else {
+            const vItems = violatingStudents.slice(0, 5).map(s => {
+              const evalObj = currentDaysEvaluations[s.id] || { rating: 0, comment: '', tags: [] };
+              const comment = (evalObj.comment || '').trim();
+              const tags: string[] = Array.isArray(evalObj.tags) ? evalObj.tags : [];
+              const reminderTags = tags.filter(isReminderOrViolationTag);
+              const reason = comment || reminderTags.map(t => t.replace(/🔴|\(.*\)/g, '').trim()).filter(Boolean).join(', ');
+              return `${s.name}${reason ? ` (${reason})` : ''}`;
+            }).join('; ');
+            sms += `- Nhờ PH phối hợp nhắc nhở ${violatingStudents.length} em: ${vItems}${violatingStudents.length > 5 ? '...' : ''}.\n`;
+          }
         } else {
           sms += `- Hôm nay cả lớp chăm ngoan, học tập tốt, không có em nào vi phạm.\n`;
         }
@@ -577,7 +590,9 @@ export default function EvaluationTab({
         msg += `Dưới đây là bảng tổng hợp chi tiết tình hình học tập và nền nếp của các con trong ngày hôm nay:\n\n`;
         msg += `📊 Sĩ số lớp: ${total} học sinh (Nữ: ${femaleTotal})\n`;
         msg += `🌟 Số học sinh tích cực, tiêu biểu: ${praisedStudents.length} em\n`;
-        msg += `⚠️ Số học sinh cần phối hợp đôn đốc: ${violatingStudents.length} em\n`;
+        if (!isOnlyPraise) {
+          msg += `⚠️ Số học sinh cần phối hợp đôn đốc: ${violatingStudents.length} em\n`;
+        }
         msg += `------------------------------------\n`;
 
         if (praisedStudents.length > 0) {
@@ -595,6 +610,9 @@ export default function EvaluationTab({
 
         if (violatingStudents.length === 0) {
           msg += `\n🎉 Cả lớp hôm nay thực hiện nền nếp rất tốt, không có bạn nào vi phạm!\n`;
+        } else if (isOnlyPraise) {
+          msg += `\n💬 VỀ NỀN NẾP & HỌC TẬP CẦN LƯU Ý:\n`;
+          msg += `Để đảm bảo tính riêng tư của các con trên nhóm chung của lớp, đối với một số bạn cần rèn luyện thêm về nền nếp và sự tập trung, GVCN xin phép sẽ chủ động liên hệ và trao đổi riêng tới từng Quý Phụ huynh để cùng gia đình đồng hành giúp con tiến bộ hơn ạ.\n`;
         } else {
           msg += `\n⚠️ DANH SÁCH CÁC CON CẦN GIA ĐÌNH PHỐI HỢP NHẮC NHỞ:\n`;
           violatingStudents.forEach((s, idx) => {
@@ -636,6 +654,9 @@ export default function EvaluationTab({
 
       if (violatingStudents.length === 0) {
         msg += `\n🎉 TÌNH HÌNH CHUNG: Hôm nay cả lớp chăm ngoan, học tập tích cực và thực hiện rất tốt nội quy, không có học sinh nào bị nhắc nhở.\n`;
+      } else if (isOnlyPraise) {
+        msg += `\n💬 LƯU Ý VỀ NỀN NẾP & HỌC TẬP:\n`;
+        msg += `Để bảo vệ sự riêng tư và giúp các con giữ được tinh thần thoải mái, đối với một vài bạn cần rèn luyện thêm về nền nếp/bài vở, GVCN xin phép được nhắn tin riêng tới từng Phụ huynh để cùng gia đình nhắc nhở con tiến bộ hơn ạ.\n`;
       } else {
         msg += `\n⚠️ CÁC CON CẦN GIA ĐÌNH PHỐI HỢP ĐÔN ĐỐC, NHẮC NHỞ (${violatingStudents.length} em):\n`;
         violatingStudents.forEach((s, idx) => {
@@ -654,10 +675,14 @@ export default function EvaluationTab({
       return msg;
     }
 
-    // 👨‍🏫 TRƯỜNG HỢP 2: TÀI KHOẢN KHÁC (GIÁO VIÊN BỘ MÔN / ADMIN) BÁO CÁO CHO GVCN (GIỮ NGUYÊN 100%)
+    // 👨‍🏫 TRƯỜNG HỢP 2: TÀI KHOẢN KHÁC (GIÁO VIÊN BỘ MÔN / ADMIN) BÁO CÁO CHO GVCN
     if (template === 'sms') {
       if (violatingStudents.length === 0) {
         return `[TIN HOC ${selectedClass} ${formattedDate}] Si so ${total} HS. Gio hoc tot, khong co HS vi pham.`;
+      }
+      if (isOnlyPraise) {
+        const pNames = praisedStudents.slice(0, 5).map(s => s.name).join(', ');
+        return `[TIN HOC ${selectedClass} ${formattedDate}] Khen ngoi ${praisedStudents.length} HS tieu bieu: ${pNames}. Danh sach nhac nho da duoc gui rieng GVCN.`;
       }
       const items = violatingStudents.map(s => {
         const evalObj = currentDaysEvaluations[s.id] || { rating: 0, comment: '', tags: [] };
@@ -681,27 +706,10 @@ export default function EvaluationTab({
       msg += `------------------------------------\n`;
       msg += `📊 Sĩ số lớp: ${total} học sinh (Nữ: ${femaleTotal})\n`;
       msg += `🌟 Học sinh tích cực/khen thưởng: ${praisedStudents.length} em\n`;
-      msg += `⚠️ Học sinh cần nhắc nhở/vi phạm: ${violatingStudents.length} em\n`;
-      msg += `------------------------------------\n`;
-
-      if (violatingStudents.length === 0) {
-        msg += `🎉 Không có học sinh vi phạm trong tiết học.\n`;
-      } else {
-        msg += `⚠️ DANH SÁCH CHI TIẾT HỌC SINH CẦN NHẮC NHỞ:\n`;
-        violatingStudents.forEach((s, idx) => {
-          const evalObj = currentDaysEvaluations[s.id] || { rating: 0, comment: '', tags: [] };
-          const comment = (evalObj.comment || '').trim();
-          const tags: string[] = Array.isArray(evalObj.tags) ? evalObj.tags : [];
-          const reminderTags = tags.filter(isReminderOrViolationTag);
-          const seatId = Object.keys(seatingChart[selectedClass] || {}).find(k => seatingChart[selectedClass][k] === s.id);
-          const seatObj = seatId ? computers.find(c => c.id === seatId) : null;
-          const machineLabel = seatObj ? ` | ${seatObj.name}` : '';
-
-          msg += `${idx + 1}. ${s.name} (MSHS: ${s.code}${machineLabel})\n`;
-          if (comment) msg += `   - Nhận xét giáo viên: ${comment}\n`;
-          if (reminderTags.length > 0) msg += `   - Thẻ nhắc nhở/vi phạm: ${reminderTags.join(', ')}\n`;
-        });
+      if (!isOnlyPraise) {
+        msg += `⚠️ Học sinh cần nhắc nhở/vi phạm: ${violatingStudents.length} em\n`;
       }
+      msg += `------------------------------------\n`;
 
       if (praisedStudents.length > 0) {
         msg += `\n🌟 DANH SÁCH HỌC SINH ĐƯỢC KHEN THƯỞNG:\n`;
@@ -718,13 +726,35 @@ export default function EvaluationTab({
         });
       }
 
+      if (violatingStudents.length === 0) {
+        msg += `\n🎉 Không có học sinh vi phạm trong tiết học.\n`;
+      } else if (isOnlyPraise) {
+        msg += `\n💬 VỀ HỌC SINH CẦN LƯU Ý:\n`;
+        msg += `Danh sách các em cần nhắc nhở/chưa tập trung được chuyển tiếp riêng tới GVCN để bảo vệ tính riêng tư của các em khi gửi thông tin vào nhóm chung.\n`;
+      } else {
+        msg += `\n⚠️ DANH SÁCH CHI TIẾT HỌC SINH CẦN NHẮC NHỞ:\n`;
+        violatingStudents.forEach((s, idx) => {
+          const evalObj = currentDaysEvaluations[s.id] || { rating: 0, comment: '', tags: [] };
+          const comment = (evalObj.comment || '').trim();
+          const tags: string[] = Array.isArray(evalObj.tags) ? evalObj.tags : [];
+          const reminderTags = tags.filter(isReminderOrViolationTag);
+          const seatId = Object.keys(seatingChart[selectedClass] || {}).find(k => seatingChart[selectedClass][k] === s.id);
+          const seatObj = seatId ? computers.find(c => c.id === seatId) : null;
+          const machineLabel = seatObj ? ` | ${seatObj.name}` : '';
+
+          msg += `${idx + 1}. ${s.name} (MSHS: ${s.code}${machineLabel})\n`;
+          if (comment) msg += `   - Nhận xét giáo viên: ${comment}\n`;
+          if (reminderTags.length > 0) msg += `   - Thẻ nhắc nhở/vi phạm: ${reminderTags.join(', ')}\n`;
+        });
+      }
+
       msg += `\n------------------------------------\n`;
       const gvcnRecipient = gvcnName && gvcnName !== 'Chưa cập nhật GVCN' ? ` (${gvcnName})` : '';
       msg += `Kính gửi GVCN Lớp ${selectedClass}${gvcnRecipient} phối hợp đôn đốc các em học sinh. Trân trọng cảm ơn Thầy/Cô!`;
       return msg;
     }
 
-    // Default Zalo Standard Template
+    // Default Zalo Standard Template cho GV Bộ môn
     let msg = `📋 BÁO CÁO NỀN NẾP TIẾT TIN HỌC - LỚP ${selectedClass}\n`;
     msg += `📅 Ngày: ${formattedDate}\n`;
     msg += `------------------------------------\n`;
@@ -733,10 +763,27 @@ export default function EvaluationTab({
     msg += `Em xin gửi Thầy/Cô tình hình học tập và nền nếp của lớp trong tiết Tin học hôm nay (${formattedDate}):\n\n`;
     msg += `📊 Sĩ số lớp: ${total} học sinh\n`;
 
+    if (praisedStudents.length > 0) {
+      msg += `\n🌟 HỌC SINH TÍCH CỰC / KHEN THƯỞNG TRONG TIẾT (${praisedStudents.length} em):\n`;
+      praisedStudents.forEach((s, idx) => {
+        const evalObj = currentDaysEvaluations[s.id] || { rating: 0, comment: '', tags: [] };
+        const tags: string[] = Array.isArray(evalObj.tags) ? evalObj.tags : [];
+        const praiseTags = tags.filter(isPraiseTag);
+        const seatId = Object.keys(seatingChart[selectedClass] || {}).find(k => seatingChart[selectedClass][k] === s.id);
+        const seatObj = seatId ? computers.find(c => c.id === seatId) : null;
+        const machineLabel = seatObj ? ` (${seatObj.name})` : '';
+        const tagText = praiseTags.length > 0 ? ` - ${praiseTags.join(', ')}` : '';
+        msg += `${idx + 1}. ${s.name}${machineLabel}${tagText}\n`;
+      });
+    }
+
     if (violatingStudents.length === 0) {
-      msg += `🎉 TÌNH HÌNH NỀN NẾP RẤT TỐT: Lớp học chăm ngoan, nghiêm túc, không có học sinh vi phạm hay bị nhắc nhở trong giờ học.\n`;
+      msg += `\n🎉 TÌNH HÌNH NỀN NẾP RẤT TỐT: Lớp học chăm ngoan, nghiêm túc, không có học sinh vi phạm hay bị nhắc nhở trong giờ học.\n`;
+    } else if (isOnlyPraise) {
+      msg += `\n💬 VỀ NỀN NẾP TIẾT HỌC:\n`;
+      msg += `Danh sách các em học sinh cần nhắc nhở trong tiết học được gửi riêng cho Thầy/Cô GVCN để bảo vệ tính riêng tư của các em khi gửi tin vào nhóm lớp.\n`;
     } else {
-      msg += `⚠️ DANH SÁCH HỌC SINH CẦN NHẮC NHỞ / VI PHẠM NỀN NẾP (${violatingStudents.length} em):\n`;
+      msg += `\n⚠️ DANH SÁCH HỌC SINH CẦN NHẮC NHỞ / VI PHẠM NỀN NẾP (${violatingStudents.length} em):\n`;
       violatingStudents.forEach((s, idx) => {
         const evalObj = currentDaysEvaluations[s.id] || { rating: 0, comment: '', tags: [] };
         const comment = (evalObj.comment || '').trim();
@@ -757,23 +804,9 @@ export default function EvaluationTab({
       msg += `\nKính mong Thầy/Cô phối hợp nhắc nhở các em để tiết học sau đạt kết quả tốt hơn!\n`;
     }
 
-    if (praisedStudents.length > 0) {
-      msg += `\n🌟 HỌC SINH TÍCH CỰC / KHEN THƯỞNG TRONG TIẾT (${praisedStudents.length} em):\n`;
-      praisedStudents.forEach((s, idx) => {
-        const evalObj = currentDaysEvaluations[s.id] || { rating: 0, comment: '', tags: [] };
-        const tags: string[] = Array.isArray(evalObj.tags) ? evalObj.tags : [];
-        const praiseTags = tags.filter(isPraiseTag);
-        const seatId = Object.keys(seatingChart[selectedClass] || {}).find(k => seatingChart[selectedClass][k] === s.id);
-        const seatObj = seatId ? computers.find(c => c.id === seatId) : null;
-        const machineLabel = seatObj ? ` (${seatObj.name})` : '';
-        const tagText = praiseTags.length > 0 ? ` - ${praiseTags.join(', ')}` : '';
-        msg += `${idx + 1}. ${s.name}${machineLabel}${tagText}\n`;
-      });
-    }
-
     msg += `\nEm trân trọng cảm ơn Thầy/Cô!`;
     return msg;
-  }, [isHomeroomTeacher, activeUser, classStudents, currentDaysEvaluations, selectedClass, selectedDate, seatingChart, computers, gvcnName]);
+  }, [isHomeroomTeacher, activeUser, classStudents, currentDaysEvaluations, selectedClass, selectedDate, seatingChart, computers, gvcnName, onlyPraiseInGroup]);
 
   // 🛡️ LƯU SỔ ĐÁNH GIÁ CHỦ ĐỘNG: Lưu trực tiếp vào LocalStorage và Supabase Cloud với Deep Merge
   const handleSave = async () => {
@@ -836,7 +869,7 @@ export default function EvaluationTab({
               type="button"
               onClick={() => {
                 setReportTemplate('zalo');
-                setCustomMessageText(generateReportText('zalo'));
+                setCustomMessageText(generateReportText('zalo', onlyPraiseInGroup));
                 setSubView(prev => prev === 'zalo' ? 'evaluation' : 'zalo');
               }}
               className={`font-black text-xs py-2 px-3.5 rounded-xl border transition shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 w-full sm:w-auto active:scale-95 ${
@@ -1183,7 +1216,7 @@ export default function EvaluationTab({
                 type="button"
                 onClick={() => {
                   setReportTemplate('zalo');
-                  setCustomMessageText(generateReportText('zalo'));
+                  setCustomMessageText(generateReportText('zalo', onlyPraiseInGroup));
                 }}
                 className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
                   reportTemplate === 'zalo' ? 'bg-sky-600 text-white shadow-xs' : 'text-slate-700 hover:bg-white/60'
@@ -1195,7 +1228,7 @@ export default function EvaluationTab({
                 type="button"
                 onClick={() => {
                   setReportTemplate('sms');
-                  setCustomMessageText(generateReportText('sms'));
+                  setCustomMessageText(generateReportText('sms', onlyPraiseInGroup));
                 }}
                 className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
                   reportTemplate === 'sms' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-700 hover:bg-white/60'
@@ -1207,7 +1240,7 @@ export default function EvaluationTab({
                 type="button"
                 onClick={() => {
                   setReportTemplate('full');
-                  setCustomMessageText(generateReportText('full'));
+                  setCustomMessageText(generateReportText('full', onlyPraiseInGroup));
                 }}
                 className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
                   reportTemplate === 'full' ? 'bg-amber-600 text-white shadow-xs' : 'text-slate-700 hover:bg-white/60'
@@ -1215,6 +1248,30 @@ export default function EvaluationTab({
               >
                 {isHomeroomTeacher ? '📑 Mẫu Đánh Giá Chi Tiết' : '📑 Mẫu Chi Tiết Đầy Đủ'}
               </button>
+            </div>
+
+            {/* 🛡️ TÙY CHỌN BẢO VỆ TÍNH RIÊNG TƯ: CHỈ GỬI DANH SÁCH KHEN THƯỞNG LÊN NHÓM CHUNG */}
+            <div className="bg-amber-50/90 border border-amber-300/80 p-3.5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-3xs transition-all">
+              <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={onlyPraiseInGroup}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setOnlyPraiseInGroup(checked);
+                    safeSetLocalStorage('zalo_only_praise_in_group', checked);
+                    setCustomMessageText(generateReportText(reportTemplate, checked));
+                  }}
+                  className="w-4.5 h-4.5 text-emerald-600 rounded-md border-amber-400 focus:ring-emerald-500 cursor-pointer accent-emerald-600"
+                />
+                <span className="text-xs sm:text-sm font-black text-slate-900 flex items-center gap-1.5">
+                  <span>🛡️</span> Chỉ gửi danh sách khen thưởng lên nhóm chung
+                </span>
+              </label>
+
+              <span className="text-[11px] font-bold text-amber-900/90 bg-amber-100/80 px-2.5 py-1 rounded-xl border border-amber-200/80">
+                🔒 Bảo vệ tính riêng tư của các em chưa ngoan, tránh để phụ huynh khác so sánh trên nhóm lớp
+              </span>
             </div>
 
             {/* GVCN Info Configuration Box (Read-Only Linked from Class Management) */}
