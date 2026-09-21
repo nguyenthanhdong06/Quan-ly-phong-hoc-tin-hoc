@@ -208,8 +208,11 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     return loadWorkspaceSeedSets(currentWsId, undefined, DEFAULT_CUSTOM_SEED_SETS);
   });
 
-  const customSeedSets = propCustomSeedSets || localCustomSeedSets;
-  const setCustomSeedSets = propSetCustomSeedSets || setLocalCustomSeedSets;
+  const customSeedSets = (propCustomSeedSets && propCustomSeedSets.length > 0) ? propCustomSeedSets : localCustomSeedSets;
+  const setCustomSeedSets = (action: React.SetStateAction<CustomSeedSet[]>) => {
+    if (propSetCustomSeedSets) propSetCustomSeedSets(action);
+    setLocalCustomSeedSets(action);
+  };
 
   // Seed Bank Modals State
   const [isSeedBankModalOpen, setIsSeedBankModalOpen] = useState<boolean>(false);
@@ -222,9 +225,40 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
 
   const lastLocalSaveTimeRef = React.useRef<number>(0);
 
+  // 🛡️ On-Demand Fetching & Auto-Heal: Luôn tải trọn vẹn hạt giống từ Cloud khi mở tab Vườn Tri Thức
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchFullSeedSets() {
+      try {
+        const { data } = await supabase
+          .from('school_states')
+          .select('key, value')
+          .in('key', [
+            `${currentWsId}_school_custom_seed_sets`,
+            `${currentWsId}_custom_seed_sets_v1`,
+            'school_custom_seed_sets'
+          ]);
+
+        if (data && data.length > 0 && isMounted) {
+          const dbObj: Record<string, any> = {};
+          data.forEach(item => { dbObj[item.key] = item.value; });
+          const merged = loadWorkspaceSeedSets(currentWsId, dbObj);
+          if (merged.length > 0 && merged.length > (customSeedSets?.length || 0)) {
+            setCustomSeedSets(merged);
+          }
+        }
+      } catch (e) {
+        console.warn('Lỗi tải nhanh hạt giống từ Cloud:', e);
+      }
+    }
+
+    fetchFullSeedSets();
+    return () => { isMounted = false; };
+  }, [currentWsId]);
+
   // Persist Custom Seed Sets theo đúng Workspace
   useEffect(() => {
-    if (customSeedSets.length === 0) return;
+    if (!customSeedSets || customSeedSets.length === 0) return;
     try {
       saveWorkspaceSeedSets(customSeedSets, currentWsId);
     } catch (e) {}

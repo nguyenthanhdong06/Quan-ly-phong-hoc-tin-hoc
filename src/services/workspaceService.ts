@@ -288,6 +288,18 @@ export function loadWorkspaceQuestions(
     }
   }
 
+  // 3.5. Fallback kế thừa: Di chuyển dữ liệu từ kho câu hỏi toàn cục school_questions (nếu có)
+  const globalCloud = dbStates?.['school_questions'];
+  if (Array.isArray(globalCloud) && globalCloud.length > 0) {
+    safeSetLocalStorage(scopedKey, globalCloud);
+    return globalCloud;
+  }
+  const globalLocal = safeGetLocalStorage<Question[] | null>('school_questions', null);
+  if (Array.isArray(globalLocal) && globalLocal.length > 0) {
+    safeSetLocalStorage(scopedKey, globalLocal);
+    return globalLocal;
+  }
+
   // 4. Nếu chưa có gì, fallback default
   if (fallbackDefault && fallbackDefault.length > 0) {
     safeSetLocalStorage(scopedKey, fallbackDefault);
@@ -343,6 +355,18 @@ export function loadWorkspaceSubjects(
       safeSetLocalStorage(scopedKey, legacyLocal);
       return legacyLocal;
     }
+  }
+
+  // 3.5 Fallback kế thừa danh mục môn học toàn cục school_subjects
+  const globalSubjectsCloud = dbStates?.['school_subjects'];
+  if (Array.isArray(globalSubjectsCloud) && globalSubjectsCloud.length > 0) {
+    safeSetLocalStorage(scopedKey, globalSubjectsCloud);
+    return globalSubjectsCloud;
+  }
+  const globalSubjectsLocal = safeGetLocalStorage<Subject[] | null>('school_subjects', null);
+  if (Array.isArray(globalSubjectsLocal) && globalSubjectsLocal.length > 0) {
+    safeSetLocalStorage(scopedKey, globalSubjectsLocal);
+    return globalSubjectsLocal;
   }
 
   // 4. Default subjects

@@ -120,7 +120,7 @@ export async function saveWorkspaceRewardsData(
 
 /**
  * 📥 TẢI VÀ HỢP NHẤT DỮ LIỆU PHẦN THƯỞNG CHO WORKSPACE
- * Cô lập 100% theo Workspace, không bị hòa trộn kho quà của giáo viên khác!
+ * Cô lập theo Workspace, tự động kế thừa kho quà tặng chung của trường nếu Workspace chưa có cấu hình riêng.
  */
 export function loadWorkspaceRewardsData(
   workspaceId: string = 'ws_default',
@@ -131,27 +131,38 @@ export function loadWorkspaceRewardsData(
   const prefix = `${effectiveWs}_`;
   const storageKey = `${prefix}garden_rewards_v2`;
   const cloudKey = `${prefix}school_garden_rewards`;
+  const globalCloudKey = 'school_garden_rewards';
 
-  // 1. Ưu tiên đọc từ LocalStorage của Workspace hiện tại
+  let result: GardenReward[] = [];
+
+  // 1. Kế thừa từ Cloud toàn cục của trường (danh mục quà chung)
+  const globalCloud = dbStates?.[globalCloudKey];
+  if (Array.isArray(globalCloud) && globalCloud.length > 0) {
+    result = deepMergeRewards(result, globalCloud);
+  }
+
+  // 2. Kế thừa từ Cloud của Workspace (các quà giáo viên cấu hình riêng)
+  const scopedCloud = dbStates?.[cloudKey];
+  if (Array.isArray(scopedCloud) && scopedCloud.length > 0) {
+    result = deepMergeRewards(result, scopedCloud);
+  }
+
+  // 3. Đọc từ LocalStorage của Workspace hiện tại
   try {
     const rawLocal = localStorage.getItem(storageKey);
     if (rawLocal !== null) {
       const parsedLocal = JSON.parse(rawLocal);
-      if (Array.isArray(parsedLocal)) {
-        const cleaned = parsedLocal.filter(item => !isSampleReward(item));
-        return cleaned;
+      if (Array.isArray(parsedLocal) && parsedLocal.length > 0) {
+        result = deepMergeRewards(result, parsedLocal);
       }
     }
   } catch (e) {
     console.warn('Cannot parse local workspace rewards data:', e);
   }
 
-  // 2. Tải từ Supabase Cloud của đúng Workspace này
-  const scopedCloud = dbStates?.[cloudKey];
-  if (scopedCloud && Array.isArray(scopedCloud)) {
-    const cleaned = scopedCloud.filter(item => !isSampleReward(item));
-    safeSetLocalStorage(storageKey, cleaned);
-    return cleaned;
+  if (result.length > 0) {
+    safeSetLocalStorage(storageKey, result);
+    return result;
   }
 
   return Array.isArray(fallbackValue) ? fallbackValue.filter(item => !isSampleReward(item)) : [];
@@ -369,6 +380,61 @@ export function loadWorkspaceGardenData(
 }
 
 /**
+ * 🔄 HỢP NHẤT SÂU KHO HẠT GIỐNG (DEEP MERGE SEED SETS)
+ * Tự động gộp các bộ hạt giống theo ID hoặc Tên cây, bảo toàn tối đa dữ liệu,
+ * ưu tiên bộ có nhiều hình ảnh cấp độ nhất hoặc mới nhất.
+ */
+export function deepMergeSeedSets(
+  target: CustomSeedSet[],
+  source: CustomSeedSet[]
+): CustomSeedSet[] {
+  const map = new Map<string, CustomSeedSet>();
+
+  const processItem = (item: CustomSeedSet) => {
+    if (!item || (!item.id && !item.name)) return;
+    const key = (item.name ? item.name.trim().toLowerCase() : item.id) || item.id;
+    const existing = map.get(key);
+    if (!existing) {
+      map.set(key, { ...item });
+    } else {
+      // Hợp nhất các cấp độ 1-7 (cấp độ nào có ảnh thì giữ lại)
+      const mergedLevels = {
+        1: existing.levels?.[1] || '',
+        2: existing.levels?.[2] || '',
+        3: existing.levels?.[3] || '',
+        4: existing.levels?.[4] || '',
+        5: existing.levels?.[5] || '',
+        6: existing.levels?.[6] || '',
+        7: existing.levels?.[7] || '',
+        ...(existing.levels || {})
+      };
+      if (item.levels) {
+        for (let lvl = 1; lvl <= 7; lvl++) {
+          const lKey = lvl as keyof typeof item.levels;
+          if (item.levels[lKey] && item.levels[lKey].trim()) {
+            mergedLevels[lKey] = item.levels[lKey];
+          }
+        }
+      }
+      map.set(key, {
+        ...existing,
+        ...item,
+        id: existing.id || item.id,
+        icon: item.icon || existing.icon,
+        name: existing.name || item.name,
+        levels: mergedLevels,
+        createdAt: existing.createdAt || item.createdAt
+      });
+    }
+  };
+
+  if (Array.isArray(target)) target.forEach(processItem);
+  if (Array.isArray(source)) source.forEach(processItem);
+
+  return Array.from(map.values());
+}
+
+/**
  * 💾 LƯU KHO HẠT GIỐNG TÙY CHỈNH THEO WORKSPACE (OFFLINE-FIRST & WORKSPACE SCOPED)
  * Mỗi giáo viên tự tạo và quản lý các bộ hạt giống 7 cấp độ riêng của mình
  */
@@ -382,13 +448,17 @@ export async function saveWorkspaceSeedSets(
   const prefix = `${effectiveWs}_`;
   const storageKey = `${prefix}custom_seed_sets_v1`;
   const cloudKey = `${prefix}school_custom_seed_sets`;
+  const legacyCloudKey = `${prefix}custom_seed_sets_v1`;
 
   // 1. Lưu ngay vào LocalStorage của Workspace
   safeSetLocalStorage(storageKey, seedSets);
 
-  // 2. Lưu lên Supabase Cloud của Workspace
+  // 2. Lưu lên Supabase Cloud của Workspace (lưu cả 2 key để tương thích mọi phiên bản)
   try {
-    return await saveSupabaseState(cloudKey, seedSets);
+    const p1 = saveSupabaseState(cloudKey, seedSets);
+    const p2 = saveSupabaseState(legacyCloudKey, seedSets);
+    const [r1] = await Promise.all([p1, p2]);
+    return r1;
   } catch {
     return true; // Lưu an toàn ở local khi offline
   }
@@ -396,7 +466,8 @@ export async function saveWorkspaceSeedSets(
 
 /**
  * 📥 TẢI KHO HẠT GIỐNG TÙY CHỈNH THEO WORKSPACE
- * Tự động tải kho hạt giống của đúng Workspace giáo viên đó
+ * Tự động tải kho hạt giống của đúng Workspace giáo viên đó, đồng thời tự động kế thừa
+ * kho hạt giống toàn cục của trường (nếu có) để giáo viên không bao giờ bị mất hạt giống cũ.
  */
 export function loadWorkspaceSeedSets(
   workspaceId: string = 'ws_default',
@@ -407,25 +478,50 @@ export function loadWorkspaceSeedSets(
   const prefix = `${effectiveWs}_`;
   const storageKey = `${prefix}custom_seed_sets_v1`;
   const cloudKey = `${prefix}school_custom_seed_sets`;
+  const legacyCloudKey = `${prefix}custom_seed_sets_v1`;
+  const globalCloudKey = 'school_custom_seed_sets';
 
-  // 1. Ưu tiên đọc từ LocalStorage của Workspace
+  let result: CustomSeedSet[] = [];
+
+  // 1. Kế thừa từ Cloud kho hạt giống toàn cục của trường (10 cây mẫu)
+  const globalCloud = dbStates?.[globalCloudKey];
+  if (Array.isArray(globalCloud) && globalCloud.length > 0) {
+    result = deepMergeSeedSets(result, globalCloud);
+  }
+
+  // 2. Kế thừa từ Cloud theo Workspace hiện tại (các cây của riêng giáo viên)
+  const scopedCloud = dbStates?.[cloudKey] || dbStates?.[legacyCloudKey];
+  if (Array.isArray(scopedCloud) && scopedCloud.length > 0) {
+    result = deepMergeSeedSets(result, scopedCloud);
+  }
+
+  // 3. Đọc từ LocalStorage của Workspace (chứa các thay đổi offline mới nhất)
   try {
     const rawLocal = localStorage.getItem(storageKey);
     if (rawLocal !== null) {
       const parsedLocal = JSON.parse(rawLocal);
-      if (Array.isArray(parsedLocal)) {
-        return parsedLocal;
+      if (Array.isArray(parsedLocal) && parsedLocal.length > 0) {
+        result = deepMergeSeedSets(result, parsedLocal);
       }
     }
   } catch (e) {
     console.warn('Cannot parse local seed sets:', e);
   }
 
-  // 2. Đọc từ Cloud dbStates của đúng Workspace
-  const scopedCloud = dbStates?.[cloudKey];
-  if (scopedCloud && Array.isArray(scopedCloud)) {
-    safeSetLocalStorage(storageKey, scopedCloud);
-    return scopedCloud;
+  // 4. Dự phòng: Đọc LocalStorage toàn cục cũ
+  try {
+    const rawGlobal = localStorage.getItem('school_custom_seed_sets');
+    if (rawGlobal !== null) {
+      const parsedGlobal = JSON.parse(rawGlobal);
+      if (Array.isArray(parsedGlobal) && parsedGlobal.length > 0) {
+        result = deepMergeSeedSets(result, parsedGlobal);
+      }
+    }
+  } catch (e) {}
+
+  if (result.length > 0) {
+    safeSetLocalStorage(storageKey, result);
+    return result;
   }
 
   return Array.isArray(fallbackValue) ? fallbackValue : [];

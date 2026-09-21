@@ -792,33 +792,37 @@ export default function App() {
           }
 
           // 🌳 Đồng bộ dữ liệu Vườn Tri Thức từ Cloud với Deep Merge bảo vệ dữ liệu ngoại tuyến
-          const loadedGarden = loadWorkspaceGardenData(activeWorkspaceId, dbStates);
+          const loadedGarden = loadWorkspaceGardenData(effectiveWsId, dbStates);
           setGardenData(loadedGarden);
-          safeSetLocalStorage(`${activeWorkspaceId}_garden_data_v2`, loadedGarden);
+          safeSetLocalStorage(`${effectiveWsId}_garden_data_v2`, loadedGarden);
 
           // 🎁 Đồng bộ danh mục Đổi Thưởng với Deep Merge bảo vệ các quà tạo ngoại tuyến
-          const loadedRewards = loadWorkspaceRewardsData(activeWorkspaceId, dbStates, gardenRewards);
+          const loadedRewards = loadWorkspaceRewardsData(effectiveWsId, dbStates, gardenRewards);
           setGardenRewards(loadedRewards);
-          safeSetLocalStorage(`${activeWorkspaceId}_garden_rewards_v2`, loadedRewards);
+          safeSetLocalStorage(`${effectiveWsId}_garden_rewards_v2`, loadedRewards);
 
           // 🌱 Đồng bộ Kho Hạt Giống 7 cấp độ theo Workspace
-          const loadedSeedSets = loadWorkspaceSeedSets(activeWorkspaceId, dbStates, DEFAULT_CUSTOM_SEED_SETS);
+          const loadedSeedSets = loadWorkspaceSeedSets(effectiveWsId, dbStates, DEFAULT_CUSTOM_SEED_SETS);
           setCustomSeedSets(loadedSeedSets);
-          safeSetLocalStorage(`${activeWorkspaceId}_custom_seed_sets_v1`, loadedSeedSets);
+          safeSetLocalStorage(`${effectiveWsId}_custom_seed_sets_v1`, loadedSeedSets);
           window.dispatchEvent(new CustomEvent('custom_seed_sets_updated', { detail: loadedSeedSets }));
 
           // 📚 Đồng bộ Ngân hàng câu hỏi & Môn học theo Workspace
-          const wsQuestionsKey = `${activeWorkspaceId}_school_questions`;
+          const wsQuestionsKey = `${effectiveWsId}_school_questions`;
           if (Array.isArray(dbStates[wsQuestionsKey])) {
             safeSetLocalStorage(wsQuestionsKey, dbStates[wsQuestionsKey]);
           }
-          const wsSubjectsKey = `${activeWorkspaceId}_school_subjects`;
+          const wsSubjectsKey = `${effectiveWsId}_school_subjects`;
           if (Array.isArray(dbStates[wsSubjectsKey])) {
             safeSetLocalStorage(wsSubjectsKey, dbStates[wsSubjectsKey]);
           }
-          const wsLeaderboardKey = `${activeWorkspaceId}_tug_leaderboard`;
+          const wsLeaderboardKey = `${effectiveWsId}_tug_leaderboard`;
           if (Array.isArray(dbStates[wsLeaderboardKey])) {
             safeSetLocalStorage(wsLeaderboardKey, dbStates[wsLeaderboardKey]);
+          }
+
+          if (effectiveWsId !== activeWorkspaceId) {
+            setActiveWorkspaceId(effectiveWsId);
           }
 
           showToast('Đã đồng bộ hóa toàn bộ cơ sở dữ liệu từ Supabase Cloud!', 'success');
