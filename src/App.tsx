@@ -29,6 +29,16 @@ import TeachingAssistant from './features/teaching-assistant';
 import LabBookingTab from './components/LabBookingTab';
 import { getTeacherAssignedClasses } from './utils/classFilters';
 import { sortClasses } from './utils/classSorter';
+import {
+  mergeGrades,
+  mergeClasses,
+  mergeStudents,
+  mergeComputers,
+  mergeMembers,
+  mergeDocuments,
+  mergeTimetableData,
+  mergeArrayById
+} from './services/dataReconciliationService';
 import OfflineSyncBanner from './components/OfflineSyncBanner';
 import { triggerInstantShortcutDownload } from './utils/shortcutInstaller';
 import { 
@@ -703,46 +713,63 @@ export default function App() {
       if (dbStates && Object.keys(dbStates).length > 0) {
         latestDbStatesRef.current = dbStates;
 
-        if (Array.isArray(dbStates['school_grades'])) setGrades(dbStates['school_grades'].length > 0 ? dbStates['school_grades'] : defaultGrades);
-        if (Array.isArray(dbStates['school_classes'])) {
-          setClasses(sortClasses(dbStates['school_classes']));
-          safeSetLocalStorage('school_classes', dbStates['school_classes']);
-        }
-        if (Array.isArray(dbStates['school_students'])) setStudents(dbStates['school_students']);
-        if (Array.isArray(dbStates['school_computers']) && dbStates['school_computers'].length > 0) {
-          setComputers(dbStates['school_computers']);
-        } else {
-          const defaultComps = generateDefaultComputers();
-          setComputers(defaultComps);
-        }
+        // 1. 🏫 Hợp nhất Khối học (Grades)
+        const localGrades = safeParse<Grade[]>('school_grades', defaultGrades);
+        const mergedGrades = mergeGrades(dbStates['school_grades'], localGrades);
+        setGrades(mergedGrades);
+        safeSetLocalStorage('school_grades', mergedGrades);
+
+        // 2. 👥 Hợp nhất Lớp học (Classes)
+        const localClasses = safeParse<ClassItem[]>('school_classes', defaultClasses);
+        const mergedClasses = mergeClasses(dbStates['school_classes'], localClasses);
+        setClasses(mergedClasses);
+        safeSetLocalStorage('school_classes', mergedClasses);
+
+        // 3. 🎓 Hợp nhất Học sinh (Students)
+        const localStudents = safeParse<Student[]>('school_students', defaultStudents);
+        const mergedStudents = mergeStudents(dbStates['school_students'], localStudents);
+        setStudents(mergedStudents);
+        safeSetLocalStorage('school_students', mergedStudents);
+
+        // 4. 🖥️ Hợp nhất Thiết bị Máy tính (Computers)
+        const localComputers = safeParse<Computer[]>('school_computers', generateDefaultComputers());
+        const mergedComputers = mergeComputers(dbStates['school_computers'], localComputers);
+        setComputers(mergedComputers);
+        safeSetLocalStorage('school_computers', mergedComputers);
         
-        // 🏢 User-Scoped Workspace States (Luôn lấy Workspace thực tế hiệu lực cao nhất)
+        // 5. 🏢 User-Scoped Workspace States (Luôn lấy Workspace thực tế hiệu lực cao nhất)
         const userToCheck = overrideUser !== undefined ? overrideUser : (currentUser || safeParse('school_current_user', null, false));
         let effectiveWsId = overrideWsId || (userToCheck ? getWorkspaceId(userToCheck) : (currentWsRef.current || activeWorkspaceId));
         if (!effectiveWsId || effectiveWsId === 'ws_default') {
           effectiveWsId = 'ws_default';
         }
 
+        // 6. 🪑 Hợp nhất Sơ đồ chỗ ngồi, Điểm danh, Đánh giá, Thi đua (Đã có Deep Merge trong utils)
         setSeatingChart(loadWorkspaceSeatingChart(effectiveWsId, dbStates));
         setAttendanceData(loadDayPartitionedAttendance(dbStates, {}, effectiveWsId));
         setEvaluationData(loadDayPartitionedEvaluation(dbStates, {}, effectiveWsId));
         setEmulationDataState(loadWorkspaceEmulationState(effectiveWsId, dbStates));
 
-        if (Array.isArray(dbStates['school_documents'])) setDocuments(dbStates['school_documents']);
-        if (Array.isArray(dbStates['school_members']) && dbStates['school_members'].length > 0) {
-          setMembers(dbStates['school_members']);
-          safeSetLocalStorage('school_members', dbStates['school_members']);
-        } else {
-          setMembers(defaultMembers);
-          safeSetLocalStorage('school_members', defaultMembers);
-        }
+        // 7. 📄 Hợp nhất Tài liệu (Documents)
+        const localDocs = safeParse<DocumentItem[]>('school_documents', defaultDocuments);
+        const mergedDocs = mergeDocuments(dbStates['school_documents'], localDocs);
+        setDocuments(mergedDocs);
+        safeSetLocalStorage('school_documents', mergedDocs);
 
-        // 📅 Đồng bộ Thời khóa biểu toàn trường & TKB riêng từng Workspace giáo viên
-        let mergedTimetable: TimetableData = (dbStates['school_timetable_data'] && typeof dbStates['school_timetable_data'] === 'object')
-          ? { ...dbStates['school_timetable_data'] }
-          : safeParse('school_timetable_data', defaultTimetable);
+        // 8. 👤 Hợp nhất Thành viên / Phân quyền Giáo viên (Members)
+        const localMembers = safeParse<Member[]>('school_members', defaultMembers);
+        const mergedMembers = mergeMembers(dbStates['school_members'], localMembers);
+        setMembers(mergedMembers);
+        safeSetLocalStorage('school_members', mergedMembers);
 
-        const membersList: Member[] = Array.isArray(dbStates['school_members']) ? dbStates['school_members'] : members;
+        // 9. 📅 Hợp nhất Thời khóa biểu toàn trường & TKB riêng từng Workspace giáo viên
+        const localTimetable = safeParse<TimetableData>('school_timetable_data', defaultTimetable);
+        let mergedTimetable: TimetableData = mergeTimetableData(
+          (dbStates['school_timetable_data'] && typeof dbStates['school_timetable_data'] === 'object') ? dbStates['school_timetable_data'] : {},
+          localTimetable
+        );
+
+        const membersList: Member[] = mergedMembers;
         Object.keys(dbStates).forEach(key => {
           if (key.startsWith('ws_') && key.endsWith('_school_timetable_data') && typeof dbStates[key] === 'object') {
             const wsId = key.replace('_school_timetable_data', '');
@@ -750,9 +777,9 @@ export default function App() {
             const member = membersList.find(m => m.id === cleanId || m.username === cleanId);
             const schedule = dbStates[key];
             if (schedule && typeof schedule === 'object') {
-              if (member?.username) mergedTimetable[member.username] = schedule;
-              if (member?.id) mergedTimetable[member.id] = schedule;
-              if (!member) mergedTimetable[cleanId] = schedule;
+              if (member?.username) mergedTimetable[member.username] = { ...(mergedTimetable[member.username] || {}), ...schedule };
+              if (member?.id) mergedTimetable[member.id] = { ...(mergedTimetable[member.id] || {}), ...schedule };
+              if (!member) mergedTimetable[cleanId] = { ...(mergedTimetable[cleanId] || {}), ...schedule };
               safeSetLocalStorage(key, schedule);
             }
           }
@@ -760,22 +787,36 @@ export default function App() {
 
         setTimetableData(mergedTimetable);
         safeSetLocalStorage('school_timetable_data', mergedTimetable);
-        if (Array.isArray(dbStates['school_lab_bookings'])) setLabBookings(dbStates['school_lab_bookings']);
-        if (Array.isArray(dbStates['school_lab_incidents'])) setLabIncidents(dbStates['school_lab_incidents']);
-        if (Array.isArray(dbStates['school_lab_maintenance_logs'])) setLabMaintenanceLogs(dbStates['school_lab_maintenance_logs']);
-        if (Array.isArray(dbStates['school_labs'])) setLabs(dbStates['school_labs']);
-        const scopedReportKey = `${effectiveWsId}_school_computer_reports`;
-        if (Array.isArray(dbStates[scopedReportKey])) {
-          safeSetLocalStorage(scopedReportKey, dbStates[scopedReportKey]);
-        }
-        if (Array.isArray(dbStates['school_computer_reports'])) {
-          safeSetLocalStorage('school_computer_reports', dbStates['school_computer_reports']);
-        }
 
-        // 📅 Đồng bộ tiêu đề thời khóa biểu từng giáo viên từ Supabase
+        // 10. 🧪 Hợp nhất Phòng máy, Sự cố, Nhật ký bảo trì, Đặt phòng
+        const mergedLabs = mergeArrayById(dbStates['school_labs'], safeParse('school_labs', []));
+        setLabs(mergedLabs);
+        safeSetLocalStorage('school_labs', mergedLabs);
+
+        const mergedIncidents = mergeArrayById(dbStates['school_lab_incidents'], safeParse('school_lab_incidents', []));
+        setLabIncidents(mergedIncidents);
+        safeSetLocalStorage('school_lab_incidents', mergedIncidents);
+
+        const mergedLogs = mergeArrayById(dbStates['school_lab_maintenance_logs'], safeParse('school_lab_maintenance_logs', []));
+        setLabMaintenanceLogs(mergedLogs);
+        safeSetLocalStorage('school_lab_maintenance_logs', mergedLogs);
+
+        const mergedBookings = mergeArrayById(dbStates['school_lab_bookings'], safeParse('school_lab_bookings', []));
+        setLabBookings(mergedBookings);
+        safeSetLocalStorage('school_lab_bookings', mergedBookings);
+
+        // 11. ⚠️ Hợp nhất Báo cáo máy hỏng
+        const scopedReportKey = `${effectiveWsId}_school_computer_reports`;
+        const mergedScopedReports = mergeArrayById(dbStates[scopedReportKey], safeParse(scopedReportKey, []));
+        safeSetLocalStorage(scopedReportKey, mergedScopedReports);
+
+        const mergedGlobalReports = mergeArrayById(dbStates['school_computer_reports'], safeParse('school_computer_reports', []));
+        safeSetLocalStorage('school_computer_reports', mergedGlobalReports);
+
+        // 12. 📅 Đồng bộ tiêu đề thời khóa biểu từng giáo viên từ Supabase
         syncTimetableTitlesFromSupabase(dbStates, effectiveWsId);
 
-        // Tự động giải mã Cloud Vault EmailJS cho thiết bị mới
+        // 13. Tự động giải mã Cloud Vault EmailJS cho thiết bị mới
         if (dbStates['school_otp_config']) {
           const otpVault = decryptVaultData(dbStates['school_otp_config']);
           if (otpVault) {
@@ -788,47 +829,63 @@ export default function App() {
           }
         }
 
-        if (dbStates['custom_avatars_list'] && Array.isArray(dbStates['custom_avatars_list'])) {
-          safeSetLocalStorage('custom_avatars_list', dbStates['custom_avatars_list']);
-          window.dispatchEvent(new CustomEvent('custom_avatars_updated', { detail: dbStates['custom_avatars_list'] }));
+        // 14. 🎨 Hợp nhất Danh mục Avatar
+        if (dbStates['custom_avatars_list'] || localStorage.getItem('custom_avatars_list')) {
+          const mergedAvatars = mergeArrayById(dbStates['custom_avatars_list'], safeParse('custom_avatars_list', []));
+          safeSetLocalStorage('custom_avatars_list', mergedAvatars);
+          window.dispatchEvent(new CustomEvent('custom_avatars_updated', { detail: mergedAvatars }));
         }
 
-        // 🌳 Đồng bộ dữ liệu Vườn Tri Thức từ Cloud với Deep Merge bảo vệ dữ liệu ngoại tuyến
+        // 15. 🌳 Đồng bộ dữ liệu Vườn Tri Thức từ Cloud với Deep Merge bảo vệ dữ liệu ngoại tuyến
         const loadedGarden = loadWorkspaceGardenData(effectiveWsId, dbStates);
         setGardenData(loadedGarden);
         safeSetLocalStorage(`${effectiveWsId}_garden_data_v2`, loadedGarden);
 
-        // 🎁 Đồng bộ danh mục Đổi Thưởng với Deep Merge bảo vệ các quà tạo ngoại tuyến
+        // 16. 🎁 Đồng bộ danh mục Đổi Thưởng với Deep Merge bảo vệ các quà tạo ngoại tuyến
         const loadedRewards = loadWorkspaceRewardsData(effectiveWsId, dbStates, gardenRewards);
         setGardenRewards(loadedRewards);
         safeSetLocalStorage(`${effectiveWsId}_garden_rewards_v2`, loadedRewards);
 
-        // 🌱 Đồng bộ Kho Hạt Giống 7 cấp độ theo Workspace
+        // 17. 🌱 Đồng bộ Kho Hạt Giống 7 cấp độ theo Workspace
         const loadedSeedSets = loadWorkspaceSeedSets(effectiveWsId, dbStates, DEFAULT_CUSTOM_SEED_SETS);
         setCustomSeedSets(loadedSeedSets);
         safeSetLocalStorage(`${effectiveWsId}_custom_seed_sets_v1`, loadedSeedSets);
         window.dispatchEvent(new CustomEvent('custom_seed_sets_updated', { detail: loadedSeedSets }));
 
-        // 📚 Đồng bộ Ngân hàng câu hỏi & Môn học theo Workspace
+        // 18. 📚 Hợp nhất Ngân hàng câu hỏi & Môn học theo Workspace
         const wsQuestionsKey = `${effectiveWsId}_school_questions`;
-        if (Array.isArray(dbStates[wsQuestionsKey])) {
-          safeSetLocalStorage(wsQuestionsKey, dbStates[wsQuestionsKey]);
-        }
+        const mergedQuestions = mergeArrayById(dbStates[wsQuestionsKey], safeParse(wsQuestionsKey, []));
+        safeSetLocalStorage(wsQuestionsKey, mergedQuestions);
+
         const wsSubjectsKey = `${effectiveWsId}_school_subjects`;
-        if (Array.isArray(dbStates[wsSubjectsKey])) {
-          safeSetLocalStorage(wsSubjectsKey, dbStates[wsSubjectsKey]);
-        }
+        const mergedSubjects = mergeArrayById(dbStates[wsSubjectsKey], safeParse(wsSubjectsKey, []));
+        safeSetLocalStorage(wsSubjectsKey, mergedSubjects);
+
         const wsLeaderboardKey = `${effectiveWsId}_tug_leaderboard`;
-        if (Array.isArray(dbStates[wsLeaderboardKey])) {
-          safeSetLocalStorage(wsLeaderboardKey, dbStates[wsLeaderboardKey]);
-        }
+        const mergedLeaderboard = mergeArrayById(dbStates[wsLeaderboardKey], safeParse(wsLeaderboardKey, []));
+        safeSetLocalStorage(wsLeaderboardKey, mergedLeaderboard);
 
         if (effectiveWsId !== activeWorkspaceId) {
           setActiveWorkspaceId(effectiveWsId);
         }
 
+        // 🚀 NẾU LOCALSTORAGE CÓ BỔ SUNG DỮ LIỆU MỚI MÀ CLOUD CHƯA CÓ -> TỰ ĐỘNG LƯU BẢN HỢP NHẤT LÊN SUPABASE
+        const cloudStudentsCount = Array.isArray(dbStates['school_students']) ? dbStates['school_students'].length : 0;
+        const cloudClassesCount = Array.isArray(dbStates['school_classes']) ? dbStates['school_classes'].length : 0;
+        const cloudMembersCount = Array.isArray(dbStates['school_members']) ? dbStates['school_members'].length : 0;
+
+        if (mergedStudents.length > cloudStudentsCount) {
+          saveSupabaseState('school_students', mergedStudents);
+        }
+        if (mergedClasses.length > cloudClassesCount) {
+          saveSupabaseState('school_classes', mergedClasses);
+        }
+        if (mergedMembers.length > cloudMembersCount) {
+          saveSupabaseState('school_members', mergedMembers);
+        }
+
         if (!silent) {
-          showToast('Đã đồng bộ hóa dữ liệu từ Supabase Cloud về máy!', 'success');
+          showToast('Đã kết hợp thành công dữ liệu thật từ Supabase và bộ nhớ máy!', 'success');
         }
       } else {
         console.log('Supabase is empty, waiting for manual database seeding or user creations...');
