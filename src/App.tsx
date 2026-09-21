@@ -700,11 +700,34 @@ export default function App() {
     }
   };
 
+  // --- 🛡️ PERSISTENT REFS CHO SYNC ĐỂ CHỐNG INFINITE LOOP HOÀN TOÀN ---
+  const activeWorkspaceIdRef = React.useRef(activeWorkspaceId);
+  const currentUserRef = React.useRef(currentUser);
+  const gardenRewardsRef = React.useRef(gardenRewards);
+  const membersRef = React.useRef(members);
+
+  useEffect(() => {
+    activeWorkspaceIdRef.current = activeWorkspaceId;
+  }, [activeWorkspaceId]);
+
+  useEffect(() => {
+    currentUserRef.current = currentUser;
+  }, [currentUser]);
+
+  useEffect(() => {
+    gardenRewardsRef.current = gardenRewards;
+  }, [gardenRewards]);
+
+  useEffect(() => {
+    membersRef.current = members;
+  }, [members]);
+
   // --- 🛡️ INITIAL SYNC TRACKER & LOOP BLOCKER ---
   const initialSyncDoneRef = React.useRef<boolean>(false);
+  const initialMountDoneRef = React.useRef<boolean>(false);
 
   // --- 🔄 SYNCHRONIZE FROM SUPABASE (REUSABLE ON MOUNT, LOGIN, & ON-DEMAND) ---
-  const syncFromSupabase = React.useCallback(async (overrideWsId?: string, overrideUser?: Member | null, silent = false) => {
+  const syncFromSupabase = React.useCallback(async (overrideWsId?: string, overrideUser?: Member | null, silent = true) => {
     setIsSyncing(true);
     setSupabaseError(null);
     setSyncSuppressed(true); // Tạm dừng ghi ngược lên Supabase để chống bão dữ liệu
@@ -738,8 +761,8 @@ export default function App() {
         safeSetLocalStorage('school_computers', mergedComputers);
         
         // 5. 🏢 User-Scoped Workspace States (Luôn lấy Workspace thực tế hiệu lực cao nhất)
-        const userToCheck = overrideUser !== undefined ? overrideUser : (currentUser || safeParse('school_current_user', null, false));
-        let effectiveWsId = overrideWsId || (userToCheck ? getWorkspaceId(userToCheck) : (currentWsRef.current || activeWorkspaceId));
+        const userToCheck = overrideUser !== undefined ? overrideUser : (currentUserRef.current || safeParse('school_current_user', null, false));
+        let effectiveWsId = overrideWsId || (userToCheck ? getWorkspaceId(userToCheck) : (currentWsRef.current || activeWorkspaceIdRef.current));
         if (!effectiveWsId || effectiveWsId === 'ws_default') {
           effectiveWsId = 'ws_default';
         }
@@ -842,7 +865,7 @@ export default function App() {
         safeSetLocalStorage(`${effectiveWsId}_garden_data_v2`, loadedGarden);
 
         // 16. 🎁 Đồng bộ danh mục Đổi Thưởng với Deep Merge bảo vệ các quà tạo ngoại tuyến
-        const loadedRewards = loadWorkspaceRewardsData(effectiveWsId, dbStates, gardenRewards);
+        const loadedRewards = loadWorkspaceRewardsData(effectiveWsId, dbStates, gardenRewardsRef.current);
         setGardenRewards(loadedRewards);
         safeSetLocalStorage(`${effectiveWsId}_garden_rewards_v2`, loadedRewards);
 
@@ -865,27 +888,12 @@ export default function App() {
         const mergedLeaderboard = mergeArrayById(dbStates[wsLeaderboardKey], safeParse(wsLeaderboardKey, []));
         safeSetLocalStorage(wsLeaderboardKey, mergedLeaderboard);
 
-        if (effectiveWsId !== activeWorkspaceId) {
+        if (effectiveWsId !== activeWorkspaceIdRef.current) {
           setActiveWorkspaceId(effectiveWsId);
         }
 
-        // 🚀 NẾU LOCALSTORAGE CÓ BỔ SUNG DỮ LIỆU MỚI MÀ CLOUD CHƯA CÓ -> TỰ ĐỘNG LƯU BẢN HỢP NHẤT LÊN SUPABASE
-        const cloudStudentsCount = Array.isArray(dbStates['school_students']) ? dbStates['school_students'].length : 0;
-        const cloudClassesCount = Array.isArray(dbStates['school_classes']) ? dbStates['school_classes'].length : 0;
-        const cloudMembersCount = Array.isArray(dbStates['school_members']) ? dbStates['school_members'].length : 0;
-
-        if (mergedStudents.length > cloudStudentsCount) {
-          saveSupabaseState('school_students', mergedStudents);
-        }
-        if (mergedClasses.length > cloudClassesCount) {
-          saveSupabaseState('school_classes', mergedClasses);
-        }
-        if (mergedMembers.length > cloudMembersCount) {
-          saveSupabaseState('school_members', mergedMembers);
-        }
-
         if (!silent) {
-          showToast('Đã kết hợp thành công dữ liệu thật từ Supabase và bộ nhớ máy!', 'success');
+          showToast('Đã đồng bộ hóa dữ liệu từ Supabase Cloud về máy!', 'success');
         }
       } else {
         console.log('Supabase is empty, waiting for manual database seeding or user creations...');
@@ -904,13 +912,16 @@ export default function App() {
       setTimeout(() => {
         setSyncSuppressed(false);
         initialSyncDoneRef.current = true;
-      }, 1000);
+      }, 500);
     }
-  }, [activeWorkspaceId, currentUser, gardenRewards, members]);
+  }, []);
 
-  // --- INITIAL MOUNT: FETCH FROM SUPABASE ---
+  // --- INITIAL MOUNT: FETCH FROM SUPABASE ĐÚNG 1 LẦN DUY NHẤT ---
   useEffect(() => {
-    syncFromSupabase();
+    if (!initialMountDoneRef.current) {
+      initialMountDoneRef.current = true;
+      syncFromSupabase(undefined, undefined, true);
+    }
   }, [syncFromSupabase]);
 
   // --- 🔄 SMART FOCUS LISTENER: TỰ ĐỘNG NẠP LẠI DỮ LIỆU MỚI NHẤT NGAY KHI QUAY LẠI TAB ---
