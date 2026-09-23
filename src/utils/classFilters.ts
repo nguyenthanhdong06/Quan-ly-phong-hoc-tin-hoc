@@ -15,6 +15,18 @@ export function getTeacherAssignedClasses(
   const isAdmin = currentUser.role?.includes('Admin');
   if (isAdmin) return sortClasses(classes); // Admin gets 100% of all classes
 
+  // Ưu tiên cao nhất: Danh sách lớp được Quản trị viên phân công cụ thể qua Checkbox
+  if (Array.isArray(currentUser.assignedClasses) && currentUser.assignedClasses.length > 0) {
+    const assignedIdsSet = new Set(currentUser.assignedClasses.map(id => id.trim().toLowerCase()));
+    const specificClasses = classes.filter(c => 
+      assignedIdsSet.has(c.id.trim().toLowerCase()) || 
+      assignedIdsSet.has(c.name.trim().toLowerCase())
+    );
+    if (specificClasses.length > 0) {
+      return sortClasses(specificClasses);
+    }
+  }
+
   // Find user's schedule entries in timetableData by username, id, or name
   const userTimetable =
     timetableData[currentUser.username] ||

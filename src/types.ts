@@ -57,6 +57,7 @@ export interface Member {
   activeSessionId?: string;
   homeroomGradeId?: number;
   homeroomClassId?: string;
+  assignedClasses?: string[]; // Danh sách ID các lớp mà giáo viên bộ môn đảm nhiệm
 }
 
 // Trạng thái điểm danh: Có mặt | Vắng có phép | Vắng không phép | Đi trễ

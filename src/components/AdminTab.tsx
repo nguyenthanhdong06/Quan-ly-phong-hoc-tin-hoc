@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Member, Computer, Student, ClassItem, Grade } from '../types';
-import { UserCheck, Trash2, ShieldAlert, Heart, HardDrive, Cpu, Cloud, Check, Wifi, AlertTriangle, RefreshCw, Database, FileCode, CheckCircle2, X, Calendar, Plus, Clock, User, Sparkles, Settings, FileText, Printer, Save, Key, Lock, Eye, EyeOff, RotateCcw, Mail, Send, ArrowRight, ArrowLeft } from 'lucide-react';
+import { UserCheck, Trash2, ShieldAlert, Heart, HardDrive, Cpu, Cloud, Check, Wifi, AlertTriangle, RefreshCw, Database, FileCode, CheckCircle2, X, Calendar, Plus, Clock, User, Sparkles, Settings, FileText, Printer, Save, Key, Lock, Eye, EyeOff, RotateCcw, Mail, Send, ArrowRight, ArrowLeft, CheckSquare, BookOpen } from 'lucide-react';
 import { safeSetLocalStorage } from '../utils/safeStorage';
 import { saveSupabaseState, supabase, SQL_INITIALIZATION_QUERY } from '../supabaseClient';
 import { sendOtpToUser, GOOGLE_APPS_SCRIPT_GMAIL_TEMPLATE } from '../services/emailSmsOtpService';
@@ -171,6 +171,34 @@ export default function AdminTab({
     return (grades && grades.length > 0 ? grades[0].id : 3);
   });
   const [newHomeroomClass, setNewHomeroomClass] = useState<string>('');
+
+  // States for subject teacher assigned classes (Checkbox selection)
+  const [newAssignedClasses, setNewAssignedClasses] = useState<string[]>([]);
+
+  // Helpers to toggle assigned classes for subject teacher
+  const handleToggleAssignedClass = (classId: string) => {
+    setNewAssignedClasses(prev => 
+      prev.includes(classId) ? prev.filter(id => id !== classId) : [...prev, classId]
+    );
+  };
+
+  const handleToggleAllClassesInGrade = (gradeId: number) => {
+    const classIdsInGrade = classes.filter(c => Number(c.gradeId) === Number(gradeId)).map(c => c.id);
+    const allSelected = classIdsInGrade.length > 0 && classIdsInGrade.every(id => newAssignedClasses.includes(id));
+    if (allSelected) {
+      setNewAssignedClasses(prev => prev.filter(id => !classIdsInGrade.includes(id)));
+    } else {
+      setNewAssignedClasses(prev => Array.from(new Set([...prev, ...classIdsInGrade])));
+    }
+  };
+
+  const handleSelectAllClasses = () => {
+    setNewAssignedClasses(classes.map(c => c.id));
+  };
+
+  const handleDeselectAllClasses = () => {
+    setNewAssignedClasses([]);
+  };
 
   const availableGrades = useMemo(() => {
     if (grades && grades.length > 0) return grades;
@@ -493,6 +521,7 @@ export default function AdminTab({
     }
 
     const isHomeroomTeacher = assignedRole === 'Giáo viên Chủ nhiệm';
+    const isSubjectTeacher = assignedRole === 'Giáo viên bộ môn';
     const item: Member = {
       id: `u-${Date.now()}`,
       name: newName.trim(),
@@ -502,7 +531,8 @@ export default function AdminTab({
       username: usernameClean,
       password: 'phongmay@123',
       homeroomGradeId: isHomeroomTeacher ? Number(newHomeroomGrade) : undefined,
-      homeroomClassId: isHomeroomTeacher ? (newHomeroomClass || undefined) : undefined
+      homeroomClassId: isHomeroomTeacher ? (newHomeroomClass || undefined) : undefined,
+      assignedClasses: isSubjectTeacher && newAssignedClasses.length > 0 ? newAssignedClasses : undefined
     };
 
     const updatedMembers = [...members, item];
@@ -524,12 +554,27 @@ export default function AdminTab({
       });
     }
 
+    // Đồng bộ giáo viên bộ môn vào các lớp phụ trách
+    if (isSubjectTeacher && newAssignedClasses.length > 0 && setClasses) {
+      setClasses(prevClasses => {
+        const updated = prevClasses.map(c => 
+          newAssignedClasses.includes(c.id)
+            ? { ...c, subjectTeacher: item.name }
+            : c
+        );
+        safeSetLocalStorage('school_classes', updated);
+        saveSupabaseState('school_classes', updated);
+        return updated;
+      });
+    }
+
     // Reset Form
     setNewName('');
     setNewRole('Giáo viên bộ môn');
     setNewEmail('');
     setNewPhone('');
     setNewHomeroomClass('');
+    setNewAssignedClasses([]);
 
     // Đóng chế độ tạo inline view & focus tới tài khoản mới tạo
     setHighlightedMemberId(item.id);
@@ -1239,6 +1284,127 @@ export default function AdminTab({
                     </div>
                   )}
 
+                  {/* DANH SÁCH CÁC KHỐI LỚP DƯỚI DẠNG CHECKBOX - Chỉ hiện ra khi chọn 'Giáo viên bộ môn' */}
+                  {newRole === 'Giáo viên bộ môn' && (
+                    <div className="md:col-span-2 bg-emerald-50/90 border-2 border-emerald-300 rounded-2xl p-4 space-y-4 shadow-xs animate-in fade-in duration-200">
+                      {/* Tiêu đề & Các nút thao tác chọn nhanh */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-emerald-200 pb-3">
+                        <div className="flex items-center gap-2 text-emerald-950 font-black text-xs">
+                          <CheckSquare className="w-4 h-4 text-emerald-700" />
+                          <span>CHỌN CÁC LỚP PHỤ TRÁCH ĐẢM NHIỆM (GIÁO VIÊN BỘ MÔN)</span>
+                          <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border shadow-2xs ${
+                            newAssignedClasses.length > 0 
+                              ? 'bg-emerald-600 text-white border-emerald-700' 
+                              : 'bg-slate-200 text-slate-700 border-slate-300'
+                          }`}>
+                            {newAssignedClasses.length > 0 ? `Đã chọn: ${newAssignedClasses.length} lớp` : 'Chưa chọn lớp'}
+                          </span>
+                        </div>
+
+                        {/* Nút Chọn tất cả / Bỏ chọn tất cả */}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={handleSelectAllClasses}
+                            className="px-2.5 py-1 text-[11px] font-extrabold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs transition-all active:scale-95 cursor-pointer"
+                          >
+                            ✓ Chọn tất cả ({classes.length} lớp)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleDeselectAllClasses}
+                            className="px-2.5 py-1 text-[11px] font-extrabold rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                          >
+                            ✕ Bỏ chọn
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Danh sách các Khối và Lớp dạng Checkbox Card */}
+                      <div className="space-y-3.5">
+                        {availableGrades.map(grade => {
+                          const gradeClasses = classes.filter(c => Number(c.gradeId) === Number(grade.id));
+                          if (gradeClasses.length === 0) return null;
+                          const allInGradeSelected = gradeClasses.every(c => newAssignedClasses.includes(c.id));
+                          const countInGrade = gradeClasses.filter(c => newAssignedClasses.includes(c.id)).length;
+
+                          return (
+                            <div key={grade.id} className="bg-white/80 border border-emerald-200/90 rounded-xl p-3 shadow-2xs space-y-2.5">
+                              {/* Header của từng Khối */}
+                              <div className="flex items-center justify-between pb-1.5 border-b border-emerald-100">
+                                <div className="flex items-center gap-2">
+                                  <BookOpen className="w-3.5 h-3.5 text-emerald-600" />
+                                  <span className="font-black text-xs text-slate-800 uppercase tracking-wide">
+                                    {grade.name}
+                                  </span>
+                                  <span className="text-[10px] font-bold text-slate-500">
+                                    ({countInGrade}/{gradeClasses.length} lớp đã chọn)
+                                  </span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleAllClassesInGrade(grade.id)}
+                                  className={`text-[10px] font-black px-2 py-0.5 rounded-md border transition-all cursor-pointer ${
+                                    allInGradeSelected
+                                      ? 'bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-200'
+                                      : 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
+                                  }`}
+                                >
+                                  {allInGradeSelected ? `Bỏ chọn ${grade.name}` : `Chọn cả ${grade.name}`}
+                                </button>
+                              </div>
+
+                              {/* Lưới các ô Checkbox cho từng Lớp trong Khối */}
+                              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                                {gradeClasses.map(c => {
+                                  const isChecked = newAssignedClasses.includes(c.id);
+                                  return (
+                                    <label
+                                      key={c.id}
+                                      className={`flex items-center gap-2 p-2 rounded-xl border text-xs transition-all cursor-pointer select-none ${
+                                        isChecked
+                                          ? 'bg-emerald-100/80 border-emerald-500 text-emerald-950 font-black shadow-xs ring-1 ring-emerald-400'
+                                          : 'bg-white border-slate-200 text-slate-700 hover:border-emerald-300 hover:bg-slate-50/80'
+                                      }`}
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={isChecked}
+                                        onChange={() => handleToggleAssignedClass(c.id)}
+                                        className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 accent-emerald-600 cursor-pointer shrink-0"
+                                      />
+                                      <div className="truncate min-w-0">
+                                        <div className="truncate">Lớp {c.name}</div>
+                                        {c.teacher && (
+                                          <div className="text-[9px] font-medium text-slate-400 truncate">
+                                            GVCN: {c.teacher}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Ghi chú hướng dẫn phân quyền */}
+                      <div className="text-[11px] font-medium">
+                        {newAssignedClasses.length > 0 ? (
+                          <p className="text-emerald-950 bg-emerald-100/70 p-2.5 rounded-xl border border-emerald-200">
+                            ✅ Giáo viên bộ môn sẽ phụ trách và quản lý <strong>{newAssignedClasses.length} lớp</strong>: {newAssignedClasses.join(', ')}.
+                          </p>
+                        ) : (
+                          <p className="text-slate-600 bg-white/70 p-2.5 rounded-xl border border-slate-200">
+                            📌 <em>Lưu ý: Nếu không chọn lớp nào, giáo viên bộ môn sẽ mặc định được xem và quản lý tất cả các lớp trong toàn trường.</em>
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Email Trường học / Gmail */}
                   <div>
                     <label className="block font-black uppercase text-slate-600 text-[11px] mb-1.5">
@@ -1375,14 +1541,25 @@ export default function AdminTab({
                                 Quản trị hệ thống (Admin)
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-700 border border-slate-200 font-extrabold text-[11px] px-3 py-0.5 rounded-full shadow-2xs whitespace-nowrap">
-                                <span>{member.role}</span>
-                                {member.role.includes('Chủ nhiệm') && member.homeroomClassId && (
-                                  <span className="bg-amber-200/90 text-amber-950 font-black px-2 py-0.5 rounded-md text-[10px] border border-amber-300">
-                                    Lớp {member.homeroomClassId}
+                              <div className="flex flex-col gap-1 items-start">
+                                <span className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-700 border border-slate-200 font-extrabold text-[11px] px-3 py-0.5 rounded-full shadow-2xs whitespace-nowrap">
+                                  <span>{member.role}</span>
+                                  {member.role.includes('Chủ nhiệm') && member.homeroomClassId && (
+                                    <span className="bg-amber-200/90 text-amber-950 font-black px-2 py-0.5 rounded-md text-[10px] border border-amber-300">
+                                      Lớp {member.homeroomClassId}
+                                    </span>
+                                  )}
+                                </span>
+                                {member.role === 'Giáo viên bộ môn' && member.assignedClasses && member.assignedClasses.length > 0 && (
+                                  <span
+                                    className="inline-flex items-center gap-1 bg-emerald-100/90 text-emerald-950 font-black px-2 py-0.5 rounded-md text-[10px] border border-emerald-300 max-w-[280px] truncate"
+                                    title={`Lớp phụ trách: ${member.assignedClasses.join(', ')}`}
+                                  >
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0"></span>
+                                    <span>Phụ trách {member.assignedClasses.length} lớp: {member.assignedClasses.join(', ')}</span>
                                   </span>
                                 )}
-                              </span>
+                              </div>
                             )}
                           </td>
 
