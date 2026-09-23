@@ -1244,8 +1244,8 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     const matchName = matchStudentSearch(s, classSearch, classStudents);
     const g = getStudentGarden(s.id);
     const { currentStage } = getStageInfo(g.water);
-    // Khi đang chủ động gõ tìm kiếm, ưu tiên hiển thị kết quả khớp tên/mã mà không bị ẩn do bộ lọc cấp độ trước đó
-    const matchStage = classStageFilter === 'ALL' || !classSearch.trim() || currentStage.level === parseInt(classStageFilter);
+    // Lọc theo cấp độ phát triển của cây
+    const matchStage = classStageFilter === 'ALL' || currentStage.level === parseInt(classStageFilter, 10);
     return matchName && matchStage;
   });
 
@@ -2226,8 +2226,23 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
                   );
                 })
               ) : (
-                <div className="col-span-full text-center py-12 text-slate-400 font-bold text-xs">
-                  Không tìm thấy chậu cây nào phù hợp trong {gradeFilter === 'ALL' ? `Lớp ${selectedClass}` : `Khối ${gradeFilter}`}.
+                <div className="col-span-full text-center py-12 text-slate-500 font-bold text-xs flex flex-col items-center justify-center gap-2">
+                  <p>
+                    Không tìm thấy chậu cây nào phù hợp
+                    {classStageFilter !== 'ALL' && ` ở Cấp ${classStageFilter}`} trong {gradeFilter === 'ALL' ? `Lớp ${selectedClass}` : `Khối ${gradeFilter}`}.
+                  </p>
+                  {(classStageFilter !== 'ALL' || classSearch) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setClassStageFilter('ALL');
+                        setClassSearch('');
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-[#dfccb0] hover:bg-[#d5c3aa] text-[#3d2b17] font-black text-xs transition-all shadow-2xs cursor-pointer flex items-center gap-1.5"
+                    >
+                      <span>🔄</span> Xem tất cả 7 cấp độ
+                    </button>
+                  )}
                 </div>
               )}
             </div>
