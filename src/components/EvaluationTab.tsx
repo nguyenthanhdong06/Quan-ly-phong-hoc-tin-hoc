@@ -602,7 +602,7 @@ export default function EvaluationTab({
             const tags: string[] = Array.isArray(evalObj.tags) ? evalObj.tags : [];
             const praiseTags = tags.filter(isPraiseTag);
             const comment = (evalObj.comment || '').trim();
-            msg += `${idx + 1}. ${s.name} (MSHS: ${s.code})\n`;
+            msg += `${idx + 1}. ${s.name}\n`;
             if (praiseTags.length > 0) msg += `   - Thành tích: ${praiseTags.join(', ')}\n`;
             if (comment) msg += `   - Nhận xét GV: ${comment}\n`;
           });
@@ -620,7 +620,7 @@ export default function EvaluationTab({
             const comment = (evalObj.comment || '').trim();
             const tags: string[] = Array.isArray(evalObj.tags) ? evalObj.tags : [];
             const reminderTags = tags.filter(isReminderOrViolationTag);
-            msg += `${idx + 1}. ${s.name} (MSHS: ${s.code})\n`;
+            msg += `${idx + 1}. ${s.name}\n`;
             if (reminderTags.length > 0) msg += `   - Vấn đề cần lưu ý: ${reminderTags.join(', ')}\n`;
             if (comment) msg += `   - Lời dặn của GV: ${comment}\n`;
           });
@@ -719,9 +719,9 @@ export default function EvaluationTab({
           const praiseTags = tags.filter(isPraiseTag);
           const seatId = Object.keys(seatingChart[selectedClass] || {}).find(k => seatingChart[selectedClass][k] === s.id);
           const seatObj = seatId ? computers.find(c => c.id === seatId) : null;
-          const machineLabel = seatObj ? ` | ${seatObj.name}` : '';
+          const machineLabel = seatObj ? ` (${seatObj.name})` : '';
 
-          msg += `${idx + 1}. ${s.name} (MSHS: ${s.code}${machineLabel})\n`;
+          msg += `${idx + 1}. ${s.name}${machineLabel}\n`;
           if (praiseTags.length > 0) msg += `   - Thưởng: ${praiseTags.join(', ')}\n`;
         });
       }
@@ -740,9 +740,9 @@ export default function EvaluationTab({
           const reminderTags = tags.filter(isReminderOrViolationTag);
           const seatId = Object.keys(seatingChart[selectedClass] || {}).find(k => seatingChart[selectedClass][k] === s.id);
           const seatObj = seatId ? computers.find(c => c.id === seatId) : null;
-          const machineLabel = seatObj ? ` | ${seatObj.name}` : '';
+          const machineLabel = seatObj ? ` (${seatObj.name})` : '';
 
-          msg += `${idx + 1}. ${s.name} (MSHS: ${s.code}${machineLabel})\n`;
+          msg += `${idx + 1}. ${s.name}${machineLabel}\n`;
           if (comment) msg += `   - Nhận xét giáo viên: ${comment}\n`;
           if (reminderTags.length > 0) msg += `   - Thẻ nhắc nhở/vi phạm: ${reminderTags.join(', ')}\n`;
         });
