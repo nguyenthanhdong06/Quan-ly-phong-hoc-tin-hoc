@@ -15,9 +15,11 @@ import {
   Computer,
   DocumentItem,
   Member,
-  TimetableData
+  TimetableData,
+  GardenReward
 } from '../types';
 import { sortClasses } from '../utils/classSorter';
+import { isSampleReward } from '../utils/gardenPartition';
 
 /**
  * 1. Hợp nhất Danh sách Khối (Grades)
@@ -334,4 +336,70 @@ export function mergeArrayById<T extends { id?: string | number }>(
   }
 
   return Array.from(map.values());
+}
+
+/**
+ * 9. Hợp nhất Danh mục Phần thưởng Kho Quà (Garden Rewards)
+ * Kết hợp thông minh giữa Supabase Cloud và LocalStorage để Localhost và Vercel giống nhau 100%, không bị kênh dữ liệu.
+ */
+export function reconcileRewards(
+  cloudRewards?: GardenReward[],
+  localRewards?: GardenReward[],
+  deletedIds?: Set<string> | string[]
+): GardenReward[] {
+  const deletedSet = new Set<string>();
+  if (deletedIds) {
+    if (deletedIds instanceof Set) {
+      deletedIds.forEach(id => deletedSet.add(String(id)));
+    } else if (Array.isArray(deletedIds)) {
+      deletedIds.forEach(id => deletedSet.add(String(id)));
+    }
+  }
+
+  const map = new Map<string, GardenReward>();
+
+  const isValidItem = (item: any): item is GardenReward => {
+    return Boolean(
+      item &&
+      item.id &&
+      typeof item.id === 'string' &&
+      !isSampleReward(item) &&
+      !deletedSet.has(item.id)
+    );
+  };
+
+  // 1. Nạp từ Cloud (Dữ liệu thật trên máy chủ Supabase)
+  if (Array.isArray(cloudRewards)) {
+    cloudRewards.forEach(item => {
+      if (isValidItem(item)) {
+        map.set(item.id, { ...item });
+      }
+    });
+  }
+
+  // 2. Hợp nhất với LocalStorage (Dữ liệu trên máy người dùng)
+  if (Array.isArray(localRewards)) {
+    localRewards.forEach(item => {
+      if (isValidItem(item)) {
+        const existing = map.get(item.id);
+        if (!existing) {
+          // Món quà mới tạo ngoại tuyến dưới máy -> bổ sung vào danh mục
+          map.set(item.id, { ...item });
+        } else {
+          // Món quà đã có ở cả 2 bên -> hợp nhất thông tin, ưu tiên các trường có nội dung đầy đủ
+          map.set(item.id, {
+            ...existing,
+            ...item,
+            title: item.title?.trim() || existing.title,
+            cost: typeof item.cost === 'number' ? item.cost : existing.cost,
+            icon: item.icon || existing.icon,
+            type: item.type || existing.type,
+            imageUrl: item.imageUrl !== undefined ? item.imageUrl : existing.imageUrl
+          });
+        }
+      }
+    });
+  }
+
+  return Array.from(map.values()).filter(item => !isSampleReward(item) && !deletedSet.has(item.id));
 }

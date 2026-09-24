@@ -1,6 +1,7 @@
 import { GardenStudentData, GardenReward, WaterLog, CustomSeedSet } from '../types';
 import { safeSetLocalStorage } from './safeStorage';
 import { saveSupabaseState, supabase } from '../supabaseClient';
+import { reconcileRewards } from '../services/dataReconciliationService';
 
 /**
  * 📦 QUẢN LÝ DỮ LIỆU VƯỜN TRI THỨC, ĐỔI THƯỞNG & KHO HẠT GIỐNG (OFFLINE-FIRST & WORKSPACE ISOLATION)
@@ -80,10 +81,11 @@ export function deepMergeRewards(
 }
 
 /**
- * 💾 LƯU DANH MỤC PHẦN THƯỞNG ĐỔI QUÀ (OFFLINE-FIRST & WORKSPACE SCOPED)
- * - Ghi ngay 0ms vào LocalStorage của đúng Workspace giáo viên.
- * - Cô lập 100%, đồng thời cập nhật Cloud của Workspace và kho chung nếu là tài khoản quản trị.
- * - Ghi nhận danh sách ID bị xóa để chống hồi sinh dữ liệu cũ (Tombstone Deletion Protection).
+ * 💾 LƯU DANH MỤC PHẦN THƯỞNG ĐỔI QUÀ (OFFLINE-FIRST & CLOUD RECONCILIATION)
+ * - Ghi ngay 0ms vào LocalStorage của Workspace và cache chung.
+ * - Đồng bộ đồng thời lên Supabase Cloud: Key phân vùng Workspace VÀ Key toàn trường school_garden_rewards.
+ * - Ghi nhận danh sách ID bị xóa lên cả LocalStorage và Supabase Cloud (school_garden_deleted_reward_ids)
+ *   để các thiết bị khác (Vercel, Localhost, Mobile...) tự động xóa theo, không bao giờ bị kênh dữ liệu.
  */
 export async function saveWorkspaceRewardsData(
   rewards: GardenReward[],
@@ -96,7 +98,9 @@ export async function saveWorkspaceRewardsData(
   const prefix = `${effectiveWs}_`;
   const storageKey = `${prefix}garden_rewards_v2`;
   const cloudKey = `${prefix}school_garden_rewards`;
+  const globalCloudKey = 'school_garden_rewards';
   const deletedIdsKey = `${prefix}deleted_reward_ids`;
+  const globalDeletedKey = 'school_garden_deleted_reward_ids';
 
   // 1. Xử lý tham số thứ 3 (Callback onMerged hoặc danh sách ID vừa xóa)
   let onMerged: ((merged: GardenReward[]) => void) | undefined;
@@ -109,13 +113,16 @@ export async function saveWorkspaceRewardsData(
       const toAdd = Array.isArray(onMergedOrDeletedIds) ? onMergedOrDeletedIds : [onMergedOrDeletedIds];
       const updated = Array.from(new Set([...currentDeleted, ...toAdd]));
       safeSetLocalStorage(deletedIdsKey, updated);
+      safeSetLocalStorage(globalDeletedKey, updated);
+      // Đẩy ngay danh sách ID đã xóa lên Cloud để các máy khác (Vercel/Localhost) tự động xóa theo
+      saveSupabaseState(globalDeletedKey, updated);
     } catch (e) {}
   }
 
   // 2. Đọc tập ID đã xóa để lọc triệt để
   let deletedIds = new Set<string>();
   try {
-    const rawDeleted = localStorage.getItem(deletedIdsKey);
+    const rawDeleted = localStorage.getItem(deletedIdsKey) || localStorage.getItem(globalDeletedKey);
     if (rawDeleted) {
       const parsed = JSON.parse(rawDeleted);
       if (Array.isArray(parsed)) parsed.forEach(id => deletedIds.add(String(id)));
@@ -125,10 +132,11 @@ export async function saveWorkspaceRewardsData(
   // Lọc sạch toàn bộ phần thưởng mẫu và phần thưởng đã bị xóa
   const cleanedRewards = rewards.filter(item => item && item.id && !isSampleReward(item) && !deletedIds.has(item.id));
 
-  // 3. Lưu ngay lập tức 0ms vào LocalStorage của Workspace này
+  // 3. Lưu ngay lập tức 0ms vào LocalStorage của Workspace này và các key chung
   safeSetLocalStorage(storageKey, cleanedRewards);
-  // Đồng bộ cả key legacy nếu có để không bị xung đột
   safeSetLocalStorage(`${prefix}garden_rewards`, cleanedRewards);
+  safeSetLocalStorage('garden_rewards_v2', cleanedRewards);
+  safeSetLocalStorage('school_garden_rewards', cleanedRewards);
 
   // 4. Cập nhật React State tức thì qua Callback (nếu có)
   if (onMerged) {
@@ -137,13 +145,14 @@ export async function saveWorkspaceRewardsData(
     } catch (e) {}
   }
 
-  // 5. Ghi đè đồng bộ lên Supabase Cloud theo key phân vùng của Workspace
+  // 5. Ghi đè đồng bộ lên Supabase Cloud:
+  // Cập nhật cả key phân vùng của Workspace và key toàn trường school_garden_rewards
+  // để mọi môi trường (Localhost, Vercel) đều nhận được dữ liệu hoàn toàn giống nhau!
   try {
-    const promises = [saveSupabaseState(cloudKey, cleanedRewards)];
-    // Nếu là Workspace mặc định hoặc Workspace quản trị chính (ws_u-1): cập nhật luôn kho chung toàn trường
-    if (effectiveWs === 'ws_default' || effectiveWs === 'ws_u-1') {
-      promises.push(saveSupabaseState('school_garden_rewards', cleanedRewards));
-    }
+    const promises = [
+      saveSupabaseState(cloudKey, cleanedRewards),
+      saveSupabaseState(globalCloudKey, cleanedRewards)
+    ];
     const results = await Promise.all(promises);
     return results[0];
   } catch {
@@ -152,12 +161,12 @@ export async function saveWorkspaceRewardsData(
 }
 
 /**
- * 📥 TẢI VÀ HỢP NHẤT DỮ LIỆU PHẦN THƯỞNG CHO WORKSPACE
- * Cô lập tuyệt đối theo Workspace:
- * - Ưu tiên 1: Dữ liệu LocalStorage của Workspace (bảo toàn 100% việc thêm/sửa/xóa của giáo viên).
- * - Ưu tiên 2: Dữ liệu Cloud của đúng Workspace đó trên Supabase.
- * - Ưu tiên 3: Kế thừa từ Cloud toàn cục CHỈ KHI Workspace là mới tinh chưa từng được cấu hình.
- * - Tuyệt đối không merge mù quáng để tránh hồi sinh các phần thưởng đã bị giáo viên xóa!
+ * 📥 TẢI VÀ KẾT HỢP DỮ LIỆU PHẦN THƯỞNG CHO WORKSPACE (DATA RECONCILIATION)
+ * Kết hợp thông minh giữa "Dữ liệu thật trên Supabase Cloud" và "Dữ liệu trong LocalStorage":
+ * - Localhost và Vercel cùng kết hợp từ Supabase và LocalStorage -> Không bao giờ bị kênh dữ liệu!
+ * - Thu thập danh sách ID đã xóa từ cả Cloud và Local để chống hồi sinh dữ liệu cũ.
+ * - Tự động bổ sung các quà mới tạo ngoại tuyến dưới máy lên Cloud.
+ * - Tự động cập nhật các thay đổi mới nhất từ Cloud vào LocalStorage.
  */
 export function loadWorkspaceRewardsData(
   workspaceId: string = 'ws_default',
@@ -170,58 +179,108 @@ export function loadWorkspaceRewardsData(
   const cloudKey = `${prefix}school_garden_rewards`;
   const globalCloudKey = 'school_garden_rewards';
   const deletedIdsKey = `${prefix}deleted_reward_ids`;
+  const globalDeletedKey = 'school_garden_deleted_reward_ids';
 
-  // 0. Đọc tập ID đã bị xóa của Workspace để loại trừ triệt để (Tombstone)
-  let deletedIds = new Set<string>();
+  // 0. Thu thập toàn bộ ID đã bị xóa từ cả Cloud và LocalStorage (Tombstone Collection)
+  const deletedIds = new Set<string>();
+
+  // Đọc từ LocalStorage
   try {
-    const rawDeleted = localStorage.getItem(deletedIdsKey);
-    if (rawDeleted) {
-      const parsed = JSON.parse(rawDeleted);
+    const rawLocalDeleted = localStorage.getItem(deletedIdsKey);
+    if (rawLocalDeleted) {
+      const parsed = JSON.parse(rawLocalDeleted);
       if (Array.isArray(parsed)) parsed.forEach(id => deletedIds.add(String(id)));
     }
   } catch (e) {}
 
-  const filterValid = (arr: any[]): GardenReward[] => {
-    if (!Array.isArray(arr)) return [];
-    return arr.filter(item => item && item.id && !isSampleReward(item) && !deletedIds.has(item.id));
-  };
+  try {
+    const rawGlobalDeleted = localStorage.getItem(globalDeletedKey);
+    if (rawGlobalDeleted) {
+      const parsed = JSON.parse(rawGlobalDeleted);
+      if (Array.isArray(parsed)) parsed.forEach(id => deletedIds.add(String(id)));
+    }
+  } catch (e) {}
 
-  // 1. ƯU TIÊN 1: Đọc từ LocalStorage của Workspace hiện tại
-  // Nếu LocalStorage đã tồn tại bản ghi (kể cả mảng rỗng [] khi giáo viên đã xóa hết quà)
-  const rawLocal = localStorage.getItem(storageKey);
-  if (rawLocal !== null) {
-    try {
-      const parsedLocal = JSON.parse(rawLocal);
-      if (Array.isArray(parsedLocal)) {
-        const cleaned = filterValid(parsedLocal);
-        return cleaned;
+  // Đọc từ Cloud dbStates (nếu có)
+  if (dbStates) {
+    const cloudScopedDeleted = dbStates[deletedIdsKey];
+    if (Array.isArray(cloudScopedDeleted)) {
+      cloudScopedDeleted.forEach(id => deletedIds.add(String(id)));
+    }
+    const cloudGlobalDeleted = dbStates[globalDeletedKey];
+    if (Array.isArray(cloudGlobalDeleted)) {
+      cloudGlobalDeleted.forEach(id => deletedIds.add(String(id)));
+    }
+  }
+
+  // Cập nhật lại deletedIds đầy đủ vào LocalStorage
+  const allDeletedArr = Array.from(deletedIds);
+  if (allDeletedArr.length > 0) {
+    safeSetLocalStorage(deletedIdsKey, allDeletedArr);
+    safeSetLocalStorage(globalDeletedKey, allDeletedArr);
+  }
+
+  // 1. Thu thập danh sách phần thưởng từ Cloud (Dữ liệu thật trên Supabase)
+  let cloudItems: GardenReward[] = [];
+  if (dbStates) {
+    const scopedCloud = dbStates[cloudKey];
+    const globalCloud = dbStates[globalCloudKey];
+
+    if (Array.isArray(scopedCloud) && scopedCloud.length > 0) {
+      cloudItems = scopedCloud;
+    } else if (Array.isArray(globalCloud) && globalCloud.length > 0) {
+      cloudItems = globalCloud;
+    }
+  }
+
+  // 2. Thu thập danh sách phần thưởng từ LocalStorage (Dữ liệu trên máy hiện tại)
+  let localItems: GardenReward[] = [];
+  try {
+    const rawLocal = localStorage.getItem(storageKey);
+    if (rawLocal) {
+      const parsed = JSON.parse(rawLocal);
+      if (Array.isArray(parsed)) localItems = parsed;
+    } else {
+      const rawLegacy = localStorage.getItem('garden_rewards_v2') || localStorage.getItem('school_garden_rewards');
+      if (rawLegacy) {
+        const parsedLegacy = JSON.parse(rawLegacy);
+        if (Array.isArray(parsedLegacy)) localItems = parsedLegacy;
       }
-    } catch (e) {
-      console.warn('Cannot parse local workspace rewards data:', e);
+    }
+  } catch (e) {}
+
+  // 3. Kết hợp thông minh giữa Cloud và LocalStorage
+  let result: GardenReward[] = [];
+
+  if (cloudItems.length > 0 || localItems.length > 0) {
+    result = reconcileRewards(cloudItems, localItems, deletedIds);
+  } else if (Array.isArray(fallbackValue) && fallbackValue.length > 0) {
+    result = fallbackValue.filter(item => item && item.id && !isSampleReward(item) && !deletedIds.has(item.id));
+  }
+
+  // 4. Lưu lại dữ liệu hợp nhất vào LocalStorage của Workspace và các key cache
+  safeSetLocalStorage(storageKey, result);
+  safeSetLocalStorage('garden_rewards_v2', result);
+  safeSetLocalStorage('school_garden_rewards', result);
+
+  // 5. Tự động đồng bộ hóa ngược (Auto Self-Healing):
+  // Nếu đang online (có dbStates), đảm bảo Supabase Cloud cũng được cập nhật bản hoàn chỉnh này
+  if (dbStates && result.length > 0) {
+    const cloudCount = cloudItems.length;
+    const needsSync = result.length !== cloudCount || 
+      result.some(r => !cloudItems.some(c => c.id === r.id)) ||
+      cloudItems.some(c => deletedIds.has(c.id));
+
+    if (needsSync) {
+      saveSupabaseState(cloudKey, result);
+      saveSupabaseState(globalCloudKey, result);
+      if (allDeletedArr.length > 0) {
+        saveSupabaseState(globalDeletedKey, allDeletedArr);
+      }
     }
   }
 
-  // 2. ƯU TIÊN 2: Đọc từ Cloud Supabase của đúng Workspace hiện tại
-  const scopedCloud = dbStates?.[cloudKey];
-  if (scopedCloud !== undefined && Array.isArray(scopedCloud)) {
-    const cleaned = filterValid(scopedCloud);
-    safeSetLocalStorage(storageKey, cleaned);
-    return cleaned;
-  }
-
-  // 3. ƯU TIÊN 3: Kế thừa từ Cloud toàn cục của trường (Chỉ áp dụng khi Workspace mới tinh chưa từng cấu hình)
-  const globalCloud = dbStates?.[globalCloudKey];
-  if (globalCloud !== undefined && Array.isArray(globalCloud) && globalCloud.length > 0) {
-    const cleaned = filterValid(globalCloud);
-    if (cleaned.length > 0) {
-      safeSetLocalStorage(storageKey, cleaned);
-      return cleaned;
-    }
-  }
-
-  // 4. Dự phòng: fallbackValue (nếu có và hợp lệ)
-  const cleanedFallback = filterValid(fallbackValue);
-  return cleanedFallback;
+  return result;
 }
 
 /**
