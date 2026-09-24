@@ -263,18 +263,14 @@ export default function EvaluationTab({
 
   // Subview toggle state: 'evaluation' (default) | 'zalo' (Báo cáo Zalo/SMS 100% Inline View)
   const [subView, setSubView] = React.useState<'evaluation' | 'zalo'>('evaluation');
-  const [reportTemplate, setReportTemplate] = React.useState<'zalo' | 'sms' | 'full'>('zalo');
+  const [reportTemplate, setReportTemplate] = React.useState<'zalo' | 'sms' | 'full' | 'private'>('zalo');
   const [customMessageText, setCustomMessageText] = React.useState<string>('');
+  const [selectedPrivateStudentId, setSelectedPrivateStudentId] = React.useState<string | null>(null);
 
   // 🛡️ Tùy chọn chỉ gửi danh sách khen thưởng lên nhóm chung (bảo vệ quyền riêng tư của các em bị nhắc nhở)
   const [onlyPraiseInGroup, setOnlyPraiseInGroup] = React.useState<boolean>(() => {
     return safeGetLocalStorage<boolean>('zalo_only_praise_in_group', false);
   });
-
-  // ✉️ Modal gửi tin nhắn riêng cho phụ huynh các em bị nhắc nhở
-  const [isPrivateMessageModalOpen, setIsPrivateMessageModalOpen] = React.useState<boolean>(false);
-  const [selectedStudentForPrivateMsg, setSelectedStudentForPrivateMsg] = React.useState<string | null>(null);
-  const [privateMessageText, setPrivateMessageText] = React.useState<string>('');
 
   // 💻 / 📱 Device Auto-Detection for Zalo PC vs Zalo Mobile
   const isMobileInitial = typeof window !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -546,9 +542,7 @@ export default function EvaluationTab({
     const reminderTags = tags.filter(isReminderOrViolationTag).map(t => t.replace(/🔴|\(.*\)/g, '').trim()).filter(Boolean);
     const teacherSignName = activeUser?.name?.trim() || gvcnName || 'Giáo viên';
 
-    let msg = `🌸 THÔNG BÁO TÌNH HÌNH HỌC TẬP RIÊNG CỦA CON 🌸\n`;
-    msg += `Kính gửi: Quý Phụ huynh em ${student.name} (Lớp ${selectedClass}),\n\n`;
-    msg += `Thầy/Cô xin phép gửi thông tin tình hình học tập và nền nếp của con trong tiết học hôm nay (${formattedDate}):\n`;
+    let msg = `Thầy/Cô xin phép gửi thông tin tình hình học tập và nền nếp của con trong tiết học hôm nay (${formattedDate}):\n`;
     
     if (reminderTags.length > 0) {
       msg += `- Vấn đề cần rèn luyện thêm: ${reminderTags.join(', ')}\n`;
@@ -560,8 +554,8 @@ export default function EvaluationTab({
       msg += `- Con cần chú ý rèn luyện thêm sự tập trung và tuân thủ nền nếp trong giờ học.\n`;
     }
 
-    msg += `\nKính mong Quý Phụ huynh cùng gia đình đồng hành, nhắc nhở và động viên để con tập trung và tiến bộ hơn trong các tiết học sau ạ.\n\n`;
-    msg += `Em xin trân trọng cảm ơn Quý Phụ huynh!\n`;
+    msg += `\nKính mong Quý Phụ huynh cùng gia đình đồng hành, nhắc nhở và động viên để con tập trung và tiến bộ hơn trong các tiết học sau.\n\n`;
+    msg += `Xin trân trọng cảm ơn Quý Phụ huynh!\n`;
     if (isHomeroomTeacher) {
       msg += `GVCN Lớp ${selectedClass}: ${teacherSignName}`;
     } else {
@@ -570,19 +564,29 @@ export default function EvaluationTab({
     return msg;
   }, [selectedDate, currentDaysEvaluations, selectedClass, activeUser, gvcnName, isHomeroomTeacher]);
 
-  const handleOpenPrivateMessageModal = () => {
-    if (violatingStudents.length === 0) {
-      showToast('🎉 Tuyệt vời! Tiết học hôm nay cả lớp chăm ngoan, không có học sinh nào bị nhắc nhở.', 'info');
-      return;
-    }
-    const firstStudent = violatingStudents[0];
-    setSelectedStudentForPrivateMsg(firstStudent.id);
-    setPrivateMessageText(generateIndividualParentMessage(firstStudent));
-    setIsPrivateMessageModalOpen(true);
-  };
-
   // 💬 Auto Generator for Zalo / SMS Homeroom Teacher Evaluation Report Text
-  const generateReportText = React.useCallback((template: 'zalo' | 'sms' | 'full', hideReminders?: boolean) => {
+  const generateReportText = React.useCallback((
+    template: 'zalo' | 'sms' | 'full' | 'private', 
+    hideReminders?: boolean,
+    targetStudentId?: string | 'ALL'
+  ) => {
+    // ✉️ Trường hợp chọn Mẫu Nhắn riêng Phụ huynh
+    if (template === 'private') {
+      if (violatingStudents.length === 0) {
+        return `🎉 Tiết học hôm nay cả lớp thực hiện nền nếp rất tốt, không có học sinh nào bị nhắc nhở để gửi riêng cho phụ huynh.`;
+      }
+      if (targetStudentId && targetStudentId !== 'ALL') {
+        const targetStudent = violatingStudents.find(s => s.id === targetStudentId) || violatingStudents[0];
+        return generateIndividualParentMessage(targetStudent);
+      }
+      if (violatingStudents.length === 1) {
+        return generateIndividualParentMessage(violatingStudents[0]);
+      }
+      return violatingStudents.map((s, idx) => {
+        return `[Tin nhắn ${idx + 1} - Gửi PH em ${s.name}]:\n${generateIndividualParentMessage(s)}`;
+      }).join('\n\n------------------------------------\n\n');
+    }
+
     const isOnlyPraise = hideReminders !== undefined ? hideReminders : onlyPraiseInGroup;
     const total = classStudents.length;
     const femaleTotal = classStudents.filter(s => s.gender === 'Nữ').length;
@@ -857,7 +861,35 @@ export default function EvaluationTab({
 
     msg += `\nEm trân trọng cảm ơn Thầy/Cô!`;
     return msg;
-  }, [isHomeroomTeacher, activeUser, classStudents, currentDaysEvaluations, selectedClass, selectedDate, seatingChart, computers, gvcnName, onlyPraiseInGroup]);
+  }, [isHomeroomTeacher, activeUser, classStudents, currentDaysEvaluations, selectedClass, selectedDate, seatingChart, computers, gvcnName, onlyPraiseInGroup, violatingStudents, generateIndividualParentMessage]);
+
+  // ✉️ Xử lý khi chọn mẫu 'Nhắn riêng PH' hoặc bấm chọn riêng từng học sinh
+  const handleSelectPrivateTemplate = React.useCallback((studentId?: string | 'ALL') => {
+    setReportTemplate('private');
+    if (violatingStudents.length === 0) {
+      setSelectedPrivateStudentId(null);
+      setCustomMessageText(`🎉 Tiết học hôm nay cả lớp thực hiện nền nếp rất tốt, không có học sinh nào bị nhắc nhở để gửi riêng cho phụ huynh.`);
+      showToast('🎉 Tiết học hôm nay cả lớp chăm ngoan, không có học sinh nào bị nhắc nhở.', 'info');
+      return;
+    }
+
+    if (studentId && studentId !== 'ALL') {
+      setSelectedPrivateStudentId(studentId);
+      const student = violatingStudents.find(s => s.id === studentId) || violatingStudents[0];
+      setCustomMessageText(generateIndividualParentMessage(student));
+      showToast(`Đã nạp mẫu tin nhắn riêng gửi phụ huynh em ${student.name}!`, 'info');
+    } else if (violatingStudents.length === 1) {
+      const singleStudent = violatingStudents[0];
+      setSelectedPrivateStudentId(singleStudent.id);
+      setCustomMessageText(generateIndividualParentMessage(singleStudent));
+      showToast(`Đã nạp mẫu tin nhắn riêng gửi phụ huynh em ${singleStudent.name}!`, 'info');
+    } else {
+      const chosenId = studentId || 'ALL';
+      setSelectedPrivateStudentId(chosenId);
+      setCustomMessageText(generateReportText('private', onlyPraiseInGroup, chosenId));
+      showToast(`Đã nạp mẫu tin nhắn riêng của ${chosenId === 'ALL' ? `tất cả ${violatingStudents.length} em` : 'học sinh'}!`, 'info');
+    }
+  }, [violatingStudents, generateIndividualParentMessage, generateReportText, onlyPraiseInGroup, showToast]);
 
   // 🛡️ LƯU SỔ ĐÁNH GIÁ CHỦ ĐỘNG: Lưu trực tiếp vào LocalStorage và Supabase Cloud với Deep Merge
   const handleSave = async () => {
@@ -1267,6 +1299,7 @@ export default function EvaluationTab({
                 type="button"
                 onClick={() => {
                   setReportTemplate('zalo');
+                  setSelectedPrivateStudentId(null);
                   setCustomMessageText(generateReportText('zalo', onlyPraiseInGroup));
                 }}
                 className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
@@ -1279,6 +1312,7 @@ export default function EvaluationTab({
                 type="button"
                 onClick={() => {
                   setReportTemplate('sms');
+                  setSelectedPrivateStudentId(null);
                   setCustomMessageText(generateReportText('sms', onlyPraiseInGroup));
                 }}
                 className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
@@ -1291,6 +1325,7 @@ export default function EvaluationTab({
                 type="button"
                 onClick={() => {
                   setReportTemplate('full');
+                  setSelectedPrivateStudentId(null);
                   setCustomMessageText(generateReportText('full', onlyPraiseInGroup));
                 }}
                 className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
@@ -1301,9 +1336,13 @@ export default function EvaluationTab({
               </button>
               <button
                 type="button"
-                onClick={handleOpenPrivateMessageModal}
-                className="flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer bg-teal-700 hover:bg-teal-800 text-white shadow-xs flex items-center justify-center gap-1.5 active:scale-95"
-                title="Xuất nhanh mẫu tin nhắn gửi riêng 1-1 cho phụ huynh từng em bị nhắc nhở"
+                onClick={() => handleSelectPrivateTemplate(selectedPrivateStudentId || 'ALL')}
+                className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 ${
+                  reportTemplate === 'private'
+                    ? 'bg-teal-700 text-white shadow-xs ring-2 ring-teal-400/50'
+                    : 'bg-teal-600/90 hover:bg-teal-700 text-white shadow-xs'
+                }`}
+                title="Hiển thị mẫu tin nhắn gửi riêng 1-1 cho phụ huynh từng em bị nhắc nhở"
               >
                 <span>✉️</span>
                 <span>Nhắn riêng PH</span>
@@ -1463,10 +1502,70 @@ export default function EvaluationTab({
               })()}
             </div>
 
+            {/* Thanh chọn học sinh khi chọn mẫu Nhắn riêng PH */}
+            {reportTemplate === 'private' && violatingStudents.length > 0 && (
+              <div className="bg-teal-50/90 border border-teal-200/90 p-3 rounded-2xl space-y-2">
+                <div className="flex items-center justify-between text-xs font-black text-teal-950">
+                  <span className="flex items-center gap-1.5">
+                    <span>✉️</span> Chọn học sinh để nạp tin nhắn riêng:
+                  </span>
+                  <span className="text-[11px] font-bold text-teal-700 bg-teal-100/80 px-2 py-0.5 rounded-lg border border-teal-200/60">
+                    {violatingStudents.length} em có lưu ý nền nếp
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {violatingStudents.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleSelectPrivateTemplate('ALL')}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1 border ${
+                        selectedPrivateStudentId === 'ALL' || !selectedPrivateStudentId
+                          ? 'bg-teal-700 text-white border-teal-800 shadow-xs'
+                          : 'bg-white text-teal-800 border-teal-200 hover:bg-teal-100/60'
+                      }`}
+                    >
+                      <span>📑</span>
+                      <span>Tất cả ({violatingStudents.length} em)</span>
+                    </button>
+                  )}
+                  {violatingStudents.map((s, idx) => {
+                    const isSelected = selectedPrivateStudentId === s.id || (violatingStudents.length === 1 && selectedPrivateStudentId !== 'ALL');
+                    const evalObj = currentDaysEvaluations[s.id] || { rating: 0, comment: '', tags: [] };
+                    const tags: string[] = Array.isArray(evalObj.tags) ? evalObj.tags : [];
+                    const reminderTags = tags.filter(isReminderOrViolationTag);
+
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => handleSelectPrivateTemplate(s.id)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 border ${
+                          isSelected
+                            ? 'bg-teal-700 text-white border-teal-800 shadow-xs'
+                            : 'bg-white text-slate-700 border-slate-200 hover:bg-teal-100/60 hover:border-teal-300'
+                        }`}
+                      >
+                        <span>{idx + 1}. {s.name}</span>
+                        {reminderTags.length > 0 && (
+                          <span className={`text-[9px] px-1.5 py-0.2 rounded-md ${
+                            isSelected ? 'bg-white/25 text-white' : 'bg-rose-100 text-rose-700 font-bold'
+                          }`}>
+                            {reminderTags.length}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Live Preview Textarea */}
             <div className="space-y-1.5 text-left">
               <label className="block text-xs font-black text-slate-700">
-                {isHomeroomTeacher ? 'Xem trước & Chỉnh sửa nội dung tin nhắn gửi Phụ huynh:' : 'Xem trước & Chỉnh sửa nội dung tin nhắn gửi GVCN:'}
+                {reportTemplate === 'private'
+                  ? `Nội dung tin nhắn gửi riêng cho Phụ huynh ${selectedPrivateStudentId && selectedPrivateStudentId !== 'ALL' ? `em ${violatingStudents.find(s => s.id === selectedPrivateStudentId)?.name || ''}` : '(Có thể chỉnh sửa trực tiếp):'}`
+                  : (isHomeroomTeacher ? 'Xem trước & Chỉnh sửa nội dung tin nhắn gửi Phụ huynh:' : 'Xem trước & Chỉnh sửa nội dung tin nhắn gửi GVCN:')}
               </label>
               <textarea
                 rows={10}
@@ -1491,9 +1590,13 @@ export default function EvaluationTab({
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
-                  onClick={handleOpenPrivateMessageModal}
-                  className="px-4 py-2.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-black text-xs transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95"
-                  title="Xuất nhanh mẫu tin nhắn gửi riêng 1-1 cho phụ huynh từng em bị nhắc nhở"
+                  onClick={() => handleSelectPrivateTemplate(selectedPrivateStudentId || 'ALL')}
+                  className={`px-4 py-2.5 rounded-xl font-black text-xs transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95 ${
+                    reportTemplate === 'private'
+                      ? 'bg-teal-700 text-white ring-2 ring-teal-400/50'
+                      : 'bg-teal-600/90 hover:bg-teal-700 text-white'
+                  }`}
+                  title="Hiển thị mẫu tin nhắn gửi riêng 1-1 cho phụ huynh từng em bị nhắc nhở"
                 >
                   <span>✉️</span>
                   <span>Nhắn riêng PH</span>
@@ -1618,184 +1721,6 @@ export default function EvaluationTab({
             </div>
           </div>
         </div>
-      )}
-
-      {/* ====================================================================
-          MODAL GỬI TIN NHẮN RIÊNG CHO PHỤ HUYNH TỪNG HỌC SINH BỊ NHẮC NHỞ
-          ==================================================================== */}
-      {isPrivateMessageModalOpen && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-fadeIn">
-          <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl border border-teal-200 overflow-hidden text-left flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-150">
-            {/* Modal Header */}
-            <div className="bg-gradient-to-r from-teal-700 via-teal-800 to-teal-900 text-white px-5 py-4 flex items-center justify-between gap-3 shrink-0">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 bg-white/15 rounded-xl border border-white/20">
-                  <Mail className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-black text-sm sm:text-base uppercase tracking-wide flex items-center gap-2">
-                    <span>Gửi Tin Nhắn Riêng Cho Phụ Huynh</span>
-                    <span className="bg-teal-500/40 text-white text-[10px] font-bold px-2 py-0.5 rounded-full border border-teal-300/40">
-                      {violatingStudents.length} em cần nhắc nhở
-                    </span>
-                  </h3>
-                  <p className="text-[11px] text-teal-100 font-medium">
-                    Soạn sẵn tin nhắn 1-1 tế nhị, sư phạm để trao đổi riêng tới từng gia đình qua Zalo/SMS
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsPrivateMessageModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer"
-                title="Đóng cửa sổ"
-              >
-                <X className="w-4 h-4 stroke-[2.5]" />
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1">
-              {/* Thanh chọn học sinh */}
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-black text-slate-600 uppercase tracking-wider block">
-                  Chọn học sinh để lấy tin nhắn riêng:
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {violatingStudents.map((s, idx) => {
-                    const isSelected = s.id === selectedStudentForPrivateMsg;
-                    const evalObj = currentDaysEvaluations[s.id] || { rating: 0, comment: '', tags: [] };
-                    const tags: string[] = Array.isArray(evalObj.tags) ? evalObj.tags : [];
-                    const reminderTags = tags.filter(isReminderOrViolationTag);
-
-                    return (
-                      <button
-                        key={s.id}
-                        type="button"
-                        onClick={() => {
-                          setSelectedStudentForPrivateMsg(s.id);
-                          setPrivateMessageText(generateIndividualParentMessage(s));
-                        }}
-                        className={`px-3 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 border ${
-                          isSelected
-                            ? 'bg-teal-700 text-white border-teal-800 shadow-sm ring-2 ring-teal-400/40'
-                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-teal-50 hover:border-teal-300'
-                        }`}
-                      >
-                        <span>{idx + 1}. {s.name}</span>
-                        {reminderTags.length > 0 && (
-                          <span className={`text-[9px] px-1.5 py-0.5 rounded-md ${
-                            isSelected ? 'bg-white/25 text-white' : 'bg-rose-100 text-rose-700 font-bold'
-                          }`}>
-                            {reminderTags.length} lưu ý
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Ô soạn thảo xem trước tin nhắn */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-black text-slate-800 flex items-center gap-1.5">
-                    <span>📝</span> Nội dung tin nhắn gửi riêng cho phụ huynh:{' '}
-                    <strong className="text-teal-800 font-bold">
-                      {violatingStudents.find(s => s.id === selectedStudentForPrivateMsg)?.name || ''}
-                    </strong>
-                  </label>
-                  <span className="text-[11px] text-slate-400 font-medium">
-                    (Có thể chỉnh sửa trực tiếp bên dưới)
-                  </span>
-                </div>
-                <textarea
-                  rows={9}
-                  value={privateMessageText}
-                  onChange={(e) => setPrivateMessageText(e.target.value)}
-                  className="w-full p-3.5 text-xs font-mono font-medium rounded-2xl border border-teal-200 bg-slate-50/60 focus:bg-white focus:outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-500/20 shadow-inner leading-relaxed text-slate-800"
-                />
-              </div>
-
-              {/* Ghi chú sư phạm */}
-              <div className="bg-amber-50/90 border border-amber-200 p-3 rounded-xl text-[11px] text-amber-900 font-medium flex items-center gap-2">
-                <span>🛡️</span>
-                <span>
-                  Tin nhắn riêng giúp phụ huynh nắm rõ tình hình thực tế của con mà không làm con cảm thấy áp lực hay bị so sánh trước tập thể lớp.
-                </span>
-              </div>
-            </div>
-
-            {/* Modal Footer Actions */}
-            <div className="bg-slate-50 border-t border-slate-200 px-5 py-3.5 flex flex-wrap items-center justify-between gap-2.5 shrink-0">
-              {violatingStudents.length > 1 ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const allMsgs = violatingStudents.map(s => generateIndividualParentMessage(s)).join('\n\n====================================\n\n');
-                    navigator.clipboard.writeText(allMsgs);
-                    showToast(`Đã sao chép toàn bộ tin nhắn riêng của ${violatingStudents.length} học sinh!`, 'success');
-                  }}
-                  className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-extrabold text-xs transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95"
-                  title="Sao chép tin nhắn riêng của tất cả các em bị nhắc nhở"
-                >
-                  <span>📑</span>
-                  <span>Sao chép tất cả ({violatingStudents.length} em)</span>
-                </button>
-              ) : <div />}
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsPrivateMessageModalOpen(false)}
-                  className="px-3.5 py-2 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 transition cursor-pointer"
-                >
-                  Đóng
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigator.clipboard.writeText(privateMessageText);
-                    const curStudent = violatingStudents.find(s => s.id === selectedStudentForPrivateMsg);
-                    showToast(`Đã sao chép tin nhắn gửi riêng cho phụ huynh em ${curStudent?.name || ''}! Thầy/Cô có thể dán (Ctrl+V) gửi ngay.`, 'success');
-                  }}
-                  className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95"
-                >
-                  <span>📋</span>
-                  <span>Sao chép tin này</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigator.clipboard.writeText(privateMessageText);
-                    if (zaloTargetMode === 'pc') {
-                      const zaloNativeAppUri = 'zalo://';
-                      const nativeLink = document.createElement('a');
-                      nativeLink.href = zaloNativeAppUri;
-                      document.body.appendChild(nativeLink);
-                      nativeLink.click();
-                      document.body.removeChild(nativeLink);
-                      setTimeout(() => {
-                        window.location.href = zaloNativeAppUri;
-                      }, 150);
-                      showToast('Đã sao chép & Kích hoạt Zalo PC! Thầy/Cô dán (Ctrl+V) gửi riêng cho phụ huynh nhé.', 'success');
-                    } else {
-                      window.open('https://chat.zalo.me/', '_blank');
-                      showToast('Đã sao chép & Mở Zalo Web! Thầy/Cô dán (Ctrl+V) gửi riêng cho phụ huynh nhé.', 'success');
-                    }
-                  }}
-                  className="px-4 py-2 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-black text-xs transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95"
-                >
-                  <span>🚀</span>
-                  <span>Mở Zalo</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>,
-        document.body
       )}
     </div>
   );
