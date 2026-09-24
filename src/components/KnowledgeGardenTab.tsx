@@ -945,14 +945,13 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     }
   };
 
-  const handleDeleteReward = (id: string, title: string) => {
+  const handleDeleteReward = async (id: string, title: string) => {
     if (window.confirm(`Bạn có chắc chắn muốn xóa phần thưởng "${title}" khỏi kho đổi quà không?`)) {
       const nextRewards = rewards.filter(r => r.id !== id);
-      safeSetLocalStorage(rewardsStorageKey, nextRewards);
-      saveWorkspaceRewardsData(nextRewards, currentWsId);
-
-      setHasUnsavedRewardChanges(true);
       setRewards(nextRewards);
+      setHasUnsavedRewardChanges(true);
+      safeSetLocalStorage(rewardsStorageKey, nextRewards);
+      await saveWorkspaceRewardsData(nextRewards, currentWsId, id);
       showToast(`Đã xóa phần thưởng "${title}" thành công!`, 'success');
     }
   };
@@ -960,10 +959,11 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
   const handleClearAllRewards = async () => {
     if (window.confirm('Thầy/Cô có chắc chắn muốn xóa toàn bộ các phần quà cũ để làm sạch kho quà không? Thao tác này sẽ dọn sạch toàn bộ phần quà cũ cả trên máy và trên Cloud của Workspace.')) {
       const targetWs = currentWsId || 'ws_default';
+      const allCurrentIds = rewards.map(r => r.id);
       setRewards([]);
       setHasUnsavedRewardChanges(false);
       safeSetLocalStorage(rewardsStorageKey, []);
-      await saveWorkspaceRewardsData([], targetWs);
+      await saveWorkspaceRewardsData([], targetWs, allCurrentIds);
       showToast('Đã dọn sạch toàn bộ phần quà cũ thành công! Bây giờ Thầy Cô có thể tạo các phần quà mới.', 'success');
     }
   };

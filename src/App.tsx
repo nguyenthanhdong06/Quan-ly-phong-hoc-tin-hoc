@@ -864,8 +864,8 @@ export default function App() {
         setGardenData(loadedGarden);
         safeSetLocalStorage(`${effectiveWsId}_garden_data_v2`, loadedGarden);
 
-        // 16. 🎁 Đồng bộ danh mục Đổi Thưởng với Deep Merge bảo vệ các quà tạo ngoại tuyến
-        const loadedRewards = loadWorkspaceRewardsData(effectiveWsId, dbStates, gardenRewardsRef.current);
+        // 16. 🎁 Đồng bộ danh mục Đổi Thưởng với Scoped Workspace an toàn chống hồi sinh quà bị xóa
+        const loadedRewards = loadWorkspaceRewardsData(effectiveWsId, dbStates, DEFAULT_REWARDS);
         setGardenRewards(loadedRewards);
         safeSetLocalStorage(`${effectiveWsId}_garden_rewards_v2`, loadedRewards);
 
