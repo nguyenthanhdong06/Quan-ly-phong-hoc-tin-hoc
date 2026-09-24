@@ -165,6 +165,14 @@ export function loadWorkspaceRewardsData(
   const cloudKey = `${prefix}school_garden_rewards`;
   const deletedIdsKey = `${prefix}deleted_reward_ids`;
 
+  // 🛡️ DỌN SẠCH TRIỆT ĐỂ: Loại bỏ tất cả dữ liệu trong các biến/khóa toàn cục cũ khỏi LocalStorage
+  try {
+    localStorage.removeItem('school_garden_rewards');
+    localStorage.removeItem('garden_rewards_v2');
+    localStorage.removeItem('garden_rewards');
+    localStorage.removeItem('school_garden_deleted_reward_ids');
+  } catch (e) {}
+
   // 0. Thu thập toàn bộ ID đã bị xóa CỦA CHÍNH TÀI KHOẢN NÀY (cả từ Local và Cloud)
   const deletedIds = new Set<string>();
 
