@@ -504,7 +504,7 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     setIsRewardsSaving(true);
     if (rewardsDebounceRef.current) clearTimeout(rewardsDebounceRef.current);
     try {
-      const targetWs = currentWsId || 'ws_u-1';
+      const targetWs = currentWsId || 'ws_default';
       await saveWorkspaceRewardsData(rewards, targetWs, (merged) => {
         setRewards(merged);
       });
@@ -528,7 +528,7 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     if (gardenDebounceRef.current) clearTimeout(gardenDebounceRef.current);
     if (rewardsDebounceRef.current) clearTimeout(rewardsDebounceRef.current);
     try {
-      const targetWs = currentWsId || 'ws_u-1';
+      const targetWs = currentWsId || 'ws_default';
       await Promise.all([
         saveWorkspaceGardenData(gardenData, targetWs, (merged) => setGardenData(merged)),
         saveWorkspaceRewardsData(rewards, targetWs, (merged) => setRewards(merged))

@@ -81,11 +81,10 @@ export function deepMergeRewards(
 }
 
 /**
- * 💾 LƯU DANH MỤC PHẦN THƯỞNG ĐỔI QUÀ (OFFLINE-FIRST & CLOUD RECONCILIATION)
- * - Ghi ngay 0ms vào LocalStorage của Workspace và cache chung.
- * - Đồng bộ đồng thời lên Supabase Cloud: Key phân vùng Workspace VÀ Key toàn trường school_garden_rewards.
- * - Ghi nhận danh sách ID bị xóa lên cả LocalStorage và Supabase Cloud (school_garden_deleted_reward_ids)
- *   để các thiết bị khác (Vercel, Localhost, Mobile...) tự động xóa theo, không bao giờ bị kênh dữ liệu.
+ * 💾 LƯU DANH MỤC PHẦN THƯỞNG ĐỔI QUÀ (SCOPED WORKSPACE ISOLATION)
+ * - Tài khoản nào tạo/sửa/xóa phần thưởng thì CHỈ LƯU VÀO TÀI KHOẢN ĐÓ.
+ * - Tuyệt đối không lưu vào khoá toàn cục (school_garden_rewards) để không ghi đè hay làm xáo trộn giữa các tài khoản.
+ * - Đồng bộ giữa LocalStorage và Supabase Cloud theo đúng key phân vùng của tài khoản đó (đảm bảo cùng 1 tài khoản mở ở Localhost hay Vercel đều đồng nhất 100%).
  */
 export async function saveWorkspaceRewardsData(
   rewards: GardenReward[],
@@ -98,11 +97,9 @@ export async function saveWorkspaceRewardsData(
   const prefix = `${effectiveWs}_`;
   const storageKey = `${prefix}garden_rewards_v2`;
   const cloudKey = `${prefix}school_garden_rewards`;
-  const globalCloudKey = 'school_garden_rewards';
   const deletedIdsKey = `${prefix}deleted_reward_ids`;
-  const globalDeletedKey = 'school_garden_deleted_reward_ids';
 
-  // 1. Xử lý tham số thứ 3 (Callback onMerged hoặc danh sách ID vừa xóa)
+  // 1. Xử lý tham số thứ 3 (Callback onMerged hoặc danh sách ID vừa xóa của tài khoản này)
   let onMerged: ((merged: GardenReward[]) => void) | undefined;
   if (typeof onMergedOrDeletedIds === 'function') {
     onMerged = onMergedOrDeletedIds;
@@ -113,16 +110,15 @@ export async function saveWorkspaceRewardsData(
       const toAdd = Array.isArray(onMergedOrDeletedIds) ? onMergedOrDeletedIds : [onMergedOrDeletedIds];
       const updated = Array.from(new Set([...currentDeleted, ...toAdd]));
       safeSetLocalStorage(deletedIdsKey, updated);
-      safeSetLocalStorage(globalDeletedKey, updated);
-      // Đẩy ngay danh sách ID đã xóa lên Cloud để các máy khác (Vercel/Localhost) tự động xóa theo
-      saveSupabaseState(globalDeletedKey, updated);
+      // Lưu danh sách ID đã xóa CHỈ vào key của tài khoản này trên Supabase
+      saveSupabaseState(deletedIdsKey, updated);
     } catch (e) {}
   }
 
-  // 2. Đọc tập ID đã xóa để lọc triệt để
+  // 2. Đọc tập ID đã xóa của tài khoản này để lọc triệt để
   let deletedIds = new Set<string>();
   try {
-    const rawDeleted = localStorage.getItem(deletedIdsKey) || localStorage.getItem(globalDeletedKey);
+    const rawDeleted = localStorage.getItem(deletedIdsKey);
     if (rawDeleted) {
       const parsed = JSON.parse(rawDeleted);
       if (Array.isArray(parsed)) parsed.forEach(id => deletedIds.add(String(id)));
@@ -132,11 +128,8 @@ export async function saveWorkspaceRewardsData(
   // Lọc sạch toàn bộ phần thưởng mẫu và phần thưởng đã bị xóa
   const cleanedRewards = rewards.filter(item => item && item.id && !isSampleReward(item) && !deletedIds.has(item.id));
 
-  // 3. Lưu ngay lập tức 0ms vào LocalStorage của Workspace này và các key chung
+  // 3. Lưu ngay lập tức 0ms vào LocalStorage CHỈ CỦA TÀI KHOẢN NÀY
   safeSetLocalStorage(storageKey, cleanedRewards);
-  safeSetLocalStorage(`${prefix}garden_rewards`, cleanedRewards);
-  safeSetLocalStorage('garden_rewards_v2', cleanedRewards);
-  safeSetLocalStorage('school_garden_rewards', cleanedRewards);
 
   // 4. Cập nhật React State tức thì qua Callback (nếu có)
   if (onMerged) {
@@ -145,28 +138,21 @@ export async function saveWorkspaceRewardsData(
     } catch (e) {}
   }
 
-  // 5. Ghi đè đồng bộ lên Supabase Cloud:
-  // Cập nhật cả key phân vùng của Workspace và key toàn trường school_garden_rewards
-  // để mọi môi trường (Localhost, Vercel) đều nhận được dữ liệu hoàn toàn giống nhau!
+  // 5. Ghi đè đồng bộ lên Supabase Cloud CHỈ THEO KEY CỦA TÀI KHOẢN NÀY (cloudKey)
+  // TUYỆT ĐỐI KHÔNG GHI VÀO KEY TOÀN CỤC school_garden_rewards
   try {
-    const promises = [
-      saveSupabaseState(cloudKey, cleanedRewards),
-      saveSupabaseState(globalCloudKey, cleanedRewards)
-    ];
-    const results = await Promise.all(promises);
-    return results[0];
+    const success = await saveSupabaseState(cloudKey, cleanedRewards);
+    return success;
   } catch {
     return true; // Đã lưu an toàn ở LocalStorage khi offline
   }
 }
 
 /**
- * 📥 TẢI VÀ KẾT HỢP DỮ LIỆU PHẦN THƯỞNG CHO WORKSPACE (DATA RECONCILIATION)
- * Kết hợp thông minh giữa "Dữ liệu thật trên Supabase Cloud" và "Dữ liệu trong LocalStorage":
- * - Localhost và Vercel cùng kết hợp từ Supabase và LocalStorage -> Không bao giờ bị kênh dữ liệu!
- * - Thu thập danh sách ID đã xóa từ cả Cloud và Local để chống hồi sinh dữ liệu cũ.
- * - Tự động bổ sung các quà mới tạo ngoại tuyến dưới máy lên Cloud.
- * - Tự động cập nhật các thay đổi mới nhất từ Cloud vào LocalStorage.
+ * 📥 TẢI VÀ KẾT HỢP DỮ LIỆU PHẦN THƯỞNG CHO WORKSPACE (SCOPED WORKSPACE RECONCILIATION)
+ * - Tài khoản nào CHỈ NẠP DỮ LIỆU CỦA CHÍNH TÀI KHOẢN ĐÓ (từ Cloud và LocalStorage của tài khoản).
+ * - Tuyệt đối không nạp từ khoá toàn cục để không bị hòa trộn kho quà của tài khoản khác.
+ * - Kết hợp thông minh giữa Supabase Cloud và LocalStorage của tài khoản đó để khi tài khoản đó mở ở Localhost hay Vercel đều có dữ liệu giống nhau 100%.
  */
 export function loadWorkspaceRewardsData(
   workspaceId: string = 'ws_default',
@@ -177,14 +163,12 @@ export function loadWorkspaceRewardsData(
   const prefix = `${effectiveWs}_`;
   const storageKey = `${prefix}garden_rewards_v2`;
   const cloudKey = `${prefix}school_garden_rewards`;
-  const globalCloudKey = 'school_garden_rewards';
   const deletedIdsKey = `${prefix}deleted_reward_ids`;
-  const globalDeletedKey = 'school_garden_deleted_reward_ids';
 
-  // 0. Thu thập toàn bộ ID đã bị xóa từ cả Cloud và LocalStorage (Tombstone Collection)
+  // 0. Thu thập toàn bộ ID đã bị xóa CỦA CHÍNH TÀI KHOẢN NÀY (cả từ Local và Cloud)
   const deletedIds = new Set<string>();
 
-  // Đọc từ LocalStorage
+  // Đọc từ LocalStorage của tài khoản này
   try {
     const rawLocalDeleted = localStorage.getItem(deletedIdsKey);
     if (rawLocalDeleted) {
@@ -193,63 +177,40 @@ export function loadWorkspaceRewardsData(
     }
   } catch (e) {}
 
-  try {
-    const rawGlobalDeleted = localStorage.getItem(globalDeletedKey);
-    if (rawGlobalDeleted) {
-      const parsed = JSON.parse(rawGlobalDeleted);
-      if (Array.isArray(parsed)) parsed.forEach(id => deletedIds.add(String(id)));
-    }
-  } catch (e) {}
-
-  // Đọc từ Cloud dbStates (nếu có)
+  // Đọc từ Cloud dbStates của tài khoản này (nếu có)
   if (dbStates) {
     const cloudScopedDeleted = dbStates[deletedIdsKey];
     if (Array.isArray(cloudScopedDeleted)) {
       cloudScopedDeleted.forEach(id => deletedIds.add(String(id)));
     }
-    const cloudGlobalDeleted = dbStates[globalDeletedKey];
-    if (Array.isArray(cloudGlobalDeleted)) {
-      cloudGlobalDeleted.forEach(id => deletedIds.add(String(id)));
-    }
   }
 
-  // Cập nhật lại deletedIds đầy đủ vào LocalStorage
+  // Cập nhật lại deletedIds đầy đủ vào LocalStorage của tài khoản này
   const allDeletedArr = Array.from(deletedIds);
   if (allDeletedArr.length > 0) {
     safeSetLocalStorage(deletedIdsKey, allDeletedArr);
-    safeSetLocalStorage(globalDeletedKey, allDeletedArr);
   }
 
-  // 1. Thu thập danh sách phần thưởng từ Cloud (Dữ liệu thật trên Supabase)
+  // 1. Thu thập danh sách phần thưởng từ Cloud CHỈ CỦA TÀI KHOẢN NÀY
   let cloudItems: GardenReward[] = [];
   if (dbStates) {
     const scopedCloud = dbStates[cloudKey];
-    const globalCloud = dbStates[globalCloudKey];
-
     if (Array.isArray(scopedCloud) && scopedCloud.length > 0) {
       cloudItems = scopedCloud;
-    } else if (Array.isArray(globalCloud) && globalCloud.length > 0) {
-      cloudItems = globalCloud;
     }
   }
 
-  // 2. Thu thập danh sách phần thưởng từ LocalStorage (Dữ liệu trên máy hiện tại)
+  // 2. Thu thập danh sách phần thưởng từ LocalStorage CHỈ CỦA TÀI KHOẢN NÀY
   let localItems: GardenReward[] = [];
   try {
     const rawLocal = localStorage.getItem(storageKey);
     if (rawLocal) {
       const parsed = JSON.parse(rawLocal);
       if (Array.isArray(parsed)) localItems = parsed;
-    } else {
-      const rawLegacy = localStorage.getItem('garden_rewards_v2') || localStorage.getItem('school_garden_rewards');
-      if (rawLegacy) {
-        const parsedLegacy = JSON.parse(rawLegacy);
-        if (Array.isArray(parsedLegacy)) localItems = parsedLegacy;
-      }
     }
   } catch (e) {}
 
-  // 3. Kết hợp thông minh giữa Cloud và LocalStorage
+  // 3. Kết hợp thông minh giữa Cloud và LocalStorage của chính tài khoản này
   let result: GardenReward[] = [];
 
   if (cloudItems.length > 0 || localItems.length > 0) {
@@ -258,13 +219,11 @@ export function loadWorkspaceRewardsData(
     result = fallbackValue.filter(item => item && item.id && !isSampleReward(item) && !deletedIds.has(item.id));
   }
 
-  // 4. Lưu lại dữ liệu hợp nhất vào LocalStorage của Workspace và các key cache
+  // 4. Lưu lại dữ liệu hợp nhất vào LocalStorage CHỈ CỦA TÀI KHOẢN NÀY
   safeSetLocalStorage(storageKey, result);
-  safeSetLocalStorage('garden_rewards_v2', result);
-  safeSetLocalStorage('school_garden_rewards', result);
 
-  // 5. Tự động đồng bộ hóa ngược (Auto Self-Healing):
-  // Nếu đang online (có dbStates), đảm bảo Supabase Cloud cũng được cập nhật bản hoàn chỉnh này
+  // 5. Tự động đồng bộ hóa ngược (Auto Self-Healing) CHỈ LÊN KEY CỦA TÀI KHOẢN NÀY TRÊN CLOUD:
+  // Giúp tài khoản đó khi mở ở Localhost hay Vercel đều sở hữu cùng một bộ dữ liệu hoàn chỉnh nhất
   if (dbStates && result.length > 0) {
     const cloudCount = cloudItems.length;
     const needsSync = result.length !== cloudCount || 
@@ -273,9 +232,8 @@ export function loadWorkspaceRewardsData(
 
     if (needsSync) {
       saveSupabaseState(cloudKey, result);
-      saveSupabaseState(globalCloudKey, result);
       if (allDeletedArr.length > 0) {
-        saveSupabaseState(globalDeletedKey, allDeletedArr);
+        saveSupabaseState(deletedIdsKey, allDeletedArr);
       }
     }
   }
