@@ -542,7 +542,7 @@ export default function EvaluationTab({
     const reminderTags = tags.filter(isReminderOrViolationTag).map(t => t.replace(/🔴|\(.*\)/g, '').trim()).filter(Boolean);
     const teacherSignName = activeUser?.name?.trim() || gvcnName || 'Giáo viên';
 
-    let msg = `Thầy/Cô xin phép gửi thông tin tình hình học tập và nền nếp của con trong tiết học hôm nay (${formattedDate}):\n`;
+    let msg = `Thầy/Cô xin phép gửi thông tin tình hình học tập và nền nếp của con ${student.name} trong tiết học hôm nay (${formattedDate}):\n`;
     
     if (reminderTags.length > 0) {
       msg += `- Vấn đề cần rèn luyện thêm: ${reminderTags.join(', ')}\n`;
@@ -863,8 +863,9 @@ export default function EvaluationTab({
     return msg;
   }, [isHomeroomTeacher, activeUser, classStudents, currentDaysEvaluations, selectedClass, selectedDate, seatingChart, computers, gvcnName, onlyPraiseInGroup, violatingStudents, generateIndividualParentMessage]);
 
-  // ✉️ Xử lý khi chọn mẫu 'Nhắn riêng PH' hoặc bấm chọn riêng từng học sinh
+  // ✉️ Xử lý khi chọn mẫu 'Nhắn riêng PH' hoặc bấm chọn riêng từng học sinh (chỉ áp dụng cho GVCN)
   const handleSelectPrivateTemplate = React.useCallback((studentId?: string | 'ALL') => {
+    if (!isHomeroomTeacher) return;
     setReportTemplate('private');
     if (violatingStudents.length === 0) {
       setSelectedPrivateStudentId(null);
@@ -889,7 +890,15 @@ export default function EvaluationTab({
       setCustomMessageText(generateReportText('private', onlyPraiseInGroup, chosenId));
       showToast(`Đã nạp mẫu tin nhắn riêng của ${chosenId === 'ALL' ? `tất cả ${violatingStudents.length} em` : 'học sinh'}!`, 'info');
     }
-  }, [violatingStudents, generateIndividualParentMessage, generateReportText, onlyPraiseInGroup, showToast]);
+  }, [isHomeroomTeacher, violatingStudents, generateIndividualParentMessage, generateReportText, onlyPraiseInGroup, showToast]);
+
+  // Đảm bảo an toàn: Nếu không phải GVCN mà đang chọn template 'private' thì tự động chuyển về 'zalo'
+  React.useEffect(() => {
+    if (!isHomeroomTeacher && reportTemplate === 'private') {
+      setReportTemplate('zalo');
+      setCustomMessageText(generateReportText('zalo', onlyPraiseInGroup));
+    }
+  }, [isHomeroomTeacher, reportTemplate, generateReportText, onlyPraiseInGroup]);
 
   // 🛡️ LƯU SỔ ĐÁNH GIÁ CHỦ ĐỘNG: Lưu trực tiếp vào LocalStorage và Supabase Cloud với Deep Merge
   const handleSave = async () => {
@@ -1334,24 +1343,26 @@ export default function EvaluationTab({
               >
                 {isHomeroomTeacher ? '📑 Mẫu Đánh Giá Chi Tiết' : '📑 Mẫu Chi Tiết Đầy Đủ'}
               </button>
-              <button
-                type="button"
-                onClick={() => handleSelectPrivateTemplate(selectedPrivateStudentId || 'ALL')}
-                className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 ${
-                  reportTemplate === 'private'
-                    ? 'bg-teal-700 text-white shadow-xs ring-2 ring-teal-400/50'
-                    : 'bg-teal-600/90 hover:bg-teal-700 text-white shadow-xs'
-                }`}
-                title="Hiển thị mẫu tin nhắn gửi riêng 1-1 cho phụ huynh từng em bị nhắc nhở"
-              >
-                <span>✉️</span>
-                <span>Nhắn riêng PH</span>
-                {violatingStudents.length > 0 && (
-                  <span className="bg-white/25 text-white font-mono text-[10px] px-1.5 py-0.5 rounded-full">
-                    {violatingStudents.length}
-                  </span>
-                )}
-              </button>
+              {isHomeroomTeacher && (
+                <button
+                  type="button"
+                  onClick={() => handleSelectPrivateTemplate(selectedPrivateStudentId || 'ALL')}
+                  className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 ${
+                    reportTemplate === 'private'
+                      ? 'bg-teal-700 text-white shadow-xs ring-2 ring-teal-400/50'
+                      : 'bg-teal-600/90 hover:bg-teal-700 text-white shadow-xs'
+                  }`}
+                  title="Hiển thị mẫu tin nhắn gửi riêng 1-1 cho phụ huynh từng em bị nhắc nhở"
+                >
+                  <span>✉️</span>
+                  <span>Nhắn riêng PH</span>
+                  {violatingStudents.length > 0 && (
+                    <span className="bg-white/25 text-white font-mono text-[10px] px-1.5 py-0.5 rounded-full">
+                      {violatingStudents.length}
+                    </span>
+                  )}
+                </button>
+              )}
             </div>
 
             {/* 🛡️ TÙY CHỌN BẢO VỆ TÍNH RIÊNG TƯ: CHỈ GỬI DANH SÁCH KHEN THƯỞNG LÊN NHÓM CHUNG */}
@@ -1502,8 +1513,8 @@ export default function EvaluationTab({
               })()}
             </div>
 
-            {/* Thanh chọn học sinh khi chọn mẫu Nhắn riêng PH */}
-            {reportTemplate === 'private' && violatingStudents.length > 0 && (
+            {/* Thanh chọn học sinh khi chọn mẫu Nhắn riêng PH (chỉ hiển thị với GVCN) */}
+            {isHomeroomTeacher && reportTemplate === 'private' && violatingStudents.length > 0 && (
               <div className="bg-teal-50/90 border border-teal-200/90 p-3 rounded-2xl space-y-2">
                 <div className="flex items-center justify-between text-xs font-black text-teal-950">
                   <span className="flex items-center gap-1.5">
@@ -1588,24 +1599,26 @@ export default function EvaluationTab({
               </button>
 
               <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleSelectPrivateTemplate(selectedPrivateStudentId || 'ALL')}
-                  className={`px-4 py-2.5 rounded-xl font-black text-xs transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95 ${
-                    reportTemplate === 'private'
-                      ? 'bg-teal-700 text-white ring-2 ring-teal-400/50'
-                      : 'bg-teal-600/90 hover:bg-teal-700 text-white'
-                  }`}
-                  title="Hiển thị mẫu tin nhắn gửi riêng 1-1 cho phụ huynh từng em bị nhắc nhở"
-                >
-                  <span>✉️</span>
-                  <span>Nhắn riêng PH</span>
-                  {violatingStudents.length > 0 && (
-                    <span className="bg-white/25 text-white font-mono text-[10px] px-1.5 py-0.5 rounded-full">
-                      {violatingStudents.length}
-                    </span>
-                  )}
-                </button>
+                {isHomeroomTeacher && (
+                  <button
+                    type="button"
+                    onClick={() => handleSelectPrivateTemplate(selectedPrivateStudentId || 'ALL')}
+                    className={`px-4 py-2.5 rounded-xl font-black text-xs transition shadow-2xs cursor-pointer flex items-center gap-1.5 active:scale-95 ${
+                      reportTemplate === 'private'
+                        ? 'bg-teal-700 text-white ring-2 ring-teal-400/50'
+                        : 'bg-teal-600/90 hover:bg-teal-700 text-white'
+                    }`}
+                    title="Hiển thị mẫu tin nhắn gửi riêng 1-1 cho phụ huynh từng em bị nhắc nhở"
+                  >
+                    <span>✉️</span>
+                    <span>Nhắn riêng PH</span>
+                    {violatingStudents.length > 0 && (
+                      <span className="bg-white/25 text-white font-mono text-[10px] px-1.5 py-0.5 rounded-full">
+                        {violatingStudents.length}
+                      </span>
+                    )}
+                  </button>
+                )}
 
                 <button
                   type="button"
