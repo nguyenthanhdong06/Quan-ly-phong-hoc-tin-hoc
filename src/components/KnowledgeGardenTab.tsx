@@ -233,11 +233,7 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
         const { data } = await supabase
           .from('school_states')
           .select('key, value')
-          .in('key', [
-            `${currentWsId}_school_custom_seed_sets`,
-            `${currentWsId}_custom_seed_sets_v1`,
-            'school_custom_seed_sets'
-          ]);
+          .eq('key', `${currentWsId}_school_custom_seed_sets`);
 
         if (data && data.length > 0 && isMounted) {
           const dbObj: Record<string, any> = {};

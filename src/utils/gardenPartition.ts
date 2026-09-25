@@ -438,6 +438,13 @@ export function loadWorkspaceGardenData(
 
   let merged: Record<string, GardenStudentData> = { ...fallbackValue };
 
+  // 🛡️ DỌN SẠCH TRIỆT ĐỂ: Loại bỏ các khóa dữ liệu vườn toàn cục cũ khỏi LocalStorage
+  try {
+    localStorage.removeItem('school_garden_data');
+    localStorage.removeItem('garden_data_v2');
+    localStorage.removeItem('garden_data');
+  } catch (e) {}
+
   // 1. Tải bản sao từ Cloud dbStates của đúng Workspace
   const scopedCloud = dbStates?.[cloudKey];
   if (scopedCloud && typeof scopedCloud === 'object') {
@@ -518,6 +525,7 @@ export function deepMergeSeedSets(
 /**
  * 💾 LƯU KHO HẠT GIỐNG TÙY CHỈNH THEO WORKSPACE (OFFLINE-FIRST & WORKSPACE SCOPED)
  * Mỗi giáo viên tự tạo và quản lý các bộ hạt giống 7 cấp độ riêng của mình
+ * Chỉ lưu theo đúng key chuẩn của Workspace (${workspaceId}_school_custom_seed_sets)
  */
 export async function saveWorkspaceSeedSets(
   seedSets: CustomSeedSet[],
@@ -529,17 +537,13 @@ export async function saveWorkspaceSeedSets(
   const prefix = `${effectiveWs}_`;
   const storageKey = `${prefix}custom_seed_sets_v1`;
   const cloudKey = `${prefix}school_custom_seed_sets`;
-  const legacyCloudKey = `${prefix}custom_seed_sets_v1`;
 
   // 1. Lưu ngay vào LocalStorage của Workspace
   safeSetLocalStorage(storageKey, seedSets);
 
-  // 2. Lưu lên Supabase Cloud của Workspace (lưu cả 2 key để tương thích mọi phiên bản)
+  // 2. Lưu lên Supabase Cloud của Workspace CHỈ theo đúng key chuẩn của Workspace
   try {
-    const p1 = saveSupabaseState(cloudKey, seedSets);
-    const p2 = saveSupabaseState(legacyCloudKey, seedSets);
-    const [r1] = await Promise.all([p1, p2]);
-    return r1;
+    return await saveSupabaseState(cloudKey, seedSets);
   } catch {
     return true; // Lưu an toàn ở local khi offline
   }
@@ -547,8 +551,8 @@ export async function saveWorkspaceSeedSets(
 
 /**
  * 📥 TẢI KHO HẠT GIỐNG TÙY CHỈNH THEO WORKSPACE
- * Tự động tải kho hạt giống của đúng Workspace giáo viên đó, đồng thời tự động kế thừa
- * kho hạt giống toàn cục của trường (nếu có) để giáo viên không bao giờ bị mất hạt giống cũ.
+ * Tự động tải kho hạt giống của đúng Workspace giáo viên đó.
+ * Loại bỏ hoàn toàn các khóa toàn cục dư thừa khỏi LocalStorage.
  */
 export function loadWorkspaceSeedSets(
   workspaceId: string = 'ws_default',
@@ -559,24 +563,23 @@ export function loadWorkspaceSeedSets(
   const prefix = `${effectiveWs}_`;
   const storageKey = `${prefix}custom_seed_sets_v1`;
   const cloudKey = `${prefix}school_custom_seed_sets`;
-  const legacyCloudKey = `${prefix}custom_seed_sets_v1`;
-  const globalCloudKey = 'school_custom_seed_sets';
+
+  // 🛡️ DỌN SẠCH TRIỆT ĐỂ: Loại bỏ các khóa hạt giống toàn cục cũ khỏi LocalStorage
+  try {
+    localStorage.removeItem('school_custom_seed_sets');
+    localStorage.removeItem('custom_seed_sets_v1');
+    localStorage.removeItem('custom_seed_sets');
+  } catch (e) {}
 
   let result: CustomSeedSet[] = [];
 
-  // 1. Kế thừa từ Cloud kho hạt giống toàn cục của trường (10 cây mẫu)
-  const globalCloud = dbStates?.[globalCloudKey];
-  if (Array.isArray(globalCloud) && globalCloud.length > 0) {
-    result = deepMergeSeedSets(result, globalCloud);
-  }
-
-  // 2. Kế thừa từ Cloud theo Workspace hiện tại (các cây của riêng giáo viên)
-  const scopedCloud = dbStates?.[cloudKey] || dbStates?.[legacyCloudKey];
+  // 1. Tải từ Cloud theo Workspace hiện tại (các cây của riêng giáo viên)
+  const scopedCloud = dbStates?.[cloudKey];
   if (Array.isArray(scopedCloud) && scopedCloud.length > 0) {
     result = deepMergeSeedSets(result, scopedCloud);
   }
 
-  // 3. Đọc từ LocalStorage của Workspace (chứa các thay đổi offline mới nhất)
+  // 2. Đọc từ LocalStorage của Workspace (chứa các thay đổi offline mới nhất)
   try {
     const rawLocal = localStorage.getItem(storageKey);
     if (rawLocal !== null) {
@@ -588,17 +591,6 @@ export function loadWorkspaceSeedSets(
   } catch (e) {
     console.warn('Cannot parse local seed sets:', e);
   }
-
-  // 4. Dự phòng: Đọc LocalStorage toàn cục cũ
-  try {
-    const rawGlobal = localStorage.getItem('school_custom_seed_sets');
-    if (rawGlobal !== null) {
-      const parsedGlobal = JSON.parse(rawGlobal);
-      if (Array.isArray(parsedGlobal) && parsedGlobal.length > 0) {
-        result = deepMergeSeedSets(result, parsedGlobal);
-      }
-    }
-  } catch (e) {}
 
   if (result.length > 0) {
     safeSetLocalStorage(storageKey, result);
