@@ -199,54 +199,40 @@ export function loadWorkspaceRewardsData(
     safeSetLocalStorage(deletedIdsKey, allDeletedArr);
   }
 
-  // 1. Thu thập danh sách phần thưởng từ Cloud CHỈ CỦA TÀI KHOẢN NÀY
-  let cloudItems: GardenReward[] = [];
-  if (dbStates) {
-    const scopedCloud = dbStates[cloudKey];
-    if (Array.isArray(scopedCloud) && scopedCloud.length > 0) {
-      cloudItems = scopedCloud;
-    }
+  // 1. Khi có kết nối mạng và Supabase Cloud trả về dbStates của Workspace này:
+  // CLOUD LÀ CHÂN LÝ DUY NHẤT (Single Source of Truth)
+  if (dbStates && dbStates[cloudKey] !== undefined) {
+    const cloudRaw = dbStates[cloudKey];
+    const cloudItems: GardenReward[] = Array.isArray(cloudRaw) ? cloudRaw : [];
+    const cleanedCloud = cloudItems.filter(
+      item => item && item.id && !isSampleReward(item) && !deletedIds.has(item.id)
+    );
+    // Ghi đè ngay vào LocalStorage của Workspace để đồng bộ 100% với Cloud
+    safeSetLocalStorage(storageKey, cleanedCloud);
+    return cleanedCloud;
   }
 
-  // 2. Thu thập danh sách phần thưởng từ LocalStorage CHỈ CỦA TÀI KHOẢN NÀY
+  // 2. Khi offline hoặc chưa tải xong từ Cloud: Mới dùng LocalStorage của Workspace làm bộ đệm cache
   let localItems: GardenReward[] = [];
   try {
     const rawLocal = localStorage.getItem(storageKey);
     if (rawLocal) {
       const parsed = JSON.parse(rawLocal);
-      if (Array.isArray(parsed)) localItems = parsed;
+      if (Array.isArray(parsed)) {
+        localItems = parsed.filter(
+          item => item && item.id && !isSampleReward(item) && !deletedIds.has(item.id)
+        );
+      }
     }
   } catch (e) {}
 
-  // 3. Kết hợp thông minh giữa Cloud và LocalStorage của chính tài khoản này
-  let result: GardenReward[] = [];
-
-  if (cloudItems.length > 0 || localItems.length > 0) {
-    result = reconcileRewards(cloudItems, localItems, deletedIds);
-  } else if (Array.isArray(fallbackValue) && fallbackValue.length > 0) {
-    result = fallbackValue.filter(item => item && item.id && !isSampleReward(item) && !deletedIds.has(item.id));
+  if (localItems.length > 0) {
+    return localItems;
   }
 
-  // 4. Lưu lại dữ liệu hợp nhất vào LocalStorage CHỈ CỦA TÀI KHOẢN NÀY
-  safeSetLocalStorage(storageKey, result);
-
-  // 5. Tự động đồng bộ hóa ngược (Auto Self-Healing) CHỈ LÊN KEY CỦA TÀI KHOẢN NÀY TRÊN CLOUD:
-  // Giúp tài khoản đó khi mở ở Localhost hay Vercel đều sở hữu cùng một bộ dữ liệu hoàn chỉnh nhất
-  if (dbStates && result.length > 0) {
-    const cloudCount = cloudItems.length;
-    const needsSync = result.length !== cloudCount || 
-      result.some(r => !cloudItems.some(c => c.id === r.id)) ||
-      cloudItems.some(c => deletedIds.has(c.id));
-
-    if (needsSync) {
-      saveSupabaseState(cloudKey, result);
-      if (allDeletedArr.length > 0) {
-        saveSupabaseState(deletedIdsKey, allDeletedArr);
-      }
-    }
-  }
-
-  return result;
+  return Array.isArray(fallbackValue)
+    ? fallbackValue.filter(item => item && item.id && !isSampleReward(item) && !deletedIds.has(item.id))
+    : [];
 }
 
 /**
@@ -396,8 +382,6 @@ export function loadWorkspaceGardenData(
   const storageKey = `${prefix}garden_data_v2`;
   const cloudKey = `${prefix}school_garden_data`;
 
-  let merged: Record<string, GardenStudentData> = { ...fallbackValue };
-
   // 🛡️ DỌN SẠCH TRIỆT ĐỂ: Loại bỏ các khóa dữ liệu vườn toàn cục cũ khỏi LocalStorage
   try {
     localStorage.removeItem('school_garden_data');
@@ -405,31 +389,27 @@ export function loadWorkspaceGardenData(
     localStorage.removeItem('garden_data');
   } catch (e) {}
 
-  // 1. Tải bản sao từ Cloud dbStates của đúng Workspace
+  // 1. Khi có kết nối mạng và Cloud trả về dữ liệu của Workspace này: CLOUD LÀ CHÂN LÝ DUY NHẤT
   const scopedCloud = dbStates?.[cloudKey];
   if (scopedCloud && typeof scopedCloud === 'object') {
-    merged = deepMergeGardenData(merged, scopedCloud);
+    safeSetLocalStorage(storageKey, scopedCloud);
+    return scopedCloud;
   }
 
-  // 2. Tải bản sao từ LocalStorage của đúng Workspace (chứa các chỉnh sửa mới nhất cả khi offline)
+  // 2. Khi offline hoặc chưa nạp Cloud: Mới dùng LocalStorage của Workspace làm bộ đệm cache
   try {
     const rawLocal = localStorage.getItem(storageKey);
     if (rawLocal) {
       const parsedLocal = JSON.parse(rawLocal);
       if (parsedLocal && typeof parsedLocal === 'object') {
-        merged = deepMergeGardenData(merged, parsedLocal);
+        return parsedLocal;
       }
     }
   } catch (e) {
     console.warn('Cannot parse local garden data:', e);
   }
 
-  // 3. Cập nhật ngay vào LocalStorage để đồng bộ 100% với dữ liệu hợp nhất
-  if (Object.keys(merged).length > 0) {
-    safeSetLocalStorage(storageKey, merged);
-  }
-
-  return merged;
+  return { ...fallbackValue };
 }
 
 /**
@@ -536,30 +516,24 @@ export function loadWorkspaceSeedSets(
     localStorage.removeItem('custom_seed_sets');
   } catch (e) {}
 
-  let result: CustomSeedSet[] = [];
-
-  // 1. Tải từ Cloud theo Workspace hiện tại (các cây của riêng giáo viên)
+  // 1. Khi có kết nối mạng và Cloud trả về dữ liệu của Workspace này: CLOUD LÀ CHÂN LÝ DUY NHẤT
   const scopedCloud = dbStates?.[cloudKey];
-  if (Array.isArray(scopedCloud) && scopedCloud.length > 0) {
-    result = deepMergeSeedSets(result, scopedCloud);
+  if (Array.isArray(scopedCloud)) {
+    safeSetLocalStorage(storageKey, scopedCloud);
+    return scopedCloud;
   }
 
-  // 2. Đọc từ LocalStorage của Workspace (chứa các thay đổi offline mới nhất)
+  // 2. Khi offline hoặc chưa nạp Cloud: Mới dùng LocalStorage của Workspace làm bộ đệm cache
   try {
     const rawLocal = localStorage.getItem(storageKey);
     if (rawLocal !== null) {
       const parsedLocal = JSON.parse(rawLocal);
       if (Array.isArray(parsedLocal) && parsedLocal.length > 0) {
-        result = deepMergeSeedSets(result, parsedLocal);
+        return parsedLocal;
       }
     }
   } catch (e) {
     console.warn('Cannot parse local seed sets:', e);
-  }
-
-  if (result.length > 0) {
-    safeSetLocalStorage(storageKey, result);
-    return result;
   }
 
   return Array.isArray(fallbackValue) ? fallbackValue : [];

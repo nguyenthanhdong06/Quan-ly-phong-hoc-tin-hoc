@@ -1107,7 +1107,7 @@ export default function App() {
   useEffect(() => {
     if (!initialSyncDoneRef.current) return;
     const wsId = currentWsRef.current;
-    if (!wsId || wsId === 'ws_default') return;
+    if (!wsId) return;
     if (!gardenData || Object.keys(gardenData).length === 0) return;
 
     const storageKey = `${wsId}_garden_data_v2`;
@@ -1129,7 +1129,7 @@ export default function App() {
   useEffect(() => {
     if (!initialSyncDoneRef.current) return;
     const wsId = currentWsRef.current;
-    if (!wsId || wsId === 'ws_default') return;
+    if (!wsId) return;
     if (!gardenRewards || gardenRewards.length === 0) return;
 
     const storageKey = `${wsId}_garden_rewards_v2`;
@@ -1151,7 +1151,7 @@ export default function App() {
   useEffect(() => {
     if (!initialSyncDoneRef.current) return;
     const wsId = currentWsRef.current;
-    if (!wsId || wsId === 'ws_default') return;
+    if (!wsId) return;
     if (!customSeedSets || customSeedSets.length === 0) return;
 
     const storageKey = `${wsId}_custom_seed_sets_v1`;

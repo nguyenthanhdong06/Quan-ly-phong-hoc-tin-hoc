@@ -368,7 +368,7 @@ export function reconcileRewards(
     );
   };
 
-  // 1. Nạp từ Cloud (Dữ liệu thật trên máy chủ Supabase)
+  // 1. Nạp từ Cloud (Dữ liệu thật trên máy chủ Supabase) - ƯU TIÊN SỐ 1
   if (Array.isArray(cloudRewards)) {
     cloudRewards.forEach(item => {
       if (isValidItem(item)) {
@@ -377,28 +377,15 @@ export function reconcileRewards(
     });
   }
 
-  // 2. Hợp nhất với LocalStorage (Dữ liệu trên máy người dùng)
-  if (Array.isArray(localRewards)) {
-    localRewards.forEach(item => {
-      if (isValidItem(item)) {
-        const existing = map.get(item.id);
-        if (!existing) {
-          // Món quà mới tạo ngoại tuyến dưới máy -> bổ sung vào danh mục
+  // 2. Chỉ khi Cloud hoàn toàn rỗng hoặc chưa nạp thì mới dùng LocalStorage
+  if (!cloudRewards || cloudRewards.length === 0) {
+    if (Array.isArray(localRewards)) {
+      localRewards.forEach(item => {
+        if (isValidItem(item)) {
           map.set(item.id, { ...item });
-        } else {
-          // Món quà đã có ở cả 2 bên -> hợp nhất thông tin, ưu tiên các trường có nội dung đầy đủ
-          map.set(item.id, {
-            ...existing,
-            ...item,
-            title: item.title?.trim() || existing.title,
-            cost: typeof item.cost === 'number' ? item.cost : existing.cost,
-            icon: item.icon || existing.icon,
-            type: item.type || existing.type,
-            imageUrl: item.imageUrl !== undefined ? item.imageUrl : existing.imageUrl
-          });
         }
-      }
-    });
+      });
+    }
   }
 
   return Array.from(map.values()).filter(item => !isSampleReward(item) && !deletedSet.has(item.id));

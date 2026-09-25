@@ -228,30 +228,51 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
 
   const lastLocalSaveTimeRef = React.useRef<number>(0);
 
-  // 🛡️ On-Demand Fetching & Auto-Heal: Luôn tải trọn vẹn hạt giống từ Cloud khi mở tab Vườn Tri Thức
+  // 🛡️ On-Demand Fetching & Auto-Heal: Luôn tải trọn vẹn Hạt giống, Kho quà và Dữ liệu Vườn từ Cloud khi mở tab Vườn Tri Thức
   useEffect(() => {
     let isMounted = true;
-    async function fetchFullSeedSets() {
+    async function fetchFullGardenWorkspaceData() {
       try {
+        const targetKeys = [
+          `${currentWsId}_school_custom_seed_sets`,
+          `${currentWsId}_school_garden_rewards`,
+          `${currentWsId}_school_garden_data`,
+          `${currentWsId}_deleted_reward_ids`
+        ];
+
         const { data } = await supabase
           .from('school_states')
           .select('key, value')
-          .eq('key', `${currentWsId}_school_custom_seed_sets`);
+          .in('key', targetKeys);
 
         if (data && data.length > 0 && isMounted) {
           const dbObj: Record<string, any> = {};
           data.forEach(item => { dbObj[item.key] = item.value; });
-          const merged = loadWorkspaceSeedSets(currentWsId, dbObj);
-          if (merged.length > 0 && merged.length > (customSeedSets?.length || 0)) {
-            setCustomSeedSets(merged);
+
+          // 1. Đồng bộ Kho Hạt Giống 7 cấp độ
+          const loadedSeeds = loadWorkspaceSeedSets(currentWsId, dbObj);
+          if (Array.isArray(loadedSeeds)) {
+            setCustomSeedSets(loadedSeeds);
+          }
+
+          // 2. Đồng bộ Kho Quà Tặng
+          const loadedRewards = loadWorkspaceRewardsData(currentWsId, dbObj);
+          if (Array.isArray(loadedRewards)) {
+            setRewards(loadedRewards);
+          }
+
+          // 3. Đồng bộ Tiến Trình Vườn Cây & Nước Học Sinh
+          const loadedGarden = loadWorkspaceGardenData(currentWsId, dbObj);
+          if (loadedGarden && typeof loadedGarden === 'object' && Object.keys(loadedGarden).length > 0) {
+            setGardenData(loadedGarden);
           }
         }
       } catch (e) {
-        console.warn('Lỗi tải nhanh hạt giống từ Cloud:', e);
+        console.warn('Lỗi tải nhanh dữ liệu Vườn Tri Thức từ Cloud:', e);
       }
     }
 
-    fetchFullSeedSets();
+    fetchFullGardenWorkspaceData();
     return () => { isMounted = false; };
   }, [currentWsId]);
 
