@@ -179,6 +179,7 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const gardenDebounceRef = useRef<any>(null);
+  const isFirstGardenRenderRef = useRef(true);
 
   // 🛡️ Trạng thái lưu trữ Offline-First & Auto-Sync cho Kho Đổi Thưởng
   const [isRewardsSaving, setIsRewardsSaving] = useState(false);
@@ -187,6 +188,8 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     return new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
   });
   const rewardsDebounceRef = useRef<any>(null);
+  const isFirstRewardsRenderRef = useRef(true);
+  const isFirstSeedSetsRenderRef = useRef(true);
 
   // 🛡️ Tự động làm sạch triệt để mọi phần thưởng mẫu cũ khỏi state và localStorage của Workspace
   useEffect(() => {
@@ -254,6 +257,10 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
 
   // Persist Custom Seed Sets theo đúng Workspace
   useEffect(() => {
+    if (isFirstSeedSetsRenderRef.current) {
+      isFirstSeedSetsRenderRef.current = false;
+      return;
+    }
     if (!customSeedSets || customSeedSets.length === 0) return;
     try {
       saveWorkspaceSeedSets(customSeedSets, currentWsId);
@@ -426,15 +433,19 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     }, 950);
   };
 
-  // 2. EFFECT: PERSIST DATA & INITIALIZE CLASS STUDENTS (OFFLINE-FIRST & AUTO-SYNC DEEP MERGE)
+  // 2. EFFECT: PERSIST DATA & INITIALIZE CLASS STUDENTS (OFFLINE-FIRST & AUTO-SYNC)
   useEffect(() => {
+    if (isFirstGardenRenderRef.current) {
+      isFirstGardenRenderRef.current = false;
+      return;
+    }
     if (Object.keys(gardenData).length === 0) return;
     try {
       // 🛡️ Lưu tức thì 0ms vào LocalStorage của Workspace để bảo vệ 100% dữ liệu khi mất mạng
       safeSetLocalStorage(gardenStorageKey, gardenData);
     } catch (e) {}
 
-    // 🌐 Tự động đồng bộ ngầm (Debounce 1.5s) với Supabase Cloud bằng Deep Merge
+    // 🌐 Tự động đồng bộ ngầm (Debounce 400ms) với Supabase Cloud
     if (gardenDebounceRef.current) clearTimeout(gardenDebounceRef.current);
     gardenDebounceRef.current = setTimeout(async () => {
       try {
@@ -443,12 +454,34 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
       } catch (e) {
         console.warn('Lỗi lưu ngầm Vườn tri thức:', e);
       }
-    }, 1500);
+    }, 400);
 
     return () => {
-      if (gardenDebounceRef.current) clearTimeout(gardenDebounceRef.current);
+      // Khi unmount (rời tab), FLUSH ngay lập tức dữ liệu mới nhất lên Supabase thay vì huỷ bỏ
+      if (gardenDebounceRef.current) {
+        clearTimeout(gardenDebounceRef.current);
+        saveWorkspaceGardenData(gardenData, currentWsId);
+      }
     };
   }, [gardenData, gardenStorageKey, currentWsId]);
+
+  // 🛡️ BEFOREUNLOAD & PAGEHIDE: ĐẢM BẢO LƯU NGAY TRƯỚC KHI ĐÓNG HOẶC TẢI LẠI TRÌNH DUYỆT
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (Object.keys(gardenData).length > 0) {
+        saveWorkspaceGardenData(gardenData, currentWsId);
+      }
+      if (rewards.length > 0) {
+        saveWorkspaceRewardsData(rewards, currentWsId);
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pagehide', handleBeforeUnload);
+    };
+  }, [gardenData, rewards, currentWsId]);
 
   // 🛡️ HÀM LƯU VƯỜN CÂY CHỦ ĐỘNG (KHI THẦY/CÔ BẤM NÚT 'LƯU VƯỜN')
   const handleSaveGarden = async () => {
@@ -470,14 +503,18 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     }
   };
 
-  // 🛡️ EFFECT: PERSIST REWARDS (OFFLINE-FIRST & AUTO-SYNC DEEP MERGE)
+  // 🛡️ EFFECT: PERSIST REWARDS (OFFLINE-FIRST & AUTO-SYNC)
   useEffect(() => {
+    if (isFirstRewardsRenderRef.current) {
+      isFirstRewardsRenderRef.current = false;
+      return;
+    }
     if (rewards.length === 0) return;
     try {
       safeSetLocalStorage(rewardsStorageKey, rewards);
     } catch (e) {}
 
-    // 🌐 Tự động đồng bộ ngầm (Debounce 1.5s) với Supabase Cloud bằng Deep Merge
+    // 🌐 Tự động đồng bộ ngầm (Debounce 400ms) với Supabase Cloud
     if (rewardsDebounceRef.current) clearTimeout(rewardsDebounceRef.current);
     rewardsDebounceRef.current = setTimeout(async () => {
       try {
@@ -487,10 +524,14 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
       } catch (e) {
         console.warn('Lỗi lưu ngầm danh mục phần thưởng:', e);
       }
-    }, 1500);
+    }, 400);
 
     return () => {
-      if (rewardsDebounceRef.current) clearTimeout(rewardsDebounceRef.current);
+      // Khi unmount (rời tab), FLUSH ngay lập tức dữ liệu mới nhất lên Supabase thay vì huỷ bỏ
+      if (rewardsDebounceRef.current) {
+        clearTimeout(rewardsDebounceRef.current);
+        saveWorkspaceRewardsData(rewards, currentWsId);
+      }
     };
   }, [rewards, rewardsStorageKey, currentWsId]);
 
@@ -693,22 +734,51 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     }
   };
 
-  // Mass Watering for Entire Class
+  // Mass Watering for Entire Class (Đồng bộ tức thì LocalStorage & Supabase)
   const handleAddWaterToAll = () => {
     if (classStudents.length === 0) {
       showToast('Lớp hiện tại chưa có học sinh!', 'warning');
       return;
     }
 
-    classStudents.forEach(s => {
-      addWaterToStudent(s.id, 5, 'Khen thưởng phong trào cả lớp');
+    const now = Date.now();
+    const dateStr = new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+    const updated = { ...gardenData };
+
+    classStudents.forEach((s, idx) => {
+      const prevData = getStudentGarden(s.id);
+      const newWater = Math.max(0, prevData.water + 5);
+      const newLogs: WaterLog[] = [
+        {
+          id: `log-${now}-${idx}`,
+          date: dateStr,
+          amount: 5,
+          reason: 'Khen thưởng phong trào cả lớp'
+        },
+        ...prevData.logs
+      ];
+      updated[s.id] = {
+        ...prevData,
+        water: newWater,
+        logs: newLogs
+      };
     });
 
+    // 🛡️ Lưu tức thì 0ms vào LocalStorage của Workspace
+    safeSetLocalStorage(gardenStorageKey, updated);
+    setGardenData(updated);
+
+    // 🌐 Đẩy đồng thời lên Supabase Cloud của Workspace
+    saveWorkspaceGardenData(updated, currentWsId);
+    setHasUnsavedChanges(false);
+
+    triggerFallingWaterDrops();
+    playStarRewardSound();
     triggerStarsConfetti();
     showToast(`🎉 Tuyệt vời! Đã tặng +5 💧 cho tất cả ${classStudents.length} học sinh lớp ${selectedClass}!`, 'success');
   };
 
-  // Award Virtue Badge
+  // Award Virtue Badge (Đồng bộ tức thì LocalStorage & Supabase)
   const handleAwardBadge = () => {
     if (!badgeModalStudent) return;
     const badgeText = customBadgeInput.trim() || '⭐ Chăm Chỉ';
@@ -716,14 +786,22 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     const currentG = getStudentGarden(sId);
 
     if (!currentG.badges.includes(badgeText)) {
-      setHasUnsavedChanges(true);
-      setGardenData(prev => ({
-        ...prev,
+      const updated = {
+        ...gardenData,
         [sId]: {
           ...currentG,
           badges: [...currentG.badges, badgeText]
         }
-      }));
+      };
+
+      // 🛡️ Lưu tức thì 0ms vào LocalStorage của Workspace
+      safeSetLocalStorage(gardenStorageKey, updated);
+      setGardenData(updated);
+
+      // 🌐 Đẩy đồng thời lên Supabase Cloud của Workspace
+      saveWorkspaceGardenData(updated, currentWsId);
+      setHasUnsavedChanges(false);
+
       playVictoryFanfareSound();
       showToast(`🏅 Đã trao tặng huy hiệu "${badgeText}" cho ${badgeModalStudent.name}!`, 'success');
     } else {
@@ -734,7 +812,7 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     setCustomBadgeInput('');
   };
 
-  // Redeem Reward in Shop (Offline-First 0ms & Auto-Sync)
+  // Redeem Reward in Shop (Offline-First 0ms & Đồng bộ tức thì Supabase)
   const handleRedeemReward = (reward: GardenReward) => {
     if (!activeStudent || !activeGarden) return;
 
@@ -767,9 +845,11 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
 
       // 🛡️ Lưu tức thì 0ms vào LocalStorage bảo vệ dữ liệu khi mất mạng
       safeSetLocalStorage(gardenStorageKey, updatedAll);
-
-      setHasUnsavedChanges(true);
       setGardenData(updatedAll);
+
+      // 🌐 Đẩy đồng thời lên Supabase Cloud
+      saveWorkspaceGardenData(updatedAll, currentWsId);
+      setHasUnsavedChanges(false);
 
       playVictoryFanfareSound();
       triggerStarsConfetti();
@@ -802,9 +882,11 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
 
       // 🛡️ Lưu tức thì 0ms vào LocalStorage bảo vệ dữ liệu khi mất mạng
       safeSetLocalStorage(gardenStorageKey, updatedAll);
-
-      setHasUnsavedChanges(true);
       setGardenData(updatedAll);
+
+      // 🌐 Đẩy đồng thời lên Supabase Cloud
+      saveWorkspaceGardenData(updatedAll, currentWsId);
+      setHasUnsavedChanges(false);
 
       playVictoryFanfareSound();
       triggerStarsConfetti();
@@ -1052,15 +1134,19 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
     if (editingSeedSet && editingSeedSet.name !== newSet.name) {
       const oldName = editingSeedSet.name;
       const newName = newSet.name;
-      setGardenData(prev => {
-        const updated = { ...prev };
-        Object.keys(updated).forEach(stId => {
-          if (updated[stId].seed === oldName) {
-            updated[stId] = { ...updated[stId], seed: newName };
-          }
-        });
-        return updated;
+      const updated = { ...gardenData };
+      let changed = false;
+      Object.keys(updated).forEach(stId => {
+        if (updated[stId].seed === oldName) {
+          updated[stId] = { ...updated[stId], seed: newName };
+          changed = true;
+        }
       });
+      if (changed) {
+        safeSetLocalStorage(gardenStorageKey, updated);
+        setGardenData(updated);
+        saveWorkspaceGardenData(updated, currentWsId);
+      }
     }
 
     showToast(editingSeedSet ? `Đã cập nhật bộ hạt giống "${newSet.name}"!` : `Đã lưu bộ hạt giống mới "${newSet.name}" vào Kho!`, 'success');
@@ -1085,15 +1171,19 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
       saveWorkspaceSeedSets(nextSets, currentWsId);
     } catch (e) {}
 
-    setGardenData(prev => {
-      const updated = { ...prev };
-      Object.keys(updated).forEach(stId => {
-        if (updated[stId].seed === target.name) {
-          updated[stId] = { ...updated[stId], seed: DEFAULT_SEED_NAME };
-        }
-      });
-      return updated;
+    const updated = { ...gardenData };
+    let changed = false;
+    Object.keys(updated).forEach(stId => {
+      if (updated[stId].seed === target.name) {
+        updated[stId] = { ...updated[stId], seed: DEFAULT_SEED_NAME };
+        changed = true;
+      }
     });
+    if (changed) {
+      safeSetLocalStorage(gardenStorageKey, updated);
+      setGardenData(updated);
+      saveWorkspaceGardenData(updated, currentWsId);
+    }
 
     showToast(`Đã xóa bộ hạt giống "${target.name}" khỏi Kho!`, 'info');
   };
@@ -1119,23 +1209,37 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
       };
     });
 
-    setHasUnsavedChanges(true);
+    // 🛡️ Lưu tức thì 0ms vào LocalStorage của Workspace
+    safeSetLocalStorage(gardenStorageKey, updated);
     setGardenData(updated);
+
+    // 🌐 Đẩy đồng thời lên Supabase Cloud của Workspace
+    saveWorkspaceGardenData(updated, currentWsId);
+    setHasUnsavedChanges(false);
+
     playVictoryFanfareSound();
     triggerStarsConfetti();
     showToast(`🎲 Đã gán ngẫu nhiên bộ hạt giống 7 cấp cho toàn bộ ${classStudents.length} học sinh lớp ${selectedClass}!`, 'success');
   };
 
   const handleStudentSeedChange = (studentId: string, newSeedName: string) => {
-    setHasUnsavedChanges(true);
     const currentG = getStudentGarden(studentId);
-    setGardenData(prev => ({
-      ...prev,
+    const updated = {
+      ...gardenData,
       [studentId]: {
         ...currentG,
         seed: newSeedName
       }
-    }));
+    };
+
+    // 🛡️ Lưu tức thì 0ms vào LocalStorage của Workspace
+    safeSetLocalStorage(gardenStorageKey, updated);
+    setGardenData(updated);
+
+    // 🌐 Đẩy đồng thời lên Supabase Cloud của Workspace
+    saveWorkspaceGardenData(updated, currentWsId);
+    setHasUnsavedChanges(false);
+
     const st = students.find(s => s.id === studentId);
     showToast(`Đã thay đổi bộ hạt giống cho ${st ? st.name : 'học sinh'} sang "${newSeedName}"!`, 'success');
   };
@@ -1218,7 +1322,15 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
           logs: []
         };
       });
+
+      // 🛡️ Lưu tức thì 0ms vào LocalStorage của Workspace
+      safeSetLocalStorage(gardenStorageKey, updated);
       setGardenData(updated);
+
+      // 🌐 Đẩy đồng thời lên Supabase Cloud của Workspace
+      saveWorkspaceGardenData(updated, currentWsId);
+      setHasUnsavedChanges(false);
+
       showToast(`Đã đặt lại dữ liệu Khu Vườn Lớp ${selectedClass} về Cấp 1 (0 💧)!`, 'info');
     }
   };

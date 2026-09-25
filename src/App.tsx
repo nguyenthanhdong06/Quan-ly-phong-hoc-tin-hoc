@@ -1099,6 +1099,77 @@ export default function App() {
     }, 1500);
   }, [emulationDataState]);
 
+  // --- 🌳 ĐỒNG BỘ TỰ ĐỘNG KHU VƯỜN TRI THỨC (GARDEN DATA, REWARDS, SEED SETS) ---
+  const rootGardenDebounceRef = React.useRef<NodeJS.Timeout | null>(null);
+  const rootRewardsDebounceRef = React.useRef<NodeJS.Timeout | null>(null);
+  const rootSeedSetsDebounceRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (!initialSyncDoneRef.current) return;
+    const wsId = currentWsRef.current;
+    if (!wsId || wsId === 'ws_default') return;
+    if (!gardenData || Object.keys(gardenData).length === 0) return;
+
+    const storageKey = `${wsId}_garden_data_v2`;
+    safeSetLocalStorage(storageKey, gardenData);
+
+    if (rootGardenDebounceRef.current) clearTimeout(rootGardenDebounceRef.current);
+    rootGardenDebounceRef.current = setTimeout(() => {
+      saveWorkspaceGardenData(gardenData, wsId);
+    }, 600);
+
+    return () => {
+      if (rootGardenDebounceRef.current) {
+        clearTimeout(rootGardenDebounceRef.current);
+        saveWorkspaceGardenData(gardenData, wsId);
+      }
+    };
+  }, [gardenData]);
+
+  useEffect(() => {
+    if (!initialSyncDoneRef.current) return;
+    const wsId = currentWsRef.current;
+    if (!wsId || wsId === 'ws_default') return;
+    if (!gardenRewards || gardenRewards.length === 0) return;
+
+    const storageKey = `${wsId}_garden_rewards_v2`;
+    safeSetLocalStorage(storageKey, gardenRewards);
+
+    if (rootRewardsDebounceRef.current) clearTimeout(rootRewardsDebounceRef.current);
+    rootRewardsDebounceRef.current = setTimeout(() => {
+      saveWorkspaceRewardsData(gardenRewards, wsId);
+    }, 600);
+
+    return () => {
+      if (rootRewardsDebounceRef.current) {
+        clearTimeout(rootRewardsDebounceRef.current);
+        saveWorkspaceRewardsData(gardenRewards, wsId);
+      }
+    };
+  }, [gardenRewards]);
+
+  useEffect(() => {
+    if (!initialSyncDoneRef.current) return;
+    const wsId = currentWsRef.current;
+    if (!wsId || wsId === 'ws_default') return;
+    if (!customSeedSets || customSeedSets.length === 0) return;
+
+    const storageKey = `${wsId}_custom_seed_sets_v1`;
+    safeSetLocalStorage(storageKey, customSeedSets);
+
+    if (rootSeedSetsDebounceRef.current) clearTimeout(rootSeedSetsDebounceRef.current);
+    rootSeedSetsDebounceRef.current = setTimeout(() => {
+      saveWorkspaceSeedSets(customSeedSets, wsId);
+    }, 600);
+
+    return () => {
+      if (rootSeedSetsDebounceRef.current) {
+        clearTimeout(rootSeedSetsDebounceRef.current);
+        saveWorkspaceSeedSets(customSeedSets, wsId);
+      }
+    };
+  }, [customSeedSets]);
+
   useEffect(() => {
     safeSetLocalStorage('school_documents', documents);
     if (initialSyncDoneRef.current) {

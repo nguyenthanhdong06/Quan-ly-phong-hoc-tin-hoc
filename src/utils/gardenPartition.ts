@@ -363,61 +363,21 @@ export async function saveWorkspaceGardenData(
   const storageKey = `${prefix}garden_data_v2`;
   const cloudKey = `${prefix}school_garden_data`;
 
-  // 1. Đọc dữ liệu hiện có từ LocalStorage của đúng Workspace
-  let localData: Record<string, GardenStudentData> = {};
-  try {
-    const rawLocal = localStorage.getItem(storageKey);
-    if (rawLocal) {
-      const parsed = JSON.parse(rawLocal);
-      if (parsed && typeof parsed === 'object') {
-        localData = parsed;
-      }
-    }
-  } catch (e) {
-    console.warn('Lỗi đọc local garden data khi lưu:', e);
-  }
+  // 1. Lưu ngay lập tức 0ms vào LocalStorage của Workspace (Bảo đảm dữ liệu sống sót 100% khi rớt mạng)
+  safeSetLocalStorage(storageKey, gardenData);
 
-  // 2. Đọc dữ liệu mới nhất từ Supabase Cloud của Workspace với Timeout 1.5s bảo vệ chống treo khi Offline
-  let cloudData: Record<string, GardenStudentData> = {};
-  if (typeof navigator === 'undefined' || navigator.onLine) {
-    try {
-      const fetchPromise = supabase
-        .from('school_states')
-        .select('value')
-        .eq('key', cloudKey)
-        .maybeSingle();
-
-      const timeoutPromise = new Promise<{ data: null; error: string }>(resolve => 
-        setTimeout(() => resolve({ data: null, error: 'timeout' }), 1500)
-      );
-
-      const res: any = await Promise.race([fetchPromise, timeoutPromise]);
-      if (res?.data?.value && typeof res.data.value === 'object') {
-        cloudData = res.data.value;
-      }
-    } catch (e) {
-      console.warn('Lỗi đọc cloud garden data khi lưu:', e);
-    }
-  }
-
-  // 3. THỰC HIỆN DEEP MERGE ĐA TẦNG (Cloud cũ + Local cũ + Thao tác mới nhất của Workspace)
-  let mergedData = deepMergeGardenData(cloudData, localData);
-  mergedData = deepMergeGardenData(mergedData, gardenData);
-
-  // 4. Lưu ngay lập tức vào LocalStorage của Workspace (Bảo đảm dữ liệu sống sót 100% khi rớt mạng)
-  safeSetLocalStorage(storageKey, mergedData);
-
-  // 5. Cập nhật React State tức thì qua Callback
+  // 2. Cập nhật React State tức thì qua Callback (nếu có)
   if (onMerged) {
     try {
-      onMerged(mergedData);
+      onMerged(gardenData);
     } catch (e) {}
   }
 
-  // 6. Lưu lên Supabase Cloud của Workspace
+  // 3. Đẩy đồng thời lên Supabase Cloud của Workspace
   try {
-    return await saveSupabaseState(cloudKey, mergedData);
-  } catch {
+    return await saveSupabaseState(cloudKey, gardenData);
+  } catch (err) {
+    console.warn('Lỗi đẩy dữ liệu vườn cây lên Supabase:', err);
     return true; // Đã lưu an toàn ở LocalStorage khi offline
   }
 }
@@ -462,6 +422,11 @@ export function loadWorkspaceGardenData(
     }
   } catch (e) {
     console.warn('Cannot parse local garden data:', e);
+  }
+
+  // 3. Cập nhật ngay vào LocalStorage để đồng bộ 100% với dữ liệu hợp nhất
+  if (Object.keys(merged).length > 0) {
+    safeSetLocalStorage(storageKey, merged);
   }
 
   return merged;
