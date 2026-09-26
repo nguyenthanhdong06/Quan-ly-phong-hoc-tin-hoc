@@ -37,7 +37,8 @@ import {
   mergeMembers,
   mergeDocuments,
   mergeTimetableData,
-  mergeArrayById
+  mergeArrayById,
+  cleanAllOrphanGardenStorage
 } from './services/dataReconciliationService';
 import OfflineSyncBanner from './components/OfflineSyncBanner';
 import { triggerInstantShortcutDownload } from './utils/shortcutInstaller';
@@ -1319,6 +1320,9 @@ export default function App() {
         setIsLoginModalOpen(false);
         showToast(`Đăng nhập thành công! Chào thầy cô: ${foundUser.name}`);
 
+        // 🧹 Dọn sạch toàn bộ khóa rác toàn cục cũ trong LocalStorage của máy
+        cleanAllOrphanGardenStorage();
+
         // 🚀 ĐỒNG BỘ DỮ LIỆU THIỆT TỪ SUPABASE VỀ LOCALSTORAGE KHI ĐĂNG NHẬP
         syncFromSupabase(targetWsId, updatedUser, false);
         return;
@@ -1333,6 +1337,7 @@ export default function App() {
       showToast(`Hẹn gặp lại thầy/cô ${currentUser.name}!`);
     }
     clearLocalSession(); // Clear session ID from LocalStorage
+    cleanAllOrphanGardenStorage();
     sessionStorage.removeItem('school_current_user');
     localStorage.removeItem('school_current_user');
     setCurrentUser(null);

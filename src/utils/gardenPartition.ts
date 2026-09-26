@@ -1,7 +1,13 @@
 import { GardenStudentData, GardenReward, WaterLog, CustomSeedSet } from '../types';
 import { safeSetLocalStorage } from './safeStorage';
 import { saveSupabaseState, supabase } from '../supabaseClient';
-import { reconcileRewards } from '../services/dataReconciliationService';
+import { 
+  reconcileRewards,
+  smartReconcileAndPruneRewards,
+  smartReconcileAndPruneGardenData,
+  smartReconcileAndPruneSeedSets,
+  cleanAllOrphanGardenStorage
+} from '../services/dataReconciliationService';
 
 /**
  * 📦 QUẢN LÝ DỮ LIỆU VƯỜN TRI THỨC, ĐỔI THƯỞNG & KHO HẠT GIỐNG (OFFLINE-FIRST & WORKSPACE ISOLATION)
@@ -200,16 +206,22 @@ export function loadWorkspaceRewardsData(
   }
 
   // 1. Khi có kết nối mạng và Supabase Cloud trả về dbStates của Workspace này:
-  // CLOUD LÀ CHÂN LÝ DUY NHẤT (Single Source of Truth)
-  if (dbStates && dbStates[cloudKey] !== undefined) {
-    const cloudRaw = dbStates[cloudKey];
-    const cloudItems: GardenReward[] = Array.isArray(cloudRaw) ? cloudRaw : [];
-    const cleanedCloud = cloudItems.filter(
-      item => item && item.id && !isSampleReward(item) && !deletedIds.has(item.id)
-    );
-    // Ghi đè ngay vào LocalStorage của Workspace để đồng bộ 100% với Cloud
-    safeSetLocalStorage(storageKey, cleanedCloud);
-    return cleanedCloud;
+  // CLOUD LÀ CHÂN LÝ DUY NHẤT (Single Source of Truth) - ĐỐI CHIẾU & LOẠI BỎ DỮ LIỆU DƯ THỪA TRONG LOCALSTORAGE
+  if (dbStates) {
+    let cloudRaw = dbStates[cloudKey];
+
+    // Tự động kế thừa từ Master trên Supabase nếu tài khoản này là tài khoản mới chưa có kho quà riêng
+    if (cloudRaw === undefined || (Array.isArray(cloudRaw) && cloudRaw.length === 0)) {
+      cloudRaw = dbStates['ws_default_school_garden_rewards'] || dbStates['ws_u-1_school_garden_rewards'];
+      if (Array.isArray(cloudRaw) && cloudRaw.length > 0) {
+        // Tự động khởi tạo dữ liệu thật cho tài khoản này trên Cloud
+        saveSupabaseState(cloudKey, cloudRaw);
+      }
+    }
+
+    if (Array.isArray(cloudRaw)) {
+      return smartReconcileAndPruneRewards(cloudRaw, storageKey, deletedIds);
+    }
   }
 
   // 2. Khi offline hoặc chưa tải xong từ Cloud: Mới dùng LocalStorage của Workspace làm bộ đệm cache
@@ -389,11 +401,21 @@ export function loadWorkspaceGardenData(
     localStorage.removeItem('garden_data');
   } catch (e) {}
 
-  // 1. Khi có kết nối mạng và Cloud trả về dữ liệu của Workspace này: CLOUD LÀ CHÂN LÝ DUY NHẤT
-  const scopedCloud = dbStates?.[cloudKey];
-  if (scopedCloud && typeof scopedCloud === 'object') {
-    safeSetLocalStorage(storageKey, scopedCloud);
-    return scopedCloud;
+  // 1. Khi có kết nối mạng và Cloud trả về dữ liệu: CLOUD LÀ CHÂN LÝ DUY NHẤT - ĐỐI CHIẾU & LOẠI BỎ RÁC TRONG LOCAL
+  if (dbStates) {
+    let scopedCloud = dbStates[cloudKey];
+
+    // Tự động kế thừa từ Master trên Supabase nếu tài khoản này là tài khoản mới chưa có dữ liệu vườn riêng
+    if (!scopedCloud || Object.keys(scopedCloud).length === 0) {
+      scopedCloud = dbStates['ws_default_school_garden_data'] || dbStates['ws_u-1_school_garden_data'];
+      if (scopedCloud && Object.keys(scopedCloud).length > 0) {
+        saveSupabaseState(cloudKey, scopedCloud);
+      }
+    }
+
+    if (scopedCloud && typeof scopedCloud === 'object') {
+      return smartReconcileAndPruneGardenData(scopedCloud, storageKey);
+    }
   }
 
   // 2. Khi offline hoặc chưa nạp Cloud: Mới dùng LocalStorage của Workspace làm bộ đệm cache
@@ -516,11 +538,21 @@ export function loadWorkspaceSeedSets(
     localStorage.removeItem('custom_seed_sets');
   } catch (e) {}
 
-  // 1. Khi có kết nối mạng và Cloud trả về dữ liệu của Workspace này: CLOUD LÀ CHÂN LÝ DUY NHẤT
-  const scopedCloud = dbStates?.[cloudKey];
-  if (Array.isArray(scopedCloud)) {
-    safeSetLocalStorage(storageKey, scopedCloud);
-    return scopedCloud;
+  // 1. Khi có kết nối mạng và Cloud trả về dữ liệu: CLOUD LÀ CHÂN LÝ DUY NHẤT - ĐỐI CHIẾU & LOẠI BỎ HẠT GIỐNG THỪA
+  if (dbStates) {
+    let scopedCloud = dbStates[cloudKey];
+
+    // Tự động kế thừa từ Master trên Supabase nếu tài khoản này là tài khoản mới chưa có hạt giống riêng
+    if (!Array.isArray(scopedCloud) || scopedCloud.length === 0) {
+      scopedCloud = dbStates['ws_default_school_custom_seed_sets'] || dbStates['ws_u-1_school_custom_seed_sets'];
+      if (Array.isArray(scopedCloud) && scopedCloud.length > 0) {
+        saveSupabaseState(cloudKey, scopedCloud);
+      }
+    }
+
+    if (Array.isArray(scopedCloud)) {
+      return smartReconcileAndPruneSeedSets(scopedCloud, storageKey);
+    }
   }
 
   // 2. Khi offline hoặc chưa nạp Cloud: Mới dùng LocalStorage của Workspace làm bộ đệm cache

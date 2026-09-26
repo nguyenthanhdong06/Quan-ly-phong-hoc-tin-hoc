@@ -237,7 +237,10 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
           `${currentWsId}_school_custom_seed_sets`,
           `${currentWsId}_school_garden_rewards`,
           `${currentWsId}_school_garden_data`,
-          `${currentWsId}_deleted_reward_ids`
+          `${currentWsId}_deleted_reward_ids`,
+          'ws_default_school_custom_seed_sets',
+          'ws_default_school_garden_rewards',
+          'ws_default_school_garden_data'
         ];
 
         const { data } = await supabase

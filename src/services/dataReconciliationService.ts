@@ -390,3 +390,143 @@ export function reconcileRewards(
 
   return Array.from(map.values()).filter(item => !isSampleReward(item) && !deletedSet.has(item.id));
 }
+
+/**
+ * 🧹 DỌN SẠCH TOÀN BỘ CÁC KHÓA RÁC TOÀN CỤC CŨ TRONG LOCALSTORAGE
+ * Đảm bảo trình duyệt không còn lưu giữ các khóa toàn cục cũ gây xung đột hoặc hồi sinh dữ liệu cũ.
+ */
+export function cleanAllOrphanGardenStorage(): void {
+  const obsoleteKeys = [
+    'school_garden_rewards',
+    'garden_rewards_v2',
+    'garden_rewards',
+    'school_garden_deleted_reward_ids',
+    'school_garden_data',
+    'garden_data_v2',
+    'garden_data',
+    'school_custom_seed_sets',
+    'custom_seed_sets_v1',
+    'custom_seed_sets'
+  ];
+
+  obsoleteKeys.forEach(k => {
+    try {
+      localStorage.removeItem(k);
+    } catch (e) {}
+  });
+}
+
+/**
+ * 🎯 SO SÁNH VÀ THANH LỌC THÔNG MINH KHO QUÀ (SMART RECONCILE & PRUNE REWARDS)
+ * Lấy dữ liệu thật từ Supabase Cloud làm CHÂN LÝ. Đối chiếu với LocalStorage:
+ * Nếu trong LocalStorage có bất kỳ món quà nào dư thừa / không tồn tại trên Supabase -> LOẠI BỎ NGAY LẬP TỨC.
+ */
+export function smartReconcileAndPruneRewards(
+  cloudRewards: GardenReward[] | undefined,
+  storageKey: string,
+  deletedIds?: Set<string>
+): GardenReward[] {
+  cleanAllOrphanGardenStorage();
+
+  // 1. Nếu trên Cloud có danh sách quà: Cloud là nguồn chân lý duy nhất
+  if (Array.isArray(cloudRewards)) {
+    const validCloudItems = cloudRewards.filter(
+      r => r && r.id && !isSampleReward(r) && (!deletedIds || !deletedIds.has(r.id))
+    );
+    const cloudIdSet = new Set(validCloudItems.map(r => r.id));
+
+    // Đọc LocalStorage để kiểm tra và phát hiện dữ liệu dư thừa
+    try {
+      const rawLocal = localStorage.getItem(storageKey);
+      if (rawLocal) {
+        const localList: GardenReward[] = JSON.parse(rawLocal);
+        if (Array.isArray(localList)) {
+          const orphanItems = localList.filter(l => l && l.id && !cloudIdSet.has(l.id));
+          if (orphanItems.length > 0) {
+            console.info(`🧹 Đã phát hiện và loại bỏ ${orphanItems.length} món quà dư thừa trong LocalStorage:`, orphanItems.map(o => o.title || o.id));
+          }
+        }
+      }
+    } catch (e) {}
+
+    // Ghi đè danh sách sạch chuẩn từ Cloud vào LocalStorage
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(validCloudItems));
+    } catch (e) {}
+
+    return validCloudItems;
+  }
+
+  // 2. Fallback khi hoàn toàn offline: dùng LocalStorage đã lọc
+  try {
+    const rawLocal = localStorage.getItem(storageKey);
+    if (rawLocal) {
+      const localList: GardenReward[] = JSON.parse(rawLocal);
+      if (Array.isArray(localList)) {
+        return localList.filter(r => r && r.id && !isSampleReward(r) && (!deletedIds || !deletedIds.has(r.id)));
+      }
+    }
+  } catch (e) {}
+
+  return [];
+}
+
+/**
+ * 🎯 SO SÁNH VÀ THANH LỌC THÔNG MINH TIẾN TRÌNH VƯỜN CÂY HỌC SINH (SMART RECONCILE & PRUNE GARDEN DATA)
+ * Đối chiếu dữ liệu học sinh trong LocalStorage với Supabase Cloud. Dữ liệu nào dư thừa hoặc không có trên Cloud sẽ bị loại bỏ.
+ */
+export function smartReconcileAndPruneGardenData(
+  cloudGarden: Record<string, any> | undefined,
+  storageKey: string
+): Record<string, any> {
+  cleanAllOrphanGardenStorage();
+
+  if (cloudGarden && typeof cloudGarden === 'object' && Object.keys(cloudGarden).length > 0) {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(cloudGarden));
+    } catch (e) {}
+    return cloudGarden;
+  }
+
+  try {
+    const rawLocal = localStorage.getItem(storageKey);
+    if (rawLocal) {
+      const localParsed = JSON.parse(rawLocal);
+      if (localParsed && typeof localParsed === 'object') {
+        return localParsed;
+      }
+    }
+  } catch (e) {}
+
+  return {};
+}
+
+/**
+ * 🎯 SO SÁNH VÀ THANH LỌC THÔNG MINH KHO HẠT GIỐNG (SMART RECONCILE & PRUNE SEED SETS)
+ * Đảm bảo các bộ hạt giống 7 cấp độ khớp 100% với dữ liệu thật trên Supabase Cloud.
+ */
+export function smartReconcileAndPruneSeedSets<T extends { id?: string; name?: string }>(
+  cloudSeedSets: T[] | undefined,
+  storageKey: string
+): T[] {
+  cleanAllOrphanGardenStorage();
+
+  if (Array.isArray(cloudSeedSets) && cloudSeedSets.length > 0) {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(cloudSeedSets));
+    } catch (e) {}
+    return cloudSeedSets;
+  }
+
+  try {
+    const rawLocal = localStorage.getItem(storageKey);
+    if (rawLocal) {
+      const localParsed = JSON.parse(rawLocal);
+      if (Array.isArray(localParsed)) {
+        return localParsed;
+      }
+    }
+  } catch (e) {}
+
+  return [];
+}
