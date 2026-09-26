@@ -20,10 +20,10 @@ export const WORKSPACE_PREFIX = 'ws_';
  * Ví dụ: User id 'u-1' -> 'ws_u-1', User id 'u-2' -> 'ws_u-2'
  */
 export function getWorkspaceId(user: Member | null): string {
-  if (!user) return `${WORKSPACE_PREFIX}default`;
+  if (!user) return '';
   // Ưu tiên dùng user.id (ví dụ: 'u-1', 'u-2') hoặc username đã được chuẩn hóa
-  const cleanId = (user.id || user.username || 'default').replace(/[^a-zA-Z0-9_-]/g, '_');
-  return `${WORKSPACE_PREFIX}${cleanId}`;
+  const cleanId = (user.id || user.username || '').replace(/[^a-zA-Z0-9_-]/g, '_');
+  return cleanId ? `${WORKSPACE_PREFIX}${cleanId}` : '';
 }
 
 /**
@@ -31,6 +31,7 @@ export function getWorkspaceId(user: Member | null): string {
  * Ví dụ: getScopedKey('school_seating_chart', 'ws_u-2') -> 'ws_u-2_school_seating_chart'
  */
 export function getScopedKey(baseKey: string, workspaceId: string): string {
+  if (!workspaceId) return baseKey;
   if (baseKey.startsWith(workspaceId)) {
     return baseKey;
   }
@@ -48,8 +49,8 @@ export function isWorkspaceKey(key: string): boolean {
  * Lấy tên giáo viên hoặc chủ sở hữu của Workspace
  */
 export function getWorkspaceOwnerName(workspaceId: string, members: Member[]): string {
-  if (!workspaceId || workspaceId === `${WORKSPACE_PREFIX}default`) {
-    return 'Không gian Mặc định';
+  if (!workspaceId) {
+    return 'Chưa đăng nhập';
   }
   const cleanId = workspaceId.replace(WORKSPACE_PREFIX, '');
   const matched = members.find(m => m.id === cleanId || m.username === cleanId);

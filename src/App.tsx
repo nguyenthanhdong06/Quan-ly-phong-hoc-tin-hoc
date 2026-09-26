@@ -672,6 +672,18 @@ export default function App() {
     // 2. Chuyển Workspace pointer ngay lập tức
     currentWsRef.current = targetWsId;
 
+    if (!targetWsId || targetWsId === 'ws_default') {
+      setActiveWorkspaceId('');
+      setSeatingChart({});
+      setAttendanceData({});
+      setEvaluationData({});
+      setEmulationDataState({});
+      setGardenData({});
+      setGardenRewards([]);
+      setCustomSeedSets([]);
+      return;
+    }
+
     // 3. Tải dữ liệu tương ứng của Workspace mới từ Supabase cache & LocalStorage
     const newSeating = loadWorkspaceSeatingChart(targetWsId, latestDbStatesRef.current);
     const newAttendance = loadDayPartitionedAttendance(latestDbStatesRef.current, {}, targetWsId);
@@ -764,15 +776,17 @@ export default function App() {
         // 5. 🏢 User-Scoped Workspace States (Luôn lấy Workspace thực tế hiệu lực cao nhất)
         const userToCheck = overrideUser !== undefined ? overrideUser : (currentUserRef.current || safeParse('school_current_user', null, false));
         let effectiveWsId = overrideWsId || (userToCheck ? getWorkspaceId(userToCheck) : (currentWsRef.current || activeWorkspaceIdRef.current));
-        if (!effectiveWsId || effectiveWsId === 'ws_default') {
-          effectiveWsId = 'ws_default';
+        if (effectiveWsId === 'ws_default') {
+          effectiveWsId = '';
         }
 
-        // 6. 🪑 Hợp nhất Sơ đồ chỗ ngồi, Điểm danh, Đánh giá, Thi đua (Đã có Deep Merge trong utils)
-        setSeatingChart(loadWorkspaceSeatingChart(effectiveWsId, dbStates));
-        setAttendanceData(loadDayPartitionedAttendance(dbStates, {}, effectiveWsId));
-        setEvaluationData(loadDayPartitionedEvaluation(dbStates, {}, effectiveWsId));
-        setEmulationDataState(loadWorkspaceEmulationState(effectiveWsId, dbStates));
+        // 6. 🪑 Hợp nhất Sơ đồ chỗ ngồi, Điểm danh, Đánh giá, Thi đua (Chỉ khi đã đăng nhập vào Workspace)
+        if (effectiveWsId) {
+          setSeatingChart(loadWorkspaceSeatingChart(effectiveWsId, dbStates));
+          setAttendanceData(loadDayPartitionedAttendance(dbStates, {}, effectiveWsId));
+          setEvaluationData(loadDayPartitionedEvaluation(dbStates, {}, effectiveWsId));
+          setEmulationDataState(loadWorkspaceEmulationState(effectiveWsId, dbStates));
+        }
 
         // 7. 📄 Hợp nhất Tài liệu (Documents)
         const localDocs = safeParse<DocumentItem[]>('school_documents', defaultDocuments);
@@ -860,37 +874,40 @@ export default function App() {
           window.dispatchEvent(new CustomEvent('custom_avatars_updated', { detail: mergedAvatars }));
         }
 
-        // 15. 🌳 Đồng bộ dữ liệu Vườn Tri Thức từ Cloud với Deep Merge bảo vệ dữ liệu ngoại tuyến
-        const loadedGarden = loadWorkspaceGardenData(effectiveWsId, dbStates);
-        setGardenData(loadedGarden);
-        safeSetLocalStorage(`${effectiveWsId}_garden_data_v2`, loadedGarden);
+        // 15 - 18. Chỉ đồng bộ dữ liệu Vườn Tri Thức & Workspace khi người dùng đã đăng nhập vào tài khoản của mình
+        if (effectiveWsId) {
+          // 15. 🌳 Đồng bộ dữ liệu Vườn Tri Thức từ Cloud của đúng tài khoản này
+          const loadedGarden = loadWorkspaceGardenData(effectiveWsId, dbStates);
+          setGardenData(loadedGarden);
+          safeSetLocalStorage(`${effectiveWsId}_garden_data_v2`, loadedGarden);
 
-        // 16. 🎁 Đồng bộ danh mục Đổi Thưởng với Scoped Workspace an toàn chống hồi sinh quà bị xóa
-        const loadedRewards = loadWorkspaceRewardsData(effectiveWsId, dbStates, DEFAULT_REWARDS);
-        setGardenRewards(loadedRewards);
-        safeSetLocalStorage(`${effectiveWsId}_garden_rewards_v2`, loadedRewards);
+          // 16. 🎁 Đồng bộ danh mục Đổi Thưởng của đúng tài khoản này (mới tạo để trống [])
+          const loadedRewards = loadWorkspaceRewardsData(effectiveWsId, dbStates, []);
+          setGardenRewards(loadedRewards);
+          safeSetLocalStorage(`${effectiveWsId}_garden_rewards_v2`, loadedRewards);
 
-        // 17. 🌱 Đồng bộ Kho Hạt Giống 7 cấp độ theo Workspace
-        const loadedSeedSets = loadWorkspaceSeedSets(effectiveWsId, dbStates, DEFAULT_CUSTOM_SEED_SETS);
-        setCustomSeedSets(loadedSeedSets);
-        safeSetLocalStorage(`${effectiveWsId}_custom_seed_sets_v1`, loadedSeedSets);
-        window.dispatchEvent(new CustomEvent('custom_seed_sets_updated', { detail: loadedSeedSets }));
+          // 17. 🌱 Đồng bộ Kho Hạt Giống của đúng tài khoản này (mới tạo để trống [])
+          const loadedSeedSets = loadWorkspaceSeedSets(effectiveWsId, dbStates, []);
+          setCustomSeedSets(loadedSeedSets);
+          safeSetLocalStorage(`${effectiveWsId}_custom_seed_sets_v1`, loadedSeedSets);
+          window.dispatchEvent(new CustomEvent('custom_seed_sets_updated', { detail: loadedSeedSets }));
 
-        // 18. 📚 Hợp nhất Ngân hàng câu hỏi & Môn học theo Workspace
-        const wsQuestionsKey = `${effectiveWsId}_school_questions`;
-        const mergedQuestions = mergeArrayById(dbStates[wsQuestionsKey], safeParse(wsQuestionsKey, []));
-        safeSetLocalStorage(wsQuestionsKey, mergedQuestions);
+          // 18. 📚 Hợp nhất Ngân hàng câu hỏi & Môn học theo Workspace
+          const wsQuestionsKey = `${effectiveWsId}_school_questions`;
+          const mergedQuestions = mergeArrayById(dbStates[wsQuestionsKey], safeParse(wsQuestionsKey, []));
+          safeSetLocalStorage(wsQuestionsKey, mergedQuestions);
 
-        const wsSubjectsKey = `${effectiveWsId}_school_subjects`;
-        const mergedSubjects = mergeArrayById(dbStates[wsSubjectsKey], safeParse(wsSubjectsKey, []));
-        safeSetLocalStorage(wsSubjectsKey, mergedSubjects);
+          const wsSubjectsKey = `${effectiveWsId}_school_subjects`;
+          const mergedSubjects = mergeArrayById(dbStates[wsSubjectsKey], safeParse(wsSubjectsKey, []));
+          safeSetLocalStorage(wsSubjectsKey, mergedSubjects);
 
-        const wsLeaderboardKey = `${effectiveWsId}_tug_leaderboard`;
-        const mergedLeaderboard = mergeArrayById(dbStates[wsLeaderboardKey], safeParse(wsLeaderboardKey, []));
-        safeSetLocalStorage(wsLeaderboardKey, mergedLeaderboard);
+          const wsLeaderboardKey = `${effectiveWsId}_tug_leaderboard`;
+          const mergedLeaderboard = mergeArrayById(dbStates[wsLeaderboardKey], safeParse(wsLeaderboardKey, []));
+          safeSetLocalStorage(wsLeaderboardKey, mergedLeaderboard);
 
-        if (effectiveWsId !== activeWorkspaceIdRef.current) {
-          setActiveWorkspaceId(effectiveWsId);
+          if (effectiveWsId !== activeWorkspaceIdRef.current) {
+            setActiveWorkspaceId(effectiveWsId);
+          }
         }
 
         if (!silent) {
@@ -1341,7 +1358,7 @@ export default function App() {
     sessionStorage.removeItem('school_current_user');
     localStorage.removeItem('school_current_user');
     setCurrentUser(null);
-    switchWorkspaceState('ws_default');
+    switchWorkspaceState('');
     setLoginForm({ username: '', password: '' }); // Clear credentials on logout to allow entering any other account
     setShowPassword(false);
     setIsLoginModalOpen(true);

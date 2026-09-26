@@ -232,15 +232,13 @@ export const KnowledgeGardenTab: React.FC<KnowledgeGardenTabProps> = ({
   useEffect(() => {
     let isMounted = true;
     async function fetchFullGardenWorkspaceData() {
+      if (!currentWsId || currentWsId === 'ws_default') return;
       try {
         const targetKeys = [
           `${currentWsId}_school_custom_seed_sets`,
           `${currentWsId}_school_garden_rewards`,
           `${currentWsId}_school_garden_data`,
-          `${currentWsId}_deleted_reward_ids`,
-          'ws_default_school_custom_seed_sets',
-          'ws_default_school_garden_rewards',
-          'ws_default_school_garden_data'
+          `${currentWsId}_deleted_reward_ids`
         ];
 
         const { data } = await supabase

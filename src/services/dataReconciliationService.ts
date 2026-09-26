@@ -397,6 +397,13 @@ export function reconcileRewards(
  */
 export function cleanAllOrphanGardenStorage(): void {
   const obsoleteKeys = [
+    'ws_default_school_garden_rewards',
+    'ws_default_school_garden_data',
+    'ws_default_school_custom_seed_sets',
+    'ws_default_deleted_reward_ids',
+    'ws_default_garden_rewards_v2',
+    'ws_default_garden_data_v2',
+    'ws_default_custom_seed_sets_v1',
     'school_garden_rewards',
     'garden_rewards_v2',
     'garden_rewards',
