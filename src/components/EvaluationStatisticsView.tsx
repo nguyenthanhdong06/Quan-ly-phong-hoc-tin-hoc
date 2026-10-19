@@ -744,22 +744,20 @@ export const EvaluationStatisticsView: React.FC<EvaluationStatisticsViewProps> =
           </button>
         </div>
 
-        {/* NẾU CHỌN TÙY CHỌN NGÀY */}
+        {/* NẾU CHỌN TÙY CHỌN NGÀY: ÁP DỤNG CẤU TRÚC NGÀY THÁNG CỦA ỨNG DỤNG ĐÁNH GIÁ (VIETNAMESE DATE PICKER) */}
         {periodType === 'custom' && (
-          <div className="flex items-center gap-2 bg-[#f4e8d3] px-2.5 py-1 rounded-xl border border-[#cbb89d] w-full sm:w-auto">
-            <span className="text-[11px] font-black text-[#5c4327]">Từ:</span>
-            <input 
-              type="date"
+          <div className="flex flex-wrap items-center gap-2 bg-[#f4e8d3] p-1 rounded-2xl border border-[#cbb89d] shadow-2xs">
+            <VietnameseDatePicker
+              label="Từ:"
               value={customStartDate}
-              onChange={(e) => setCustomStartDate(e.target.value)}
-              className="bg-white px-2 py-0.5 rounded-lg border border-[#cbb89d] text-xs font-extrabold text-[#3d2b17] outline-none"
+              onChange={(newDate) => setCustomStartDate(newDate)}
+              className="py-1 px-2.5 rounded-xl bg-white border-[#cbb89d]"
             />
-            <span className="text-[11px] font-black text-[#5c4327]">Đến:</span>
-            <input 
-              type="date"
+            <VietnameseDatePicker
+              label="Đến:"
               value={customEndDate}
-              onChange={(e) => setCustomEndDate(e.target.value)}
-              className="bg-white px-2 py-0.5 rounded-lg border border-[#cbb89d] text-xs font-extrabold text-[#3d2b17] outline-none"
+              onChange={(newDate) => setCustomEndDate(newDate)}
+              className="py-1 px-2.5 rounded-xl bg-white border-[#cbb89d]"
             />
           </div>
         )}
