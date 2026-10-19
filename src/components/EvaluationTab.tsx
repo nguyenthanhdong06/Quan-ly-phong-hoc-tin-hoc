@@ -1,12 +1,13 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { Student, EvaluationData, SeatingChart, Computer, EmulationDataState, AttendanceData, ClassItem, GardenStudentData, WaterLog, Member } from '../types';
-import { Star, Calendar, Search, X, Award, MessageSquare, Tag, ArrowLeft, Save, RefreshCw, Mail, Send, Check } from 'lucide-react';
+import { Star, Calendar, Search, X, Award, MessageSquare, Tag, ArrowLeft, Save, RefreshCw, Mail, Send, Check, BarChart3 } from 'lucide-react';
 import { triggerStarsConfetti } from '../utils/confetti';
 import { playStarRewardSound, playWarningDeductSound } from '../utils/audioEffects';
 import { CyberRobotCardFrameDecoration } from './CyberRobotCardFrameDecoration';
 import { StudentCard3D } from './StudentCard3D';
 import { VietnameseDatePicker } from './common/VietnameseDatePicker';
+import { EvaluationStatisticsView } from './EvaluationStatisticsView';
 import { getStudentAvatar } from '../utils/studentAvatar';
 import { matchStudentSearch } from '../utils/nameFormatter';
 import { saveDayPartitionedEvaluation } from '../utils/evaluationPartition';
@@ -261,8 +262,8 @@ export default function EvaluationTab({
   const [isSaving, setIsSaving] = React.useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = React.useState(false);
 
-  // Subview toggle state: 'evaluation' (default) | 'zalo' (Báo cáo Zalo/SMS 100% Inline View)
-  const [subView, setSubView] = React.useState<'evaluation' | 'zalo'>('evaluation');
+  // Subview toggle state: 'evaluation' (default) | 'zalo' (Báo cáo Zalo/SMS) | 'statistics' (Thống kê vi phạm & tiến bộ)
+  const [subView, setSubView] = React.useState<'evaluation' | 'zalo' | 'statistics'>('evaluation');
   const [reportTemplate, setReportTemplate] = React.useState<'zalo' | 'sms' | 'full' | 'private'>('zalo');
   const [customMessageText, setCustomMessageText] = React.useState<string>('');
   const [selectedPrivateStudentId, setSelectedPrivateStudentId] = React.useState<string | null>(null);
@@ -956,6 +957,22 @@ export default function EvaluationTab({
               value={selectedDate}
               onChange={(newDate) => setSelectedDate(newDate)}
             />
+
+            <button
+              type="button"
+              onClick={() => {
+                setSubView(prev => prev === 'statistics' ? 'evaluation' : 'statistics');
+              }}
+              className={`font-black text-xs py-2 px-3.5 rounded-xl border transition shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 w-full sm:w-auto active:scale-95 ${
+                subView === 'statistics'
+                  ? 'bg-amber-700 hover:bg-amber-800 text-white border-amber-600 ring-2 ring-amber-300'
+                  : 'bg-amber-600 hover:bg-amber-700 text-white border-amber-500'
+              }`}
+              title="Xem thống kê tổng quan vi phạm, theo dõi sự tiến bộ và phân tích hành vi của học sinh"
+            >
+              <BarChart3 className="w-4 h-4 text-amber-100" />
+              <span>Thống Kê</span>
+            </button>
 
             <button
               type="button"
@@ -1734,6 +1751,23 @@ export default function EvaluationTab({
             </div>
           </div>
         </div>
+      )}
+
+      {/* ====================================================================
+          THỐNG KÊ NỀN NẾP & THEO DÕI HỌC SINH VI PHẠM (INLINE VIEW 100%)
+          ==================================================================== */}
+      {subView === 'statistics' && (
+        <EvaluationStatisticsView
+          selectedClass={selectedClass}
+          classes={classes}
+          students={students}
+          evaluationData={evaluationData}
+          computers={computers}
+          seatingChart={seatingChart}
+          currentUser={activeUser}
+          onBack={() => setSubView('evaluation')}
+          showToast={showToast}
+        />
       )}
     </div>
   );
