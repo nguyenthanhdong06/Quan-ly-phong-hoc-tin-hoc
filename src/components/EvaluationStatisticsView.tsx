@@ -191,6 +191,10 @@ export const EvaluationStatisticsView: React.FC<EvaluationStatisticsViewProps> =
   const [severityFilter, setSeverityFilter] = useState<'all' | 'once' | 'repeat' | 'severe'>('all');
   const [selectedStudentForDetail, setSelectedStudentForDetail] = useState<string | null>(null);
 
+  // 💻 / 📱 Device Auto-Detection for Zalo PC vs Zalo Mobile
+  const isMobileInitial = typeof window !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const [zaloTargetMode, setZaloTargetMode] = useState<'pc' | 'mobile'>(isMobileInitial ? 'mobile' : 'pc');
+
   // Mẫu tin nhắn Zalo
   const [zaloReportFormat, setZaloReportFormat] = useState<'summary' | 'detailed' | 'cooperation'>('summary');
   const [copiedZalo, setCopiedZalo] = useState(false);
@@ -222,11 +226,36 @@ export const EvaluationStatisticsView: React.FC<EvaluationStatisticsViewProps> =
     return students.filter(s => targetClasses.includes(s.classId));
   }, [scopeMode, selectedClass, targetClasses, students]);
 
-  // GVCN của lớp đang chọn
+  // GVCN của lớp đang chọn (kèm fallback đọc từ localStorage 'school_classes')
   const currentClassObj = useMemo(() => {
-    return classes.find(c => c.id === selectedClass || c.name === selectedClass);
+    let found = classes?.find(c => 
+      c.id === selectedClass || 
+      (c.name && c.name.trim().toLowerCase() === selectedClass.trim().toLowerCase()) ||
+      (c.id && selectedClass && c.id.trim().toLowerCase() === selectedClass.trim().toLowerCase())
+    );
+
+    if (!found || (!found.teacher && !found.teacherPhone)) {
+      try {
+        const local = localStorage.getItem('school_classes');
+        if (local) {
+          const parsed = JSON.parse(local);
+          if (Array.isArray(parsed)) {
+            const localFound = parsed.find((c: any) => 
+              c.id === selectedClass || 
+              (c.name && c.name.trim().toLowerCase() === selectedClass.trim().toLowerCase()) ||
+              (c.id && selectedClass && c.id.trim().toLowerCase() === selectedClass.trim().toLowerCase())
+            );
+            if (localFound) found = localFound;
+          }
+        }
+      } catch (e) {
+        console.error('Error loading school_classes fallback in EvaluationStatisticsView:', e);
+      }
+    }
+
+    return found || null;
   }, [classes, selectedClass]);
-  const gvcnName = currentClassObj?.teacher?.trim() || 'Giáo viên chủ nhiệm';
+  const gvcnName = currentClassObj?.teacher?.trim() || 'Chưa cập nhật GVCN';
   const gvcnPhone = currentClassObj?.teacherPhone?.trim() || '';
 
   // 🧠 CORE ENGINE: TỔNG HỢP VÀ PHÂN TÍCH TẤT CẢ VI PHẠM TRONG KHOẢNG THỜI GIAN
@@ -496,13 +525,58 @@ export const EvaluationStatisticsView: React.FC<EvaluationStatisticsViewProps> =
     }
   };
 
-  // Mở Zalo Web / App
-  const handleOpenZalo = () => {
-    handleCopyZalo();
-    const zaloUrl = gvcnPhone 
-      ? `https://zalo.me/${gvcnPhone.replace(/\D/g, '')}`
-      : 'https://chat.zalo.me';
-    window.open(zaloUrl, '_blank', 'noopener,noreferrer');
+  // Mở Zalo Web / App kết nối trực tiếp tài khoản GVCN (giống hệt nút 'Mở Zalo' hiện có)
+  const handleOpenZalo = async () => {
+    // 1. Sao chép tin nhắn vào clipboard
+    try {
+      await navigator.clipboard.writeText(generatedZaloMessage);
+      setCopiedZalo(true);
+      setTimeout(() => setCopiedZalo(false), 2500);
+    } catch (e) {}
+
+    const cleanPhone = gvcnPhone.trim().replace(/\D/g, '');
+    if (gvcnPhone.trim() && cleanPhone.length !== 10) {
+      showToast(`⚠️ SĐT Zalo GVCN chưa đúng 10 chữ số (Hiện tại đang có ${cleanPhone.length} số: ${gvcnPhone}). Vui lòng kiểm tra lại!`, 'error');
+      return;
+    }
+
+    if (zaloTargetMode === 'pc') {
+      let zaloNativeAppUri = 'zalo://';
+      if (cleanPhone) {
+        zaloNativeAppUri = `zalo://conversation?phone=${cleanPhone}`;
+      }
+
+      // Kích hoạt giao thức native app Zalo PC
+      const nativeLink = document.createElement('a');
+      nativeLink.href = zaloNativeAppUri;
+      document.body.appendChild(nativeLink);
+      nativeLink.click();
+      document.body.removeChild(nativeLink);
+
+      setTimeout(() => {
+        window.location.href = zaloNativeAppUri;
+      }, 150);
+
+      showToast(
+        cleanPhone
+          ? `Đã sao chép tin nhắn & Mở Zalo PC App chat với GVCN ${gvcnName} (${cleanPhone})! Thầy/Cô dán (Ctrl+V) vào khung chat nhé.`
+          : 'Đã sao chép tin nhắn & Mở Zalo PC! (Lớp chưa cập nhật SĐT GVCN nên mở Zalo chung)',
+        'success'
+      );
+    } else {
+      let mobileUri = 'https://zalo.me/';
+      if (cleanPhone) {
+        mobileUri = `https://zalo.me/${cleanPhone}`;
+      }
+
+      window.open(mobileUri, '_blank', 'noopener,noreferrer');
+      showToast(
+        cleanPhone
+          ? `Đã sao chép tin nhắn & Mở Zalo Mobile kết nối GVCN ${gvcnName} (${cleanPhone})!`
+          : 'Đã sao chép tin nhắn & Mở Zalo Web/Mobile! (Lớp chưa cập nhật SĐT GVCN)',
+        'success'
+      );
+    }
   };
 
   // Xuất file Excel (.xlsx) chuẩn chỉnh
@@ -1397,6 +1471,70 @@ export const EvaluationStatisticsView: React.FC<EvaluationStatisticsViewProps> =
             </div>
           </div>
 
+          {/* HỘP KẾT NỐI ZALO & 2 NÚT CHUYỂN ĐỔI CHẾ ĐỘ ZALO PC / MOBILE (GIỐNG HỆT GIAO DIỆN BÁO CÁO ZALO) */}
+          <div className="bg-sky-50/90 p-4 rounded-2xl border border-sky-200 text-left space-y-3 shadow-2xs">
+            {/* Device Switcher Strip */}
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sky-200/80 pb-2.5">
+              <span className="text-xs font-black text-sky-950 flex items-center gap-1.5">
+                <span>⚙️</span> KÍCH HOẠT KẾT NỐI ZALO LỚP{' '}
+                <span className="text-sky-700 bg-white px-2 py-0.5 rounded-lg border border-sky-300 font-mono">
+                  {selectedClass}
+                </span>
+                :
+              </span>
+
+              {/* 2 NÚT CHUYỂN ĐỔI CHẾ ĐỘ ZALO ĐÚNG NHƯ ẢNH ĐÍNH KÈM */}
+              <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-sky-300 shadow-3xs">
+                <span className="text-[10px] font-bold text-slate-500 px-1">Chế độ:</span>
+                <button
+                  type="button"
+                  onClick={() => setZaloTargetMode('pc')}
+                  className={`px-3 py-1 rounded-lg text-xs font-black transition cursor-pointer flex items-center gap-1.5 ${
+                    zaloTargetMode === 'pc' 
+                      ? 'bg-sky-600 text-white shadow-2xs' 
+                      : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+                  title="Kích hoạt ứng dụng Zalo PC trên máy tính"
+                >
+                  💻 Zalo PC (Máy tính)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setZaloTargetMode('mobile')}
+                  className={`px-3 py-1 rounded-lg text-xs font-black transition cursor-pointer flex items-center gap-1.5 ${
+                    zaloTargetMode === 'mobile' 
+                      ? 'bg-sky-600 text-white shadow-2xs' 
+                      : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+                  title="Mở Zalo trên trình duyệt hoặc điện thoại"
+                >
+                  📱 Zalo Mobile (Điện thoại)
+                </button>
+              </div>
+            </div>
+
+            {/* GVCN Info Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white p-3 rounded-xl border border-sky-200 shadow-2xs text-left">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black text-sky-950 whitespace-nowrap flex items-center gap-1">
+                  👤 GVCN Lớp {selectedClass}:
+                </span>
+                <span className="text-xs font-black text-slate-800 bg-sky-50/90 px-3 py-1 rounded-lg border border-sky-200">
+                  {gvcnName}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black text-sky-950 whitespace-nowrap flex items-center gap-1">
+                  📱 SĐT Zalo GVCN:
+                </span>
+                <span className="text-xs font-black text-slate-800 bg-sky-50/90 px-3 py-1 rounded-lg border border-sky-200 font-mono">
+                  {gvcnPhone || 'Chưa cập nhật SĐT'}
+                </span>
+              </div>
+            </div>
+          </div>
+
           {/* CHỌN MẪU BÁO CÁO ZALO */}
           <div className="bg-white rounded-xl border border-[#e2d5c3] p-4 text-left space-y-3">
             <div className="flex items-center justify-between flex-wrap gap-2">
@@ -1450,12 +1588,32 @@ export const EvaluationStatisticsView: React.FC<EvaluationStatisticsViewProps> =
                 <button
                   type="button"
                   onClick={handleOpenZalo}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-black text-xs transition cursor-pointer active:scale-95 shadow-2xs"
-                  title="Mở ứng dụng Zalo để dán và gửi cho GVCN"
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-black text-xs transition cursor-pointer active:scale-95 shadow-2xs border border-sky-500"
+                  title={
+                    zaloTargetMode === 'pc'
+                      ? `Mở ứng dụng Zalo PC kết nối trực tiếp tài khoản GVCN ${gvcnName}`
+                      : `Mở ứng dụng Zalo Mobile kết nối trực tiếp tài khoản GVCN ${gvcnName}`
+                  }
                 >
-                  <ExternalLink className="w-4 h-4" />
-                  <span>Gửi qua Zalo</span>
+                  <span>💬</span>
+                  <span>{zaloTargetMode === 'pc' ? 'Mở Zalo PC gửi GVCN' : 'Mở App Zalo gửi GVCN'}</span>
                 </button>
+
+                <a
+                  href={
+                    gvcnPhone.trim().replace(/\D/g, '')
+                      ? `sms:${gvcnPhone.trim().replace(/\D/g, '')}?body=${encodeURIComponent(generatedZaloMessage)}`
+                      : `sms:?body=${encodeURIComponent(generatedZaloMessage)}`
+                  }
+                  onClick={() => {
+                    navigator.clipboard.writeText(generatedZaloMessage);
+                    showToast('Đã sao chép & Kích hoạt ứng dụng Tin nhắn SMS!', 'success');
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs transition shadow-2xs cursor-pointer flex items-center gap-1 active:scale-95 no-underline"
+                  title="Soạn tin nhắn SMS gửi cho GVCN"
+                >
+                  <span>📱</span> Gửi SMS
+                </a>
               </div>
             </div>
 
