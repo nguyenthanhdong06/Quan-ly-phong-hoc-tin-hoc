@@ -48,9 +48,9 @@ export const TodayDashboard: React.FC<TodayDashboardProps> = ({
   const todayScheduleDay = jsDay >= 1 && jsDay <= 5 ? String(jsDay + 1) : '2';
   const todayStr = now.toISOString().split('T')[0];
 
-  // Các tiết dạy của hôm nay
+  // Các tiết dạy của hôm nay (Tiết 1 đến 8)
   const todayPeriods: Array<{ period: string; cell: TimetableCell; times: { session: string; start: string; end: string } }> = [];
-  for (let p = 1; p <= 7; p++) {
+  for (let p = 1; p <= 8; p++) {
     const periodStr = String(p);
     const key = `${todayScheduleDay}-${periodStr}`;
     const cell = scheduleMap[key];

@@ -73,17 +73,18 @@ export const generateDefaultLabLayout = (rows: number = 6, cols: number = 6) => 
   return layout;
 };
 
-// Lưới khung tiết học tiểu học (35 phút/tiết, giải lao 20 phút sau tiết 2)
+// Lưới khung tiết học tiểu học (Sáng 5 tiết: 7h00 - 10h35, Chiều 3 tiết: 14h00 - 15h55)
 export const TIME_SLOTS = [
   { id: 's1', name: 'Sáng 1', period: 'Sáng', time: '07:00 - 07:35', isBreak: false },
   { id: 's2', name: 'Sáng 2', period: 'Sáng', time: '07:40 - 08:15', isBreak: false },
-  { id: 'break_am', name: 'Giờ Ra Chơi', period: 'Sáng', time: '08:15 - 08:35', isBreak: true, label: '☕ GIỜ RA CHƠI (GIẢI LAO PHÒNG MÁY)' },
-  { id: 's3', name: 'Sáng 3', period: 'Sáng', time: '08:35 - 09:10', isBreak: false },
-  { id: 's4', name: 'Sáng 4', period: 'Sáng', time: '09:15 - 09:50', isBreak: false },
-  { id: 'break_noon', name: 'Nghỉ Trưa', period: 'Trưa', time: '09:50 - 14:00', isBreak: true, label: '🌙 NGHỈ TRƯA & CHUẨN BỊ BUỔI CHIỀU' },
-  { id: 'c5', name: 'Chiều 5', period: 'Chiều', time: '14:00 - 14:35', isBreak: false },
-  { id: 'c6', name: 'Chiều 6', period: 'Chiều', time: '14:40 - 15:15', isBreak: false },
-  { id: 'c7', name: 'Chiều 7', period: 'Chiều', time: '15:20 - 15:55', isBreak: false },
+  { id: 'break_am', name: 'Giờ Ra Chơi', period: 'Sáng', time: '08:15 - 08:40', isBreak: true, label: '☕ GIỜ RA CHƠI (GIẢI LAO PHÒNG MÁY)' },
+  { id: 's3', name: 'Sáng 3', period: 'Sáng', time: '08:40 - 09:15', isBreak: false },
+  { id: 's4', name: 'Sáng 4', period: 'Sáng', time: '09:20 - 09:55', isBreak: false },
+  { id: 's5', name: 'Sáng 5', period: 'Sáng', time: '10:00 - 10:35', isBreak: false },
+  { id: 'break_noon', name: 'Nghỉ Trưa', period: 'Trưa', time: '10:35 - 14:00', isBreak: true, label: '🌙 NGHỈ TRƯA & CHUẨN BỊ BUỔI CHIỀU' },
+  { id: 'c6', name: 'Chiều 6', period: 'Chiều', time: '14:00 - 14:35', isBreak: false },
+  { id: 'c7', name: 'Chiều 7', period: 'Chiều', time: '14:40 - 15:15', isBreak: false },
+  { id: 'c8', name: 'Chiều 8', period: 'Chiều', time: '15:20 - 15:55', isBreak: false },
 ];
 
 export const DAYS_OF_WEEK = [
@@ -120,6 +121,23 @@ export default function LabBookingTab({
       setActiveSubTab('calendar');
     }
   }, [isAdmin, activeSubTab]);
+
+  // Tự động chuẩn hóa slotId lịch đặt phòng theo cấu trúc mới (c5 -> c6, c6 -> c7, c7 -> c8)
+  useEffect(() => {
+    if (!bookings || bookings.length === 0) return;
+    let hasChanges = false;
+    const normalized = bookings.map(b => {
+      if (b.slotId === 'c7') { hasChanges = true; return { ...b, slotId: 'c8' }; }
+      if (b.slotId === 'c6') { hasChanges = true; return { ...b, slotId: 'c7' }; }
+      if (b.slotId === 'c5') { hasChanges = true; return { ...b, slotId: 'c6' }; }
+      return b;
+    });
+    if (hasChanges) {
+      setBookings(normalized);
+      safeSetLocalStorage('school_lab_bookings', normalized);
+      saveSupabaseState('school_lab_bookings', normalized);
+    }
+  }, [bookings, setBookings]);
 
   // Inline Sub-View Modes cho 2 nút "Ghi nhật ký" và "Thêm phòng mới"
   const [logSubViewMode, setLogSubViewMode] = useState<'list' | 'add'>('list');

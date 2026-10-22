@@ -144,9 +144,9 @@ export const NextWeekPlanner: React.FC<NextWeekPlannerProps> = ({
           const { dateStr, displayStr } = getDateOfWeekDay(dayStr, weekOffset);
           const dayName = DAY_NAMES[dayStr];
 
-          // Lấy danh sách tiết TKB của ngày này
+          // Lấy danh sách tiết TKB của ngày này (Tiết 1 đến 8)
           const daySlots: Array<{ period: string; cell: TimetableCell; times: { session: string; start: string; end: string } }> = [];
-          for (let p = 1; p <= 7; p++) {
+          for (let p = 1; p <= 8; p++) {
             const periodStr = String(p);
             const key = `${dayStr}-${periodStr}`;
             const cell = scheduleMap[key];

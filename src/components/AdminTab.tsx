@@ -886,11 +886,11 @@ export default function AdminTab({
               {/* --- BUỔI SÁNG --- */}
               {/* Row 1 - Tiết 1 */}
               <tr className="bg-white hover:bg-slate-50/40 transition">
-                <td className="border border-slate-300 font-black text-slate-800 tracking-wider text-[11px] bg-slate-50/55" rowSpan={5}>
+                <td className="border border-slate-300 font-black text-slate-800 tracking-wider text-[11px] bg-slate-50/55" rowSpan={6}>
                   <div className="flex flex-col items-center justify-center p-2">
                     <span className="text-amber-500 text-lg">☀️</span>
                     <span className="font-black tracking-widest text-[#0c2a5c] uppercase text-xs">SÁNG</span>
-                    <span className="text-[10px] text-slate-400 font-bold mt-1">7h00 - 10h10</span>
+                    <span className="text-[10px] text-slate-400 font-bold mt-1">7h00 - 10h35</span>
                   </div>
                 </td>
                 <td className="border border-slate-300 font-extrabold bg-slate-50/55 text-slate-600 py-4">Sáng 1</td>
@@ -1019,17 +1019,9 @@ export default function AdminTab({
                 })}
               </tr>
 
-              {/* --- BUỔI CHIỀU --- */}
-              {/* Row 5 - Tiết 5 */}
+                            {/* Row 5 - Tiết 5 */}
               <tr className="bg-white hover:bg-slate-50/40 transition">
-                <td className="border border-slate-300 font-black text-slate-800 tracking-wider text-[11px] bg-slate-50/55" rowSpan={3}>
-                  <div className="flex flex-col items-center justify-center p-2">
-                    <span className="text-teal-600 text-lg">🌇</span>
-                    <span className="font-black tracking-widest text-[#0c2a5c] uppercase text-xs">CHIỀU</span>
-                    <span className="text-[10px] text-slate-400 font-bold mt-1">14h00 - 16h10</span>
-                  </div>
-                </td>
-                <td className="border border-slate-300 font-extrabold bg-slate-50/55 text-slate-600 py-4">Chiều 5</td>
+                <td className="border border-slate-300 font-extrabold bg-slate-50/55 text-slate-600 py-4">Sáng 5</td>
                 {['2', '3', '4', '5', '6'].map((day) => {
                   const data = getAdminCellData(day, '5');
                   return (
@@ -1056,8 +1048,16 @@ export default function AdminTab({
                 })}
               </tr>
 
+              {/* --- BUỔI CHIỀU --- */}
               {/* Row 6 - Tiết 6 */}
               <tr className="bg-white hover:bg-slate-50/40 transition">
+                <td className="border border-slate-300 font-black text-slate-800 tracking-wider text-[11px] bg-slate-50/55" rowSpan={3}>
+                  <div className="flex flex-col items-center justify-center p-2">
+                    <span className="text-teal-600 text-lg">🌇</span>
+                    <span className="font-black tracking-widest text-[#0c2a5c] uppercase text-xs">CHIỀU</span>
+                    <span className="text-[10px] text-slate-400 font-bold mt-1">14h00 - 16h10</span>
+                  </div>
+                </td>
                 <td className="border border-slate-300 font-extrabold bg-slate-50/55 text-slate-600 py-4">Chiều 6</td>
                 {['2', '3', '4', '5', '6'].map((day) => {
                   const data = getAdminCellData(day, '6');
@@ -1092,9 +1092,38 @@ export default function AdminTab({
                   const data = getAdminCellData(day, '7');
                   return (
                     <td 
-                      key={`7-${day}`}
+                      key={`7-${day}`} 
                       id={`cell-${day}-7`}
                       onClick={() => handleCellClick(day, '7')}
+                      className="border border-slate-300 p-3.5 transition relative cursor-pointer group hover:bg-amber-50 select-none min-h-[64px]"
+                    >
+                      {data ? (
+                        <div className="space-y-1">
+                          <p className="font-extrabold text-[#0c2a5c] uppercase text-xs">{data.subject}</p>
+                          <span className="inline-flex bg-amber-50 text-amber-800 text-[10px] font-black px-2 py-0.5 rounded border border-amber-200 shadow-sm">
+                            Lớp {data.className}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-slate-300 group-hover:text-slate-500 italic transition font-semibold flex items-center justify-center gap-1">
+                          <Plus className="w-3 h-3 text-slate-300 group-hover:text-amber-500" /> Trống
+                        </span>
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+
+              {/* Row 8 - Tiết 8 */}
+              <tr className="bg-white hover:bg-slate-50/40 transition">
+                <td className="border border-slate-300 font-extrabold bg-slate-50/55 text-slate-600 py-4">Chiều 8</td>
+                {['2', '3', '4', '5', '6'].map((day) => {
+                  const data = getAdminCellData(day, '8');
+                  return (
+                    <td 
+                      key={`8-${day}`}
+                      id={`cell-${day}-8`}
+                      onClick={() => handleCellClick(day, '8')}
                       className="border border-slate-300 p-3.5 transition relative cursor-pointer group hover:bg-amber-50 select-none min-h-[64px]"
                     >
                       {data ? (
@@ -1123,7 +1152,7 @@ export default function AdminTab({
           <div className="space-y-1">
             <span className="block font-black text-[#0c2a5c] uppercase text-[10px]">📌 Ghi chú thời gian và lộ trình biểu mẫu (Lũy kế):</span>
             <ul className="list-disc pl-4 space-y-1 text-slate-600">
-              <li><strong>SÁNG:</strong> Vào lớp: <strong>7h00</strong>. Ra về: <strong>10h10</strong></li>
+              <li><strong>SÁNG:</strong> Vào lớp: <strong>7h00</strong>. Ra về: <strong>10h35</strong></li>
               <li><strong>CHIỀU:</strong> Vào lớp: <strong>14h00</strong>. Ra về: <strong>16h10</strong></li>
               <li>Thời khóa biểu được hiển thị độc lập cho từng giáo viên được lựa chọn ở trình đơn phía trên.</li>
             </ul>
@@ -1801,7 +1830,7 @@ export default function AdminTab({
                     Phân Công Lịch Giảng Dạy
                   </h4>
                   <p className="text-[11px] font-bold text-amber-900">
-                    Thứ {editingCell.day === '2' ? 'Hai' : editingCell.day === '3' ? 'Ba' : editingCell.day === '4' ? 'Tư' : editingCell.day === '5' ? 'Năm' : 'Sáu'} — Tiết {editingCell.period} ({parseInt(editingCell.period) <= 4 ? 'Buổi Sáng' : 'Buổi Chiều'})
+                    Thứ {editingCell.day === '2' ? 'Hai' : editingCell.day === '3' ? 'Ba' : editingCell.day === '4' ? 'Tư' : editingCell.day === '5' ? 'Năm' : 'Sáu'} — Tiết {editingCell.period} ({parseInt(editingCell.period) <= 5 ? 'Buổi Sáng' : 'Buổi Chiều'})
                   </p>
                 </div>
               </div>

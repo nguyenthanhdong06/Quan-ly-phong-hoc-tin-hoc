@@ -1,14 +1,15 @@
 import { TaskCategory, TaskPriority, TaskStatus } from './types';
 
-// Khung giờ chuẩn các tiết học trường Tiểu học
+// Khung giờ chuẩn các tiết học trường Tiểu học (Sáng 5 tiết: 7h00 - 10h35, Chiều 3 tiết: 14h00 - 15h55)
 export const PERIOD_TIMES: Record<string, { session: 'Sáng' | 'Chiều'; start: string; end: string }> = {
-  '1': { session: 'Sáng', start: '07:30', end: '08:05' },
-  '2': { session: 'Sáng', start: '08:15', end: '08:50' },
-  '3': { session: 'Sáng', start: '09:20', end: '09:55' },
-  '4': { session: 'Sáng', start: '10:05', end: '10:40' },
-  '5': { session: 'Chiều', start: '13:30', end: '14:05' },
-  '6': { session: 'Chiều', start: '14:15', end: '14:50' },
-  '7': { session: 'Chiều', start: '15:00', end: '15:35' },
+  '1': { session: 'Sáng', start: '07:00', end: '07:35' },
+  '2': { session: 'Sáng', start: '07:40', end: '08:15' },
+  '3': { session: 'Sáng', start: '08:40', end: '09:15' },
+  '4': { session: 'Sáng', start: '09:20', end: '09:55' },
+  '5': { session: 'Sáng', start: '10:00', end: '10:35' },
+  '6': { session: 'Chiều', start: '14:00', end: '14:35' },
+  '7': { session: 'Chiều', start: '14:40', end: '15:15' },
+  '8': { session: 'Chiều', start: '15:20', end: '15:55' },
 };
 
 export const DAY_NAMES: Record<string, string> = {

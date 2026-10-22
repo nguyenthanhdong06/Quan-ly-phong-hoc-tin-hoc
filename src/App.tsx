@@ -42,6 +42,7 @@ import {
 } from './services/dataReconciliationService';
 import OfflineSyncBanner from './components/OfflineSyncBanner';
 import { triggerInstantShortcutDownload } from './utils/shortcutInstaller';
+import { autoMigrateLocalTimetableStorage } from './utils/timetableMigration';
 import { 
   saveDayPartitionedAttendance, 
   loadDayPartitionedAttendance, 
@@ -226,6 +227,9 @@ export default function App() {
   // User-Scoped Workspace Garden & Seed Sets States
   const [customSeedSets, setCustomSeedSets] = useState<CustomSeedSet[]>(() => loadWorkspaceSeedSets(activeWorkspaceId, undefined, DEFAULT_CUSTOM_SEED_SETS));
   const [gardenRewards, setGardenRewards] = useState<GardenReward[]>(() => loadWorkspaceRewardsData(activeWorkspaceId, undefined, DEFAULT_REWARDS));
+
+  // Chạy migration tự động đồng bộ khung TKB cấu trúc mới (Sáng 5 tiết, Chiều 3 tiết: 6, 7, 8)
+  autoMigrateLocalTimetableStorage();
 
   const [documents, setDocuments] = useState<DocumentItem[]>(() => safeParse('school_documents', defaultDocuments));
   const [members, setMembers] = useState<Member[]>(() => safeParse('school_members', defaultMembers));

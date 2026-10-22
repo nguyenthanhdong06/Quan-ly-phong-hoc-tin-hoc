@@ -415,7 +415,7 @@ export default function TimetableTab({
     const htmlTableRows = `
       <!-- SANG Row 1 -->
       <tr>
-        <td class="session-cell" rowspan="5" style="font-weight: bold; text-align: center; font-size: 13pt; border: 1px solid black; width: 120px; padding: 3px 2px;">SÁNG</td>
+        <td class="session-cell" rowspan="6" style="font-weight: bold; text-align: center; font-size: 13pt; border: 1px solid black; width: 120px; padding: 3px 2px;">SÁNG</td>
         <td style="font-weight: bold; text-align: center; border: 1px solid black; padding: 3px 2px; font-size: 13pt;">1</td>
         ${['2', '3', '4', '5', '6'].map(day => `<td style="text-align: center; border: 1px solid black; padding: 3px 2px; font-weight: bold; font-size: 13pt;">${renderCellHTMLString(day, '1')}</td>`).join('')}
       </tr>
@@ -438,15 +438,15 @@ export default function TimetableTab({
         <td style="font-weight: bold; text-align: center; border: 1px solid black; padding: 3px 2px; font-size: 13pt;">4</td>
         ${['2', '3', '4', '5', '6'].map(day => `<td style="text-align: center; border: 1px solid black; padding: 3px 2px; font-weight: bold; font-size: 13pt;">${renderCellHTMLString(day, '4')}</td>`).join('')}
       </tr>
-      
-      <!-- CHIEU Row 5 -->
+      <!-- SANG Row 5 -->
       <tr>
-        <td class="session-cell" rowspan="3" style="font-weight: bold; text-align: center; font-size: 13pt; border: 1px solid black; width: 120px; padding: 3px 2px;">CHIỀU</td>
         <td style="font-weight: bold; text-align: center; border: 1px solid black; padding: 3px 2px; font-size: 13pt;">5</td>
         ${['2', '3', '4', '5', '6'].map(day => `<td style="text-align: center; border: 1px solid black; padding: 3px 2px; font-weight: bold; font-size: 13pt;">${renderCellHTMLString(day, '5')}</td>`).join('')}
       </tr>
+      
       <!-- CHIEU Row 6 -->
       <tr>
+        <td class="session-cell" rowspan="3" style="font-weight: bold; text-align: center; font-size: 13pt; border: 1px solid black; width: 120px; padding: 3px 2px;">CHIỀU</td>
         <td style="font-weight: bold; text-align: center; border: 1px solid black; padding: 3px 2px; font-size: 13pt;">6</td>
         ${['2', '3', '4', '5', '6'].map(day => `<td style="text-align: center; border: 1px solid black; padding: 3px 2px; font-weight: bold; font-size: 13pt;">${renderCellHTMLString(day, '6')}</td>`).join('')}
       </tr>
@@ -454,6 +454,11 @@ export default function TimetableTab({
       <tr>
         <td style="font-weight: bold; text-align: center; border: 1px solid black; padding: 3px 2px; font-size: 13pt;">7</td>
         ${['2', '3', '4', '5', '6'].map(day => `<td style="text-align: center; border: 1px solid black; padding: 3px 2px; font-weight: bold; font-size: 13pt;">${renderCellHTMLString(day, '7')}</td>`).join('')}
+      </tr>
+      <!-- CHIEU Row 8 -->
+      <tr>
+        <td style="font-weight: bold; text-align: center; border: 1px solid black; padding: 3px 2px; font-size: 13pt;">8</td>
+        ${['2', '3', '4', '5', '6'].map(day => `<td style="text-align: center; border: 1px solid black; padding: 3px 2px; font-weight: bold; font-size: 13pt;">${renderCellHTMLString(day, '8')}</td>`).join('')}
       </tr>
     `;
 
@@ -582,7 +587,7 @@ export default function TimetableTab({
                 <strong>Ghi chú:</strong><br>
                 <strong>* Sáng:</strong><br>
                 &nbsp;&nbsp;&nbsp;&nbsp;- Vào học: 7h00<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;- Ra về:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;10h10<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;- Ra về:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;10h35<br>
                 <strong>* Chiều:</strong><br>
                 &nbsp;&nbsp;&nbsp;&nbsp;- Vào học: 14h00<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;- Ra về:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;16h10
@@ -946,7 +951,7 @@ export default function TimetableTab({
                   {/* --- SÁNG --- */}
                   {/* Tiết 1 */}
                   <tr>
-                    <td style={{ border: '1px solid black', fontWeight: 'bold', textTransform: 'uppercase', fontSize: '13pt', padding: '3px 2px' }} rowSpan={5}>SÁNG</td>
+                    <td style={{ border: '1px solid black', fontWeight: 'bold', textTransform: 'uppercase', fontSize: '13pt', padding: '3px 2px' }} rowSpan={6}>SÁNG</td>
                     <td style={{ border: '1px solid black', padding: '3px 2px', fontWeight: 'bold', fontSize: '13pt' }}>1</td>
                     {['2', '3', '4', '5', '6'].map((day) => {
                       const data = getCellData(day, '1');
@@ -1012,10 +1017,8 @@ export default function TimetableTab({
                     })}
                   </tr>
 
-                  {/* --- CHIỀU --- */}
                   {/* Tiết 5 */}
                   <tr>
-                    <td style={{ border: '1px solid black', fontWeight: 'bold', textTransform: 'uppercase', fontSize: '13pt', padding: '3px 2px' }} rowSpan={3}>CHIỀU</td>
                     <td style={{ border: '1px solid black', padding: '3px 2px', fontWeight: 'bold', fontSize: '13pt' }}>5</td>
                     {['2', '3', '4', '5', '6'].map((day) => {
                       const data = getCellData(day, '5');
@@ -1029,8 +1032,10 @@ export default function TimetableTab({
                     })}
                   </tr>
 
+                  {/* --- CHIỀU --- */}
                   {/* Tiết 6 */}
                   <tr>
+                    <td style={{ border: '1px solid black', fontWeight: 'bold', textTransform: 'uppercase', fontSize: '13pt', padding: '3px 2px' }} rowSpan={3}>CHIỀU</td>
                     <td style={{ border: '1px solid black', padding: '3px 2px', fontWeight: 'bold', fontSize: '13pt' }}>6</td>
                     {['2', '3', '4', '5', '6'].map((day) => {
                       const data = getCellData(day, '6');
@@ -1058,6 +1063,21 @@ export default function TimetableTab({
                       );
                     })}
                   </tr>
+
+                  {/* Tiết 8 */}
+                  <tr>
+                    <td style={{ border: '1px solid black', padding: '3px 2px', fontWeight: 'bold', fontSize: '13pt' }}>8</td>
+                    {['2', '3', '4', '5', '6'].map((day) => {
+                      const data = getCellData(day, '8');
+                      return (
+                        <td key={`pre-8-${day}`} style={{ border: '1px solid black', padding: '3px 2px', fontSize: '13pt', fontWeight: 'bold' }}>
+                          {data ? (
+                            <span>{data.subject} {formatSuperscriptClass(data.className)}</span>
+                          ) : ''}
+                        </td>
+                      );
+                    })}
+                  </tr>
                 </tbody>
               </table>
 
@@ -1067,7 +1087,7 @@ export default function TimetableTab({
                   <span style={{ fontWeight: 'bold', display: 'block' }}>Ghi chú:</span>
                   <span style={{ fontWeight: 'bold', display: 'block', marginTop: '2px' }}>* Sáng:</span>
                   <span style={{ display: 'block', paddingLeft: '16px' }}>- Vào học: 7h00</span>
-                  <span style={{ display: 'block', paddingLeft: '16px' }}>- Ra về:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;10h10</span>
+                  <span style={{ display: 'block', paddingLeft: '16px' }}>- Ra về:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;10h35</span>
                   <span style={{ fontWeight: 'bold', display: 'block', marginTop: '2px' }}>* Chiều:</span>
                   <span style={{ display: 'block', paddingLeft: '16px' }}>- Vào học: 14h00</span>
                   <span style={{ display: 'block', paddingLeft: '16px' }}>- Ra về:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;16h10</span>
@@ -1108,11 +1128,11 @@ export default function TimetableTab({
                   {/* --- BUỔI SÁNG --- */}
                   {/* Row 1 - Tiết 1 */}
                   <tr className="hover:bg-slate-50/40 transition">
-                    <td className="border border-slate-300 font-black text-slate-800 tracking-wider text-[11px] bg-slate-50/55" rowSpan={5}>
+                    <td className="border border-slate-300 font-black text-slate-800 tracking-wider text-[11px] bg-slate-50/55" rowSpan={6}>
                       <div className="flex flex-col items-center justify-center p-1.5">
                         <span className="text-emerald-600 text-base">☀️</span>
                         <span className="font-black tracking-widest text-[#113f43] uppercase text-xs">SÁNG</span>
-                        <span className="text-[9px] text-slate-400 font-bold mt-0.5">7h00 - 10h10</span>
+                        <span className="text-[9px] text-slate-400 font-bold mt-0.5">7h00 - 10h35</span>
                       </div>
                     </td>
                     <td className="border border-slate-300 font-extrabold bg-slate-50/55 text-slate-600 py-2 text-xs">Sáng 1</td>
@@ -1213,27 +1233,9 @@ export default function TimetableTab({
                     })}
                   </tr>
 
-                  {/* Row 4.5 - Tiết Trưa / Ra chơi sáng */}
-                  <tr className="bg-slate-550/10 text-center tracking-widest text-[11px] font-bold text-slate-500">
-                    <td className="border border-slate-300 py-1.5" colSpan={1}>
-                      🌙
-                    </td>
-                    <td className="border border-[#e2e8f0] py-1.5 text-[9px] uppercase tracking-wider font-extrabold text-slate-400" colSpan={5}>
-                      Nghỉ trưa & Chuẩn bị buổi chiều
-                    </td>
-                  </tr>
-
-                  {/* --- BUỔI CHIỀU --- */}
                   {/* Row 5 - Tiết 5 */}
                   <tr className="hover:bg-slate-50/40 transition">
-                    <td className="border border-slate-300 font-black text-slate-800 tracking-wider text-[11px] bg-slate-50/55" rowSpan={3}>
-                      <div className="flex flex-col items-center justify-center p-1.5">
-                        <span className="text-teal-600 text-base">🌇</span>
-                        <span className="font-black tracking-widest text-[#113f43] uppercase text-xs">CHIỀU</span>
-                        <span className="text-[9px] text-slate-400 font-bold mt-0.5">14h00 - 16h10</span>
-                      </div>
-                    </td>
-                    <td className="border border-slate-300 font-extrabold bg-slate-50/55 text-slate-600 py-2 text-xs">Chiều 5</td>
+                    <td className="border border-slate-300 font-extrabold bg-slate-50/55 text-slate-600 py-2 text-xs">Sáng 5</td>
                     {['2', '3', '4', '5', '6'].map((day) => {
                       const data = getCellData(day, '5');
                       return (
@@ -1253,8 +1255,26 @@ export default function TimetableTab({
                     })}
                   </tr>
 
+                  {/* Row 5.5 - Tiết Trưa / Ra chơi sáng */}
+                  <tr className="bg-slate-550/10 text-center tracking-widest text-[11px] font-bold text-slate-500">
+                    <td className="border border-slate-300 py-1.5" colSpan={1}>
+                      🌙
+                    </td>
+                    <td className="border border-[#e2e8f0] py-1.5 text-[9px] uppercase tracking-wider font-extrabold text-slate-400" colSpan={5}>
+                      Nghỉ trưa & Chuẩn bị buổi chiều
+                    </td>
+                  </tr>
+
+                  {/* --- BUỔI CHIỀU --- */}
                   {/* Row 6 - Tiết 6 */}
                   <tr className="hover:bg-slate-50/40 transition">
+                    <td className="border border-slate-300 font-black text-slate-800 tracking-wider text-[11px] bg-slate-50/55" rowSpan={3}>
+                      <div className="flex flex-col items-center justify-center p-1.5">
+                        <span className="text-teal-600 text-base">🌇</span>
+                        <span className="font-black tracking-widest text-[#113f43] uppercase text-xs">CHIỀU</span>
+                        <span className="text-[9px] text-slate-400 font-bold mt-0.5">14h00 - 16h10</span>
+                      </div>
+                    </td>
                     <td className="border border-slate-300 font-extrabold bg-slate-50/55 text-slate-600 py-2 text-xs">Chiều 6</td>
                     {['2', '3', '4', '5', '6'].map((day) => {
                       const data = getCellData(day, '6');
@@ -1297,6 +1317,28 @@ export default function TimetableTab({
                     })}
                   </tr>
 
+                  {/* Row 8 - Tiết 8 */}
+                  <tr className="hover:bg-slate-50/40 transition">
+                    <td className="border border-slate-300 font-extrabold bg-slate-50/55 text-slate-600 py-2 text-xs">Chiều 8</td>
+                    {['2', '3', '4', '5', '6'].map((day) => {
+                      const data = getCellData(day, '8');
+                      return (
+                        <td key={`8-${day}`} className="border border-slate-300 p-2 text-xs">
+                          {data ? (
+                            <div className="space-y-0.5">
+                              <p className="font-black text-emerald-800 uppercase text-xs">{data.subject}</p>
+                              <span className="inline-flex bg-emerald-50 text-emerald-800 text-[10px] font-black px-1.5 py-0.5 rounded border border-emerald-200 shadow-2xs">
+                                Lớp {formatSuperscriptClass(data.className)}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-[10px] text-slate-300 italic font-semibold">Trống</span>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+
                 </tbody>
               </table>
             </div>
@@ -1306,7 +1348,7 @@ export default function TimetableTab({
               <div className="space-y-1">
                 <span className="block font-black text-emerald-800 uppercase text-[10px]">📌 QUY ĐỊNH & THÔNG TIN THỜI GIAN:</span>
                 <ul className="list-disc pl-4 space-y-1 text-slate-600">
-                  <li><strong>SÁNG:</strong> Vào lớp: <strong>7h00</strong>. Ra về: <strong>10h10</strong></li>
+                  <li><strong>SÁNG:</strong> Vào lớp: <strong>7h00</strong>. Ra về: <strong>10h35</strong></li>
                   <li><strong>CHIỀU:</strong> Vào lớp: <strong>14h00</strong>. Ra về: <strong>16h10</strong></li>
                   <li>Nếu phát hiện sai sót trong lịch phân công giảng dạy, vui lòng liên hệ Ban Giám Hiệu (Admin) để cập nhật kịp thời.</li>
                 </ul>
@@ -1353,7 +1395,7 @@ export default function TimetableTab({
                 {/* Session headers */}
                 <tr className="bg-slate-200 border-b border-slate-300 text-slate-800 font-extrabold uppercase text-[10px]">
                   <th className="py-2.5 px-3 w-[180px] text-left border border-slate-300" rowSpan={2}>Giáo viên</th>
-                  <th className="py-1.5 px-2 border border-slate-300 bg-emerald-50 text-emerald-800" colSpan={4}>BUỔI SÁNG (☀️ 7h00 - 10h10)</th>
+                  <th className="py-1.5 px-2 border border-slate-300 bg-emerald-50 text-emerald-800" colSpan={5}>BUỔI SÁNG (☀️ 7h00 - 10h35)</th>
                   <th className="py-1.5 px-2 border border-slate-300 bg-teal-50 text-teal-800" colSpan={3}>BUỔI CHIỀU (🌇 14h00 - 16h10)</th>
                 </tr>
                 <tr className="bg-slate-100 border-b border-slate-300 text-slate-700 font-extrabold uppercase text-[9px]">
@@ -1364,6 +1406,7 @@ export default function TimetableTab({
                   <th className="py-2 border border-slate-300 w-[100px]">Tiết 5</th>
                   <th className="py-2 border border-slate-300 w-[100px]">Tiết 6</th>
                   <th className="py-2 border border-slate-300 w-[100px]">Tiết 7</th>
+                  <th className="py-2 border border-slate-300 w-[100px]">Tiết 8</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 bg-white">
@@ -1393,8 +1436,8 @@ export default function TimetableTab({
                         </div>
                       </td>
 
-                      {/* Tiết 1 - 7 Columns */}
-                      {['1', '2', '3', '4', '5', '6', '7'].map((period) => {
+                      {/* Tiết 1 - 8 Columns */}
+                      {['1', '2', '3', '4', '5', '6', '7', '8'].map((period) => {
                         const cell = schedule[`${selectedGlobalDay}-${period}`];
                         return (
                           <td key={period} className="border border-slate-300 p-2 min-h-[50px] vertical-middle">
@@ -1482,7 +1525,7 @@ export default function TimetableTab({
                             Thứ {res.day === '2' ? 'Hai' : res.day === '3' ? 'Ba' : res.day === '4' ? 'Tư' : res.day === '5' ? 'Năm' : 'Sáu'}
                           </span>
                           <span className="inline-flex items-center gap-1 bg-teal-50 text-teal-800 text-[10px] font-black px-2 py-0.5 rounded-lg border border-teal-100">
-                            Tiết {res.period} ({res.period <= '4' ? 'Sáng' : 'Chiều'})
+                            Tiết {res.period} ({res.period <= '5' ? 'Sáng' : 'Chiều'})
                           </span>
                         </td>
                         <td className="py-3 px-4 font-extrabold text-slate-700 uppercase">
@@ -1547,7 +1590,7 @@ export default function TimetableTab({
             {/* --- SÁNG --- */}
             {/* Row 1 - Tiết 1 */}
             <tr>
-              <td style={{ border: '1px solid black', fontWeight: 'bold', textTransform: 'uppercase', fontSize: '13pt', padding: '3px 2px' }} rowSpan={5}>SÁNG</td>
+              <td style={{ border: '1px solid black', fontWeight: 'bold', textTransform: 'uppercase', fontSize: '13pt', padding: '3px 2px' }} rowSpan={6}>SÁNG</td>
               <td style={{ border: '1px solid black', padding: '3px 2px', fontWeight: 'bold', fontSize: '13pt' }}>1</td>
               {['2', '3', '4', '5', '6'].map((day) => {
                 const data = getCellData(day, '1');
@@ -1613,10 +1656,8 @@ export default function TimetableTab({
               })}
             </tr>
 
-            {/* --- CHIỀU --- */}
             {/* Row 5 - Tiết 5 */}
             <tr>
-              <td style={{ border: '1px solid black', fontWeight: 'bold', textTransform: 'uppercase', fontSize: '13pt', padding: '3px 2px' }} rowSpan={3}>CHIỀU</td>
               <td style={{ border: '1px solid black', padding: '3px 2px', fontWeight: 'bold', fontSize: '13pt' }}>5</td>
               {['2', '3', '4', '5', '6'].map((day) => {
                 const data = getCellData(day, '5');
@@ -1630,8 +1671,10 @@ export default function TimetableTab({
               })}
             </tr>
 
+            {/* --- CHIỀU --- */}
             {/* Row 6 - Tiết 6 */}
             <tr>
+              <td style={{ border: '1px solid black', fontWeight: 'bold', textTransform: 'uppercase', fontSize: '13pt', padding: '3px 2px' }} rowSpan={3}>CHIỀU</td>
               <td style={{ border: '1px solid black', padding: '3px 2px', fontWeight: 'bold', fontSize: '13pt' }}>6</td>
               {['2', '3', '4', '5', '6'].map((day) => {
                 const data = getCellData(day, '6');
@@ -1659,6 +1702,21 @@ export default function TimetableTab({
                 );
               })}
             </tr>
+
+            {/* Row 8 - Tiết 8 */}
+            <tr>
+              <td style={{ border: '1px solid black', padding: '3px 2px', fontWeight: 'bold', fontSize: '13pt' }}>8</td>
+              {['2', '3', '4', '5', '6'].map((day) => {
+                const data = getCellData(day, '8');
+                return (
+                  <td key={`p-8-${day}`} style={{ border: '1px solid black', padding: '3px 2px', fontSize: '13pt', fontWeight: 'bold' }}>
+                    {data ? (
+                      <span>{data.subject} {formatSuperscriptClass(data.className)}</span>
+                    ) : ''}
+                  </td>
+                );
+              })}
+            </tr>
           </tbody>
         </table>
 
@@ -1668,7 +1726,7 @@ export default function TimetableTab({
             <span style={{ fontWeight: 'bold', display: 'block' }}>Ghi chú:</span>
             <span style={{ fontWeight: 'bold', display: 'block', marginTop: '2px' }}>* Sáng:</span>
             <span style={{ display: 'block', paddingLeft: '16px' }}>- Vào học: 7h00</span>
-            <span style={{ display: 'block', paddingLeft: '16px' }}>- Ra về:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;10h10</span>
+            <span style={{ display: 'block', paddingLeft: '16px' }}>- Ra về:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;10h35</span>
             <span style={{ fontWeight: 'bold', display: 'block', marginTop: '2px' }}>* Chiều:</span>
             <span style={{ display: 'block', paddingLeft: '16px' }}>- Vào học: 14h00</span>
             <span style={{ display: 'block', paddingLeft: '16px' }}>- Ra về:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;16h10</span>
