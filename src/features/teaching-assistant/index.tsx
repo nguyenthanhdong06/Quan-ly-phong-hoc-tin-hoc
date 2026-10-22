@@ -48,8 +48,19 @@ export default function TeachingAssistant({
   showToast,
   dbStates,
 }: TeachingAssistantProps) {
-  const workspaceId = getWorkspaceId(currentUser);
-  const userId = currentUser?.id || currentUser?.username || 'user';
+  // Đối với tài khoản Admin: Cho phép chọn xem TKB kết hợp & công việc của từng giáo viên trong trường
+  const isAdmin = Boolean(currentUser?.role?.includes('Admin'));
+  const [selectedTeacherId, setSelectedTeacherId] = useState<string>(() => {
+    return currentUser?.id || currentUser?.username || '';
+  });
+
+  const effectiveTeacher = useMemo(() => {
+    if (!isAdmin || !selectedTeacherId) return currentUser;
+    return members.find(m => m.id === selectedTeacherId || m.username === selectedTeacherId) || currentUser;
+  }, [isAdmin, selectedTeacherId, members, currentUser]);
+
+  const workspaceId = getWorkspaceId(effectiveTeacher);
+  const userId = effectiveTeacher?.id || effectiveTeacher?.username || 'user';
 
   // Chế độ xem hiện tại: Mặc định là 'today' hoặc 'next_week'
   const [activeTab, setActiveTab] = useState<AssistantActiveTab>('today');
@@ -70,10 +81,10 @@ export default function TeachingAssistant({
   const [taskToEdit, setTaskToEdit] = useState<TeachingTask | null>(null);
   const [taskModalInitialValues, setTaskModalInitialValues] = useState<Partial<TeachingTask>>({});
 
-  // Lấy TKB của giáo viên hiện tại
+  // Lấy TKB của giáo viên hiện tại (tôn trọng workspace riêng)
   const teacherScheduleMap = useMemo(() => {
-    return getTeacherScheduleMap(timetableData, currentUser);
-  }, [timetableData, currentUser]);
+    return getTeacherScheduleMap(timetableData, effectiveTeacher, dbStates);
+  }, [timetableData, effectiveTeacher, dbStates]);
 
   // Trích xuất danh sách môn học của giáo viên
   const teacherSubjects = useMemo(() => {
@@ -92,12 +103,12 @@ export default function TeachingAssistant({
     return () => clearInterval(timer);
   }, [teacherScheduleMap]);
 
-  // Tải dữ liệu ban đầu
+  // Tải dữ liệu ban đầu theo Workspace của tài khoản đang xem
   useEffect(() => {
     let isMounted = true;
     async function initData() {
-      const loadedTasks = await loadTeachingTasks(currentUser, dbStates);
-      const loadedNotes = await loadTeachingQuickNotes(currentUser, dbStates);
+      const loadedTasks = await loadTeachingTasks(effectiveTeacher, dbStates);
+      const loadedNotes = await loadTeachingQuickNotes(effectiveTeacher, dbStates);
       if (isMounted) {
         setTasks(loadedTasks);
         setQuickNotes(loadedNotes);
@@ -108,7 +119,7 @@ export default function TeachingAssistant({
     return () => {
       isMounted = false;
     };
-  }, [currentUser, dbStates]);
+  }, [effectiveTeacher, dbStates]);
 
   // Tự động kiểm tra và nhắc nhở việc sắp đến hạn trước tiết học
   useEffect(() => {
@@ -155,13 +166,13 @@ export default function TeachingAssistant({
     });
 
     setTasks(updatedTasks);
-    saveTeachingTasks(updatedTasks, currentUser);
+    saveTeachingTasks(updatedTasks, effectiveTeacher);
 
     if (isNowCompleted) {
       playStarRewardSound();
       showToast('Đã đánh dấu hoàn thành công việc! 🎉', 'success');
     }
-  }, [tasks, currentUser, showToast]);
+  }, [tasks, effectiveTeacher, showToast]);
 
   // Thao tác: Lưu hoặc Cập nhật công việc
   const handleSaveTask = useCallback((taskData: Omit<TeachingTask, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }) => {
@@ -195,16 +206,16 @@ export default function TeachingAssistant({
     }
 
     setTasks(updatedTasks);
-    saveTeachingTasks(updatedTasks, currentUser);
-  }, [tasks, currentUser, showToast]);
+    saveTeachingTasks(updatedTasks, effectiveTeacher);
+  }, [tasks, effectiveTeacher, showToast]);
 
   // Thao tác: Xóa công việc
   const handleDeleteTask = useCallback((taskId: string) => {
     const updatedTasks = tasks.filter(t => t.id !== taskId);
     setTasks(updatedTasks);
-    saveTeachingTasks(updatedTasks, currentUser);
+    saveTeachingTasks(updatedTasks, effectiveTeacher);
     showToast('Đã xóa công việc.', 'info');
-  }, [tasks, currentUser, showToast]);
+  }, [tasks, effectiveTeacher, showToast]);
 
   // Thao tác: Mở modal thêm việc cho một tiết cụ thể
   const handleOpenNewTaskForPeriod = useCallback((
@@ -240,18 +251,18 @@ export default function TeachingAssistant({
     };
     const updated = [newNote, ...quickNotes];
     setQuickNotes(updated);
-    saveTeachingQuickNotes(updated, currentUser);
+    saveTeachingQuickNotes(updated, effectiveTeacher);
     playStarRewardSound();
     showToast('Đã lưu ghi chú nhanh thành công!', 'success');
-  }, [quickNotes, currentUser, showToast]);
+  }, [quickNotes, effectiveTeacher, showToast]);
 
   // Thao tác: Xóa ghi chú nhanh
   const handleDeleteQuickNote = useCallback((noteId: string) => {
     const updated = quickNotes.filter(n => n.id !== noteId);
     setQuickNotes(updated);
-    saveTeachingQuickNotes(updated, currentUser);
+    saveTeachingQuickNotes(updated, effectiveTeacher);
     showToast('Đã xóa ghi chú.', 'info');
-  }, [quickNotes, currentUser, showToast]);
+  }, [quickNotes, effectiveTeacher, showToast]);
 
   // Thao tác: Chuyển ghi chú thành công việc tuần tới
   const handleConvertNoteToTask = useCallback((noteContent: string, classId?: string, subject?: string) => {
@@ -359,6 +370,10 @@ export default function TeachingAssistant({
         <ScheduleTimelineView
           tasks={tasks}
           scheduleMap={teacherScheduleMap}
+          currentUser={currentUser}
+          members={members}
+          selectedTeacherId={selectedTeacherId}
+          onSelectTeacherId={setSelectedTeacherId}
           onOpenNewTaskForPeriod={handleOpenNewTaskForPeriod}
           onEditTask={(task) => {
             setTaskToEdit(task);

@@ -1,31 +1,60 @@
 import { Member, TimetableCell, TimetableData } from '../../../types';
 import { PERIOD_TIMES, DAY_NAMES } from '../constants';
 import { CurrentClassContext, MatchedScheduleSlot } from '../types';
+import { safeGetLocalStorage } from '../../../utils/safeStorage';
 
 /**
- * 🔍 Lấy dữ liệu TKB của giáo viên hiện tại từ TimetableData
+ * 🔍 Lấy dữ liệu TKB của giáo viên hiện tại từ TimetableData và Workspace riêng biệt
  */
 export function getTeacherScheduleMap(
   timetableData: TimetableData,
-  currentUser: Member | null
+  currentUser: Member | null,
+  dbStates?: Record<string, any>
 ): Record<string, TimetableCell> {
-  if (!currentUser || !timetableData) return {};
+  if (!currentUser) return {};
 
-  if (currentUser.username && timetableData[currentUser.username]) {
-    return timetableData[currentUser.username];
-  }
-  if (currentUser.id && timetableData[currentUser.id]) {
-    return timetableData[currentUser.id];
-  }
-  if (currentUser.name && timetableData[currentUser.name]) {
-    return timetableData[currentUser.name];
+  const cleanId = (currentUser.id || currentUser.username || '').replace(/[^a-zA-Z0-9_-]/g, '_');
+  const wsKey = `ws_${cleanId}_school_timetable_data`;
+
+  // 1. Kiểm tra trong timetableData theo username, id, name hoặc cleanId
+  if (timetableData) {
+    if (currentUser.username && timetableData[currentUser.username] && Object.keys(timetableData[currentUser.username]).length > 0) {
+      return timetableData[currentUser.username];
+    }
+    if (currentUser.id && timetableData[currentUser.id] && Object.keys(timetableData[currentUser.id]).length > 0) {
+      return timetableData[currentUser.id];
+    }
+    if (currentUser.name && timetableData[currentUser.name] && Object.keys(timetableData[currentUser.name]).length > 0) {
+      return timetableData[currentUser.name];
+    }
+    if (cleanId && timetableData[cleanId] && Object.keys(timetableData[cleanId]).length > 0) {
+      return timetableData[cleanId];
+    }
+    // Khớp không phân biệt hoa thường
+    const searchKey = (currentUser.username || currentUser.id || currentUser.name || '').toLowerCase();
+    const matchedKey = Object.keys(timetableData).find(k => k.toLowerCase() === searchKey);
+    if (matchedKey && timetableData[matchedKey] && Object.keys(timetableData[matchedKey]).length > 0) {
+      return timetableData[matchedKey];
+    }
   }
 
-  // Khớp không phân biệt hoa thường
-  const searchKey = (currentUser.username || currentUser.id || currentUser.name || '').toLowerCase();
-  const matchedKey = Object.keys(timetableData).find(k => k.toLowerCase() === searchKey);
-  if (matchedKey && timetableData[matchedKey]) {
-    return timetableData[matchedKey];
+  // 2. Tôn trọng không gian làm việc (Workspace): Đọc từ dbStates theo wsKey
+  if (dbStates && dbStates[wsKey] && typeof dbStates[wsKey] === 'object' && Object.keys(dbStates[wsKey]).length > 0) {
+    return dbStates[wsKey];
+  }
+
+  // 3. Đọc từ LocalStorage theo wsKey riêng của Workspace giáo viên
+  const wsSchedule = safeGetLocalStorage<Record<string, TimetableCell>>(wsKey, {});
+  if (wsSchedule && Object.keys(wsSchedule).length > 0) {
+    return wsSchedule;
+  }
+
+  // 4. Fallback cho Admin nếu Admin chưa có TKB riêng: Lấy giáo viên đầu tiên có TKB để tiện đối chiếu
+  if (currentUser.role?.includes('Admin') && timetableData) {
+    const firstActiveTeacherKey = Object.keys(timetableData).find(k => Object.keys(timetableData[k] || {}).length > 0);
+    if (firstActiveTeacherKey && timetableData[firstActiveTeacherKey]) {
+      return timetableData[firstActiveTeacherKey];
+    }
   }
 
   return {};

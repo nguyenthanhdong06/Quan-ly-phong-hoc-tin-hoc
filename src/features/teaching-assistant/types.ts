@@ -34,7 +34,7 @@ export interface TeachingTask {
   plannedDate?: string;     // YYYY-MM-DD
   dueDate?: string;         // ISO String hoặc YYYY-MM-DD HH:mm
   scheduleDay?: string;     // '2' | '3' | '4' | '5' | '6'
-  schedulePeriod?: string;  // '1' | '2' | '3' | '4' | '5' | '6' | '7'
+  schedulePeriod?: string;  // '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8'
   reminderBeforeMinutes?: number; // 15, 30, 60, 180, 1440
   
   // Công việc lặp lại
@@ -61,7 +61,7 @@ export interface TeachingQuickNote {
 
 export interface MatchedScheduleSlot {
   day: string;              // '2', '3', '4', '5', '6'
-  period: string;           // '1' - '7'
+  period: string;           // '1' - '8'
   session: 'Sáng' | 'Chiều';
   startTime: string;        // '07:30'
   endTime: string;          // '08:05'

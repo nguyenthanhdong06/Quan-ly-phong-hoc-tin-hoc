@@ -521,7 +521,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                           : 'bg-white hover:bg-amber-200/80 text-amber-950 border-amber-400'
                       }`}
                     >
-                      <span>📅 {DAY_NAMES[slot.day]} - Tiết {slot.period} ({slot.startTime})</span>
+                      <span>📅 {DAY_NAMES[slot.day]} - {slot.session} {slot.period} ({slot.startTime} - {slot.endTime})</span>
                       {isSelected && <span className="text-[10px] bg-amber-400 text-amber-950 px-1.5 py-0.5 rounded-full">Đã chọn</span>}
                     </button>
                   );

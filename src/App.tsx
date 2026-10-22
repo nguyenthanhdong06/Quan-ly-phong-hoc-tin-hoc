@@ -2043,6 +2043,7 @@ export default function App() {
                 grades={grades}
                 timetableData={timetableData}
                 showToast={showToast}
+                dbStates={latestDbStatesRef.current}
               />
             )}
 

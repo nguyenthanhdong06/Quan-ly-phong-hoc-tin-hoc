@@ -75,7 +75,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
             {/* Tag Lặp lại */}
             {task.isRecurring && (
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-900 border border-purple-200 flex items-center gap-0.5">
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-100 text-sky-900 border border-sky-200 flex items-center gap-0.5">
                 <Repeat className="w-3 h-3" /> Lặp lại
               </span>
             )}
@@ -102,7 +102,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             {showScheduleBadge && task.scheduleDay && task.schedulePeriod && (
               <span className="inline-flex items-center gap-1 font-bold text-amber-900 bg-amber-200/50 px-2 py-0.5 rounded">
                 <Calendar className="w-3.5 h-3.5 text-amber-800" />
-                {dayLabel} - Tiết {task.schedulePeriod} {periodTime ? `(${periodTime.start})` : ''}
+                {dayLabel} - {periodTime ? `${periodTime.session} ${task.schedulePeriod} (${periodTime.start})` : `Tiết ${task.schedulePeriod}`}
               </span>
             )}
 
